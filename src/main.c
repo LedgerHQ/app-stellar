@@ -80,6 +80,17 @@ typedef struct transactionContext_t {
     uint32_t rawTxLength;
 } transactionContext_t;
 
+typedef struct txContent_t {
+    uint64_t amount;
+    uint64_t fees;
+    uint8_t account[20];
+    uint8_t destination[20];
+    uint32_t sourceTag;
+    uint8_t sourceTagPresent;
+    uint32_t destinationTag;
+    uint8_t destinationTagPresent;
+} txContent_t;
+
 union {
     publicKeyContext_t publicKeyContext;
     transactionContext_t transactionContext;
