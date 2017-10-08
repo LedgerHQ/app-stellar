@@ -1,2 +1,2 @@
-# blue-app-xrp
-Ripple wallet application for Ledger Blue and Nano S
+# nano-app-xlm
+Stellar wallet application for Nano S
