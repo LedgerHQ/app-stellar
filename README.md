@@ -1,2 +1,2 @@
-# nano-app-xlm
-Stellar wallet application for Nano S
+# ledger-app-xlm
+Stellar application for Ledger Nano S
