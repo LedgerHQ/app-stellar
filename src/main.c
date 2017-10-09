@@ -689,7 +689,6 @@ void handleGetPublicKey(uint8_t p1, uint8_t p2, uint8_t *dataBuffer,
     uint8_t p2Chain = p2 & 0x3F;
 
     if ((bip32PathLength < 0x01) || (bip32PathLength > MAX_BIP32_PATH)) {
-        PRINTF("Invalid path\n");
         THROW(0x6a80);
     }
     if ((p2Chain != P2_CHAINCODE) && (p2Chain != P2_NO_CHAINCODE)) {
