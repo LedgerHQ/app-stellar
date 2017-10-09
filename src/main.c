@@ -663,9 +663,9 @@ unsigned short io_exchange_al(unsigned char channel, unsigned short tx_len) {
 uint32_t set_result_get_publicKey() {
     uint32_t tx = 0;
 
-    G_io_apdu_buffer[tx++] = 65;
-    os_memmove(G_io_apdu_buffer+tx, tmpCtx.publicKeyContext.publicKey.W, 65);
-    tx += 65;
+    G_io_apdu_buffer[tx++] = 32;
+    os_memmove(G_io_apdu_buffer+tx, tmpCtx.publicKeyContext.publicKey.W, 32);
+    tx += 32;
 
     if (tmpCtx.publicKeyContext.getChaincode) {
         os_memmove(G_io_apdu_buffer + tx, tmpCtx.publicKeyContext.chainCode, 32);
