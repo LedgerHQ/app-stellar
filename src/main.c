@@ -73,7 +73,6 @@ typedef struct publicKeyContext_t {
 } publicKeyContext_t;
 
 typedef struct transactionContext_t {
-    cx_curve_t curve;
     uint8_t pathLength;
     uint32_t bip32Path[MAX_BIP32_PATH];
     uint8_t rawTx[MAX_RAW_TX];
@@ -425,9 +424,7 @@ const bagl_element_t ui_approval_nanos[] = {
  ux_step 0: confirm
          1: amount
          2: address
-         3: [sourcetag]
-         4: [destinationtag]
-         5: fees
+         3: fees
 */
 unsigned int ui_approval_prepro(const bagl_element_t *element) {
     unsigned int display = 1;
@@ -444,38 +441,7 @@ unsigned int ui_approval_prepro(const bagl_element_t *element) {
             case 0x12:
                 os_memmove(&tmp_element, element, sizeof(bagl_element_t));
                 display = ux_step - 1;
-                switch (display) {
-                case 0: // amount
-                case 1: // address
-                display_detail:
-                    tmp_element.text =
-                        ui_approval_details[display]
-                                           [(element->component.userid) >> 4];
-                    break;
-                case 2: // source tag
-                    if (txContent.sourceTagPresent) {
-                        SPRINTF(tag, "%u", txContent.sourceTag);
-                        goto display_detail;
-                    }
-                    if (txContent.destinationTagPresent) {
-                        SPRINTF(tag, "%u", txContent.destinationTag);
-                        display = 3;
-                        goto display_detail;
-                    }
-                // no break is intentional
-                case 3: // destination tag
-                    if (txContent.sourceTagPresent &&
-                        txContent.destinationTagPresent) {
-                        SPRINTF(tag, "%u", txContent.destinationTag);
-                        display = 3;
-                        goto display_detail;
-                    }
-                // no break is intentional
-                case 4: // fees
-                    display = 4;
-                    goto display_detail;
-                }
-
+                tmp_element.text = ui_approval_details[display][(element->component.userid) >> 4];
                 UX_CALLBACK_SET_INTERVAL(MAX(
                     3000,
                     1000 + bagl_label_roundtrip_duration_ms(&tmp_element, 7)));
@@ -555,29 +521,19 @@ unsigned int ui_address_nanos_button(unsigned int button_mask,
 }
 
 unsigned int io_seproxyhal_touch_tx_ok(const bagl_element_t *e) {
-    uint8_t privateKeyData[64];
+    uint8_t privateKeyData[32];
     cx_ecfp_private_key_t privateKey;
     uint32_t tx = 0;
 
     os_perso_derive_node_bip32(
-        tmpCtx.transactionContext.curve, tmpCtx.transactionContext.bip32Path,
+        CX_CURVE_Ed25519, tmpCtx.transactionContext.bip32Path,
         tmpCtx.transactionContext.pathLength, privateKeyData, NULL);
-    cx_ecfp_init_private_key(tmpCtx.transactionContext.curve, privateKeyData,
-                             32, &privateKey);
+    cx_ecfp_init_private_key(CX_CURVE_Ed25519, privateKeyData, 32, &privateKey);
     os_memset(privateKeyData, 0, sizeof(privateKeyData));
-    if (tmpCtx.transactionContext.curve == CX_CURVE_256K1) {
-        cx_hash_sha512(tmpCtx.transactionContext.rawTx,
-                       tmpCtx.transactionContext.rawTxLength, privateKeyData);
-        tx = cx_ecdsa_sign(&privateKey, CX_RND_RFC6979 | CX_LAST, CX_SHA256,
-                           privateKeyData, 32, G_io_apdu_buffer);
-        G_io_apdu_buffer[0] = 0x30;
-    } else {
-        tx = cx_eddsa_sign(&privateKey, NULL, CX_LAST, CX_SHA512,
-                           tmpCtx.transactionContext.rawTx,
-                           tmpCtx.transactionContext.rawTxLength,
-                           G_io_apdu_buffer);
-    }
-
+    tx = cx_eddsa_sign(&privateKey, NULL, CX_LAST, CX_SHA512,
+                       tmpCtx.transactionContext.rawTx,
+                       tmpCtx.transactionContext.rawTxLength,
+                       G_io_apdu_buffer);
     os_memset(&privateKey, 0, sizeof(privateKey));
     G_io_apdu_buffer[tx++] = 0x90;
     G_io_apdu_buffer[tx++] = 0x00;
@@ -732,6 +688,64 @@ void handleGetAppConfiguration(uint8_t p1, uint8_t p2, uint8_t *workBuffer,
     THROW(0x9000);
 }
 
+void handleSign(uint8_t p1, uint8_t p2, uint8_t *workBuffer,
+                uint16_t dataLength, volatile unsigned int *flags,
+                volatile unsigned int *tx) {
+    UNUSED(tx);
+    uint8_t addressLength;
+    uint32_t i;
+    if (p1 == P1_FIRST) {
+        tmpCtx.transactionContext.pathLength = workBuffer[0];
+        if ((tmpCtx.transactionContext.pathLength < 0x01) ||
+            (tmpCtx.transactionContext.pathLength > MAX_BIP32_PATH)) {
+            THROW(0x6a80);
+        }
+        workBuffer++;
+        dataLength--;
+        for (i = 0; i < tmpCtx.transactionContext.pathLength; i++) {
+            tmpCtx.transactionContext.bip32Path[i] =
+                (workBuffer[0] << 24) | (workBuffer[1] << 16) |
+                (workBuffer[2] << 8) | (workBuffer[3]);
+            workBuffer += 4;
+            dataLength -= 4;
+        }
+    } else {
+        THROW(0x6B00);
+    }
+/*
+    if (parseTx(workBuffer, dataLength, &txContent) != USTREAM_FINISHED) {
+        THROW(0x6A80);
+    }
+    xrp_print_amount(txContent.amount, fullAmount, sizeof(fullAmount));
+    xrp_print_amount(txContent.fees, maxFee, sizeof(fullAmount));
+    addressLength = xrp_public_key_to_encoded_base58(
+        txContent.destination, 20, tmpCtx.publicKeyContext.address,
+        sizeof(tmpCtx.publicKeyContext.address), 0, 1);
+    tmpCtx.publicKeyContext.address[addressLength] = '\0';
+
+    os_memset(addressSummary, 0, sizeof(addressSummary));
+    os_memmove((void *)addressSummary, tmpCtx.publicKeyContext.address, 5);
+    os_memmove((void *)(addressSummary + 5), "...", 3);
+    os_memmove((void *)(addressSummary + 8),
+               tmpCtx.publicKeyContext.address + addressLength - 4, 4);
+*/
+
+    os_memmove(tmpCtx.transactionContext.rawTx, SIGN_PREFIX, sizeof(SIGN_PREFIX));
+    os_memmove(tmpCtx.transactionContext.rawTx + sizeof(SIGN_PREFIX), workBuffer, dataLength);
+    tmpCtx.transactionContext.rawTxLength = dataLength + sizeof(SIGN_PREFIX);
+
+/*
+    ux_step = 0;
+    // "confirm", amount, address, fees
+    ux_step_count = 4;
+    UX_DISPLAY(ui_approval_nanos, ui_approval_prepro);
+*/
+
+    io_seproxyhal_touch_tx_ok(NULL);
+
+    *flags |= IO_ASYNCH_REPLY;
+}
+
 void handleApdu(volatile unsigned int *flags, volatile unsigned int *tx) {
     unsigned short sw = 0;
 
@@ -749,14 +763,12 @@ void handleApdu(volatile unsigned int *flags, volatile unsigned int *tx) {
                                    G_io_apdu_buffer[OFFSET_LC], flags, tx);
                 break;
 
-/*
             case INS_SIGN:
                 handleSign(G_io_apdu_buffer[OFFSET_P1],
                            G_io_apdu_buffer[OFFSET_P2],
                            G_io_apdu_buffer + OFFSET_CDATA,
                            G_io_apdu_buffer[OFFSET_LC], flags, tx);
                 break;
-*/
 
             case INS_GET_APP_CONFIGURATION:
                 handleGetAppConfiguration(
