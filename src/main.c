@@ -615,13 +615,15 @@ unsigned short io_exchange_al(unsigned char channel, unsigned short tx_len) {
     return 0;
 }
 
+
 uint32_t set_result_get_publicKey() {
     uint32_t tx = 0;
-
     G_io_apdu_buffer[tx++] = 32;
-    os_memmove(G_io_apdu_buffer+tx, tmpCtx.publicKeyContext.publicKey.W, 32);
+    uint8_t i;
+    for (i = 0; i < 32; i++) {
+        out[i+tx] = publicKey->W[64 - i];
+    }
     tx += 32;
-
 //    if (tmpCtx.publicKeyContext.getChaincode) {
 //        os_memmove(G_io_apdu_buffer + tx, tmpCtx.publicKeyContext.chainCode, 32);
 //        tx += 32;
@@ -722,11 +724,16 @@ void handleSign(uint8_t p1, uint8_t p2, uint8_t *workBuffer,
     os_perso_derive_node_bip32(CX_CURVE_Ed25519, tmpCtx.transactionContext.bip32Path,
         tmpCtx.transactionContext.pathLength, privateKeyData, NULL);
     cx_ecfp_init_private_key(CX_CURVE_Ed25519, privateKeyData, 32, &privateKey);
+    cx_ecfp_generate_pair(CX_CURVE_Ed25519, &tmpCtx.publicKeyContext.publicKey, &privateKey, 1);
     os_memset(privateKeyData, 0, sizeof(privateKeyData));
     *tx = cx_eddsa_sign(&privateKey, NULL, CX_LAST, CX_SHA512,
                        tmpCtx.transactionContext.rawTx,
                        tmpCtx.transactionContext.rawTxLength,
                        G_io_apdu_buffer);
+    cx_eddsa_verify(&tmpCtx.publicKeyContext.publicKey, CX_LAST, CX_SHA512,
+                       tmpCtx.transactionContext.rawTx,
+                       tmpCtx.transactionContext.rawTxLength,
+                       G_io_apdu_buffer, *tx+1);
     os_memset(&privateKey, 0, sizeof(privateKey));
 
     G_io_apdu_buffer[*tx++] = 0x90;
