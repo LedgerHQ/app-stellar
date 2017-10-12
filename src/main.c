@@ -526,8 +526,7 @@ unsigned int io_seproxyhal_touch_tx_ok(const bagl_element_t *e) {
     cx_ecfp_private_key_t privateKey;
     uint32_t tx = 0;
 
-    os_perso_derive_node_bip32(
-        CX_CURVE_Ed25519, tmpCtx.transactionContext.bip32Path,
+    os_perso_derive_node_bip32(CX_CURVE_Ed25519, tmpCtx.transactionContext.bip32Path,
         tmpCtx.transactionContext.pathLength, privateKeyData, NULL);
     cx_ecfp_init_private_key(CX_CURVE_Ed25519, privateKeyData, 32, &privateKey);
     os_memset(privateKeyData, 0, sizeof(privateKeyData));
@@ -761,38 +760,28 @@ void handleSign(uint8_t p1, uint8_t p2, uint8_t *workBuffer,
     } else {
         THROW(0x6B00);
     }
-/*
-    if (parseTx(workBuffer, dataLength, &txContent) != USTREAM_FINISHED) {
-        THROW(0x6A80);
-    }
-    xrp_print_amount(txContent.amount, fullAmount, sizeof(fullAmount));
-    xrp_print_amount(txContent.fees, maxFee, sizeof(fullAmount));
-    addressLength = xrp_public_key_to_encoded_base58(
-        txContent.destination, 20, tmpCtx.publicKeyContext.address,
-        sizeof(tmpCtx.publicKeyContext.address), 0, 1);
-    tmpCtx.publicKeyContext.address[addressLength] = '\0';
 
-    os_memset(addressSummary, 0, sizeof(addressSummary));
-    os_memmove((void *)addressSummary, tmpCtx.publicKeyContext.address, 5);
-    os_memmove((void *)(addressSummary + 5), "...", 3);
-    os_memmove((void *)(addressSummary + 8),
-               tmpCtx.publicKeyContext.address + addressLength - 4, 4);
-*/
+    os_memmove(tmpCtx.transactionContext.rawTx, workBuffer, dataLength);
+    tmpCtx.transactionContext.rawTxLength = dataLength;
 
-    os_memmove(tmpCtx.transactionContext.rawTx, SIGN_PREFIX, sizeof(SIGN_PREFIX));
-    os_memmove(tmpCtx.transactionContext.rawTx + sizeof(SIGN_PREFIX), workBuffer, dataLength);
-    tmpCtx.transactionContext.rawTxLength = dataLength + sizeof(SIGN_PREFIX);
+    uint8_t privateKeyData[32];
+    cx_ecfp_private_key_t privateKey;
+    *tx = 0;
 
-/*
-    ux_step = 0;
-    // "confirm", amount, address, fees
-    ux_step_count = 4;
-    UX_DISPLAY(ui_approval_nanos, ui_approval_prepro);
-*/
+    os_perso_derive_node_bip32(CX_CURVE_Ed25519, tmpCtx.transactionContext.bip32Path,
+        tmpCtx.transactionContext.pathLength, privateKeyData, NULL);
+    cx_ecfp_init_private_key(CX_CURVE_Ed25519, privateKeyData, 32, &privateKey);
+    os_memset(privateKeyData, 0, sizeof(privateKeyData));
+    *tx = cx_eddsa_sign(&privateKey, NULL, CX_LAST, CX_SHA512,
+                       tmpCtx.transactionContext.rawTx,
+                       tmpCtx.transactionContext.rawTxLength,
+                       G_io_apdu_buffer);
+    os_memset(&privateKey, 0, sizeof(privateKey));
 
-    io_seproxyhal_touch_tx_ok(NULL);
+    G_io_apdu_buffer[*tx++] = 0x90;
+    G_io_apdu_buffer[*tx++] = 0x00;
 
-    *flags |= IO_ASYNCH_REPLY;
+    THROW(0x9000);
 }
 
 void handleApdu(volatile unsigned int *flags, volatile unsigned int *tx) {
