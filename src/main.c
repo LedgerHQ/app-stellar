@@ -617,16 +617,6 @@ unsigned short io_exchange_al(unsigned char channel, unsigned short tx_len) {
     return 0;
 }
 
-uint32_t set_result_get_privateKey(cx_ecfp_private_key_t *privateKey) {
-    uint32_t tx = 0;
-
-    G_io_apdu_buffer[tx++] = 32;
-    os_memmove(G_io_apdu_buffer+tx, privateKey->d, 32);
-    tx += 32;
-
-    return tx;
-}
-
 uint32_t set_result_get_publicKey() {
     uint32_t tx = 0;
     G_io_apdu_buffer[tx++] = 32;
@@ -646,44 +636,6 @@ uint32_t set_result_get_publicKey() {
 //    }
 
     return tx;
-}
-
-void handleGetPrivateKey(uint8_t p1, uint8_t p2, uint8_t *dataBuffer,
-                        uint16_t dataLength, volatile unsigned int *flags,
-                        volatile unsigned int *tx) {
-    UNUSED(p1);
-    UNUSED(dataLength);
-    UNUSED(flags);
-    uint8_t privateKeyData[32];
-    uint32_t bip32Path[MAX_BIP32_PATH];
-    uint32_t i;
-    uint8_t bip32PathLength = *(dataBuffer++);
-    cx_ecfp_private_key_t privateKey;
-    uint8_t p2Chain = p2 & 0x3F;
-
-    if ((bip32PathLength < 0x01) || (bip32PathLength > MAX_BIP32_PATH)) {
-        THROW(0x6a80);
-    }
-    if ((p2Chain != P2_CHAINCODE) && (p2Chain != P2_NO_CHAINCODE)) {
-        THROW(0x6B00);
-    }
-
-    for (i = 0; i < bip32PathLength; i++) {
-        bip32Path[i] = (dataBuffer[0] << 24) | (dataBuffer[1] << 16) |
-                       (dataBuffer[2] << 8) | (dataBuffer[3]);
-        dataBuffer += 4;
-    }
-    tmpCtx.publicKeyContext.getChaincode = (p2Chain == P2_CHAINCODE);
-    os_perso_derive_node_bip32(CX_CURVE_Ed25519, bip32Path, bip32PathLength, privateKeyData, NULL);
-    cx_ecfp_init_private_key(CX_CURVE_Ed25519, privateKeyData, 32, &privateKey);
-    cx_ecfp_generate_pair(CX_CURVE_Ed25519, &tmpCtx.publicKeyContext.publicKey, &privateKey, 1);
-//    os_memset(&privateKey, 0, sizeof(privateKey));
-//    os_memset(privateKeyData, 0, sizeof(privateKeyData));
-
-
-    *tx = set_result_get_privateKey(&privateKey);
-    THROW(0x9000);
-
 }
 
 void handleGetPublicKey(uint8_t p1, uint8_t p2, uint8_t *dataBuffer,
@@ -743,75 +695,40 @@ void handleGetAppConfiguration(uint8_t p1, uint8_t p2, uint8_t *workBuffer,
     THROW(0x9000);
 }
 
-void handleSign(uint8_t p1, uint8_t p2, uint8_t *workBuffer,
-                uint16_t dataLength, volatile unsigned int *flags,
-                volatile unsigned int *tx) {
-    UNUSED(tx);
-    uint8_t addressLength;
-    uint32_t i;
-    if (p1 == P1_FIRST) {
-        tmpCtx.transactionContext.pathLength = workBuffer[0];
-        if ((tmpCtx.transactionContext.pathLength < 0x01) ||
-            (tmpCtx.transactionContext.pathLength > MAX_BIP32_PATH)) {
-            THROW(0x6a80);
-        }
-        workBuffer++;
-        dataLength--;
-        for (i = 0; i < tmpCtx.transactionContext.pathLength; i++) {
-            tmpCtx.transactionContext.bip32Path[i] =
-                (workBuffer[0] << 24) | (workBuffer[1] << 16) |
-                (workBuffer[2] << 8) | (workBuffer[3]);
-            workBuffer += 4;
-            dataLength -= 4;
-        }
-    } else {
-        THROW(0x6B00);
+void handleSign(uint8_t *dataBuffer, uint16_t dataLength, volatile unsigned int *tx) {
+
+    // read bip32 path
+    uint32_t bip32Path[MAX_BIP32_PATH];
+    uint8_t bip32PathLength = dataBuffer[0];
+    dataBuffer += 1;
+    dataLength -= 1;
+
+    uint8_t i;
+    for (i = 0; i < bip32PathLength; i++) {
+        bip32Path[i] = (dataBuffer[0] << 24) | (dataBuffer[1] << 16) |
+                       (dataBuffer[2] << 8) | (dataBuffer[3]);
+        dataBuffer += 4;
+        dataLength -= 4;
     }
 
-    os_memmove(tmpCtx.transactionContext.rawTx, workBuffer, dataLength);
-    tmpCtx.transactionContext.rawTxLength = dataLength;
+    // read transaction
+    uint8_t txContent[MAX_RAW_TX];
+    os_memmove(txContent, dataBuffer, dataLength);
 
-    uint8_t privateKeyData[32];
-    cx_ecfp_private_key_t privateKey;
-
-    os_perso_derive_node_bip32(CX_CURVE_Ed25519, tmpCtx.transactionContext.bip32Path,
-        tmpCtx.transactionContext.pathLength, privateKeyData, NULL);
-    cx_ecfp_init_private_key(CX_CURVE_Ed25519, privateKeyData, 32, &privateKey);
-    os_memset(privateKeyData, 0, sizeof(privateKeyData));
-    *tx = cx_eddsa_sign(&privateKey, NULL, CX_LAST, CX_SHA512,
-                       tmpCtx.transactionContext.rawTx,
-                       tmpCtx.transactionContext.rawTxLength,
-                       G_io_apdu_buffer);
-//    cx_eddsa_verify(&tmpCtx.publicKeyContext.publicKey, CX_LAST, CX_SHA512,
-//                       tmpCtx.transactionContext.rawTx,
-//                       tmpCtx.transactionContext.rawTxLength,
-//                       G_io_apdu_buffer, *tx+1);
-    os_memset(&privateKey, 0, sizeof(privateKey));
-
-    G_io_apdu_buffer[*tx++] = 0x90;
-    G_io_apdu_buffer[*tx++] = 0x00;
-
-    THROW(0x9000);
-}
-
-void testSign(uint8_t *workBuffer, uint16_t dataLength, volatile unsigned int *tx) {
-
-    // read input buffer: private key + message
-    uint8_t privateKeyData[32];
-    os_memmove(privateKeyData, workBuffer, 32);
-    workBuffer += 32;
-    dataLength -= 32;
-
-    uint8_t message[MAX_RAW_TX];
-    os_memmove(message, workBuffer, dataLength);
+    // hash transaction
+    uint8_t txHash[32];
+    cx_hash_sha256(txContent, dataLength, txHash);
 
     // initialize private key
+    uint8_t privateKeyData[32];
     cx_ecfp_private_key_t privateKey;
     os_perso_derive_node_bip32(CX_CURVE_Ed25519, bip32Path, bip32PathLength, privateKeyData, NULL);
     cx_ecfp_init_private_key(CX_CURVE_Ed25519, privateKeyData, 32, &privateKey);
+    os_memset(privateKeyData, 0, sizeof(privateKeyData));
 
-    // perform signing of message
-    *tx = cx_eddsa_sign(&privateKey, NULL, CX_LAST, CX_SHA512, message, dataLength, G_io_apdu_buffer);
+    // sign hash
+    *tx = cx_eddsa_sign(&privateKey, NULL, CX_LAST, CX_SHA512, txHash, 32, G_io_apdu_buffer);
+    os_memset(&privateKey, 0, sizeof(privateKey));
 
     THROW(0x9000);
 }
@@ -833,22 +750,9 @@ void handleApdu(volatile unsigned int *flags, volatile unsigned int *tx) {
                                    G_io_apdu_buffer[OFFSET_LC], flags, tx);
                 break;
 
-            case INS_GET_PRIVATE_KEY:
-                handleGetPrivateKey(G_io_apdu_buffer[OFFSET_P1],
-                                   G_io_apdu_buffer[OFFSET_P2],
-                                   G_io_apdu_buffer + OFFSET_CDATA,
-                                   G_io_apdu_buffer[OFFSET_LC], flags, tx);
-                break;
-
             case INS_SIGN:
-                handleSign(G_io_apdu_buffer[OFFSET_P1],
-                           G_io_apdu_buffer[OFFSET_P2],
-                           G_io_apdu_buffer + OFFSET_CDATA,
-                           G_io_apdu_buffer[OFFSET_LC], flags, tx);
-                break;
-
-            case INS_TEST_SIGN:
-                testSign(G_io_apdu_buffer + OFFSET_CDATA, G_io_apdu_buffer[OFFSET_LC], tx);
+                handleSign(G_io_apdu_buffer + OFFSET_CDATA,
+                           G_io_apdu_buffer[OFFSET_LC], tx);
                 break;
 
             case INS_GET_APP_CONFIGURATION:
