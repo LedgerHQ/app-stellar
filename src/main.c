@@ -48,6 +48,7 @@ uint32_t set_result_get_publicKey(void);
 #define INS_SIGN 0x04
 #define INS_GET_APP_CONFIGURATION 0x06
 #define INS_GET_PRIVATE_KEY 0x08
+#define INS_TEST_SIGN 0x10
 #define P1_CONFIRM 0x01
 #define P1_NON_CONFIRM 0x00
 #define P2_NO_CHAINCODE 0x00
@@ -772,25 +773,45 @@ void handleSign(uint8_t p1, uint8_t p2, uint8_t *workBuffer,
 
     uint8_t privateKeyData[32];
     cx_ecfp_private_key_t privateKey;
-    *tx = 0;
 
     os_perso_derive_node_bip32(CX_CURVE_Ed25519, tmpCtx.transactionContext.bip32Path,
         tmpCtx.transactionContext.pathLength, privateKeyData, NULL);
     cx_ecfp_init_private_key(CX_CURVE_Ed25519, privateKeyData, 32, &privateKey);
-    cx_ecfp_generate_pair(CX_CURVE_Ed25519, &tmpCtx.publicKeyContext.publicKey, &privateKey, 1);
     os_memset(privateKeyData, 0, sizeof(privateKeyData));
     *tx = cx_eddsa_sign(&privateKey, NULL, CX_LAST, CX_SHA512,
                        tmpCtx.transactionContext.rawTx,
                        tmpCtx.transactionContext.rawTxLength,
                        G_io_apdu_buffer);
-    cx_eddsa_verify(&tmpCtx.publicKeyContext.publicKey, CX_LAST, CX_SHA512,
-                       tmpCtx.transactionContext.rawTx,
-                       tmpCtx.transactionContext.rawTxLength,
-                       G_io_apdu_buffer, *tx+1);
+//    cx_eddsa_verify(&tmpCtx.publicKeyContext.publicKey, CX_LAST, CX_SHA512,
+//                       tmpCtx.transactionContext.rawTx,
+//                       tmpCtx.transactionContext.rawTxLength,
+//                       G_io_apdu_buffer, *tx+1);
     os_memset(&privateKey, 0, sizeof(privateKey));
 
     G_io_apdu_buffer[*tx++] = 0x90;
     G_io_apdu_buffer[*tx++] = 0x00;
+
+    THROW(0x9000);
+}
+
+void testSign(uint8_t *workBuffer, uint16_t dataLength, volatile unsigned int *tx) {
+
+    // read input buffer: private key + message
+    uint8_t privateKeyData[32];
+    os_memmove(privateKeyData, workBuffer, 32);
+    workBuffer += 32;
+    dataLength -= 32;
+
+    uint8_t message[MAX_RAW_TX];
+    os_memmove(message, workBuffer, dataLength);
+
+    // initialize private key
+    cx_ecfp_private_key_t privateKey;
+    os_perso_derive_node_bip32(CX_CURVE_Ed25519, bip32Path, bip32PathLength, privateKeyData, NULL);
+    cx_ecfp_init_private_key(CX_CURVE_Ed25519, privateKeyData, 32, &privateKey);
+
+    // perform signing of message
+    *tx = cx_eddsa_sign(&privateKey, NULL, CX_LAST, CX_SHA512, message, dataLength, G_io_apdu_buffer);
 
     THROW(0x9000);
 }
@@ -824,6 +845,10 @@ void handleApdu(volatile unsigned int *flags, volatile unsigned int *tx) {
                            G_io_apdu_buffer[OFFSET_P2],
                            G_io_apdu_buffer + OFFSET_CDATA,
                            G_io_apdu_buffer[OFFSET_LC], flags, tx);
+                break;
+
+            case INS_TEST_SIGN:
+                testSign(G_io_apdu_buffer + OFFSET_CDATA, G_io_apdu_buffer[OFFSET_LC], tx);
                 break;
 
             case INS_GET_APP_CONFIGURATION:
