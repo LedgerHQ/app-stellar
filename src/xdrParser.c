@@ -2,68 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-static const unsigned char PADDING_CHAR = '=';
-static const unsigned char base32[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-
-static size_t min(size_t x, size_t y) {
-	return x < y ? x : y;
-}
-
-static void pad(unsigned char *buf, int len) {
-	for (int i = 0; i < len; i++)
-		buf[i] = PADDING_CHAR;
-}
-
-static unsigned char shift_right(unsigned char byte, char offset) {
-	return (offset > 0) ? byte >> offset : byte << -offset;
-}
-
-static unsigned char shift_left(unsigned char byte, char offset) {
-	return shift_right(byte, -offset);
-}
-
-static void encode_sequence(const unsigned char *plain, int len, unsigned char *coded) {
-	for (int block = 0; block < 8; block++) {
-		int octet = (block * 5) / 8;
-		int junk = (8 - 5 - (5 * block) % 8);
-
-		if (octet >= len) {
-			pad(&coded[block], 8 - block);
-			return;
-		}
-
-		unsigned char c = shift_right(plain[octet], junk);
-
-		if (junk < 0 &&  octet < len - 1) {
-			c |= shift_right(plain[octet+1], 8 + junk);
-		}
-		coded[block] = base32[c & 0x1F];
-	}
-}
-
-void base32_encode(const unsigned char *plain, size_t len, unsigned char *coded) {
-	for (size_t i = 0, j = 0; i < len; i += 5, j += 8) {
-		encode_sequence(&plain[i], min(len - i, 5), &coded[j]);
-	}
-}
-
-unsigned short crc16(unsigned char *ptr, int count) {
-   int  crc;
-   char i;
-   crc = 0;
-   while (--count >= 0) {
-      crc = crc ^ (int) *ptr++ << 8;
-      i = 8;
-      do
-      {
-         if (crc & 0x8000)
-            crc = crc << 1 ^ 0x1021;
-         else
-            crc = crc << 1;
-      } while(--i);
-   }
-   return (crc);
-}
+#include "base32.h"
+#include "crc16.h"
 
 void printHexBlocks(unsigned char *buffer, int size) {
     int i = 0;
