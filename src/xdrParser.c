@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 #include "base32.h"
 #include "crc16.h"
@@ -96,7 +97,7 @@ void parseTxXdr(unsigned char *buffer, int size) {
     printf("amount: %d\n", amount/10000000);
     //    printf("next: %d\n", buffer[0]);
 }
-
+/*
 int main() {
    char *filename = "/tmp/txSignatureBase";
    unsigned char *buffer;
@@ -138,3 +139,4 @@ int main() {
 
     return 0;
 }
+*/
