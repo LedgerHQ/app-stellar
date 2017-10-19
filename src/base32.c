@@ -19,24 +19,24 @@
 
 #include "base32.h"
 
-static const unsigned char PADDING_CHAR = '=';
-static const unsigned char base32[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+static const char PADDING_CHAR = '=';
+static const char base32[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 
 static size_t min(size_t x, size_t y) {
 	return x < y ? x : y;
 }
 
-static void pad(unsigned char *buf, int len) {
+static void pad(char *buf, int len) {
 	int i;
 	for (i = 0; i < len; i++)
 		buf[i] = PADDING_CHAR;
 }
 
-static unsigned char shift_right(unsigned char byte, char offset) {
+static char shift_right(char byte, char offset) {
 	return (offset > 0) ? byte >> offset : byte << -offset;
 }
 
-static void encode_sequence(const unsigned char *plain, int len, unsigned char *coded) {
+static void encode_sequence(const char *plain, int len, char *coded) {
 	int block;
 	for (block = 0; block < 8; block++) {
 		int octet = (block * 5) / 8;
@@ -47,7 +47,7 @@ static void encode_sequence(const unsigned char *plain, int len, unsigned char *
 			return;
 		}
 
-		unsigned char c = shift_right(plain[octet], junk);
+		char c = shift_right(plain[octet], junk);
 
 		if (junk < 0 &&  octet < len - 1) {
 			c |= shift_right(plain[octet+1], 8 + junk);
@@ -56,7 +56,7 @@ static void encode_sequence(const unsigned char *plain, int len, unsigned char *
 	}
 }
 
-void base32_encode(const unsigned char *plain, size_t len, unsigned char *coded) {
+void base32_encode(const char *plain, size_t len, char *coded) {
 	size_t i, j;
 	for (i = 0, j = 0; i < len; i += 5, j += 8) {
 		encode_sequence(&plain[i], min(len - i, 5), &coded[j]);

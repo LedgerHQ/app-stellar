@@ -2,6 +2,8 @@
  *   Ledger Stellar App
  *   (c) 2017 LeNonDupe
  *
+ *  adapted from https://github.com/mjg59/tpmtotp/blob/master/base32.h
+ *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
  *  You may obtain a copy of the License at
@@ -14,5 +16,13 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  ********************************************************************************/
+#include <stdint.h>
 
-unsigned short crc16(char *ptr, int count);
+typedef struct txContent_t {
+    char source[56];
+    char destination[56];
+    uint64_t amount;
+    uint32_t fee;
+} txContent_t;
+
+void parseTxXdr(uint8_t *buffer, int size, txContent_t *txContent);

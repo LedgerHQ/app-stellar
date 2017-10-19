@@ -17,7 +17,7 @@
 
 #include "crc16.h"
 
-unsigned short crc16(unsigned char *ptr, int count) {
+unsigned short crc16(char *ptr, int count) {
    int  crc;
    char i;
    crc = 0;

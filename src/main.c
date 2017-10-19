@@ -29,6 +29,8 @@
 #include "u2f_service.h"
 #include "u2f_transport.h"
 #include "base32.h"
+#include "xdr_parser.h"
+#include "stlr_utils.h"
 
 volatile unsigned char u2fMessageBuffer[U2F_MAX_MESSAGE_SIZE];
 
@@ -74,22 +76,11 @@ typedef struct publicKeyContext_t {
 } publicKeyContext_t;
 
 typedef struct transactionContext_t {
-    uint8_t pathLength;
+    uint8_t bip32PathLength;
     uint32_t bip32Path[MAX_BIP32_PATH];
     uint8_t rawTx[MAX_RAW_TX];
     uint32_t rawTxLength;
 } transactionContext_t;
-
-typedef struct txContent_t {
-    uint64_t amount;
-    uint64_t fees;
-    uint8_t account[20];
-    uint8_t destination[20];
-    uint32_t sourceTag;
-    uint8_t sourceTagPresent;
-    uint32_t destinationTag;
-    uint8_t destinationTagPresent;
-} txContent_t;
 
 publicKeyContext_t pkCtx;
 transactionContext_t txCtx;
@@ -203,110 +194,60 @@ const ux_menu_entry_t menu_main[] = {
     {NULL, os_sched_exit, 0, &C_icon_dashboard, "Quit app", NULL, 50, 29},
     UX_MENU_END};
 
-const bagl_element_t ui_address_nanos[] = {
-    // type                               userid    x    y   w    h  str rad
-    // fill      fg        bg      fid iid  txt   touchparams...       ]
-    {{BAGL_RECTANGLE, 0x00, 0, 0, 128, 32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF,
-      0, 0},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-
-    {{BAGL_ICON, 0x00, 3, 12, 7, 7, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
-      BAGL_GLYPH_ICON_CROSS},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    {{BAGL_ICON, 0x00, 117, 13, 8, 6, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
-      BAGL_GLYPH_ICON_CHECK},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-
-    //{{BAGL_ICON                           , 0x01,  31,   9,  14,  14, 0, 0, 0
-    //, 0xFFFFFF, 0x000000, 0, BAGL_GLYPH_ICON_EYE_BADGE  }, NULL, 0, 0, 0,
-    // NULL, NULL, NULL },
-    {{BAGL_LABELINE, 0x01, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Confirm",
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    {{BAGL_LABELINE, 0x01, 0, 26, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "address",
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-
-    {{BAGL_LABELINE, 0x02, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Address",
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    {{BAGL_LABELINE, 0x02, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-     (char *)fullAddress,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-};
-
-unsigned int ui_address_prepro(const bagl_element_t *element) {
-    if (element->component.userid > 0) {
-        unsigned int display = (ux_step == element->component.userid - 1);
-        if (display) {
-            switch (element->component.userid) {
-            case 1:
-                UX_CALLBACK_SET_INTERVAL(2000);
-                break;
-            case 2:
-                UX_CALLBACK_SET_INTERVAL(MAX(
-                    3000, 1000 + bagl_label_roundtrip_duration_ms(element, 7)));
-                break;
-            }
-        }
-        return display;
-    }
-    return 1;
-}
-
-unsigned int ui_address_nanos_button(unsigned int button_mask,
-                                     unsigned int button_mask_counter);
-
 const char *const ui_approval_details[][2] = {
     {"Amount", fullAmount}, {"Address", addressSummary},
-    {"Source Tag", tag},    {"Destination Tag", tag},
-    {"Fees", maxFee},
+    {"Fee", maxFee}
 };
+
+/*
+ ux_step 0: confirm
+         1: amount
+         2: address
+         3: fee
+*/
+unsigned int ui_approval_prepro(const bagl_element_t *element) {
+    unsigned int display = 1;
+    if (element->component.userid > 0) {
+        display = ux_step == element->component.userid - 1;
+        if (display) {
+            switch (element->component.userid) {
+            case 0x01:
+                UX_CALLBACK_SET_INTERVAL(2000);
+                break;
+            case 0x02:
+            case 0x12:
+                os_memmove(&tmp_element, element, sizeof(bagl_element_t));
+                display = ux_step - 1;
+                switch (display) {
+                case 0: // amount
+                case 1: // address
+                case 2: // fee
+                    tmp_element.text = ui_approval_details[display][(element->component.userid) >> 4];
+                    break;
+                }
+
+                UX_CALLBACK_SET_INTERVAL(MAX(
+                    3000,
+                    1000 + bagl_label_roundtrip_duration_ms(&tmp_element, 7)));
+                return &tmp_element;
+            }
+        }
+    }
+    return display;
+}
+
 const bagl_element_t ui_approval_nanos[] = {
-    // type                               userid    x    y   w    h  str rad
-    // fill      fg        bg      fid iid  txt   touchparams...       ]
+    // {
+    //     {type, userid, x, y, width, height, stroke, radius, fill, fgcolor,
+    //      bgcolor, font_id, icon_id},
+    //     text,
+    //     touch_area_brim,
+    //     overfgcolor,
+    //     overbgcolor,
+    //     tap,
+    //     out,
+    //     over}
+    // }
     {{BAGL_RECTANGLE, 0x00, 0, 0, 128, 32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF,
       0, 0},
      NULL,
@@ -326,6 +267,7 @@ const bagl_element_t ui_approval_nanos[] = {
      NULL,
      NULL,
      NULL},
+
     {{BAGL_ICON, 0x00, 117, 13, 8, 6, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
       BAGL_GLYPH_ICON_CHECK},
      NULL,
@@ -336,9 +278,6 @@ const bagl_element_t ui_approval_nanos[] = {
      NULL,
      NULL},
 
-    //{{BAGL_ICON                           , 0x01,  21,   9,  14,  14, 0, 0, 0
-    //, 0xFFFFFF, 0x000000, 0, BAGL_GLYPH_ICON_TRANSACTION_BADGE  }, NULL, 0, 0,
-    // 0, NULL, NULL, NULL },
     {{BAGL_LABELINE, 0x01, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
      "Confirm",
@@ -348,6 +287,7 @@ const bagl_element_t ui_approval_nanos[] = {
      NULL,
      NULL,
      NULL},
+
     {{BAGL_LABELINE, 0x01, 0, 26, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
      "transaction",
@@ -367,6 +307,7 @@ const bagl_element_t ui_approval_nanos[] = {
      NULL,
      NULL,
      NULL},
+
     {{BAGL_LABELINE, 0x12, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
      NULL, //(char *)fullAmount,
@@ -375,84 +316,11 @@ const bagl_element_t ui_approval_nanos[] = {
      0,
      NULL,
      NULL,
-     NULL},
-
-    /*
-   {{BAGL_LABELINE, 0x03, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
-     BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-    "Address",
-    0,
-    0,
-    0,
-    NULL,
-    NULL,
-    NULL},
-   {{BAGL_LABELINE, 0x03, 16, 26, 96, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
-     BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-    (char *)addressSummary,
-    0,
-    0,
-    0,
-    NULL,
-    NULL,
-    NULL},
-
-   {{BAGL_LABELINE, 0x04, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
-     BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-    "Fees",
-    0,
-    0,
-    0,
-    NULL,
-    NULL,
-    NULL},
-   {{BAGL_LABELINE, 0x04, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
-     BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-    (char *)maxFee,
-    0,
-    0,
-    0,
-    NULL,
-    NULL,
-    NULL},
-    */
-
+     NULL}
 };
-
-/*
- ux_step 0: confirm
-         1: amount
-         2: address
-         3: fees
-*/
-unsigned int ui_approval_prepro(const bagl_element_t *element) {
-    unsigned int display = 1;
-    if (element->component.userid > 0) {
-        // display the meta element when at least bigger
-        display = (ux_step == element->component.userid - 1) ||
-                  (element->component.userid >= 0x02 && ux_step >= 1);
-        if (display) {
-            switch (element->component.userid) {
-            case 0x01:
-                UX_CALLBACK_SET_INTERVAL(2000);
-                break;
-            case 0x02:
-            case 0x12:
-                os_memmove(&tmp_element, element, sizeof(bagl_element_t));
-                display = ux_step - 1;
-                tmp_element.text = ui_approval_details[display][(element->component.userid) >> 4];
-                UX_CALLBACK_SET_INTERVAL(MAX(
-                    3000,
-                    1000 + bagl_label_roundtrip_duration_ms(&tmp_element, 7)));
-                return &tmp_element;
-            }
-        }
-    }
-    return display;
-}
-
-unsigned int ui_approval_nanos_button(unsigned int button_mask,
-                                      unsigned int button_mask_counter);
+//
+//unsigned int ui_approval_nanos_button(unsigned int button_mask,
+//                                      unsigned int button_mask_counter);
 
 
 void ui_idle(void) {
@@ -504,35 +372,24 @@ unsigned int io_seproxyhal_touch_address_cancel(const bagl_element_t *e) {
     return 0; // do not redraw the widget
 }
 
-unsigned int ui_address_nanos_button(unsigned int button_mask,
-                                     unsigned int button_mask_counter) {
-    switch (button_mask) {
-    case BUTTON_EVT_RELEASED | BUTTON_LEFT: // CANCEL
-        io_seproxyhal_touch_address_cancel(NULL);
-        break;
-
-    case BUTTON_EVT_RELEASED | BUTTON_RIGHT: { // OK
-        io_seproxyhal_touch_address_ok(NULL);
-        break;
-    }
-    }
-    return 0;
-}
-
 unsigned int io_seproxyhal_touch_tx_ok(const bagl_element_t *e) {
-    uint8_t privateKeyData[32];
-    cx_ecfp_private_key_t privateKey;
     uint32_t tx = 0;
 
-    os_perso_derive_node_bip32(CX_CURVE_Ed25519, txCtx.bip32Path,
-        txCtx.pathLength, privateKeyData, NULL);
+    // hash transaction
+    uint8_t txHash[32];
+    cx_hash_sha256(txCtx.rawTx, txCtx.rawTxLength, txHash);
+
+    // initialize private key
+    uint8_t privateKeyData[32];
+    cx_ecfp_private_key_t privateKey;
+    os_perso_derive_node_bip32(CX_CURVE_Ed25519, txCtx.bip32Path, txCtx.bip32PathLength, privateKeyData, NULL);
     cx_ecfp_init_private_key(CX_CURVE_Ed25519, privateKeyData, 32, &privateKey);
     os_memset(privateKeyData, 0, sizeof(privateKeyData));
-    tx = cx_eddsa_sign(&privateKey, NULL, CX_LAST, CX_SHA512,
-                       txCtx.rawTx,
-                       txCtx.rawTxLength,
-                       G_io_apdu_buffer);
+
+    // sign hash
+    tx = cx_eddsa_sign(&privateKey, NULL, CX_LAST, CX_SHA512, txHash, 32, G_io_apdu_buffer);
     os_memset(&privateKey, 0, sizeof(privateKey));
+
     G_io_apdu_buffer[tx++] = 0x90;
     G_io_apdu_buffer[tx++] = 0x00;
 
@@ -694,38 +551,32 @@ void handleGetAppConfiguration(uint8_t p1, uint8_t p2, uint8_t *workBuffer,
     THROW(0x9000);
 }
 
-void handleSign(uint8_t *dataBuffer, uint16_t dataLength, volatile unsigned int *tx) {
+void handleSign(uint8_t *dataBuffer, uint16_t dataLength, volatile unsigned int *flags, volatile unsigned int *tx) {
 
     // read bip32 path
-    uint8_t bip32PathLength = dataBuffer[0];
+    txCtx.bip32PathLength = dataBuffer[0];
     dataBuffer += 1;
     dataLength -= 1;
 
-    uint32_t bip32Path[bip32PathLength];
-    uint8_t read = readBip32Path(dataBuffer, bip32Path, bip32PathLength);
+    uint8_t read = readBip32Path(dataBuffer, txCtx.bip32Path, txCtx.bip32PathLength);
     dataBuffer += read;
     dataLength -= read;
 
     // read transaction
-    uint8_t txContent[MAX_RAW_TX];
-    os_memmove(txContent, dataBuffer, dataLength);
+    txCtx.rawTxLength = dataLength;
+    os_memmove(txCtx.rawTx, dataBuffer, dataLength);
+    parseTxXdr(txCtx.rawTx, dataLength, &txContent);
 
-    // hash transaction
-    uint8_t txHash[32];
-    cx_hash_sha256(txContent, dataLength, txHash);
+    // prepare for display
+    summarize_address(txContent.destination, (void *)addressSummary);
+    snprintf((void *)maxFee, 32, "%f", (float)txContent.fee/10000000);
+    snprintf((void *)fullAmount, 32, "%.2f", (float)txContent.amount/10000000);
 
-    // initialize private key
-    uint8_t privateKeyData[32];
-    cx_ecfp_private_key_t privateKey;
-    os_perso_derive_node_bip32(CX_CURVE_Ed25519, bip32Path, bip32PathLength, privateKeyData, NULL);
-    cx_ecfp_init_private_key(CX_CURVE_Ed25519, privateKeyData, 32, &privateKey);
-    os_memset(privateKeyData, 0, sizeof(privateKeyData));
+    ux_step = 0;
+    ux_step_count = 2;
+    UX_DISPLAY(ui_approval_nanos, NULL);
 
-    // sign hash
-    *tx = cx_eddsa_sign(&privateKey, NULL, CX_LAST, CX_SHA512, txHash, 32, G_io_apdu_buffer);
-    os_memset(&privateKey, 0, sizeof(privateKey));
-
-    THROW(0x9000);
+    *flags |= IO_ASYNCH_REPLY;
 }
 
 void handleApdu(volatile unsigned int *flags, volatile unsigned int *tx) {
@@ -747,7 +598,7 @@ void handleApdu(volatile unsigned int *flags, volatile unsigned int *tx) {
 
             case INS_SIGN:
                 handleSign(G_io_apdu_buffer + OFFSET_CDATA,
-                           G_io_apdu_buffer[OFFSET_LC], tx);
+                           G_io_apdu_buffer[OFFSET_LC], flags, tx);
                 break;
 
             case INS_GET_APP_CONFIGURATION:
@@ -922,6 +773,7 @@ void app_exit(void) {
     }
     END_TRY_L(exit);
 }
+
 
 __attribute__((section(".boot"))) int main(void) {
     // exit critical section
