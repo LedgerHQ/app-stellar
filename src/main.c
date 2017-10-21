@@ -87,12 +87,10 @@ transactionContext_t txCtx;
 txContent_t txContent;
 
 volatile uint8_t fidoTransport;
-volatile char tag[11];  // uint32t
-volatile char tag2[11]; // uint32t
 volatile char addressSummary[32];
 volatile char fullAddress[43];
-volatile char fullAmount[50];
-volatile char maxFee[50];
+volatile char fullAmount[33];
+volatile char maxFee[33];
 volatile bool dataPresent;
 
 bagl_element_t tmp_element;
@@ -492,6 +490,16 @@ uint32_t set_result_get_publicKey() {
     return tx;
 }
 
+void read_public_key(cx_ecfp_public_key_t *publicKey, uint8_t *out) {
+    uint8_t i;
+    for (i = 0; i < 32; i++) {
+        out[i] = publicKey->W[64 - i];
+    }
+    if ((publicKey->W[32] & 1) != 0) {
+        out[31] |= 0x80;
+    }
+}
+
 uint8_t readBip32Path(uint8_t *dataBuffer, uint32_t *bip32Path, uint8_t bip32PathLength) {
     uint8_t i;
     for (i = 0; i < bip32PathLength; i++) {
@@ -565,12 +573,12 @@ void handleSign(uint8_t *dataBuffer, uint16_t dataLength, volatile unsigned int 
     // read transaction
     txCtx.rawTxLength = dataLength;
     os_memmove(txCtx.rawTx, dataBuffer, dataLength);
-    parseTxXdr(txCtx.rawTx, dataLength, &txContent);
+    parseTxXdr(txCtx.rawTx, &txContent);
 
     // prepare for display
     summarize_address(txContent.destination, (void *)addressSummary);
-    snprintf((void *)maxFee, 32, "%f", (float)txContent.fee/10000000);
-    snprintf((void *)fullAmount, 32, "%.2f", (float)txContent.amount/10000000);
+//    print_amount((float)txContent.fee/10000000, maxFee, 32);
+//    print_amount((float)txContent.amount/10000000, fullAmount, 32);
 
     ux_step = 0;
     ux_step_count = 2;

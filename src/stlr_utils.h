@@ -16,12 +16,23 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  ********************************************************************************/
-#include <stdint.h>
-#include "os.h"
-#include "cx.h"
 
-void read_public_key(cx_ecfp_public_key_t *publicKey, uint8_t *out);
+#ifndef _STELLAR_UTILS_H_
+#define _STELLAR_UTILS_H_
+
+#include <stdint.h>
+
+#ifdef TEST
+#include <stdio.h>
+#define THROW(code) { printf("error: %d", code); return; }
+#else
+#include "os.h"
+#endif // TEST
 
 void public_key_to_address(uint8_t *in, char *out);
 
 void summarize_address(char *in, char *out);
+
+void print_amount(uint64_t amount, char *out, uint8_t len);
+
+#endif // _STELLAR_UTILS_H_

@@ -17,31 +17,18 @@
  *  limitations under the License.
  ********************************************************************************/
 #include <stdint.h>
-#include <stdlib.h>
 #include <string.h>
-#include "os.h"
-#include "cx.h"
+#include <stdio.h>
+
+#include "stlr_utils.h"
 #include "crc16.h"
 #include "base32.h"
-
-/**
- * read the generated ed25516 public key
- */
-void read_public_key(cx_ecfp_public_key_t *publicKey, uint8_t *out) {
-    uint8_t i;
-    for (i = 0; i < 32; i++) {
-        out[i] = publicKey->W[64 - i];
-    }
-    if ((publicKey->W[32] & 1) != 0) {
-        out[31] |= 0x80;
-    }
-}
 
 /**
  * convert the raw public key to a stellar address
  */
 void public_key_to_address(uint8_t *in, char *out) {
-    char *buffer = (char*) malloc(35);
+    char buffer[35];
     buffer[0] = 6 << 3; // version bit 'G'
     int i;
     for (i = 0; i < 32; i++) {
@@ -58,4 +45,38 @@ void summarize_address(char *in, char *out) {
     strncpy(out, in, 5);
     strncpy(out + 5, "...", 3);
     strncpy(out + 8, in + 52, 5);
+}
+
+void print_amount(uint64_t amount, char *out, uint8_t len) {
+    char buffer[len];
+    uint64_t dVal = amount;
+    int i, j;
+
+    memset(buffer, 0, len);
+    for (i = 0; dVal > 0 || i < 9; i++) {
+        if (dVal > 0) {
+            buffer[i] = (dVal % 10) + '0';
+            dVal /= 10;
+        } else {
+            buffer[i] = '0';
+        }
+        if (i == 6) { // stroops to xlm: 1 xlm = 10000000 stroops
+            i += 1;
+            buffer[i] = '.';
+        }
+        if (i >= len) {
+            THROW(0x6700);
+        }
+    }
+    // reverse order
+    for (i -= 1, j = 0; i >= 0 && j < len-1; i--, j++) {
+        out[j] = buffer[i];
+    }
+    // strip trailing 0s
+    for (j -= 1; j > 0; j--) {
+        if (out[j] != '0') break;
+    }
+    // strip trailing .
+    if (out[j] == '.') j--;
+    out[++j] = '\0';
 }

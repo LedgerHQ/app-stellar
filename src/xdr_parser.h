@@ -16,6 +16,9 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  ********************************************************************************/
+#ifndef _XDR_PARSER_H_
+#define _XDR_PARSER_H_
+
 #include <stdint.h>
 
 typedef struct txContent_t {
@@ -25,4 +28,6 @@ typedef struct txContent_t {
     uint32_t fee;
 } txContent_t;
 
-void parseTxXdr(uint8_t *buffer, int size, txContent_t *txContent);
+void parseTxXdr(char *buffer, txContent_t *txContent);
+
+#endif

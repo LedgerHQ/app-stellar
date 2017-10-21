@@ -17,14 +17,10 @@
  *  limitations under the License.
  ********************************************************************************/
 
-#include <stddef.h>
+#ifndef _BASE32_H_
+#define _BASE32_H_
 
-/**
- * Returns the length of the output buffer required to encode len bytes of
- * data into base32. This is a macro to allow users to define buffer size at
- * compilation time.
- */
-#define BASE32_LEN(len)  (((len)/5)*8 + ((len) % 5 ? 8 : 0))
+#include <stddef.h>
 
 /**
  * Encode the data pointed to by plain into base32 and store the
@@ -35,3 +31,5 @@
  * define how many bytes will be read from the "plain" buffer.
  **/
 void base32_encode(const char *plain, size_t len, char *coded);
+
+#endif
