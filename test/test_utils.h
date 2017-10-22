@@ -16,29 +16,7 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  ********************************************************************************/
-#include <stdio.h>
 
-#include "xdr_parser.h"
-#include "test_utils.h"
+int read_file(char *filename, char *buffer, int maxlen);
 
-int main(int argc, char *argv[]) {
-
-    if(argc != 2 ) {
-        printf("Expected argument missing\n");
-        return 1;
-    }
-
-    char *filename = argv[1];
-    char buffer[4096];
-    txContent_t txContent;
-
-    int read = read_file(filename, buffer, 4096);
-    if (read) {
-        printHexBlocks(buffer, read/2);
-        parseTxXdr(buffer, &txContent);
-    }
-
-    return 0;
-
-}
-
+void printHexBlocks(char *buffer, int size);
