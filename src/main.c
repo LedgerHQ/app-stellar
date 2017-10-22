@@ -612,7 +612,7 @@ void handleSign(uint8_t *dataBuffer, uint16_t dataLength, volatile unsigned int 
     parseTxXdr(txCtx.rawTx, &txContent);
 
     // prepare for display
-    summarize_address(txContent.destination, (void *)addressSummary);
+    summarize_address(txContent.destination, addressSummary);
     print_amount(txContent.fee, maxFee, 22);
     print_amount(txContent.amount, fullAmount, 22);
 
