@@ -39,7 +39,7 @@ void parsePaymentOpXdr(char *buffer, txContent_t *txContent) {
         THROW(0x6c20);
     }
     buffer += 4;
-    public_key_to_address((void *)buffer, txContent->destination);
+    public_key_to_address(buffer, txContent->destination);
     PRINTF("destination: %s\n", txContent->destination);
     char address_summary[14];
     summarize_address(txContent->destination, address_summary);
@@ -87,7 +87,7 @@ void parseTxXdr(char *buffer, txContent_t *txContent) {
         THROW(0x6c20);
     }
     buffer += 4;
-    public_key_to_address((void *)buffer, txContent->source);
+    public_key_to_address(buffer, txContent->source);
     PRINTF("source: %s\n", txContent->source);
     buffer += 8*4;
     txContent->fee = readUInt32Block(buffer);

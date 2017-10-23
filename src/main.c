@@ -88,9 +88,8 @@ txContent_t txContent;
 
 volatile uint8_t fidoTransport;
 volatile char addressSummary[32];
-volatile char fullAddress[43];
-volatile char fullAmount[24];
-volatile char maxFee[24];
+volatile char amount[24];
+volatile char fee[24];
 volatile bool dataPresent;
 
 bagl_element_t tmp_element;
@@ -193,8 +192,9 @@ const ux_menu_entry_t menu_main[] = {
     UX_MENU_END};
 
 unsigned int ui_approval_prepro(const bagl_element_t *element) {
+    unsigned int display = 1;
     if (element->component.userid > 0) {
-        unsigned int display = (ux_step == element->component.userid - 1);
+        display = (ux_step == element->component.userid - 1);
         if (display) {
 //            switch (element->component.userid) {
 //            case 1:
@@ -207,9 +207,8 @@ unsigned int ui_approval_prepro(const bagl_element_t *element) {
 //            }
             UX_CALLBACK_SET_INTERVAL(2000);
         }
-        return display;
     }
-    return 1;
+    return display;
 }
 
 const bagl_element_t ui_approval_nanos[] = {
@@ -306,7 +305,7 @@ const bagl_element_t ui_approval_nanos[] = {
      NULL},
     {{BAGL_LABELINE, 0x03, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-     (char *)fullAmount,
+     (char *)amount,
      0,
      0,
      0,
@@ -344,7 +343,7 @@ const bagl_element_t ui_approval_nanos[] = {
      NULL},
     {{BAGL_LABELINE, 0x05, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-     (char *)maxFee,
+     (char *)fee,
      0,
      0,
      0,
@@ -613,8 +612,8 @@ void handleSign(uint8_t *dataBuffer, uint16_t dataLength, volatile unsigned int 
 
     // prepare for display
     summarize_address(txContent.destination, addressSummary);
-    print_amount(txContent.fee, maxFee, 22);
-    print_amount(txContent.amount, fullAmount, 22);
+    print_amount(txContent.fee, fee, 22);
+    print_amount(txContent.amount, amount, 22);
 
     ux_step = 0;
     ux_step_count = 5;

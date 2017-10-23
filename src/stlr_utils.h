@@ -28,7 +28,6 @@
 #define PRINTF(msg, arg) printf(msg, arg)
 #else
 #include "os.h"
-#define PRINTF(msg, arg) do {} while(0) // noop
 #endif // TEST
 
 void public_key_to_address(uint8_t *in, char *out);

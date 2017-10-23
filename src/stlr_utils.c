@@ -32,7 +32,7 @@ void public_key_to_address(uint8_t *in, char *out) {
     buffer[0] = 6 << 3; // version bit 'G'
     int i;
     for (i = 0; i < 32; i++) {
-        buffer[i+1] = in[i];
+        buffer[i+1] = (char) in[i];
     }
     short crc = crc16(buffer, 33); // checksum
     buffer[33] = crc;
@@ -44,7 +44,8 @@ void public_key_to_address(uint8_t *in, char *out) {
 void summarize_address(char *in, char *out) {
     strncpy(out, in, 5);
     strncpy(out + 5, "...", 3);
-    strncpy(out + 8, in + 52, 5);
+    strncpy(out + 8, in + 52, 4);
+    out[13] = '\0';
 }
 
 void print_amount(uint64_t amount, char *out, uint8_t len) {
@@ -78,5 +79,8 @@ void print_amount(uint64_t amount, char *out, uint8_t len) {
     }
     // strip trailing .
     if (out[j] == '.') j--;
-    out[++j] = '\0';
+
+    strncpy(out + (j+1), " xml", 4);
+    out[j+5] = '\0';
+
 }
