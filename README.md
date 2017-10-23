@@ -16,11 +16,11 @@ Alternatively, if you are on a Mac, you can set up the Vagrant Virtualbox Ledger
 
 The command to compile and load the app onto the device is:
 
-```make load```
+```$ make load```
 
 To remove the app from the device do:
 
-```make delete```
+```$ make delete```
 
 ## Testing
 
