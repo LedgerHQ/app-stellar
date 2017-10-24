@@ -2,9 +2,9 @@
 
 ## Introduction
 
-This is a wallet app for the [Ledger Nano S](https://www.ledgerwallet.com/products/ledger-nano-s).
+This is a wallet app for the [Ledger Nano S](https://www.ledgerwallet.com/products/ledger-nano-s) that makes it possible to store your [Stellar](https://www.stellar.org/)-based assets on that device.
 
-It is currently work in progress.
+It is currently a work in progress that is not yet ready to use.
 
 I am simultaneously developing a [Javascript library](https://github.com/lenondupe/stellar-ledger-api) to communicate with this app. There you will find some scripts in order to test the app.
 
