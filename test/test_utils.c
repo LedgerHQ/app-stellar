@@ -16,8 +16,9 @@
  ********************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 
-int read_file(char *filename, char *buffer, int maxlen) {
+int read_file(char *filename, uint8_t *buffer, int maxlen) {
    int size, read;
    FILE *handler = fopen(filename, "r");
 
@@ -54,7 +55,7 @@ int read_file(char *filename, char *buffer, int maxlen) {
     }
 }
 
-void printHexBlocks(char *buffer, int size) {
+void printHexBlocks(uint8_t *buffer, int size) {
     int i = 0;
     for (i = 0; i < size; i++) {
         if (i % 4 == 0) {

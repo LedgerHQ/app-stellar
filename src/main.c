@@ -87,7 +87,7 @@ transactionContext_t txCtx;
 txContent_t txContent;
 
 volatile uint8_t fidoTransport;
-volatile char addressSummary[32];
+volatile unsigned char addressSummary[32];
 volatile char amount[24];
 volatile char fee[24];
 volatile bool dataPresent;

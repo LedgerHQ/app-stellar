@@ -24,16 +24,18 @@
 static const uint8_t ASSET_TYPE_NATIVE = 0;
 static const uint8_t PUBLIC_KEY_TYPE_ED25519 = 0;
 
-uint32_t readUInt32Block(char *buffer) {
-    return (buffer[3] & 0xFF) + ((buffer[2] & 0xFF) << 8) + ((buffer[1] & 0xFF) <<  16) + ((buffer[0] & 0xFF) << 24);
+uint32_t readUInt32Block(uint8_t *buffer) {
+    return buffer[3] + (buffer[2] << 8) + (buffer[1] <<  16) + (buffer[0] << 24);
 }
 
-uint64_t readUInt64Block(char *buffer) {
-    return (buffer[7] & 0xFF) + ((buffer[6] & 0xFF) << 8) + ((buffer[5] & 0xFF) <<  16) + ((buffer[4] & 0xFF) << 24)
-        + (buffer[3] & 0xFF) + ((buffer[2] & 0xFF) << 8) + ((buffer[1] & 0xFF) <<  16) + ((buffer[0] & 0xFF) << 24);
+uint64_t readUInt64Block(uint8_t *buffer) {
+    uint64_t i1 = buffer[3] + (buffer[2] << 8) + (buffer[1] <<  16) + (buffer[0] << 24);
+    buffer += 4;
+    uint32_t i2 = buffer[3] + (buffer[2] << 8) + (buffer[1] <<  16) + (buffer[0] << 24);
+    return i2 | (i1 << 32);
 }
 
-void parsePaymentOpXdr(char *buffer, txContent_t *txContent) {
+void parsePaymentOpXdr(uint8_t *buffer, txContent_t *txContent) {
     uint32_t destinationAccountType = readUInt32Block(buffer);
     if (destinationAccountType != PUBLIC_KEY_TYPE_ED25519) {
         THROW(0x6c20);
@@ -41,9 +43,6 @@ void parsePaymentOpXdr(char *buffer, txContent_t *txContent) {
     buffer += 4;
     public_key_to_address(buffer, txContent->destination);
     PRINTF("destination: %s\n", txContent->destination);
-    char address_summary[14];
-    summarize_address(txContent->destination, address_summary);
-    PRINTF("summary: %s\n", address_summary);
     buffer += 8*4;
     uint32_t asset = readUInt32Block(buffer);
     if (asset != ASSET_TYPE_NATIVE) {
@@ -56,7 +55,7 @@ void parsePaymentOpXdr(char *buffer, txContent_t *txContent) {
     PRINTF("amount: %s\n", amount_summary);
 }
 
-void parseOpXdr(char *buffer, txContent_t *txContent) {
+void parseOpXdr(uint8_t *buffer, txContent_t *txContent) {
     uint32_t hasAccountId = readUInt32Block(buffer);
     if (hasAccountId) {
         THROW(0x6c20);
@@ -70,7 +69,7 @@ void parseOpXdr(char *buffer, txContent_t *txContent) {
     parsePaymentOpXdr(buffer, txContent);
 }
 
-void parseOpsXdr(char *buffer, txContent_t *txContent) {
+void parseOpsXdr(uint8_t *buffer, txContent_t *txContent) {
     uint32_t operationsCount = readUInt32Block(buffer);
     if (operationsCount != 1) {
         THROW(0x6c20);
@@ -79,7 +78,7 @@ void parseOpsXdr(char *buffer, txContent_t *txContent) {
     parseOpXdr(buffer, txContent);
 }
 
-void parseTxXdr(char *buffer, txContent_t *txContent) {
+void parseTxXdr(uint8_t *buffer, txContent_t *txContent) {
     buffer += 8*4; // skip networkId
     buffer += 4; // skip envelopeType
     uint32_t sourceAccountType = readUInt32Block(buffer);

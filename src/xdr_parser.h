@@ -22,12 +22,12 @@
 #include <stdint.h>
 
 typedef struct txContent_t {
-    char source[56];
-    char destination[56];
+    unsigned char source[56];
+    unsigned char destination[56];
     uint64_t amount;
     uint32_t fee;
 } txContent_t;
 
-void parseTxXdr(char *buffer, txContent_t *txContent);
+void parseTxXdr(uint8_t *buffer, txContent_t *txContent);
 
 #endif

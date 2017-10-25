@@ -17,9 +17,9 @@
 
 #include "crc16.h"
 
-unsigned short crc16(char *ptr, int count) {
+unsigned short crc16(unsigned char *ptr, int count) {
    int  crc;
-   char i;
+   unsigned char i;
    crc = 0;
    while (--count >= 0) {
       crc = crc ^ (int) *ptr++ << 8;

@@ -30,9 +30,9 @@
 #include "os.h"
 #endif // TEST
 
-void public_key_to_address(uint8_t *in, char *out);
+void public_key_to_address(uint8_t *in, unsigned char *out);
 
-void summarize_address(char *in, char *out);
+void summarize_address(unsigned char *in, unsigned char *out);
 
 void print_amount(uint64_t amount, char *out, uint8_t len);
 

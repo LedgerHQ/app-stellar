@@ -14,7 +14,8 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  ********************************************************************************/
+#include <stdint.h>
 
-int read_file(char *filename, char *buffer, int maxlen);
+int read_file(char *filename, uint8_t *buffer, int maxlen);
 
-void printHexBlocks(char *buffer, int size);
+void printHexBlocks(uint8_t *buffer, int size);

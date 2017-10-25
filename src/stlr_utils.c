@@ -27,12 +27,12 @@
 /**
  * convert the raw public key to a stellar address
  */
-void public_key_to_address(uint8_t *in, char *out) {
-    char buffer[35];
+void public_key_to_address(uint8_t *in, unsigned char *out) {
+    unsigned char buffer[35];
     buffer[0] = 6 << 3; // version bit 'G'
     int i;
     for (i = 0; i < 32; i++) {
-        buffer[i+1] = (char) in[i];
+        buffer[i+1] = (unsigned char) in[i];
     }
     short crc = crc16(buffer, 33); // checksum
     buffer[33] = crc;
@@ -41,10 +41,12 @@ void public_key_to_address(uint8_t *in, char *out) {
     out[56] = '\0';
 }
 
-void summarize_address(char *in, char *out) {
-    strncpy(out, in, 5);
-    strncpy(out + 5, "...", 3);
-    strncpy(out + 8, in + 52, 4);
+void summarize_address(unsigned char *in, unsigned char *out) {
+    memcpy(out, in, 5);
+    out[5] = '.';
+    out[6] = '.';
+    out[7] = '.';
+    memcpy(out + 8, in + 52, 4);
     out[13] = '\0';
 }
 
@@ -80,7 +82,7 @@ void print_amount(uint64_t amount, char *out, uint8_t len) {
     // strip trailing .
     if (out[j] == '.') j--;
 
-    strncpy(out + (j+1), " xml", 4);
+    strncpy(out + (j+1), " xlm", 4);
     out[j+5] = '\0';
 
 }
