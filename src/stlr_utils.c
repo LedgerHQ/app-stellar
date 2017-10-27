@@ -50,7 +50,7 @@ void summarize_address(unsigned char *in, unsigned char *out) {
     out[13] = '\0';
 }
 
-void print_amount(uint64_t amount, char *out, uint8_t len) {
+void print_amount(uint64_t amount, char *asset, char *out, uint8_t len) {
     char buffer[len];
     uint64_t dVal = amount;
     int i, j;
@@ -81,8 +81,8 @@ void print_amount(uint64_t amount, char *out, uint8_t len) {
     }
     // strip trailing .
     if (out[j] == '.') j--;
-
-    strncpy(out + (j+1), " xlm", 4);
-    out[j+5] = '\0';
+    out[++j] = ' ';
+    strncpy(out + ++j, asset, strlen(asset));
+    out[j+strlen(asset)] = '\0';
 
 }

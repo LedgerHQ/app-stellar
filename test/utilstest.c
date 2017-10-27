@@ -16,19 +16,15 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  ********************************************************************************/
-#ifndef _XDR_PARSER_H_
-#define _XDR_PARSER_H_
+#include <stdio.h>
+#include "stlr_utils.h"
 
-#include <stdint.h>
+int main(int argc, char *argv[]) {
 
-typedef struct txContent_t {
-    unsigned char source[56];
-    unsigned char destination[56];
-    uint64_t amount;
-    uint32_t fee;
-    unsigned char assetCode[13];
-} txContent_t;
+    char printed[24];
+    print_amount(0x45d964b800, printed, 22);
+    printf("%s", printed);
+    return 0;
 
-void parseTxXdr(uint8_t *buffer, txContent_t *txContent);
+}
 
-#endif
