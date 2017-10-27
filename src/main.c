@@ -720,8 +720,8 @@ void handleSignTx(uint8_t *dataBuffer, uint16_t dataLength, volatile unsigned in
 
     // prepare for display
     summarize_address(txContent.destination, addressSummary);
-    print_amount(txContent.fee, fee, 22);
-    print_amount(txContent.amount, amount, 22);
+    print_amount(txContent.fee, "XLM", fee, 22);
+    print_amount(txContent.amount, txContent.assetCode, amount, 22);
 
     // hash transaction
     cx_hash_sha256(txCtx.rawTx, txCtx.rawTxLength, txCtx.txHash);
