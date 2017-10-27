@@ -50,7 +50,7 @@ uint32_t set_result_get_publicKey(void);
 #define INS_GET_PUBLIC_KEY 0x02
 #define INS_SIGN_TX 0x04
 #define INS_GET_APP_CONFIGURATION 0x06
-#define INS_SIGN_HASH 0x08
+#define INS_SIGN_TX_HASH 0x08
 #define P1_NO_SIGNATURE 0x00
 #define P1_SIGNATURE 0x01
 #define P2_NO_CHAINCODE 0x00
@@ -81,6 +81,7 @@ typedef struct transactionContext_t {
     uint32_t bip32Path[MAX_BIP32_PATH];
     uint8_t rawTx[MAX_RAW_TX];
     uint32_t rawTxLength;
+    uint8_t txHash[32];
 } transactionContext_t;
 
 publicKeyContext_t pkCtx;
@@ -212,7 +213,7 @@ unsigned int ui_approval_prepro(const bagl_element_t *element) {
     return display;
 }
 
-const bagl_element_t ui_approval_nanos[] = {
+const bagl_element_t ui_approve_tx_nanos[] = {
     // {
     //     {type, userid, x, y, width, height, stroke, radius, fill, fgcolor,
     //      bgcolor, font_id, icon_id},
@@ -352,9 +353,90 @@ const bagl_element_t ui_approval_nanos[] = {
      NULL,
      NULL},
 };
-//
-//unsigned int ui_approval_nanos_button(unsigned int button_mask,
-//                                      unsigned int button_mask_counter);
+
+const bagl_element_t ui_approve_hash_nanos[] = {
+    // {
+    //     {type, userid, x, y, width, height, stroke, radius, fill, fgcolor,
+    //      bgcolor, font_id, icon_id},
+    //     text,
+    //     touch_area_brim,
+    //     overfgcolor,
+    //     overbgcolor,
+    //     tap,
+    //     out,
+    //     over}
+    // }
+
+    {{BAGL_RECTANGLE, 0x00, 0, 0, 128, 32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF,
+      0, 0},
+     NULL,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
+    {{BAGL_ICON, 0x00, 3, 12, 7, 7, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
+      BAGL_GLYPH_ICON_CROSS},
+     NULL,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+    {{BAGL_ICON, 0x00, 117, 13, 8, 6, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
+      BAGL_GLYPH_ICON_CHECK},
+     NULL,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
+    //{{BAGL_ICON                           , 0x01,  21,   9,  14,  14, 0, 0, 0
+    //, 0xFFFFFF, 0x000000, 0, BAGL_GLYPH_ICON_TRANSACTION_BADGE  }, NULL, 0, 0,
+    //0, NULL, NULL, NULL },
+    {{BAGL_LABELINE, 0x01, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     "Confirm",
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+    {{BAGL_LABELINE, 0x01, 0, 26, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     "transaction",
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
+    {{BAGL_LABELINE, 0x02, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     "WARNING",
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+    {{BAGL_LABELINE, 0x02, 23, 26, 82, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     "No data",
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL}
+};
 
 
 void ui_idle(void) {
@@ -409,10 +491,6 @@ unsigned int io_seproxyhal_touch_address_cancel(const bagl_element_t *e) {
 unsigned int io_seproxyhal_touch_tx_ok(const bagl_element_t *e) {
     uint32_t tx = 0;
 
-    // hash transaction
-    uint8_t txHash[32];
-    cx_hash_sha256(txCtx.rawTx, txCtx.rawTxLength, txHash);
-
     // initialize private key
     uint8_t privateKeyData[32];
     cx_ecfp_private_key_t privateKey;
@@ -421,7 +499,7 @@ unsigned int io_seproxyhal_touch_tx_ok(const bagl_element_t *e) {
     os_memset(privateKeyData, 0, sizeof(privateKeyData));
 
     // sign hash
-    tx = cx_eddsa_sign(&privateKey, NULL, CX_LAST, CX_SHA512, txHash, 32, G_io_apdu_buffer);
+    tx = cx_eddsa_sign(&privateKey, NULL, CX_LAST, CX_SHA512, txCtx.txHash, 32, G_io_apdu_buffer);
     os_memset(&privateKey, 0, sizeof(privateKey));
 
     G_io_apdu_buffer[tx++] = 0x90;
@@ -464,7 +542,22 @@ unsigned int io_seproxyhal_touch_tx_cancel(const bagl_element_t *e) {
 }
 
 
-unsigned int ui_approval_nanos_button(unsigned int button_mask,
+unsigned int ui_approve_tx_nanos_button(unsigned int button_mask,
+                                      unsigned int button_mask_counter) {
+    switch (button_mask) {
+    case BUTTON_EVT_RELEASED | BUTTON_LEFT:
+        io_seproxyhal_touch_tx_cancel(NULL);
+        break;
+
+    case BUTTON_EVT_RELEASED | BUTTON_RIGHT: {
+        io_seproxyhal_touch_tx_ok(NULL);
+        break;
+    }
+    }
+    return 0;
+}
+
+unsigned int ui_approve_hash_nanos_button(unsigned int button_mask,
                                       unsigned int button_mask_counter) {
     switch (button_mask) {
     case BUTTON_EVT_RELEASED | BUTTON_LEFT:
@@ -569,7 +662,7 @@ void handleGetPublicKey(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t da
     dataLength -= read;
 
     uint16_t msgLength;
-    uint8_t * msg;
+    uint8_t msg[32];
     if (pkCtx.returnSignature) {
         msgLength = dataLength;
         os_memmove(msg, dataBuffer, msgLength);
@@ -630,9 +723,33 @@ void handleSignTx(uint8_t *dataBuffer, uint16_t dataLength, volatile unsigned in
     print_amount(txContent.fee, fee, 22);
     print_amount(txContent.amount, amount, 22);
 
+    // hash transaction
+    cx_hash_sha256(txCtx.rawTx, txCtx.rawTxLength, txCtx.txHash);
+
     ux_step = 0;
     ux_step_count = 5;
-    UX_DISPLAY(ui_approval_nanos, ui_approval_prepro);
+    UX_DISPLAY(ui_approve_tx_nanos, ui_approval_prepro);
+
+    *flags |= IO_ASYNCH_REPLY;
+}
+
+void handleSignTxHash(uint8_t *dataBuffer, uint16_t dataLength, volatile unsigned int *flags, volatile unsigned int *tx) {
+
+    // read bip32 path
+    txCtx.bip32PathLength = dataBuffer[0];
+    dataBuffer += 1;
+    dataLength -= 1;
+
+    uint8_t read = readBip32Path(dataBuffer, txCtx.bip32Path, txCtx.bip32PathLength);
+    dataBuffer += read;
+    dataLength -= read;
+
+    // read the tx hash
+    os_memmove(txCtx.txHash, dataBuffer, dataLength);
+
+    ux_step = 0;
+    ux_step_count = 2;
+    UX_DISPLAY(ui_approve_hash_nanos, ui_approval_prepro);
 
     *flags |= IO_ASYNCH_REPLY;
 }
@@ -657,6 +774,11 @@ void handleApdu(volatile unsigned int *flags, volatile unsigned int *tx) {
 
             case INS_SIGN_TX:
                 handleSignTx(G_io_apdu_buffer + OFFSET_CDATA,
+                           G_io_apdu_buffer[OFFSET_LC], flags, tx);
+                break;
+
+            case INS_SIGN_TX_HASH:
+                handleSignTxHash(G_io_apdu_buffer + OFFSET_CDATA,
                            G_io_apdu_buffer[OFFSET_LC], flags, tx);
                 break;
 
