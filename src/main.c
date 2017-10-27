@@ -48,12 +48,11 @@ uint32_t set_result_get_publicKey(void);
 
 #define CLA 0xE0
 #define INS_GET_PUBLIC_KEY 0x02
-#define INS_SIGN 0x04
+#define INS_SIGN_TX 0x04
 #define INS_GET_APP_CONFIGURATION 0x06
-#define INS_GET_PRIVATE_KEY 0x08
-#define INS_TEST_SIGN 0x10
-#define P1_CONFIRM 0x01
-#define P1_NON_CONFIRM 0x00
+#define INS_SIGN_HASH 0x08
+#define P1_NO_SIGNATURE 0x00
+#define P1_SIGNATURE 0x01
 #define P2_NO_CHAINCODE 0x00
 #define P2_CHAINCODE 0x01
 #define P1_FIRST 0x00
@@ -70,8 +69,10 @@ uint32_t set_result_get_publicKey(void);
 
 typedef struct publicKeyContext_t {
     cx_ecfp_public_key_t publicKey;
-    uint8_t address[56];
     uint8_t chainCode[32];
+    uint8_t signature[64];
+    bool returnSignature;
+    uint8_t signatureLength;
     bool returnChainCode;
 } publicKeyContext_t;
 
@@ -507,6 +508,7 @@ unsigned short io_exchange_al(unsigned char channel, unsigned short tx_len) {
 uint32_t set_result_get_publicKey() {
     uint32_t tx = 0;
     G_io_apdu_buffer[tx++] = 32;
+    // copy public key little endian
     uint8_t i;
     for (i = 0; i < 32; i++) {
         G_io_apdu_buffer[i+tx] = pkCtx.publicKey.W[64 - i];
@@ -517,22 +519,19 @@ uint32_t set_result_get_publicKey() {
 
     tx += 32;
 
+    if (pkCtx.returnSignature) {
+        G_io_apdu_buffer[tx++] = pkCtx.signatureLength;
+        os_memmove(G_io_apdu_buffer + tx, pkCtx.signature, pkCtx.signatureLength);
+        tx += pkCtx.signatureLength;
+    }
+
     if (pkCtx.returnChainCode) {
+        G_io_apdu_buffer[tx++] = 32;
         os_memmove(G_io_apdu_buffer + tx, pkCtx.chainCode, 32);
         tx += 32;
     }
 
     return tx;
-}
-
-void read_public_key(cx_ecfp_public_key_t *publicKey, uint8_t *out) {
-    uint8_t i;
-    for (i = 0; i < 32; i++) {
-        out[i] = publicKey->W[64 - i];
-    }
-    if ((publicKey->W[32] & 1) != 0) {
-        out[31] |= 0x80;
-    }
 }
 
 uint8_t readBip32Path(uint8_t *dataBuffer, uint32_t *bip32Path, uint8_t bip32PathLength) {
@@ -545,23 +544,36 @@ uint8_t readBip32Path(uint8_t *dataBuffer, uint32_t *bip32Path, uint8_t bip32Pat
     return 4 * bip32PathLength;
 }
 
-void handleGetPublicKey(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, volatile unsigned int *tx) {
-    UNUSED(p1);
+void handleGetPublicKey(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLength, volatile unsigned int *tx) {
 
+    if ((p1 != P1_SIGNATURE) && (p1 != P1_NO_SIGNATURE)) {
+        THROW(0x6B00);
+    }
     if ((p2 != P2_CHAINCODE) && (p2 != P2_NO_CHAINCODE)) {
         THROW(0x6B00);
     }
+    pkCtx.returnSignature = (p1 == P1_SIGNATURE);
     pkCtx.returnChainCode = (p2 == P2_CHAINCODE);
 
     uint8_t bip32PathLength = dataBuffer[0];
     dataBuffer += 1;
+    dataLength -= 1;
 
     if ((bip32PathLength < 0x01) || (bip32PathLength > MAX_BIP32_PATH)) {
         THROW(0x6a80);
     }
 
     uint32_t bip32Path[bip32PathLength];
-    readBip32Path(dataBuffer, bip32Path, bip32PathLength);
+    uint8_t read = readBip32Path(dataBuffer, bip32Path, bip32PathLength);
+    dataBuffer += read;
+    dataLength -= read;
+
+    uint16_t msgLength;
+    uint8_t * msg;
+    if (pkCtx.returnSignature) {
+        msgLength = dataLength;
+        os_memmove(msg, dataBuffer, msgLength);
+    }
 
     uint8_t privateKeyData[32];
     cx_ecfp_private_key_t privateKey;
@@ -570,6 +582,9 @@ void handleGetPublicKey(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, volatile un
     cx_ecfp_init_private_key(CX_CURVE_Ed25519, privateKeyData, 32, &privateKey);
     os_memset(privateKeyData, 0, sizeof(privateKeyData));
     cx_ecfp_generate_pair(CX_CURVE_Ed25519, &pkCtx.publicKey, &privateKey, 1);
+    if (pkCtx.returnSignature) {
+        pkCtx.signatureLength = cx_eddsa_sign(&privateKey, NULL, CX_LAST, CX_SHA512, msg, msgLength, pkCtx.signature);
+    }
     os_memset(&privateKey, 0, sizeof(privateKey));
 
     *tx = set_result_get_publicKey();
@@ -594,7 +609,7 @@ void handleGetAppConfiguration(uint8_t p1, uint8_t p2, uint8_t *workBuffer,
     THROW(0x9000);
 }
 
-void handleSign(uint8_t *dataBuffer, uint16_t dataLength, volatile unsigned int *flags, volatile unsigned int *tx) {
+void handleSignTx(uint8_t *dataBuffer, uint16_t dataLength, volatile unsigned int *flags, volatile unsigned int *tx) {
 
     // read bip32 path
     txCtx.bip32PathLength = dataBuffer[0];
@@ -636,11 +651,12 @@ void handleApdu(volatile unsigned int *flags, volatile unsigned int *tx) {
                 handleGetPublicKey(G_io_apdu_buffer[OFFSET_P1],
                                    G_io_apdu_buffer[OFFSET_P2],
                                    G_io_apdu_buffer + OFFSET_CDATA,
+                                   G_io_apdu_buffer[OFFSET_LC],
                                    tx);
                 break;
 
-            case INS_SIGN:
-                handleSign(G_io_apdu_buffer + OFFSET_CDATA,
+            case INS_SIGN_TX:
+                handleSignTx(G_io_apdu_buffer + OFFSET_CDATA,
                            G_io_apdu_buffer[OFFSET_LC], flags, tx);
                 break;
 
