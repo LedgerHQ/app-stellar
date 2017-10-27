@@ -22,8 +22,8 @@
 #include <stdint.h>
 
 typedef struct txContent_t {
-    unsigned char source[56];
-    unsigned char destination[56];
+    unsigned char source[57];
+    unsigned char destination[57];
     uint64_t amount;
     uint32_t fee;
     unsigned char assetCode[13];
