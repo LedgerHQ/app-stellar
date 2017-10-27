@@ -28,7 +28,7 @@ The `./test` directory contains files for testing the xdr transanction parser. T
 
 ### XDR parsing
 
-When a transaction is to be signed it is sent to the device as an [XDR](https://tools.ietf.org/html/rfc1832) serialized binary object. To show the transaction details to the user on the device this XDR blob must be read. This is done by a purpose-built parser shipped with this app. The parser currently supports only the most simple payment transaction. Hopefully it will be possible to support all possible transactions in the future. When a transaction is sent to the device that is not supported an error code is returned.
+When a transaction is to be signed it is sent to the device as an [XDR](https://tools.ietf.org/html/rfc1832) serialized binary object. To show the transaction details to the user on the device this XDR blob must be read. This is done by a purpose-built parser shipped with this app. The parser supports only simple payment transactions. Other types of transaction should be signed by sending the transaction hash.
 
 ## Approving a transaction
 
