@@ -18,6 +18,7 @@
 #include "os.h"
 #include "cx.h"
 #include <stdbool.h>
+#include <limits.h>
 
 #include "os_io_seproxyhal.h"
 #include "string.h"
@@ -55,8 +56,6 @@ uint32_t set_result_get_publicKey(void);
 #define P1_SIGNATURE 0x01
 #define P2_NO_CHAINCODE 0x00
 #define P2_CHAINCODE 0x01
-#define P1_FIRST 0x00
-#define P1_MORE 0x80
 
 #define OFFSET_CLA 0
 #define OFFSET_INS 1
@@ -89,7 +88,7 @@ transactionContext_t txCtx;
 txContent_t txContent;
 
 volatile uint8_t fidoTransport;
-volatile unsigned char addressSummary[32];
+volatile char addressSummary[32];
 volatile char amount[24];
 volatile char fee[24];
 volatile bool dataPresent;
@@ -601,14 +600,18 @@ unsigned short io_exchange_al(unsigned char channel, unsigned short tx_len) {
 uint32_t set_result_get_publicKey() {
     uint32_t tx = 0;
     G_io_apdu_buffer[tx++] = 32;
-    // copy public key little endian
+
+    uint8_t publicKey[32];
+    // copy public key little endian to big endian
     uint8_t i;
     for (i = 0; i < 32; i++) {
-        G_io_apdu_buffer[i+tx] = pkCtx.publicKey.W[64 - i];
+        publicKey[i] = pkCtx.publicKey.W[64 - i];
     }
     if ((pkCtx.publicKey.W[32] & 1) != 0) {
-        G_io_apdu_buffer[31+tx] |= 0x80;
+        publicKey[31] |= 0x80;
     }
+
+    os_memmove(G_io_apdu_buffer + tx, publicKey, 32);
 
     tx += 32;
 
@@ -665,6 +668,9 @@ void handleGetPublicKey(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t da
     uint8_t msg[32];
     if (pkCtx.returnSignature) {
         msgLength = dataLength;
+        if (msgLength > 32) {
+            THROW(0x6a80);
+        }
         os_memmove(msg, dataBuffer, msgLength);
     }
 

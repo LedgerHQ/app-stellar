@@ -19,46 +19,57 @@
 
 #include "base32.h"
 
-static const unsigned char PADDING_CHAR = '=';
-static const unsigned char base32[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+int base32_encode(const uint8_t *data, int length, char *result, int bufSize) {
+    int count = 0;
+    int quantum = 8;
 
-static size_t min(size_t x, size_t y) {
-	return x < y ? x : y;
-}
+    if (length < 0 || length > (1 << 28)) {
+        return -1;
+    }
 
-static void pad(unsigned char *buf, int len) {
-	int i;
-	for (i = 0; i < len; i++)
-		buf[i] = PADDING_CHAR;
-}
+    if (length > 0) {
+        int buffer = data[0];
+        int next = 1;
+        int bitsLeft = 8;
 
-static unsigned char shift_right(unsigned char byte, char offset) {
-	return (offset > 0) ? byte >> offset : byte << -offset;
-}
+        while (count < bufSize && (bitsLeft > 0 || next < length)) {
+            if (bitsLeft < 5) {
+                if (next < length) {
+                    buffer <<= 8;
+                    buffer |= data[next++] & 0xFF;
+                    bitsLeft += 8;
+                } else {
+                    int pad = 5 - bitsLeft;
+                    buffer <<= pad;
+                    bitsLeft += pad;
+                }
+            }
 
-static void encode_sequence(const unsigned char *plain, int len, unsigned char *coded) {
-	int block;
-	for (block = 0; block < 8; block++) {
-		int octet = (block * 5) / 8;
-		int junk = (8 - 5 - (5 * block) % 8);
+            int index = 0x1F & (buffer >> (bitsLeft - 5));
+            bitsLeft -= 5;
+            result[count++] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"[index];
 
-		if (octet >= len) {
-			pad(&coded[block], 8 - block);
-			return;
-		}
+            // Track the characters which make up a single quantum of 8 characters
+            quantum--;
+            if (quantum == 0) {
+                quantum = 8;
+            }
+        }
 
-		unsigned char c = shift_right(plain[octet], junk);
+        // If the number of encoded characters does not make a full quantum, insert padding
+        if (quantum != 8) {
+            while (quantum > 0 && count < bufSize) {
+                result[count++] = '=';
+                quantum--;
+            }
+        }
+    }
 
-		if (junk < 0 &&  octet < len - 1) {
-			c |= shift_right(plain[octet+1], 8 + junk);
-		}
-		coded[block] = base32[c & 0x1F];
-	}
-}
-
-void base32_encode(const unsigned char *plain, size_t len, unsigned char *coded) {
-	size_t i, j;
-	for (i = 0, j = 0; i < len; i += 5, j += 8) {
-		encode_sequence(&plain[i], min(len - i, 5), &coded[j]);
-	}
+    // Finally check if we exceeded buffer size.
+    if (count < bufSize) {
+        result[count] = '\000';
+        return count;
+    } else {
+        return -1;
+    }
 }

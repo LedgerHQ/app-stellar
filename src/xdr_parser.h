@@ -22,11 +22,11 @@
 #include <stdint.h>
 
 typedef struct txContent_t {
-    unsigned char source[57];
-    unsigned char destination[57];
+    char source[57];
+    char destination[57];
     uint64_t amount;
     uint32_t fee;
-    unsigned char assetCode[13];
+    char assetCode[13];
 } txContent_t;
 
 void parseTxXdr(uint8_t *buffer, txContent_t *txContent);

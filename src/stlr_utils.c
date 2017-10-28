@@ -27,21 +27,21 @@
 /**
  * convert the raw public key to a stellar address
  */
-void public_key_to_address(uint8_t *in, unsigned char *out) {
-    unsigned char buffer[35];
+void public_key_to_address(uint8_t *in, char *out) {
+    uint8_t buffer[35];
     buffer[0] = 6 << 3; // version bit 'G'
     int i;
     for (i = 0; i < 32; i++) {
-        buffer[i+1] = (unsigned char) in[i];
+        buffer[i+1] = in[i];
     }
-    short crc = crc16(buffer, 33); // checksum
+    short crc = crc16((char *)buffer, 33); // checksum
     buffer[33] = crc;
     buffer[34] = crc >> 8;
-    base32_encode(buffer, 35, out);
+    base32_encode(buffer, 35, out, 56);
     out[56] = '\0';
 }
 
-void summarize_address(unsigned char *in, unsigned char *out) {
+void summarize_address(char *in, char *out) {
     memcpy(out, in, 5);
     out[5] = '.';
     out[6] = '.';
@@ -81,6 +81,7 @@ void print_amount(uint64_t amount, char *asset, char *out, uint8_t len) {
     }
     // strip trailing .
     if (out[j] == '.') j--;
+    // qualify amount
     out[++j] = ' ';
     strncpy(out + ++j, asset, strlen(asset));
     out[j+strlen(asset)] = '\0';

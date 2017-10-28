@@ -15,4 +15,4 @@
  *  limitations under the License.
  ********************************************************************************/
 
-unsigned short crc16(unsigned char *ptr, int count);
+unsigned short crc16(char *ptr, int count);

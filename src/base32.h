@@ -21,15 +21,9 @@
 #define _BASE32_H_
 
 #include <stddef.h>
+#include <stdint.h>
 
-/**
- * Encode the data pointed to by plain into base32 and store the
- * result at the address pointed to by coded. The "coded" argument
- * must point to a location that has enough available space
- * to store the whole coded string. The resulting string will only
- * contain characters from the [A-Z2-7=] set. The "len" arguments
- * define how many bytes will be read from the "plain" buffer.
- **/
-void base32_encode(const unsigned char *plain, size_t len, unsigned char *coded);
+
+int base32_encode(const uint8_t *data, int length, char *result, int bufSize);
 
 #endif
