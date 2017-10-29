@@ -44,7 +44,7 @@ static const uint8_t SW_INTERNAL[] = {0x6F, 0x00};
 static const uint8_t NOTIFY_USER_PRESENCE_NEEDED[] = {
     KEEPALIVE_REASON_TUP_NEEDED};
 
-static const uint8_t PROXY_MAGIC[] = {'s', '7', 'r'};
+static const uint8_t PROXY_MAGIC[] = {'l', '0', 'v'};
 
 #define INIT_U2F_VERSION 0x02
 #define INIT_DEVICE_VERSION_MAJOR 0
