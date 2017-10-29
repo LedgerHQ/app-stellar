@@ -37,4 +37,4 @@ The operation to retrieve the public key implements an optional keypair verifica
 ## Approving a transaction
 
 There are two ways a transaction may be approved by the device. In the case of a simple payment transaction it is sent to the device in its xdr representation. The app then parses the xdr and shows the payment details to the user for approval.
-Alternatively, if a transaction contains more than a single operation and/or contains different types of operations a different operation can be used that takes only the transaction hash. In this case the details of the operation cannot be shown to the user. A warning is shown that no details are available.
+Alternatively, if a transaction contains more than a single operation and/or contains different types of operations a different method can be used that takes only the transaction hash. In this case the details of the operation cannot be shown to the user. A warning is shown that no details are available.
