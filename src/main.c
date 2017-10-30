@@ -56,6 +56,10 @@ uint32_t set_result_get_publicKey(void);
 #define P1_SIGNATURE 0x01
 #define P2_NO_CHAINCODE 0x00
 #define P2_CHAINCODE 0x01
+#define P1_FIRST 0x00
+#define P1_MORE 0x80
+#define P2_LAST 0x00
+#define P2_MORE 0x80
 
 #define OFFSET_CLA 0
 #define OFFSET_INS 1
@@ -64,7 +68,7 @@ uint32_t set_result_get_publicKey(void);
 #define OFFSET_LC 4
 #define OFFSET_CDATA 5
 
-#define MAX_RAW_TX 200
+#define MAX_RAW_TX 1024
 
 typedef struct publicKeyContext_t {
     cx_ecfp_public_key_t publicKey;
@@ -708,20 +712,42 @@ void handleGetAppConfiguration(uint8_t p1, uint8_t p2, uint8_t *workBuffer,
     THROW(0x9000);
 }
 
-void handleSignTx(uint8_t *dataBuffer, uint16_t dataLength, volatile unsigned int *flags, volatile unsigned int *tx) {
+void handleSignTx(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLength, volatile unsigned int *flags, volatile unsigned int *tx) {
 
-    // read bip32 path
-    txCtx.bip32PathLength = dataBuffer[0];
-    dataBuffer += 1;
-    dataLength -= 1;
+    if ((p1 != P1_FIRST) && (p1 != P1_MORE)) {
+        THROW(0x6B00);
+    }
+    if ((p2 != P2_LAST) && (p2 != P2_MORE)) {
+        THROW(0x6B00);
+    }
 
-    uint8_t read = readBip32Path(dataBuffer, txCtx.bip32Path, txCtx.bip32PathLength);
-    dataBuffer += read;
-    dataLength -= read;
+    if (p1 == P1_FIRST) {
+        // read bip32 path
+        txCtx.bip32PathLength = dataBuffer[0];
+        dataBuffer += 1;
+        dataLength -= 1;
 
-    // read transaction
-    txCtx.rawTxLength = dataLength;
-    os_memmove(txCtx.rawTx, dataBuffer, dataLength);
+        uint8_t read = readBip32Path(dataBuffer, txCtx.bip32Path, txCtx.bip32PathLength);
+        dataBuffer += read;
+        dataLength -= read;
+
+        // read raw tx data
+        txCtx.rawTxLength = dataLength;
+        os_memmove(txCtx.rawTx, dataBuffer, dataLength);
+    } else {
+        // read more raw tx data
+        uint32_t offset = txCtx.rawTxLength;
+        txCtx.rawTxLength += dataLength;
+        if (txCtx.rawTxLength > MAX_RAW_TX) {
+            THROW(0x6700);
+        }
+        os_memmove(txCtx.rawTx+offset, dataBuffer, dataLength);
+    }
+
+    if (p2 == P2_MORE) {
+        THROW(0x9000);
+    }
+
     parseTxXdr(txCtx.rawTx, &txContent);
 
     // prepare for display
@@ -779,8 +805,10 @@ void handleApdu(volatile unsigned int *flags, volatile unsigned int *tx) {
                 break;
 
             case INS_SIGN_TX:
-                handleSignTx(G_io_apdu_buffer + OFFSET_CDATA,
-                           G_io_apdu_buffer[OFFSET_LC], flags, tx);
+                handleSignTx(G_io_apdu_buffer[OFFSET_P1],
+                             G_io_apdu_buffer[OFFSET_P2],
+                             G_io_apdu_buffer + OFFSET_CDATA,
+                             G_io_apdu_buffer[OFFSET_LC], flags, tx);
                 break;
 
             case INS_SIGN_TX_HASH:
