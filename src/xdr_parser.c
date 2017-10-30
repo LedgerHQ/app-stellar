@@ -53,6 +53,15 @@ uint8_t numBytes(uint8_t size) {
    return size + 4 - remainder;
 }
 
+uint8_t skipTimeBounds(uint8_t *buffer) {
+    uint32_t timeBounds = readUInt32Block(buffer);
+    if (timeBounds != 0) {
+        return 4 + 8 + 8; // timebounds on + unint64 + uint64
+    } else {
+        return 4;  // timebounds off
+    }
+}
+
 uint8_t skipMemo(uint8_t *buffer) {
     uint8_t memoType = (uint8_t) readUInt32Block(buffer);
     buffer += 4;
@@ -166,11 +175,7 @@ void parseTxXdr(uint8_t *buffer, txContent_t *txContent) {
     PRINTF("amount: %d\n", txContent->fee);
     buffer += 4;
     buffer += 8; // skip seqNum
-    uint32_t timeBounds = readUInt32Block(buffer);
-    if (timeBounds != 0) {
-        THROW(0x6c20);
-    }
-    buffer += 4;
+    buffer += skipTimeBounds(buffer);
     buffer += skipMemo(buffer);
 //    printHexBlocks(buffer, 20);
     parseOpsXdr(buffer, txContent);

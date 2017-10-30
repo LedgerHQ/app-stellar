@@ -8,3 +8,4 @@ gcc test/parsertest.c src/stlr_utils.c src/base32.c src/crc16.c src/xdr_parser.c
 ./obj/parsertest test/txOpAccountId.hex
 ./obj/parsertest test/txCustomAsset4.hex
 ./obj/parsertest test/txCustomAsset12.hex
+./obj/parsertest test/txTimeBounds.hex
