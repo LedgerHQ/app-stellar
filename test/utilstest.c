@@ -1,8 +1,6 @@
 /*******************************************************************************
  *   Ledger Stellar App
- *   (c) 2017 LeNonDupe
- *
- *  adapted from https://github.com/mjg59/tpmtotp/blob/master/base32.h
+ *   (c) 2017 Ledger
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -53,3 +51,4 @@ int main(int argc, char *argv[]) {
     return 0;
 
 }
+

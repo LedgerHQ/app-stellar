@@ -1,6 +1,6 @@
 /*******************************************************************************
 *   Ledger Stellar App
-*   (c) 2017 LeNonDupe
+*   (c) 2017 Ledger
 *
 *  Licensed under the Apache License, Version 2.0 (the "License");
 *  you may not use this file except in compliance with the License.

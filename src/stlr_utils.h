@@ -1,6 +1,6 @@
 /*******************************************************************************
  *   Ledger Stellar App
- *   (c) 2017 LeNonDupe
+ *   (c) 2017 Ledger
  *
  *  adapted from https://github.com/mjg59/tpmtotp/blob/master/base32.h
  *
