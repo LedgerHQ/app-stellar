@@ -47,7 +47,7 @@ void summarize_address(char *in, char *out) {
     out[6] = '.';
     out[7] = '.';
     memcpy(out + 8, in + 52, 4);
-    out[13] = '\0';
+    out[12] = '\0';
 }
 
 void print_amount(uint64_t amount, char *asset, char *out, uint8_t len) {
@@ -86,4 +86,24 @@ void print_amount(uint64_t amount, char *asset, char *out, uint8_t len) {
     strncpy(out + ++j, asset, strlen(asset));
     out[j+strlen(asset)] = '\0';
 
+}
+
+void print_id_memo(uint64_t id, char *out, uint8_t len) {
+    char buffer[len];
+    uint64_t dVal = id;
+    int i, j;
+
+    memset(buffer, 0, len);
+    for (i = 0; dVal > 0; i++) {
+        buffer[i] = (dVal % 10) + '0';
+        dVal /= 10;
+        if (i >= len) {
+            THROW(0x6700);
+        }
+    }
+    // reverse order
+    for (i -= 1, j = 0; i >= 0 && j < len-1; i--, j++) {
+        out[j] = buffer[i];
+    }
+    out[j] = '\0';
 }

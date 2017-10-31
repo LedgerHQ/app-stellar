@@ -27,6 +27,8 @@ typedef struct txContent_t {
     uint64_t amount;
     uint32_t fee;
     char assetCode[13];
+    uint8_t memoType;
+    char memo[29];
 } txContent_t;
 
 void parseTxXdr(uint8_t *buffer, txContent_t *txContent);

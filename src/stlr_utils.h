@@ -30,10 +30,22 @@
 #include "os.h"
 #endif // TEST
 
+#define ASSET_TYPE_NATIVE 0
+#define ASSET_TYPE_CREDIT_ALPHANUM4 1
+#define ASSET_TYPE_CREDIT_ALPHANUM12 2
+
+#define MEMO_TYPE_NONE 0
+#define MEMO_TYPE_TEXT 1
+#define MEMO_TYPE_ID 2
+#define MEMO_TYPE_HASH 3
+#define MEMO_TYPE_RETURN 4
+
 void public_key_to_address(uint8_t *in, char *out);
 
 void summarize_address(char *in, char *out);
 
 void print_amount(uint64_t amount, char *asset, char *out, uint8_t len);
+
+void print_id_memo(uint64_t id, char *out, uint8_t len);
 
 #endif // _STELLAR_UTILS_H_
