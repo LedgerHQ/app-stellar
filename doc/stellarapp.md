@@ -154,3 +154,85 @@ None
 | Application minor version                                                         | 1        |
 | Application patch version                                                         | 1        |
 
+## Transport protocol
+
+### General transport description
+
+Ledger APDUs requests and responses are encapsulated using a flexible protocol allowing to fragment large payloads over different underlying transport mechanisms.
+
+The common transport header is defined as follows: 
+
+| *Description*                                                                     | *Length* |
+|-----------------------------------------------------------------------------------|----------|
+| Communication channel ID (big endian)                                             | 2        |
+| Command tag                                                                       | 1        |
+| Packet sequence index (big endian)                                                | 2        |
+| Payload                                                                           | var      |
+
+The Communication channel ID allows commands multiplexing over the same physical link. It is not used for the time being, and should be set to 0101 to avoid compatibility issues with implementations ignoring a leading 00 byte.
+
+The Command tag describes the message content. Use TAG_APDU (0x05) for standard APDU payloads, or TAG_PING (0x02) for a simple link test.
+
+The Packet sequence index describes the current sequence for fragmented payloads. The first fragment index is 0x00.
+
+### APDU Command payload encoding
+
+APDU Command payloads are encoded as follows:
+
+| *Description*                                                                     | *Length* |
+|-----------------------------------------------------------------------------------|----------|
+| APDU length (big endian)                                                          | 2        |
+| APDU CLA                                                                          | 1        |
+| APDU INS                                                                          | 1        |
+| APDU P1                                                                           | 1        |
+| APDU P2                                                                           | 1        |
+| APDU length                                                                       | 1        |
+| Optional APDU data                                                                | var      |
+
+APDU payload is encoded according to the APDU case 
+
+| Case Number  | *Lc* | *Le* | Case description                                          |
+|--------------|------|------|-----------------------------------------------------------|
+|   1          |  0   |  0   | No data in either direction - L is set to 00              |
+|   2          |  0   |  !0  | Input Data present, no Output Data - L is set to Lc       |
+|   3          |  !0  |  0   | Output Data present, no Input Data - L is set to Le       |
+|   4          |  !0  |  !0  | Both Input and Output Data are present - L is set to Lc   |
+
+### APDU Response payload encoding
+
+APDU Response payloads are encoded as follows:
+
+| *Description*                                                                     | *Length* |
+|-----------------------------------------------------------------------------------|----------|
+| APDU response length (big endian)                                                 | 2        |
+| APDU response data and Status Word                                                | var      |
+
+### USB mapping
+
+Messages are exchanged with the dongle over HID endpoints over interrupt transfers, with each chunk being 64 bytes long. The HID Report ID is ignored.
+
+### BLE mapping
+
+A similar encoding is used over BLE, without the Communication channel ID.
+
+The application acts as a GATT server defining service UUID D973F2E0-B19E-11E2-9E96-0800200C9A66
+
+When using this service, the client sends requests to the characteristic D973F2E2-B19E-11E2-9E96-0800200C9A66, and gets notified on the characteristic D973F2E1-B19E-11E2-9E96-0800200C9A66 after registering for it. 
+
+Requests are encoded using the standard BLE 20 bytes MTU size
+
+## Status Words 
+
+The following standard Status Words are returned for all APDUs - some specific Status Words can be used for specific commands.
+
+**Status Words**
+
+| *SW*     | *Description*                                    |
+|----------|--------------------------------------------------|
+|   6700   | Incorrect length                                 |
+|   6982   | Security status not satisfied (Canceled by user) |
+|   6A80   | Invalid data                                     |
+|   6B00   | Incorrect parameter P1 or P2                     |
+|   6C2x   | Unsupported Transaction                          |
+|   6Fxx   | Technical problem (Internal error, please report)|
+|   9000   | Normal ending of the command                     |
