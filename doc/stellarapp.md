@@ -107,7 +107,7 @@ This command signs any Stellar transaction given a transaction hash. The user is
 
 | *CLA* | *INS*  | *P1*               | *P2*            | *Lc*     | *Le* |
 |-------|--------|--------------------|-----------------|----------|------|
-|   E0  |   04   |                    |                 |          |      |
+|   E0  |   08   |                    |                 |          |      |
 
 
 **Input data**
@@ -126,4 +126,31 @@ This command signs any Stellar transaction given a transaction hash. The user is
 |-----------------------------------------------------------------------------------|----------|
 | EDDSA encoded signature (ed25519)                                                 | variable |
 
+
+### Get app configuration
+
+#### Description
+
+This command returns specific application configuration.
+
+#### Coding
+
+**Command**
+
+| *CLA* | *INS*  | *P1*               | *P2*       | *Lc*     | *Le* |
+|-------|--------|--------------------|------------|----------|------|
+|   E0  |   06   |                    |            |          |      |
+
+**Input data**
+
+None
+
+**Output data**
+
+| *Description*                                                                     | *Length* |
+|-----------------------------------------------------------------------------------|----------|
+| Flags                                                                             | 1        |
+| Application major version                                                         | 1        |
+| Application minor version                                                         | 1        |
+| Application patch version                                                         | 1        |
 
