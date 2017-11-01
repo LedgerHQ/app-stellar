@@ -622,7 +622,6 @@ unsigned short io_exchange_al(unsigned char channel, unsigned short tx_len) {
 
 uint32_t set_result_get_publicKey() {
     uint32_t tx = 0;
-    G_io_apdu_buffer[tx++] = 32;
 
     uint8_t publicKey[32];
     // copy public key little endian to big endian
@@ -639,13 +638,11 @@ uint32_t set_result_get_publicKey() {
     tx += 32;
 
     if (pkCtx.returnSignature) {
-        G_io_apdu_buffer[tx++] = pkCtx.signatureLength;
         os_memmove(G_io_apdu_buffer + tx, pkCtx.signature, pkCtx.signatureLength);
         tx += pkCtx.signatureLength;
     }
 
     if (pkCtx.returnChainCode) {
-        G_io_apdu_buffer[tx++] = 32;
         os_memmove(G_io_apdu_buffer + tx, pkCtx.chainCode, 32);
         tx += 32;
     }
