@@ -42,13 +42,9 @@ This command returns the public key for the given BIP 32 path.
 
 | *Description*                                                                     | *Length* |
 |-----------------------------------------------------------------------------------|----------|
-| Public Key length                                                                 | 1        |
-| Public Key                                                                        | 56       |
-| Signature length if requested                                                     | 1        |
+| Public Key                                                                        | 32       |
 | Signature if requested                                                            | 64       |
-| Chain code length if requested                                                    | 1        |
 | Chain code if requested                                                           | 32       |
-
 
 ### Sign Single Payment Transaction
 
