@@ -75,7 +75,6 @@ typedef struct publicKeyContext_t {
     uint8_t chainCode[32];
     uint8_t signature[64];
     bool returnSignature;
-    uint8_t signatureLength;
     bool returnChainCode;
 } publicKeyContext_t;
 
@@ -638,8 +637,8 @@ uint32_t set_result_get_publicKey() {
     tx += 32;
 
     if (pkCtx.returnSignature) {
-        os_memmove(G_io_apdu_buffer + tx, pkCtx.signature, pkCtx.signatureLength);
-        tx += pkCtx.signatureLength;
+        os_memmove(G_io_apdu_buffer + tx, pkCtx.signature, 64);
+        tx += 64;
     }
 
     if (pkCtx.returnChainCode) {
@@ -650,14 +649,19 @@ uint32_t set_result_get_publicKey() {
     return tx;
 }
 
-uint8_t readBip32Path(uint8_t *dataBuffer, uint32_t *bip32Path, uint8_t bip32PathLength) {
+uint8_t readBip32Path(uint8_t *dataBuffer, uint32_t *bip32Path) {
+    uint8_t bip32PathLength = dataBuffer[0];
+    dataBuffer += 1;
+    if ((bip32PathLength < 0x01) || (bip32PathLength > MAX_BIP32_PATH)) {
+        THROW(0x6a80);
+    }
     uint8_t i;
     for (i = 0; i < bip32PathLength; i++) {
         bip32Path[i] = (dataBuffer[0] << 24) | (dataBuffer[1] << 16) |
                        (dataBuffer[2] << 8) | (dataBuffer[3]);
         dataBuffer += 4;
     }
-    return 4 * bip32PathLength;
+    return bip32PathLength;
 }
 
 void handleGetPublicKey(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLength, volatile unsigned int *tx) {
@@ -671,18 +675,10 @@ void handleGetPublicKey(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t da
     pkCtx.returnSignature = (p1 == P1_SIGNATURE);
     pkCtx.returnChainCode = (p2 == P2_CHAINCODE);
 
-    uint8_t bip32PathLength = dataBuffer[0];
-    dataBuffer += 1;
-    dataLength -= 1;
-
-    if ((bip32PathLength < 0x01) || (bip32PathLength > MAX_BIP32_PATH)) {
-        THROW(0x6a80);
-    }
-
-    uint32_t bip32Path[bip32PathLength];
-    uint8_t read = readBip32Path(dataBuffer, bip32Path, bip32PathLength);
-    dataBuffer += read;
-    dataLength -= read;
+    uint32_t bip32Path[MAX_BIP32_PATH];
+    uint8_t bip32PathLength = readBip32Path(dataBuffer, bip32Path);
+    dataBuffer += 1 + bip32PathLength * 4;
+    dataLength -= 1 + bip32PathLength * 4;
 
     uint16_t msgLength;
     uint8_t msg[32];
@@ -702,7 +698,7 @@ void handleGetPublicKey(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t da
     os_memset(privateKeyData, 0, sizeof(privateKeyData));
     cx_ecfp_generate_pair(CX_CURVE_Ed25519, &pkCtx.publicKey, &privateKey, 1);
     if (pkCtx.returnSignature) {
-        pkCtx.signatureLength = cx_eddsa_sign(&privateKey, NULL, CX_LAST, CX_SHA512, msg, msgLength, pkCtx.signature);
+        cx_eddsa_sign(&privateKey, NULL, CX_LAST, CX_SHA512, msg, msgLength, pkCtx.signature);
     }
     os_memset(&privateKey, 0, sizeof(privateKey));
 
@@ -738,14 +734,10 @@ void handleSignTx(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLeng
     }
 
     if (p1 == P1_FIRST) {
-        // read bip32 path
-        txCtx.bip32PathLength = dataBuffer[0];
-        dataBuffer += 1;
-        dataLength -= 1;
-
-        uint8_t read = readBip32Path(dataBuffer, txCtx.bip32Path, txCtx.bip32PathLength);
-        dataBuffer += read;
-        dataLength -= read;
+        // read the bip32 path
+        txCtx.bip32PathLength = readBip32Path(dataBuffer, txCtx.bip32Path);
+        dataBuffer += 1 + txCtx.bip32PathLength * 4;
+        dataLength -= 1 + txCtx.bip32PathLength * 4;
 
         // read raw tx data
         txCtx.rawTxLength = dataLength;
@@ -783,14 +775,10 @@ void handleSignTx(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLeng
 
 void handleSignTxHash(uint8_t *dataBuffer, uint16_t dataLength, volatile unsigned int *flags, volatile unsigned int *tx) {
 
-    // read bip32 path
-    txCtx.bip32PathLength = dataBuffer[0];
-    dataBuffer += 1;
-    dataLength -= 1;
-
-    uint8_t read = readBip32Path(dataBuffer, txCtx.bip32Path, txCtx.bip32PathLength);
-    dataBuffer += read;
-    dataLength -= read;
+    // read the bip32 path
+    txCtx.bip32PathLength = readBip32Path(dataBuffer, txCtx.bip32Path);
+    dataBuffer += 1 + txCtx.bip32PathLength * 4;
+    dataLength -= 1 + txCtx.bip32PathLength * 4;
 
     // read the tx hash
     os_memmove(txCtx.txHash, dataBuffer, dataLength);
