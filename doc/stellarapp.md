@@ -18,7 +18,8 @@ The application interface can be accessed over HID or BLE
 
 #### Description
 
-This command returns the public key for the given BIP 32 path.
+This command returns the public key for the given BIP 32 path. An optional message can be sent to sign to verify
+the validity of the generated keypair.
 
 #### Coding
 
@@ -31,12 +32,13 @@ This command returns the public key for the given BIP 32 path.
 
 **Input data**
 
-| *Description*                                                                     | *Length* |
-|-----------------------------------------------------------------------------------|----------|
-| Number of BIP 32 derivations to perform (max 10)                                  | 1        |
-| First derivation index (big endian)                                               | 4        |
-| ...                                                                               | 4        |
-| Last derivation index (big endian)                                                | 4        |
+| *Description*                                                                     | *Length*     |
+|-----------------------------------------------------------------------------------|--------------|
+| Number of BIP 32 derivations to perform (max 10)                                  | 1            |
+| First derivation index (big endian)                                               | 4            |
+| ...                                                                               | 4            |
+| Last derivation index (big endian)                                                | 4            |
+| Message to sign                                                                   | var (max 32) |
 
 **Output data**
 
