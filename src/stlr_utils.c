@@ -79,11 +79,14 @@ void print_amount(uint64_t amount, char *asset, char *out, uint8_t len) {
     for (j -= 1; j > 0; j--) {
         if (out[j] != '0') break;
     }
+    j += 1;
+
     // strip trailing .
-    if (out[j] == '.') j--;
+    if (out[j-1] == '.') j -= 1;
+
     // qualify amount
-    out[++j] = ' ';
-    strncpy(out + ++j, asset, strlen(asset));
+    out[j++] = ' ';
+    strncpy(out + j, asset, strlen(asset));
     out[j+strlen(asset)] = '\0';
 
 }

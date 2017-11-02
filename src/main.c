@@ -91,9 +91,9 @@ transactionContext_t txCtx;
 txContent_t txContent;
 
 volatile uint8_t fidoTransport;
-volatile char addressSummary[32];
-volatile char amount[24];
-volatile char fee[24];
+volatile char addressSummary[13]; // 5 + 3 + 4 + 1
+volatile char amount[35]; // 20 + 1 + 1 + 12 + 1
+volatile char fee[26]; // 20 + 1 + 1 + 3 + 1
 volatile bool dataPresent;
 
 bagl_element_t tmp_element;
@@ -440,17 +440,17 @@ const bagl_element_t ui_approve_hash_nanos[] = {
      NULL},
 
     {{BAGL_LABELINE, 0x02, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "WARNING",
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     "No data",
      0,
      0,
      0,
      NULL,
      NULL,
      NULL},
-    {{BAGL_LABELINE, 0x02, 23, 26, 82, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
+    {{BAGL_LABELINE, 0x02, 23, 26, 82, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "No data available",
+     "available",
      0,
      0,
      0,
