@@ -92,6 +92,7 @@ txContent_t txContent;
 
 volatile uint8_t fidoTransport;
 volatile char addressSummary[13]; // 5 + 3 + 4 + 1
+volatile char memoSummary[13]; // 5 + 3 + 4 + 1
 volatile char amount[35]; // 20 + 1 + 1 + 12 + 1
 volatile char fee[26]; // 20 + 1 + 1 + 3 + 1
 volatile bool dataPresent;
@@ -347,7 +348,7 @@ const bagl_element_t ui_approve_tx_nanos[] = {
      NULL},
     {{BAGL_LABELINE, 0x05, 16, 26, 96, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     (char *)txContent.memo,
+     (char *)memoSummary,
      0,
      0,
      0,
@@ -759,7 +760,12 @@ void handleSignTx(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLeng
     parseTxXdr(txCtx.rawTx, &txContent);
 
     // prepare for display
-    summarize_address(txContent.destination, addressSummary);
+    os_memset(addressSummary, 0, sizeof(addressSummary));
+    os_memset(memoSummary, 0, sizeof(memoSummary));
+    os_memset(fee, 0, sizeof(fee));
+    os_memset(amount, 0, sizeof(amount));
+    print_summary(txContent.destination, addressSummary);
+    print_summary(txContent.memo, memoSummary);
     print_amount(txContent.fee, "XLM", fee, 22);
     print_amount(txContent.amount, txContent.assetCode, amount, 22);
 

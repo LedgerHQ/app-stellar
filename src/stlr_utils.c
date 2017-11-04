@@ -41,13 +41,18 @@ void public_key_to_address(uint8_t *in, char *out) {
     out[56] = '\0';
 }
 
-void summarize_address(char *in, char *out) {
-    memcpy(out, in, 5);
-    out[5] = '.';
-    out[6] = '.';
-    out[7] = '.';
-    memcpy(out + 8, in + 52, 4);
-    out[12] = '\0';
+void print_summary(char *in, char *out) {
+    size_t len = strlen(in);
+    if (strlen(in) > 12) {
+        memcpy(out, in, 5);
+        out[5] = '.';
+        out[6] = '.';
+        out[7] = '.';
+        memcpy(out + 8, in + len - 4, 4);
+        out[12] = '\0';
+    } else {
+        memcpy(out, in, len);
+    }
 }
 
 void print_amount(uint64_t amount, char *asset, char *out, uint8_t len) {

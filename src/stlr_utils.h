@@ -42,7 +42,7 @@
 
 void public_key_to_address(uint8_t *in, char *out);
 
-void summarize_address(char *in, char *out);
+void print_summary(char *in, char *out);
 
 void print_amount(uint64_t amount, char *asset, char *out, uint8_t len);
 
