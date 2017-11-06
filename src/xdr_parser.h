@@ -22,7 +22,7 @@
 #include <stdint.h>
 
 typedef struct txContent_t {
-    char networkId[32];
+    uint8_t networkId[32];
     char source[57];
     char destination[57];
     uint64_t amount;

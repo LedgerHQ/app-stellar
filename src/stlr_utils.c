@@ -34,6 +34,8 @@ static const uint8_t PUBLIC_NETWORK_ID_HASH[64] = {0x7a, 0xc3, 0x39, 0x97, 0x54,
                                                    0xdb, 0x16, 0x50, 0x8c, 0x01, 0x16, 0x3f, 0x26,
                                                    0xe5, 0xcb, 0x2a, 0x3e, 0x10, 0x45, 0xa9, 0x79};
 
+static const char hexChars[] = "0123456789ABCDEF";
+
 /**
  * convert the raw public key to a stellar address
  */
@@ -134,4 +136,20 @@ void print_network_id(uint8_t *in, char *out) {
     } else {
         strncpy(out, "Unknown", 8);
     }
+}
+
+void print_hash_summary(uint8_t *in, char *out) {
+    uint8_t i, j;
+    for (i = 0, j = 0; i < 3; i+=1, j+=2) {
+        out[j] = hexChars[in[i] / 16];
+        out[j+1] = hexChars[in[i] % 16];
+    }
+    out[j++] = '.';
+    out[j++] = '.';
+    out[j++] = '.';
+    for (i = 61; i < 64; i+=1, j+=2) {
+        out[j] = hexChars[in[i] / 16];
+        out[j+1] = hexChars[in[i] % 16];
+    }
+    out[j] = '\0';
 }

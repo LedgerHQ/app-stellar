@@ -50,4 +50,6 @@ void print_id_memo(uint64_t id, char *out, uint8_t len);
 
 void print_network_id(uint8_t *in, char *out);
 
+void print_hash_summary(uint8_t *in, char *out);
+
 #endif // _STELLAR_UTILS_H_

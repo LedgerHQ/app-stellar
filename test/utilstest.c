@@ -44,6 +44,14 @@ void test_print_summary(char *msg, char *expected) {
     }
 }
 
+void test_print_hash(uint8_t *hash, char *expected) {
+    char hex[16];
+    print_hash_summary(hash, hex);
+    if (strcmp(hex, expected) != 0) {
+        printf("test_print_hash failed. Expected: %s; Actual: %s\n", expected, hex);
+    }
+}
+
 int main(int argc, char *argv[]) {
 
     test_print_amount(1, "0.0000001 XLM");
@@ -59,6 +67,12 @@ int main(int argc, char *argv[]) {
     test_print_summary("stellar lumens", "stell...mens");
     test_print_summary("GBGBTCCP7WG2E5XFYLQFJP2DYOQZPCCDCHK62K6TZD4BHMNYI5WSXESH", "GBGBT...XESH");
 
+    uint8_t hash[64];
+    uint8_t i;
+    for (i = 0; i < 64; i++) {
+        hash[i] = i;
+    }
+    test_print_hash(hash, "000102...3D3E3F");
     return 0;
 
 }
