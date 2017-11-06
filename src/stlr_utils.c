@@ -24,6 +24,16 @@
 #include "crc16.h"
 #include "base32.h"
 
+static const uint8_t TEST_NETWORK_ID_HASH[64] = {0xce, 0xe0, 0x30, 0x2d, 0x59, 0x84, 0x4d, 0x32,
+                                                 0xbd, 0xca, 0x91, 0x5c, 0x82, 0x03, 0xdd, 0x44,
+                                                 0xb3, 0x3f, 0xbb, 0x7e, 0xdc, 0x19, 0x05, 0x1e,
+                                                 0xa3, 0x7a, 0xbe, 0xdf, 0x28, 0xec, 0xd4, 0x72};
+
+static const uint8_t PUBLIC_NETWORK_ID_HASH[64] = {0x7a, 0xc3, 0x39, 0x97, 0x54, 0x4e, 0x31, 0x75,
+                                                   0xd2, 0x66, 0xbd, 0x02, 0x24, 0x39, 0xb2, 0x2c,
+                                                   0xdb, 0x16, 0x50, 0x8c, 0x01, 0x16, 0x3f, 0x26,
+                                                   0xe5, 0xcb, 0x2a, 0x3e, 0x10, 0x45, 0xa9, 0x79};
+
 /**
  * convert the raw public key to a stellar address
  */
@@ -114,4 +124,14 @@ void print_id_memo(uint64_t id, char *out, uint8_t len) {
         out[j] = buffer[i];
     }
     out[j] = '\0';
+}
+
+void print_network_id(uint8_t *in, char *out) {
+    if (memcmp(in, PUBLIC_NETWORK_ID_HASH, 32) == 0) {
+        strncpy(out, "Public", 7);
+    } else if (memcmp(in, TEST_NETWORK_ID_HASH, 32) == 0) {
+        strncpy(out, "Test", 5);
+    } else {
+        strncpy(out, "Unknown", 8);
+    }
 }

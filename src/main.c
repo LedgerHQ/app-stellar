@@ -95,7 +95,7 @@ volatile char addressSummary[13]; // 5 + 3 + 4 + 1
 volatile char memoSummary[13]; // 5 + 3 + 4 + 1
 volatile char amount[35]; // 20 + 1 + 1 + 12 + 1
 volatile char fee[26]; // 20 + 1 + 1 + 3 + 1
-volatile bool dataPresent;
+volatile char networkId[8];
 
 bagl_element_t tmp_element;
 
@@ -368,6 +368,25 @@ const bagl_element_t ui_approve_tx_nanos[] = {
     {{BAGL_LABELINE, 0x06, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
      (char *)fee,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
+    {{BAGL_LABELINE, 0x07, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     "Network",
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+    {{BAGL_LABELINE, 0x07, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
+     (char *)networkId,
      0,
      0,
      0,
@@ -764,16 +783,18 @@ void handleSignTx(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLeng
     os_memset(memoSummary, 0, sizeof(memoSummary));
     os_memset(fee, 0, sizeof(fee));
     os_memset(amount, 0, sizeof(amount));
+    os_memset(networkId, 0, sizeof(networkId));
     print_summary(txContent.destination, addressSummary);
     print_summary(txContent.memo, memoSummary);
     print_amount(txContent.fee, "XLM", fee, 22);
     print_amount(txContent.amount, txContent.assetCode, amount, 22);
+    print_network_id(txContent.networkId, networkId);
 
     // hash transaction
     cx_hash_sha256(txCtx.rawTx, txCtx.rawTxLength, txCtx.txHash);
 
     ux_step = 0;
-    ux_step_count = 6;
+    ux_step_count = 7;
     UX_DISPLAY(ui_approve_tx_nanos, ui_approval_prepro);
 
     *flags |= IO_ASYNCH_REPLY;

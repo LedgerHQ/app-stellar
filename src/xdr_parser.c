@@ -172,7 +172,8 @@ void parseOpsXdr(uint8_t *buffer, txContent_t *txContent) {
 }
 
 void parseTxXdr(uint8_t *buffer, txContent_t *txContent) {
-    buffer += 8*4; // skip networkId
+    memcpy(txContent->networkId, buffer, 32);
+    buffer += 32;
     buffer += 4; // skip envelopeType
     uint32_t sourceAccountType = readUInt32Block(buffer);
     if (sourceAccountType != PUBLIC_KEY_TYPE_ED25519) {
