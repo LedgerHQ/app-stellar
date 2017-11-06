@@ -24,6 +24,7 @@
 
 static const uint8_t PUBLIC_KEY_TYPE_ED25519 = 0;
 static const uint8_t OPERATION_TYPE_PAYMENT = 1;
+static const uint8_t MEMO_TEXT_MAX_SIZE = 28;
 
 uint32_t readUInt32Block(uint8_t *buffer) {
     return buffer[3] + (buffer[2] << 8) + (buffer[1] <<  16) + (buffer[0] << 24);
@@ -42,6 +43,15 @@ uint8_t numBytes(uint8_t size) {
       return size;
    }
    return size + 4 - remainder;
+}
+
+void checkPadding(uint8_t *buffer, uint8_t dataLength, uint8_t totalLength) {
+    uint8_t i;
+    for (i = 0; i < totalLength - dataLength; i++) {
+        if (buffer[dataLength + i] != 0x00) {
+             THROW(0x6c2e);
+        }
+    }
 }
 
 uint8_t skipTimeBounds(uint8_t *buffer) {
@@ -65,9 +75,13 @@ uint8_t parseMemo(uint8_t *buffer, txContent_t *txContent) {
             return 4 + 8; // type + value
         case MEMO_TYPE_TEXT: {
             uint8_t size = readUInt32Block(buffer);
+            if (size > MEMO_TEXT_MAX_SIZE) {
+                THROW(0x6c2f);
+            }
             buffer += 4;
             memcpy(txContent->memo, buffer, size);
             txContent->memo[size] = '\0';
+            checkPadding(buffer, size, numBytes(size)); // security check
             return 4 + 4 + numBytes(size); // type + size + text
         }
         case MEMO_TYPE_HASH:
