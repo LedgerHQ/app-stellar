@@ -55,13 +55,13 @@ void public_key_to_address(uint8_t *in, char *out) {
 
 void print_summary(char *in, char *out) {
     size_t len = strlen(in);
-    if (strlen(in) > 12) {
-        memcpy(out, in, 5);
-        out[5] = '.';
-        out[6] = '.';
+    if (strlen(in) > 15) {
+        memcpy(out, in, 7);
         out[7] = '.';
-        memcpy(out + 8, in + len - 4, 4);
-        out[12] = '\0';
+        out[8] = '.';
+        out[9] = '.';
+        memcpy(out + 10, in + len - 5, 5);
+        out[15] = '\0';
     } else {
         memcpy(out, in, len);
     }

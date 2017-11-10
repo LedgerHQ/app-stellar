@@ -37,7 +37,7 @@ void test_print_id_memo(uint64_t id, char* expected) {
 }
 
 void test_print_summary(char *msg, char *expected) {
-    char summery[13];
+    char summery[16];
     print_summary(msg, summery);
     if (strcmp(summery, expected) != 0) {
         printf("test_summerize_message failed. Expected: %s; Actual: %s\n", expected, summery);
@@ -64,8 +64,8 @@ int main(int argc, char *argv[]) {
     test_print_id_memo(12, "12");
     test_print_id_memo(100, "100");
 
-    test_print_summary("stellar lumens", "stell...mens");
-    test_print_summary("GBGBTCCP7WG2E5XFYLQFJP2DYOQZPCCDCHK62K6TZD4BHMNYI5WSXESH", "GBGBT...XESH");
+    test_print_summary("sending starlight", "sending...light");
+    test_print_summary("GBGBTCCP7WG2E5XFYLQFJP2DYOQZPCCDCHK62K6TZD4BHMNYI5WSXESH", "GBGBTCC...SXESH");
 
     uint8_t hash[64];
     uint8_t i;

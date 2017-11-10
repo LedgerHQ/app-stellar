@@ -91,8 +91,8 @@ transactionContext_t txCtx;
 txContent_t txContent;
 
 volatile uint8_t fidoTransport;
-volatile char addressSummary[13]; // 5 + 3 + 4 + 1
-volatile char memoSummary[13]; // 5 + 3 + 4 + 1
+volatile char addressSummary[16]; // 7 + 3 + 5 + 1
+volatile char memoSummary[16]; // 7 + 3 + 5 + 1
 volatile char amount[35]; // 20 + 1 + 1 + 12 + 1
 volatile char fee[26]; // 20 + 1 + 1 + 3 + 1
 volatile char networkId[8];
@@ -796,6 +796,7 @@ void handleSignTx(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLeng
         THROW(0x9000);
     }
 
+    os_memset(&txContent, 0, sizeof(txContent));
     parseTxXdr(txCtx.rawTx, &txContent);
 
     // prepare for display
