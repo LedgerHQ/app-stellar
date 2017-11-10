@@ -36,3 +36,16 @@ The operation to retrieve the public key implements an optional keypair verifica
 
 There are two ways a transaction may be approved by the device. In the case of a simple payment transaction it can be sent to the device in its xdr representation. The app then parses the xdr and shows the payment details to the user for approval.
 Alternatively, if a transaction contains more than a single operation and/or contains different types of operations a different method must be used that takes only the transaction hash. In this case the details of the operation cannot be shown to the user. A warning is shown that no data is available instead. Only approve the transaction if you trust the companion application you are using on the host.
+
+## Troubleshooting
+
+#### TypeError: argument must be string or read-only buffer, not bytearray
+
+After installing a new development environment I ran into this issue while loading the app. It could be related to an incompatible python version. I got around it by editing hexLoader.py. It seems the icon sometimes causes the data type of data object to be converted from string to byte array. On line 148 change
+```python
+data += struct.pack('>B', len(icon)) + icon
+```  
+to 
+```python
+data += struct.pack('>B', len(icon)) + str(icon)
+```
