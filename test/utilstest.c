@@ -64,8 +64,8 @@ int main(int argc, char *argv[]) {
     test_print_id_memo(12, "12");
     test_print_id_memo(100, "100");
 
-    test_print_summary("sending starlight", "sending...light");
-    test_print_summary("GBGBTCCP7WG2E5XFYLQFJP2DYOQZPCCDCHK62K6TZD4BHMNYI5WSXESH", "GBGBTCC...SXESH");
+    test_print_summary("sending starlight", "sendin...light");
+    test_print_summary("GBGBTCCP7WG2E5XFYLQFJP2DYOQZPCCDCHK62K6TZD4BHMNYI5WSXESH", "GBGBTC...SXESH");
 
     uint8_t hash[64];
     uint8_t i;

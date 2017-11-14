@@ -91,10 +91,10 @@ transactionContext_t txCtx;
 txContent_t txContent;
 
 volatile uint8_t fidoTransport;
-volatile char addressSummary[16]; // 7 + 3 + 5 + 1
-volatile char memoSummary[16]; // 7 + 3 + 5 + 1
-volatile char amount[35]; // 20 + 1 + 1 + 12 + 1
-volatile char fee[26]; // 20 + 1 + 1 + 3 + 1
+volatile char addressSummary[15];
+volatile char memoSummary[15];
+volatile char amount[35];
+volatile char fee[26];
 volatile char networkId[8];
 volatile char hashSummary[16];
 
@@ -747,15 +747,7 @@ void handleGetPublicKey(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t da
 
 }
 
-void handleGetAppConfiguration(uint8_t p1, uint8_t p2, uint8_t *workBuffer,
-                               uint16_t dataLength,
-                               volatile unsigned int *flags,
-                               volatile unsigned int *tx) {
-    UNUSED(p1);
-    UNUSED(p2);
-    UNUSED(workBuffer);
-    UNUSED(dataLength);
-    UNUSED(flags);
+void handleGetAppConfiguration(volatile unsigned int *tx) {
     G_io_apdu_buffer[0] = 0x00;
     G_io_apdu_buffer[1] = LEDGER_MAJOR_VERSION;
     G_io_apdu_buffer[2] = LEDGER_MINOR_VERSION;
@@ -873,10 +865,7 @@ void handleApdu(volatile unsigned int *flags, volatile unsigned int *tx) {
                 break;
 
             case INS_GET_APP_CONFIGURATION:
-                handleGetAppConfiguration(
-                    G_io_apdu_buffer[OFFSET_P1], G_io_apdu_buffer[OFFSET_P2],
-                    G_io_apdu_buffer + OFFSET_CDATA,
-                    G_io_apdu_buffer[OFFSET_LC], flags, tx);
+                handleGetAppConfiguration(tx);
                 break;
 
             default:
