@@ -30,11 +30,11 @@ typedef struct txContent_t {
     uint8_t operationType;
     char destination[57];
     uint64_t amount;
-    char assetCode[13];
+    char asset[13];
     uint64_t trustLimit;
-    char assetCodeBuying[13];
-    char assetCodeSelling[13];
-    float price;
+    char buying[13];
+    char selling[13];
+    uint64_t price;
     uint64_t offerId;
 } txContent_t;
 

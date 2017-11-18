@@ -97,27 +97,29 @@ uint8_t parseAsset(uint8_t *buffer, txContent_t *txContent) {
     buffer += 4;
     switch (assetType) {
         case ASSET_TYPE_NATIVE: {
-            strncpy(txContent->assetCode, "XLM", 3);
-            txContent->assetCode[4] = '\0';
+            strncpy(txContent->asset, "XLM", 3);
+            txContent->asset[4] = '\0';
             return 4; // type
         }
         case ASSET_TYPE_CREDIT_ALPHANUM4: {
-            memcpy(txContent->assetCode, buffer, 4);
+            memcpy(txContent->asset, buffer, 4);
             buffer += 4;
             uint32_t sourceAccountType = readUInt32Block(buffer);
             if (sourceAccountType != PUBLIC_KEY_TYPE_ED25519) {
                 THROW(0x6c23);
             }
+            buffer += 4;
             return 4 + 4 + 36; // type + code4 + accountId
         }
         case ASSET_TYPE_CREDIT_ALPHANUM12: {
-            memcpy(txContent->assetCode, buffer, 12);
-            txContent->assetCode[12] = '\0';
+            memcpy(txContent->asset, buffer, 12);
+            txContent->asset[12] = '\0';
             buffer += 12;
             uint32_t sourceAccountType = readUInt32Block(buffer);
             if (sourceAccountType != PUBLIC_KEY_TYPE_ED25519) {
                 THROW(0x6c22);
             }
+            buffer += 4;
             return 4 + 12 + 36; // type + code12 + accountId
         }
         default:
@@ -135,18 +137,18 @@ void parsePaymentOpXdr(uint8_t *buffer, txContent_t *txContent) {
     PRINTF("destination: %s\n", txContent->destination);
     buffer += 8*4;
     buffer += parseAsset(buffer, txContent);
-    PRINTF("asset: %s\n", txContent->assetCode);
+    PRINTF("asset: %s\n", txContent->asset);
     txContent->amount = readUInt64Block(buffer);
     PRINTF("amount: %ld\n", (long)txContent->amount);
 }
 
 uint8_t parseManageOfferOpXdr(uint8_t *buffer, txContent_t *txContent) {
     buffer += parseAsset(buffer, txContent);
-    memcpy(txContent->assetCodeBuying, txContent->assetCode, 13);
-    PRINTF("buying: %s\n", txContent->assetCodeBuying);
+    memcpy(txContent->buying, txContent->asset, 13);
+    PRINTF("buying: %s\n", txContent->buying);
     buffer += parseAsset(buffer, txContent);
-    memcpy(txContent->assetCodeSelling, txContent->assetCode, 13);
-    PRINTF("selling: %s\n", txContent->assetCodeSelling);
+    memcpy(txContent->selling, txContent->asset, 13);
+    PRINTF("selling: %s\n", txContent->selling);
     txContent->amount = readUInt64Block(buffer);
     PRINTF("amount: %ld\n", (long)txContent->amount);
     buffer += 8;
@@ -154,6 +156,7 @@ uint8_t parseManageOfferOpXdr(uint8_t *buffer, txContent_t *txContent) {
     buffer += 4;
     uint32_t denominator = readUInt32Block(buffer);
     buffer += 4;
+    txContent->price = (numerator * 10000000) / denominator;
 
     txContent->offerId = readUInt64Block(buffer);
     if (txContent->offerId == 0) {
@@ -167,7 +170,7 @@ uint8_t parseManageOfferOpXdr(uint8_t *buffer, txContent_t *txContent) {
 
 uint8_t parseChangeTrustOpXdr(uint8_t *buffer, txContent_t *txContent) {
     buffer += parseAsset(buffer, txContent);
-    PRINTF("asset: %s\n", txContent->assetCode);
+    PRINTF("asset: %s\n", txContent->asset);
     txContent->trustLimit = readUInt64Block(buffer);
     PRINTF("trustLimit: %ld\n", (long)txContent->trustLimit);
     if (txContent->trustLimit == 0) {

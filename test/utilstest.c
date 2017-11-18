@@ -28,9 +28,9 @@ void test_print_amount(uint64_t amount, char *expected) {
     }
 }
 
-void test_print_id_memo(uint64_t id, char* expected) {
+void test_print_id(uint64_t id, char* expected) {
     char printed[24];
-    print_id_memo(id, printed, 22);
+    print_id(id, printed, 22);
     if (strcmp(printed, expected) != 0) {
         printf("test_print_id_memo failed. Expected: %s; Actual: %s\n", expected, printed);
     }
@@ -60,9 +60,9 @@ int main(int argc, char *argv[]) {
     test_print_amount(100000001, "10.0000001 XLM");
     test_print_amount(100000001000000, "10000000.1 XLM");
 
-    test_print_id_memo(1, "1");
-    test_print_id_memo(12, "12");
-    test_print_id_memo(100, "100");
+    test_print_id(1, "1");
+    test_print_id(12, "12");
+    test_print_id(100, "100");
 
     test_print_summary("sending starlight", "sendin...light");
     test_print_summary("GBGBTCCP7WG2E5XFYLQFJP2DYOQZPCCDCHK62K6TZD4BHMNYI5WSXESH", "GBGBTC...SXESH");

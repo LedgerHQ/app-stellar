@@ -204,23 +204,24 @@ const ux_menu_entry_t menu_main[] = {
     {NULL, os_sched_exit, 0, &C_icon_dashboard, "Quit app", NULL, 50, 29},
     UX_MENU_END};
 
-// maps steps to ui elements
-const uint8_t ui_elements_map[][8] = {
-  { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x00 }, // payment
-  { 0x01, 0x02, 0x10, 0x11, 0x03, 0x05, 0x06, 0x07 }, // create offer
-  { 0x01, 0x02, 0x12, 0x05, 0x06, 0x07, 0x00, 0x00 }, // delete offer
-  { 0x01, 0x02, 0x10, 0x11, 0x03, 0x05, 0x06, 0x07 }, // change offer
-  { 0x01, 0x02, 0x08, 0x09, 0x05, 0x06, 0x07, 0x00 }, // add trust
-  { 0x01, 0x02, 0x08, 0x05, 0x06, 0x07, 0x00, 0x00 }  // remove trust
+// component id steps for different types of operations
+const uint8_t ui_elements_map[][9] = {
+  { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x00, 0x00 }, // payment
+  { 0x01, 0x02, 0x10, 0x11, 0x03, 0x13, 0x05, 0x06, 0x07 }, // create offer
+  { 0x01, 0x02, 0x12, 0x05, 0x06, 0x07, 0x00, 0x00, 0x00 }, // delete offer
+  { 0x01, 0x02, 0x10, 0x11, 0x03, 0x13, 0x05, 0x06, 0x07 }, // change offer
+  { 0x01, 0x02, 0x08, 0x09, 0x05, 0x06, 0x07, 0x00, 0x00 }, // add trust
+  { 0x01, 0x02, 0x08, 0x05, 0x06, 0x07, 0x00, 0x00, 0x00 }  // remove trust
 };
 
+// number of steps involved in showing details for different types of operations
 const uint8_t ui_elements_step_count[] = {
-  7,
-  8,
-  6,
-  8,
-  7,
-  6
+  7, // payment
+  9, // create offer
+  6, // delete offer
+  9, // change offer
+  7, // add trust
+  6  // remove trust
 };
 
 unsigned int ui_approval_prepro(const bagl_element_t *element) {
@@ -500,6 +501,25 @@ const bagl_element_t ui_approve_tx_nanos[] = {
     {{BAGL_LABELINE, 0x12, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
      (char *) offerId,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
+    {{BAGL_LABELINE, 0x13, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     "Price",
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+    {{BAGL_LABELINE, 0x13, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
+     (char *) price,
      0,
      0,
      0,
@@ -919,14 +939,14 @@ void handleSignTx(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLeng
     os_memset((char *)offerId, 0, sizeof(offerId));
     print_summary(txContent.destination, (char *)addressSummary);
     print_summary(txContent.memo, (char *)memoSummary);
-    print_summary(txContent.assetCode, (char *)trustAsset);
-    print_summary(txContent.assetCodeBuying, (char *)buyAsset);
-    print_summary(txContent.assetCodeSelling, (char *)sellAsset);
+    print_summary(txContent.asset, (char *)trustAsset);
+    print_summary(txContent.buying, (char *)buyAsset);
+    print_summary(txContent.selling, (char *)sellAsset);
     print_id(txContent.offerId, (char *)offerId, 22);
     print_amount(txContent.fee, "XLM", (char *)fee, 22);
-    print_amount(txContent.amount, txContent.assetCode, (char *)amount, 22);
+    print_amount(txContent.amount, txContent.asset, (char *)amount, 22);
     print_amount(txContent.trustLimit, NULL, (char *)trustLimit, 22);
-    print_amount(txContent.price, txContent.assetCodeSelling, (char *)price, 22);
+    print_amount(txContent.price, txContent.selling, (char *)price, 22);
     print_network_id(txContent.networkId, (char *)networkId);
     print_operation_type(txContent.operationType, (char *)operationType);
 
