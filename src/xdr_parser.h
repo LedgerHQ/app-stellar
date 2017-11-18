@@ -24,12 +24,18 @@
 typedef struct txContent_t {
     uint8_t networkId[32];
     char source[57];
-    char destination[57];
-    uint64_t amount;
     uint32_t fee;
-    char assetCode[13];
     uint8_t memoType;
     char memo[29];
+    uint8_t operationType;
+    char destination[57];
+    uint64_t amount;
+    char assetCode[13];
+    uint64_t trustLimit;
+    char assetCodeBuying[13];
+    char assetCodeSelling[13];
+    float price;
+    uint64_t offerId;
 } txContent_t;
 
 void parseTxXdr(uint8_t *buffer, txContent_t *txContent);

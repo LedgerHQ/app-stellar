@@ -23,7 +23,6 @@
 #include "xdr_parser.h"
 
 static const uint8_t PUBLIC_KEY_TYPE_ED25519 = 0;
-static const uint8_t OPERATION_TYPE_PAYMENT = 1;
 static const uint8_t MEMO_TEXT_MAX_SIZE = 28;
 
 uint32_t readUInt32Block(uint8_t *buffer) {
@@ -71,7 +70,7 @@ uint8_t parseMemo(uint8_t *buffer, txContent_t *txContent) {
             memcpy(txContent->memo, "[none]", 7);
             return 4;
         case MEMO_TYPE_ID:
-            print_id_memo(readUInt64Block(buffer), txContent->memo, 22);
+            print_id(readUInt64Block(buffer), txContent->memo, 22);
             return 4 + 8; // type + value
         case MEMO_TYPE_TEXT: {
             uint8_t size = readUInt32Block(buffer);
@@ -141,6 +140,43 @@ void parsePaymentOpXdr(uint8_t *buffer, txContent_t *txContent) {
     PRINTF("amount: %ld\n", (long)txContent->amount);
 }
 
+uint8_t parseManageOfferOpXdr(uint8_t *buffer, txContent_t *txContent) {
+    buffer += parseAsset(buffer, txContent);
+    memcpy(txContent->assetCodeBuying, txContent->assetCode, 13);
+    PRINTF("buying: %s\n", txContent->assetCodeBuying);
+    buffer += parseAsset(buffer, txContent);
+    memcpy(txContent->assetCodeSelling, txContent->assetCode, 13);
+    PRINTF("selling: %s\n", txContent->assetCodeSelling);
+    txContent->amount = readUInt64Block(buffer);
+    PRINTF("amount: %ld\n", (long)txContent->amount);
+    buffer += 8;
+    uint32_t numerator = readUInt32Block(buffer);
+    buffer += 4;
+    uint32_t denominator = readUInt32Block(buffer);
+    buffer += 4;
+
+    txContent->offerId = readUInt64Block(buffer);
+    if (txContent->offerId == 0) {
+        return OPERATION_TYPE_CREATE_OFFER;
+    } else if (txContent->amount == 0) {
+        return OPERATION_TYPE_DELETE_OFFER;
+    } else {
+        return OPERATION_TYPE_CHANGE_OFFER;
+    }
+}
+
+uint8_t parseChangeTrustOpXdr(uint8_t *buffer, txContent_t *txContent) {
+    buffer += parseAsset(buffer, txContent);
+    PRINTF("asset: %s\n", txContent->assetCode);
+    txContent->trustLimit = readUInt64Block(buffer);
+    PRINTF("trustLimit: %ld\n", (long)txContent->trustLimit);
+    if (txContent->trustLimit == 0) {
+        return OPERATION_TYPE_REMOVE_TRUST;
+    } else {
+        return OPERATION_TYPE_ADD_TRUST;
+    }
+}
+
 void parseOpXdr(uint8_t *buffer, txContent_t *txContent) {
     uint32_t hasAccountId = readUInt32Block(buffer);
     buffer += 4;
@@ -155,11 +191,23 @@ void parseOpXdr(uint8_t *buffer, txContent_t *txContent) {
         buffer += 8*4;
     }
     uint32_t operationType = readUInt32Block(buffer);
-    if (operationType != OPERATION_TYPE_PAYMENT) {
-        THROW(0x6c24);
-    }
     buffer += 4;
-    parsePaymentOpXdr(buffer, txContent);
+    switch (operationType) {
+        case XDR_OPERATION_TYPE_PAYMENT: {
+            txContent->operationType = OPERATION_TYPE_PAYMENT;
+            parsePaymentOpXdr(buffer, txContent);
+            break;
+        }
+        case XDR_OPERATION_TYPE_MANAGE_OFFER: {
+            txContent->operationType = parseManageOfferOpXdr(buffer, txContent);
+            break;
+        }
+        case XDR_OPERATION_TYPE_CHANGE_TRUST: {
+            txContent->operationType = parseChangeTrustOpXdr(buffer, txContent);
+            break;
+        }
+        default: THROW(0x6c24);
+    }
 }
 
 void parseOpsXdr(uint8_t *buffer, txContent_t *txContent) {
@@ -184,7 +232,7 @@ void parseTxXdr(uint8_t *buffer, txContent_t *txContent) {
     PRINTF("transaction source: %s\n", txContent->source);
     buffer += 8*4;
     txContent->fee = readUInt32Block(buffer);
-    PRINTF("amount: %d\n", txContent->fee);
+    PRINTF("fee: %d\n", txContent->fee);
     buffer += 4;
     buffer += 8; // skip seqNum
     buffer += skipTimeBounds(buffer);
