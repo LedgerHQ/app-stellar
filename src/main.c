@@ -792,6 +792,12 @@ unsigned short io_exchange_al(unsigned char channel, unsigned short tx_len) {
     return 0;
 }
 
+bool isManagerOfferOperation(uint8_t operationType) {
+    return operationType == OPERATION_TYPE_CHANGE_OFFER
+        || operationType == OPERATION_TYPE_DELETE_OFFER
+        || operationType == OPERATION_TYPE_CREATE_OFFER;
+}
+
 uint32_t set_result_get_publicKey() {
     uint32_t tx = 0;
 
@@ -944,9 +950,10 @@ void handleSignTx(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLeng
     print_summary(txContent.selling, (char *)sellAsset);
     print_id(txContent.offerId, (char *)offerId, 22);
     print_amount(txContent.fee, "XLM", (char *)fee, 22);
-    print_amount(txContent.amount, txContent.asset, (char *)amount, 22);
+    char * asset = (isManagerOfferOperation(txContent.operationType)) ? txContent.selling : txContent.asset;
+    print_amount(txContent.amount, asset, (char *)amount, 22);
     print_amount(txContent.trustLimit, NULL, (char *)trustLimit, 22);
-    print_amount(txContent.price, txContent.selling, (char *)price, 22);
+    print_amount(txContent.price, txContent.buying, (char *)price, 22);
     print_network_id(txContent.networkId, (char *)networkId);
     print_operation_type(txContent.operationType, (char *)operationType);
 

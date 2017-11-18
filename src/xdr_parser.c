@@ -144,11 +144,11 @@ void parsePaymentOpXdr(uint8_t *buffer, txContent_t *txContent) {
 
 uint8_t parseManageOfferOpXdr(uint8_t *buffer, txContent_t *txContent) {
     buffer += parseAsset(buffer, txContent);
-    memcpy(txContent->buying, txContent->asset, 13);
-    PRINTF("buying: %s\n", txContent->buying);
-    buffer += parseAsset(buffer, txContent);
     memcpy(txContent->selling, txContent->asset, 13);
     PRINTF("selling: %s\n", txContent->selling);
+    buffer += parseAsset(buffer, txContent);
+    memcpy(txContent->buying, txContent->asset, 13);
+    PRINTF("buying: %s\n", txContent->buying);
     txContent->amount = readUInt64Block(buffer);
     PRINTF("amount: %ld\n", (long)txContent->amount);
     buffer += 8;
