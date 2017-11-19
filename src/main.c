@@ -206,6 +206,7 @@ const ux_menu_entry_t menu_main[] = {
 
 // component id steps for different types of operations
 const uint8_t ui_elements_map[][9] = {
+  { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x00, 0x00 }, // create account
   { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x00, 0x00 }, // payment
   { 0x01, 0x02, 0x10, 0x11, 0x03, 0x13, 0x05, 0x06, 0x07 }, // create offer
   { 0x01, 0x02, 0x12, 0x05, 0x06, 0x07, 0x00, 0x00, 0x00 }, // delete offer
@@ -216,6 +217,7 @@ const uint8_t ui_elements_map[][9] = {
 
 // number of steps involved in showing details for different types of operations
 const uint8_t ui_elements_step_count[] = {
+  7, // create account
   7, // payment
   9, // create offer
   6, // delete offer

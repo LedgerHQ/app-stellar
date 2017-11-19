@@ -97,7 +97,7 @@ uint8_t parseAsset(uint8_t *buffer, txContent_t *txContent) {
     buffer += 4;
     switch (assetType) {
         case ASSET_TYPE_NATIVE: {
-            strncpy(txContent->asset, "XLM", 3);
+            strncpy(txContent->asset, "XLM", 4);
             txContent->asset[4] = '\0';
             return 4; // type
         }
@@ -125,6 +125,20 @@ uint8_t parseAsset(uint8_t *buffer, txContent_t *txContent) {
         default:
             THROW(0x6c28); // unknown memo type
     }
+}
+
+void parseCreateAccountOpXdr(uint8_t *buffer, txContent_t *txContent) {
+    uint32_t destinationAccountType = readUInt32Block(buffer);
+    if (destinationAccountType != PUBLIC_KEY_TYPE_ED25519) {
+        THROW(0x6c27);
+    }
+    buffer += 4;
+    public_key_to_address(buffer, txContent->destination);
+    PRINTF("destination: %s\n", txContent->destination);
+    buffer += 8*4;
+    txContent->amount = readUInt64Block(buffer);
+    PRINTF("amount: %ld\n", (long)txContent->amount);
+    strncpy(txContent->asset, "XLM", 4);
 }
 
 void parsePaymentOpXdr(uint8_t *buffer, txContent_t *txContent) {
@@ -196,6 +210,11 @@ void parseOpXdr(uint8_t *buffer, txContent_t *txContent) {
     uint32_t operationType = readUInt32Block(buffer);
     buffer += 4;
     switch (operationType) {
+        case XDR_OPERATION_TYPE_CREATE_ACCOUNT: {
+            txContent->operationType = OPERATION_TYPE_CREATE_ACCOUNT;
+            parseCreateAccountOpXdr(buffer, txContent);
+            break;
+        }
         case XDR_OPERATION_TYPE_PAYMENT: {
             txContent->operationType = OPERATION_TYPE_PAYMENT;
             parsePaymentOpXdr(buffer, txContent);

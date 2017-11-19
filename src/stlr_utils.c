@@ -144,6 +144,10 @@ void print_network_id(uint8_t *in, char *out) {
 
 void print_operation_type(uint8_t type, char *out) {
     switch (type) {
+        case OPERATION_TYPE_CREATE_ACCOUNT: {
+            strncpy(out, "Create Acc", 11);
+            break;
+        }
         case OPERATION_TYPE_PAYMENT: {
             strncpy(out, "Payment", 8);
             break;
