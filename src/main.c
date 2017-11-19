@@ -224,10 +224,21 @@ const uint8_t ui_elements_step_count[] = {
   6  // remove trust
 };
 
-unsigned int ui_approval_prepro(const bagl_element_t *element) {
+unsigned int ui_tx_approval_prepro(const bagl_element_t *element) {
     unsigned int display = 1;
     if (element->component.userid > 0) {
         display = (ui_elements_map[txContent.operationType][ux_step] == element->component.userid);
+        if (display) {
+            UX_CALLBACK_SET_INTERVAL(2000);
+        }
+    }
+    return display;
+}
+
+unsigned int ui_tx_hash_approval_prepro(const bagl_element_t *element) {
+    unsigned int display = 1;
+    if (element->component.userid > 0) {
+        display = (ux_step == element->component.userid - 1);
         if (display) {
             UX_CALLBACK_SET_INTERVAL(2000);
         }
@@ -962,7 +973,7 @@ void handleSignTx(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLeng
 
     ux_step = 0;
     ux_step_count = ui_elements_step_count[txContent.operationType];
-    UX_DISPLAY(ui_approve_tx_nanos, ui_approval_prepro);
+    UX_DISPLAY(ui_approve_tx_nanos, ui_tx_approval_prepro);
 
     *flags |= IO_ASYNCH_REPLY;
 }
@@ -983,7 +994,7 @@ void handleSignTxHash(uint8_t *dataBuffer, uint16_t dataLength, volatile unsigne
 
     ux_step = 0;
     ux_step_count = 3;
-    UX_DISPLAY(ui_approve_hash_nanos, ui_approval_prepro);
+    UX_DISPLAY(ui_approve_hash_nanos, ui_tx_hash_approval_prepro);
 
     *flags |= IO_ASYNCH_REPLY;
 }
