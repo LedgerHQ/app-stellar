@@ -101,14 +101,18 @@ void print_amount(uint64_t amount, char *asset, char *out, uint8_t len) {
     // strip trailing .
     if (out[j-1] == '.') j -= 1;
 
-    // qualify amount
-    out[j++] = ' ';
-    strncpy(out + j, asset, strlen(asset));
-    out[j+strlen(asset)] = '\0';
+    if (asset) {
+        // qualify amount
+        out[j++] = ' ';
+        strncpy(out + j, asset, strlen(asset));
+        out[j+strlen(asset)] = '\0';
+    } else {
+        out[j] = '\0';
+    }
 
 }
 
-void print_id_memo(uint64_t id, char *out, uint8_t len) {
+void print_id(uint64_t id, char *out, uint8_t len) {
     char buffer[len];
     uint64_t dVal = id;
     int i, j;
@@ -135,6 +139,42 @@ void print_network_id(uint8_t *in, char *out) {
         strncpy(out, "Test", 5);
     } else {
         strncpy(out, "Unknown", 8);
+    }
+}
+
+void print_operation_type(uint8_t type, char *out) {
+    switch (type) {
+        case OPERATION_TYPE_CREATE_ACCOUNT: {
+            strncpy(out, "Create Acc", 11);
+            break;
+        }
+        case OPERATION_TYPE_PAYMENT: {
+            strncpy(out, "Payment", 8);
+            break;
+        }
+        case OPERATION_TYPE_CREATE_OFFER: {
+            strncpy(out, "Create Offer", 13);
+            break;
+        }
+        case OPERATION_TYPE_DELETE_OFFER: {
+            strncpy(out, "Delete Offer", 13);
+            break;
+        }
+        case OPERATION_TYPE_CHANGE_OFFER: {
+            strncpy(out, "Change Offer", 13);
+            break;
+        }
+        case OPERATION_TYPE_ADD_TRUST: {
+            strncpy(out, "Add Trust", 10);
+            break;
+        }
+        case OPERATION_TYPE_REMOVE_TRUST: {
+            strncpy(out, "Remove Trust", 13);
+            break;
+        }
+        default: {
+            strncpy(out, "Unknown", 8);
+        }
     }
 }
 

@@ -40,16 +40,32 @@
 #define MEMO_TYPE_HASH 3
 #define MEMO_TYPE_RETURN 4
 
+#define XDR_OPERATION_TYPE_CREATE_ACCOUNT 0
+#define XDR_OPERATION_TYPE_PAYMENT 1
+#define XDR_OPERATION_TYPE_MANAGE_OFFER 3
+#define XDR_OPERATION_TYPE_CHANGE_TRUST 6
+
+#define OPERATION_TYPE_CREATE_ACCOUNT 0
+#define OPERATION_TYPE_PAYMENT 1
+#define OPERATION_TYPE_CREATE_OFFER 2
+#define OPERATION_TYPE_DELETE_OFFER 3
+#define OPERATION_TYPE_CHANGE_OFFER 4
+#define OPERATION_TYPE_ADD_TRUST 5
+#define OPERATION_TYPE_REMOVE_TRUST 6
+
 void public_key_to_address(uint8_t *in, char *out);
 
 void print_summary(char *in, char *out);
 
 void print_amount(uint64_t amount, char *asset, char *out, uint8_t len);
 
-void print_id_memo(uint64_t id, char *out, uint8_t len);
+void print_id(uint64_t id, char *out, uint8_t len);
 
 void print_network_id(uint8_t *in, char *out);
 
+void print_operation_type(uint8_t type, char *out);
+
 void print_hash_summary(uint8_t *in, char *out);
+
 
 #endif // _STELLAR_UTILS_H_

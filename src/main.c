@@ -96,6 +96,13 @@ volatile char memoSummary[15];
 volatile char amount[35];
 volatile char fee[26];
 volatile char networkId[8];
+volatile char operationType[14];
+volatile char trustAsset[13];
+volatile char trustLimit[35];
+volatile char buyAsset[13];
+volatile char sellAsset[13];
+volatile char price[22];
+volatile char offerId[22];
 volatile char hashSummary[16];
 
 bagl_element_t tmp_element;
@@ -197,20 +204,44 @@ const ux_menu_entry_t menu_main[] = {
     {NULL, os_sched_exit, 0, &C_icon_dashboard, "Quit app", NULL, 50, 29},
     UX_MENU_END};
 
-unsigned int ui_approval_prepro(const bagl_element_t *element) {
+// component id steps for different types of operations
+const uint8_t ui_elements_map[][9] = {
+  { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x00, 0x00 }, // create account
+  { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x00, 0x00 }, // payment
+  { 0x01, 0x02, 0x10, 0x11, 0x03, 0x13, 0x05, 0x06, 0x07 }, // create offer
+  { 0x01, 0x02, 0x12, 0x05, 0x06, 0x07, 0x00, 0x00, 0x00 }, // delete offer
+  { 0x01, 0x02, 0x10, 0x11, 0x03, 0x13, 0x05, 0x06, 0x07 }, // change offer
+  { 0x01, 0x02, 0x08, 0x09, 0x05, 0x06, 0x07, 0x00, 0x00 }, // add trust
+  { 0x01, 0x02, 0x08, 0x05, 0x06, 0x07, 0x00, 0x00, 0x00 }  // remove trust
+};
+
+// number of steps involved in showing details for different types of operations
+const uint8_t ui_elements_step_count[] = {
+  7, // create account
+  7, // payment
+  9, // create offer
+  6, // delete offer
+  9, // change offer
+  7, // add trust
+  6  // remove trust
+};
+
+unsigned int ui_tx_approval_prepro(const bagl_element_t *element) {
+    unsigned int display = 1;
+    if (element->component.userid > 0) {
+        display = (ui_elements_map[txContent.operationType][ux_step] == element->component.userid);
+        if (display) {
+            UX_CALLBACK_SET_INTERVAL(2000);
+        }
+    }
+    return display;
+}
+
+unsigned int ui_tx_hash_approval_prepro(const bagl_element_t *element) {
     unsigned int display = 1;
     if (element->component.userid > 0) {
         display = (ux_step == element->component.userid - 1);
         if (display) {
-//            switch (element->component.userid) {
-//            case 1:
-//                UX_CALLBACK_SET_INTERVAL(2000);
-//                break;
-//            case 2:
-//                UX_CALLBACK_SET_INTERVAL(MAX(
-//                    3000, 1000 + bagl_label_roundtrip_duration_ms(element, 7)));
-//                break;
-//            }
             UX_CALLBACK_SET_INTERVAL(2000);
         }
     }
@@ -283,7 +314,7 @@ const bagl_element_t ui_approve_tx_nanos[] = {
 
     {{BAGL_LABELINE, 0x02, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "ATTENTION",
+     "Type",
      0,
      0,
      0,
@@ -292,7 +323,7 @@ const bagl_element_t ui_approve_tx_nanos[] = {
      NULL},
     {{BAGL_LABELINE, 0x02, 23, 26, 82, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Data present",
+     (char*) operationType,
      0,
      0,
      0,
@@ -394,6 +425,121 @@ const bagl_element_t ui_approve_tx_nanos[] = {
      NULL,
      NULL,
      NULL},
+
+    {{BAGL_LABELINE, 0x08, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     "Asset",
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+    {{BAGL_LABELINE, 0x08, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
+     (char *) trustAsset,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
+    {{BAGL_LABELINE, 0x09, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     "Limit",
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+    {{BAGL_LABELINE, 0x09, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
+     (char *) trustLimit,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
+    {{BAGL_LABELINE, 0x10, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     "Buy",
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+    {{BAGL_LABELINE, 0x10, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
+     (char *) buyAsset,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
+    {{BAGL_LABELINE, 0x11, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     "Sell",
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+    {{BAGL_LABELINE, 0x11, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
+     (char *) sellAsset,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
+    {{BAGL_LABELINE, 0x12, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     "Offer Id",
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+    {{BAGL_LABELINE, 0x12, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
+     (char *) offerId,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
+    {{BAGL_LABELINE, 0x13, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     "Price",
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+    {{BAGL_LABELINE, 0x13, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
+     (char *) price,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
 };
 
 const bagl_element_t ui_approve_hash_nanos[] = {
@@ -659,6 +805,12 @@ unsigned short io_exchange_al(unsigned char channel, unsigned short tx_len) {
     return 0;
 }
 
+bool isManagerOfferOperation(uint8_t operationType) {
+    return operationType == OPERATION_TYPE_CHANGE_OFFER
+        || operationType == OPERATION_TYPE_DELETE_OFFER
+        || operationType == OPERATION_TYPE_CREATE_OFFER;
+}
+
 uint32_t set_result_get_publicKey() {
     uint32_t tx = 0;
 
@@ -797,18 +949,33 @@ void handleSignTx(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLeng
     os_memset((char *)fee, 0, sizeof(fee));
     os_memset((char *)amount, 0, sizeof(amount));
     os_memset((char *)networkId, 0, sizeof(networkId));
+    os_memset((char *)trustAsset, 0, sizeof(trustAsset));
+    os_memset((char *)trustLimit, 0, sizeof(trustLimit));
+    os_memset((char *)operationType, 0, sizeof(operationType));
+    os_memset((char *)buyAsset, 0, sizeof(buyAsset));
+    os_memset((char *)sellAsset, 0, sizeof(sellAsset));
+    os_memset((char *)price, 0, sizeof(price));
+    os_memset((char *)offerId, 0, sizeof(offerId));
     print_summary(txContent.destination, (char *)addressSummary);
     print_summary(txContent.memo, (char *)memoSummary);
+    print_summary(txContent.asset, (char *)trustAsset);
+    print_summary(txContent.buying, (char *)buyAsset);
+    print_summary(txContent.selling, (char *)sellAsset);
+    print_id(txContent.offerId, (char *)offerId, 22);
     print_amount(txContent.fee, "XLM", (char *)fee, 22);
-    print_amount(txContent.amount, txContent.assetCode, (char *)amount, 22);
+    char * asset = (isManagerOfferOperation(txContent.operationType)) ? txContent.selling : txContent.asset;
+    print_amount(txContent.amount, asset, (char *)amount, 22);
+    print_amount(txContent.trustLimit, NULL, (char *)trustLimit, 22);
+    print_amount(txContent.price, txContent.buying, (char *)price, 22);
     print_network_id(txContent.networkId, (char *)networkId);
+    print_operation_type(txContent.operationType, (char *)operationType);
 
     // hash transaction
     cx_hash_sha256(txCtx.rawTx, txCtx.rawTxLength, txCtx.txHash);
 
     ux_step = 0;
-    ux_step_count = 7;
-    UX_DISPLAY(ui_approve_tx_nanos, ui_approval_prepro);
+    ux_step_count = ui_elements_step_count[txContent.operationType];
+    UX_DISPLAY(ui_approve_tx_nanos, ui_tx_approval_prepro);
 
     *flags |= IO_ASYNCH_REPLY;
 }
@@ -829,7 +996,7 @@ void handleSignTxHash(uint8_t *dataBuffer, uint16_t dataLength, volatile unsigne
 
     ux_step = 0;
     ux_step_count = 3;
-    UX_DISPLAY(ui_approve_hash_nanos, ui_approval_prepro);
+    UX_DISPLAY(ui_approve_hash_nanos, ui_tx_hash_approval_prepro);
 
     *flags |= IO_ASYNCH_REPLY;
 }
@@ -998,11 +1165,6 @@ unsigned char io_event(unsigned char channel) {
     case SEPROXYHAL_TAG_TICKER_EVENT:
         UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer, {
             if (UX_ALLOWED) {
-#if 0
-                if (skipWarning && (ux_step == 0)) {
-                    ux_step++;
-                }
-#endif
                 if (ux_step_count) {
                     // prepare next screen
                     ux_step = (ux_step + 1) % ux_step_count;
