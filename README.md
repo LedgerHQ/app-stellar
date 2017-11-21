@@ -4,13 +4,13 @@
 
 This is a wallet app for the [Ledger Nano S](https://www.ledgerwallet.com/products/ledger-nano-s) that makes it possible to store your [Stellar](https://www.stellar.org/)-based assets on that device.
 
-I am simultaneously developing a [Javascript library](https://github.com/lenondupe/stellar-ledger-api) to communicate with this app. There you will find some scripts with which to test this app.
+A companion [Javascript library](https://github.com/lenondupe/stellar-ledger-api) is available to communicate with this app. It also includes some scripts with which to test the app.
 
 ## Building and installing
 
 To build and install the app on your Nano Ledger S you must set up the Nano Ledger S build environment. Please follow the Getting Started instructions at the [Ledger Nano S github repository](https://github.com/LedgerHQ/ledger-nano-s).
 
-Alternatively, if you are on a Mac, you can set up the Vagrant Virtualbox Ledger environment maintained [here](https://github.com/fix/ledger-vagrant). This sets up an Ubuntu virtual machine with the Ledger build environment already set up. Note that at the time of this writing this seems to be the only way to build and install on a Mac. The native Ledger Nano S build environment is currently not working.
+Alternatively, you can set up the Vagrant Virtualbox Ledger environment maintained [here](https://github.com/fix/ledger-vagrant). This sets up an Ubuntu virtual machine with the Ledger build environment already set up. Note that if you are on a Mac, at the time of this writing this seems to be the only way to build and load the app.
 
 The command to compile and load the app onto the device is:
 
@@ -22,11 +22,11 @@ To remove the app from the device do:
 
 ## Testing
 
-The `./test` directory contains files for testing the xdr transanction parser. To build and execute the test run `./test.sh`.
+The `./test` directory contains files for testing the xdr transanction parser and some printing utilities. To build and execute the tests run `./test.sh`.
 
 ### XDR parsing
 
-When a transaction is to be signed it is sent to the device as an [XDR](https://tools.ietf.org/html/rfc1832) serialized binary object. To show the transaction details to the user on the device this binary object must be read. This is done by a purpose-built parser shipped with this app. The parser supports only simple payment transactions. Other types of transaction should be signed by sending the transaction hash.
+When a transaction is to be signed it is sent to the device as an [XDR](https://tools.ietf.org/html/rfc1832) serialized binary object. To show the transaction details to the user on the device this binary object must be read. This is done by a purpose-built parser shipped with this app. The parser currently supports single operation transactions where the operation is one of createAccount, payment, changeTrust, and managerOffer. Other types of transactions should be signed by sending the transaction hash.
 
 ## Key pair validation
 
@@ -34,8 +34,8 @@ The operation to retrieve the public key implements an optional keypair verifica
 
 ## Approving a transaction
 
-There are two ways a transaction may be approved by the device. In the case of a simple payment transaction it can be sent to the device in its xdr representation. The app then parses the xdr and shows the payment details to the user for approval.
-Alternatively, if a transaction contains more than a single operation and/or contains different types of operations a different method must be used that takes only the transaction hash. In this case the details of the operation cannot be shown to the user. A warning is shown that no data is available instead. Only approve the transaction if you trust the companion application you are using on the host.
+There are two ways a transaction may be approved by the device. In the case of a single payment, createAccount, managerOffer, or changeTrust operation the transaction can be sent to the device in its xdr representation. The app then parses the xdr and shows the transaction details on the device for approval.
+Alternatively, if a transaction contains more than a single operation and/or contains other types of operations than mentioned above a different method must be used that takes only the transaction hash. In this case the details of the operation cannot be shown to the user. A warning is shown that no data is available and you then a summary of the hash is shown. Only approve the transaction if you trust the companion application you are using on the host, because in this case you cannot be sure the host sent you the transaction you prepared there or has sent a different transaction to the device to sign.
 
 ## Troubleshooting
 
