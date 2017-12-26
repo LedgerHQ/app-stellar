@@ -166,6 +166,26 @@ void parsePathPaymentOpXdr(uint8_t *buffer, txContent_t *txContent) {
     // TODO
 }
 
+void parseSetOptionsOpXdr(uint8_t *buffer, txContent_t *txContent) {
+    // TODO
+}
+
+void parseAllowTrustOpXdr(uint8_t *buffer, txContent_t *txContent) {
+    // TODO
+}
+
+void parseAccountMergeOpXdr(uint8_t *buffer, txContent_t *txContent) {
+    // TODO
+}
+
+void parseInflationOpXdr(uint8_t *buffer, txContent_t *txContent) {
+    // TODO
+}
+
+void parseManageDataOpXdr(uint8_t *buffer, txContent_t *txContent) {
+    // TODO
+}
+
 uint8_t parseOfferOpXdr(uint8_t *buffer, txContent_t *txContent, uint32_t operationType) {
     char selling[13];
     buffer += parseAsset(buffer, selling);
@@ -245,14 +265,38 @@ void parseOpXdr(uint8_t *buffer, txContent_t *txContent) {
             txContent->operationType = parseOfferOpXdr(buffer, txContent, operationType);
             break;
         }
+        case XDR_OPERATION_TYPE_SET_OPTIONS: {
+            txContent->operationType = OPERATION_TYPE_SET_OPTIONS;
+            parseSetOptionsOpXdr(buffer, txContent);
+            break;
+        }
         case XDR_OPERATION_TYPE_CHANGE_TRUST: {
             txContent->operationType = parseChangeTrustOpXdr(buffer, txContent);
             break;
         }
-        case XDR_OPERATION_TYPE_ACCOUNT_MERGE: {
-
+        case XDR_OPERATION_TYPE_ALLOW_TRUST: {
+            txContent->operationType = OPERATION_TYPE_ALLOW_TRUST;
+            parseAllowTrustOpXdr(buffer, txContent);
+            break;
         }
-        default: THROW(0x6c24);
+        case XDR_OPERATION_TYPE_ACCOUNT_MERGE: {
+            txContent->operationType = OPERATION_TYPE_ACCOUNT_MERGE;
+            parseAccountMergeOpXdr(buffer, txContent);
+            break;
+        }
+        case XDR_OPERATION_TYPE_INFLATION: {
+            txContent->operationType = OPERATION_TYPE_INFLATION;
+            parseInflationOpXdr(buffer, txContent);
+            break;
+        }
+        case XDR_OPERATION_TYPE_MANAGE_DATA: {
+            txContent->operationType = OPERATION_TYPE_MANAGE_DATA;
+            parseManageDataOpXdr(buffer, txContent);
+            break;
+        }
+        default: {
+            txContent->operationType = OPERATION_TYPE_UNKNOWN;
+        }
     }
 }
 

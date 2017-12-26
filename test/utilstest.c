@@ -52,6 +52,14 @@ void test_print_hash(uint8_t *hash, char *expected) {
     }
 }
 
+void test_print_operation_type(uint8_t type, char *expected) {
+    char s[15];
+    print_operation_type(type, s);
+    if (strcmp(s, expected) != 0) {
+        printf("test_print_operation_type failed. Expected: %s; Actual: %s\n", expected, s);
+    }
+}
+
 int main(int argc, char *argv[]) {
 
     test_print_amount(1, "0.0000001 XLM");
@@ -73,6 +81,7 @@ int main(int argc, char *argv[]) {
         hash[i] = i;
     }
     test_print_hash(hash, "000102...3D3E3F");
+    test_print_operation_type(14, "Unknown");
     return 0;
 
 }
