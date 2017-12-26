@@ -145,7 +145,7 @@ void print_network_id(uint8_t *in, char *out) {
 void print_operation_type(uint8_t type, char *out) {
     switch (type) {
         case OPERATION_TYPE_CREATE_ACCOUNT: {
-            strncpy(out, "Create Acc", 11);
+            strncpy(out, "Create Acct", 11);
             break;
         }
         case OPERATION_TYPE_PAYMENT: {
@@ -164,8 +164,12 @@ void print_operation_type(uint8_t type, char *out) {
             strncpy(out, "Change Offer", 13);
             break;
         }
-        case OPERATION_TYPE_ADD_TRUST: {
-            strncpy(out, "Add Trust", 10);
+        case OPERATION_TYPE_CREATE_PASSIVE_OFFER: {
+            strncpy(out, "Passive Offer", 14);
+            break;
+        }
+        case OPERATION_TYPE_CHANGE_TRUST: {
+            strncpy(out, "Change Trust", 10);
             break;
         }
         case OPERATION_TYPE_REMOVE_TRUST: {

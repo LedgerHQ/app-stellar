@@ -22,19 +22,16 @@
 #include <stdint.h>
 
 typedef struct txContent_t {
-    uint8_t networkId[32];
-    char source[57];
-    uint32_t fee;
-    uint8_t memoType;
+    char networkId[8];
+    char source[15];
+    char fee[26];
     char memo[29];
     uint8_t operationType;
-    char destination[57];
-    uint64_t amount;
+    char destination[15];
+    char amount[35];
+    char amount_alt[35];
     char asset[13];
-    uint64_t trustLimit;
-    char buying[13];
-    char selling[13];
-    uint64_t price;
+    char asset_alt[13];
     uint64_t offerId;
 } txContent_t;
 
