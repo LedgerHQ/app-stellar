@@ -97,7 +97,7 @@ uint8_t parseAsset(uint8_t *buffer, char *asset) {
     buffer += 4;
     switch (assetType) {
         case ASSET_TYPE_NATIVE: {
-            strncpy(asset, "XLM", 3);
+            strcpy(asset, "XLM");
             asset[3] = '\0';
             return 4; // type
         }
@@ -163,7 +163,27 @@ void parsePaymentOpXdr(uint8_t *buffer, txContent_t *txContent) {
 }
 
 void parsePathPaymentOpXdr(uint8_t *buffer, txContent_t *txContent) {
-    // TODO
+    char asset[13];
+    buffer += parseAsset(buffer, asset);
+    uint64_t amount = readUInt64Block(buffer);
+    buffer += 8;
+    print_amount(amount, asset, txContent->amount, 22);
+    PRINTF("send: %s\n", txContent->amount);
+    uint32_t sourceAccountType = readUInt32Block(buffer);
+    if (sourceAccountType != PUBLIC_KEY_TYPE_ED25519) {
+        THROW(0x6c2b);
+    }
+    buffer += 4;
+    char destination[57];
+    public_key_to_address(buffer, destination);
+    print_summary(destination, txContent->destination);
+    PRINTF("destination: %s\n", txContent->destination);
+    buffer += 32;
+    buffer += parseAsset(buffer, asset);
+    amount = readUInt64Block(buffer);
+    buffer += 8;
+    print_amount(amount, asset, txContent->amount_alt, 22);
+    PRINTF("receive: %s\n", txContent->amount_alt);
 }
 
 void parseSetOptionsOpXdr(uint8_t *buffer, txContent_t *txContent) {

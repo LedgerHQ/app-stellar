@@ -95,6 +95,9 @@ volatile char memoSummary[15];
 volatile char operationType[15];
 volatile char offerId[22];
 volatile char hashSummary[16];
+volatile char amountTitle[18];
+volatile char altAmountTitle[8];
+volatile char assetTitle[6];
 
 bagl_element_t tmp_element;
 
@@ -199,11 +202,11 @@ const ux_menu_entry_t menu_main[] = {
 const uint8_t ui_elements_map[][8] = {
   { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x00 }, // create account
   { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x00 }, // payment
-  { 0x01, 0x02, 0x20, 0x05, 0x06, 0x07, 0x00, 0x00 }, // path payment
-  { 0x01, 0x02, 0x10, 0x11, 0x13, 0x05, 0x06, 0x07 }, // create offer
+  { 0x01, 0x02, 0x03, 0x13, 0x05, 0x06, 0x07, 0x00 }, // path payment
+  { 0x01, 0x02, 0x08, 0x03, 0x13, 0x05, 0x06, 0x07 }, // create offer
   { 0x01, 0x02, 0x12, 0x05, 0x06, 0x07, 0x00, 0x00 }, // delete offer
-  { 0x01, 0x02, 0x10, 0x11, 0x13, 0x05, 0x06, 0x07 }, // change offer
-  { 0x01, 0x02, 0x10, 0x11, 0x13, 0x05, 0x06, 0x07 }, // passive offer
+  { 0x01, 0x02, 0x08, 0x03, 0x13, 0x05, 0x06, 0x07 }, // change offer
+  { 0x01, 0x02, 0x08, 0x03, 0x13, 0x05, 0x06, 0x07 }, // passive offer
   { 0x01, 0x02, 0x20, 0x05, 0x06, 0x07, 0x00, 0x00 }, // set options
   { 0x01, 0x02, 0x08, 0x05, 0x06, 0x07, 0x00, 0x00 }, // change trust
   { 0x01, 0x02, 0x08, 0x05, 0x06, 0x07, 0x00, 0x00 }, // remove trust
@@ -321,7 +324,7 @@ const bagl_element_t ui_approve_tx_nanos[] = {
 
     {{BAGL_LABELINE, 0x03, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Amount",
+     (char*) amountTitle,
      0,
      0,
      0,
@@ -416,7 +419,7 @@ const bagl_element_t ui_approve_tx_nanos[] = {
 
     {{BAGL_LABELINE, 0x08, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Asset",
+     (char *) assetTitle,
      0,
      0,
      0,
@@ -426,44 +429,6 @@ const bagl_element_t ui_approve_tx_nanos[] = {
     {{BAGL_LABELINE, 0x08, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
      txContent.asset,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-
-    {{BAGL_LABELINE, 0x10, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Buy",
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    {{BAGL_LABELINE, 0x10, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-     txContent.asset,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-
-    {{BAGL_LABELINE, 0x11, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Sell",
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    {{BAGL_LABELINE, 0x11, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-     txContent.amount,
      0,
      0,
      0,
@@ -492,7 +457,7 @@ const bagl_element_t ui_approve_tx_nanos[] = {
 
     {{BAGL_LABELINE, 0x13, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Price",
+     (char *) altAmountTitle,
      0,
      0,
      0,
@@ -938,9 +903,15 @@ void handleSignTx(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLeng
     // prepare for display
     os_memset((char *)memoSummary, 0, sizeof(memoSummary));
     os_memset((char *)operationType, 0, sizeof(operationType));
+    os_memset((char *)amountTitle, 0, sizeof(amountTitle));
+    os_memset((char *)altAmountTitle, 0, sizeof(altAmountTitle));
+    os_memset((char *)assetTitle, 0, sizeof(assetTitle));
     os_memset((char *)offerId, 0, sizeof(offerId));
     print_summary(txContent.memo, (char *)memoSummary);
     print_operation_type(txContent.operationType, (char *)operationType);
+    print_amount_title(txContent.operationType, (char *)amountTitle);
+    print_alt_amount_title(txContent.operationType, (char *)altAmountTitle);
+    print_asset_title(txContent.operationType, (char *)assetTitle);
     print_id(txContent.offerId, (char *)offerId, 22);
 
     // hash transaction

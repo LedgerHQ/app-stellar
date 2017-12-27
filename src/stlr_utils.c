@@ -34,6 +34,24 @@ static const uint8_t PUBLIC_NETWORK_ID_HASH[64] = {0x7a, 0xc3, 0x39, 0x97, 0x54,
                                                    0xdb, 0x16, 0x50, 0x8c, 0x01, 0x16, 0x3f, 0x26,
                                                    0xe5, 0xcb, 0x2a, 0x3e, 0x10, 0x45, 0xa9, 0x79};
 
+static const char * operationCaptions[][4] = {
+    {"Create Account", "Starting Balance", NULL, NULL},
+    {"Payment", "Amount", NULL, NULL},
+    {"Path Payment", "Send", "Receive", NULL},
+    {"Create Offer", "Sell", "Price", "Buy"},
+    {"Remove Offer", NULL, NULL, NULL},
+    {"Change Offer", "Sell", "Price", "Buy"},
+    {"Passive Offer", "Sell", "Price", "Buy"},
+    {"Set Options", NULL, NULL, NULL},
+    {"Change Trust", NULL, NULL, "Asset"},
+    {"Remove Trust", NULL, NULL, "Asset"},
+    {"Allow Trust", NULL, NULL, NULL},
+    {"Account Merge", NULL, NULL, NULL},
+    {"Inflation", NULL, NULL, NULL},
+    {"Manage Data", NULL, NULL, NULL},
+    {"Unknown", NULL, NULL, NULL},
+};
+
 static const char hexChars[] = "0123456789ABCDEF";
 
 /**
@@ -104,7 +122,7 @@ void print_amount(uint64_t amount, char *asset, char *out, uint8_t len) {
     if (asset) {
         // qualify amount
         out[j++] = ' ';
-        strncpy(out + j, asset, strlen(asset));
+        strcpy(out + j, asset);
         out[j+strlen(asset)] = '\0';
     } else {
         out[j] = '\0';
@@ -134,75 +152,35 @@ void print_id(uint64_t id, char *out, uint8_t len) {
 
 void print_network_id(uint8_t *in, char *out) {
     if (memcmp(in, PUBLIC_NETWORK_ID_HASH, 32) == 0) {
-        strncpy(out, "Public", 7);
+        strcpy(out, "Public");
     } else if (memcmp(in, TEST_NETWORK_ID_HASH, 32) == 0) {
-        strncpy(out, "Test", 5);
+        strcpy(out, "Test");
     } else {
-        strncpy(out, "Unknown", 8);
+        strcpy(out, "Unknown");
     }
 }
 
 void print_operation_type(uint8_t type, char *out) {
-    switch (type) {
-        case OPERATION_TYPE_CREATE_ACCOUNT: {
-            strncpy(out, "Create Account", 15);
-            break;
-        }
-        case OPERATION_TYPE_PAYMENT: {
-            strncpy(out, "Payment", 8);
-            break;
-        }
-        case OPERATION_TYPE_PATH_PAYMENT: {
-            strncpy(out, "Path Payment", 13);
-            break;
-        }
-        case OPERATION_TYPE_CREATE_OFFER: {
-            strncpy(out, "Create Offer", 13);
-            break;
-        }
-        case OPERATION_TYPE_DELETE_OFFER: {
-            strncpy(out, "Remove Offer", 13);
-            break;
-        }
-        case OPERATION_TYPE_CHANGE_OFFER: {
-            strncpy(out, "Change Offer", 13);
-            break;
-        }
-        case OPERATION_TYPE_CREATE_PASSIVE_OFFER: {
-            strncpy(out, "Passive Offer", 14);
-            break;
-        }
-        case OPERATION_TYPE_SET_OPTIONS: {
-            strncpy(out, "Set Options", 12);
-            break;
-        }
-        case OPERATION_TYPE_CHANGE_TRUST: {
-            strncpy(out, "Change Trust", 13);
-            break;
-        }
-        case OPERATION_TYPE_REMOVE_TRUST: {
-            strncpy(out, "Remove Trust", 13);
-            break;
-        }
-        case OPERATION_TYPE_ALLOW_TRUST: {
-            strncpy(out, "Allow Trust", 12);
-            break;
-        }
-        case OPERATION_TYPE_ACCOUNT_MERGE: {
-            strncpy(out, "Account Merge", 14);
-            break;
-        }
-        case OPERATION_TYPE_INFLATION: {
-            strncpy(out, "Inflation", 10);
-            break;
-        }
-        case OPERATION_TYPE_MANAGE_DATA: {
-            strncpy(out, "Manage Data", 12);
-            break;
-        }
-        default: {
-            strncpy(out, "Unknown", 8);
-        }
+    if (((const char*) PIC(operationCaptions[type][0]))) {
+        strcpy(out, ((const char*) PIC(operationCaptions[type][0])));
+    }
+}
+
+void print_amount_title(uint8_t type, char *out) {
+    if (((const char*) PIC(operationCaptions[type][1]))) {
+        strcpy(out, ((const char*) PIC(operationCaptions[type][1])));
+    }
+}
+
+void print_alt_amount_title(uint8_t type, char *out) {
+    if (((const char*) PIC(operationCaptions[type][2]))) {
+        strcpy(out, ((const char*) PIC(operationCaptions[type][2])));
+    }
+}
+
+void print_asset_title(uint8_t type, char *out) {
+    if (((const char*) PIC(operationCaptions[type][3]))) {
+        strcpy(out, ((const char*) PIC(operationCaptions[type][3])));
     }
 }
 

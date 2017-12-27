@@ -31,7 +31,6 @@ typedef struct txContent_t {
     char amount[35];
     char amount_alt[35];
     char asset[13];
-    char asset_alt[13];
     uint64_t offerId;
 } txContent_t;
 
