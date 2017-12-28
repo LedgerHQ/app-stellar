@@ -26,6 +26,7 @@
 #include <stdio.h>
 #define THROW(code) { printf("error: %d", code); return; }
 #define PRINTF(msg, arg) printf(msg, arg)
+#define PIC(code) code
 #else
 #include "os.h"
 #endif // TEST
@@ -63,10 +64,18 @@
 #define OPERATION_TYPE_CHANGE_TRUST 8
 #define OPERATION_TYPE_REMOVE_TRUST 9
 #define OPERATION_TYPE_ALLOW_TRUST 10
-#define OPERATION_TYPE_ACCOUNT_MERGE 11
-#define OPERATION_TYPE_INFLATION 12
-#define OPERATION_TYPE_MANAGE_DATA 13
-#define OPERATION_TYPE_UNKNOWN 14;
+#define OPERATION_TYPE_REVOKE_TRUST 11
+#define OPERATION_TYPE_ACCOUNT_MERGE 12
+#define OPERATION_TYPE_INFLATION 13
+#define OPERATION_TYPE_MANAGE_DATA 14
+#define OPERATION_TYPE_UNKNOWN 15;
+
+#define CAPTION_TYPE_OPERATION 0
+#define CAPTION_TYPE_DESTINATION 1
+#define CAPTION_TYPE_AMOUNT1 2
+#define CAPTION_TYPE_AMOUNT2 3
+#define CAPTION_TYPE_ASSET 4
+#define CAPTION_TYPE_EXTRA 5
 
 void public_key_to_address(uint8_t *in, char *out);
 
@@ -74,11 +83,11 @@ void print_summary(char *in, char *out);
 
 void print_amount(uint64_t amount, char *asset, char *out, uint8_t len);
 
-void print_id(uint64_t id, char *out, uint8_t len);
+void print_id(uint64_t id, char *out);
 
 void print_network_id(uint8_t *in, char *out);
 
-void print_operation_type(uint8_t type, char *out);
+void print_caption(uint8_t operationType, uint8_t captionType, char *out);
 
 void print_hash_summary(uint8_t *in, char *out);
 

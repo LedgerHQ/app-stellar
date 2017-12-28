@@ -34,29 +34,27 @@ static const uint8_t PUBLIC_NETWORK_ID_HASH[64] = {0x7a, 0xc3, 0x39, 0x97, 0x54,
                                                    0xdb, 0x16, 0x50, 0x8c, 0x01, 0x16, 0x3f, 0x26,
                                                    0xe5, 0xcb, 0x2a, 0x3e, 0x10, 0x45, 0xa9, 0x79};
 
-static const char * operationCaptions[][4] = {
-    {"Create Account", "Starting Balance", NULL, NULL},
-    {"Payment", "Amount", NULL, NULL},
-    {"Path Payment", "Send", "Receive", NULL},
-    {"Create Offer", "Sell", "Price", "Buy"},
-    {"Remove Offer", NULL, NULL, NULL},
-    {"Change Offer", "Sell", "Price", "Buy"},
-    {"Passive Offer", "Sell", "Price", "Buy"},
-    {"Set Options", NULL, NULL, NULL},
-    {"Change Trust", NULL, NULL, "Asset"},
-    {"Remove Trust", NULL, NULL, "Asset"},
-    {"Allow Trust", NULL, NULL, NULL},
-    {"Account Merge", NULL, NULL, NULL},
-    {"Inflation", NULL, NULL, NULL},
-    {"Manage Data", NULL, NULL, NULL},
-    {"Unknown", NULL, NULL, NULL},
+static const char * captions[][6] = {
+    {"Create Account", "Account ID", "Starting Balance", NULL, NULL, NULL},
+    {"Payment", "Destination", "Amount", NULL, NULL, NULL},
+    {"Path Payment", "Destination", "Send", "Receive", NULL, NULL},
+    {"Create Offer", NULL, "Sell", "Price", "Buy", NULL},
+    {"Remove Offer", NULL, NULL, NULL, NULL, "Offer ID"},
+    {"Change Offer", NULL, "Sell", "Price", "Buy", NULL},
+    {"Passive Offer", NULL, "Sell", "Price", "Buy", NULL},
+    {"Set Options", NULL, NULL, NULL, NULL, NULL},
+    {"Change Trust", NULL, NULL, NULL, "Asset", NULL},
+    {"Remove Trust", NULL, NULL, NULL, "Asset", NULL},
+    {"Allow Trust", "Account ID", NULL, NULL, "Asset", NULL},
+    {"Revoke Trust", "Account ID", NULL, NULL, "Asset", NULL},
+    {"Account Merge", "Destination", NULL, NULL, NULL, NULL},
+    {"Inflation", NULL, NULL, NULL, NULL, NULL},
+    {"Manage Data", NULL, NULL, NULL, NULL, "Data Name"},
+    {"Unknown", NULL, NULL, NULL, NULL, "Hash"}
 };
 
 static const char hexChars[] = "0123456789ABCDEF";
 
-/**
- * convert the raw public key to a stellar address
- */
 void public_key_to_address(uint8_t *in, char *out) {
     uint8_t buffer[35];
     buffer[0] = 6 << 3; // version bit 'G'
@@ -130,21 +128,21 @@ void print_amount(uint64_t amount, char *asset, char *out, uint8_t len) {
 
 }
 
-void print_id(uint64_t id, char *out, uint8_t len) {
-    char buffer[len];
+void print_id(uint64_t id, char *out) {
+    char buffer[22];
     uint64_t dVal = id;
     int i, j;
 
-    memset(buffer, 0, len);
+    memset(buffer, 0, 22);
     for (i = 0; dVal > 0; i++) {
         buffer[i] = (dVal % 10) + '0';
         dVal /= 10;
-        if (i >= len) {
+        if (i >= 22) {
             THROW(0x6700);
         }
     }
     // reverse order
-    for (i -= 1, j = 0; i >= 0 && j < len-1; i--, j++) {
+    for (i -= 1, j = 0; i >= 0 && j < 22-1; i--, j++) {
         out[j] = buffer[i];
     }
     out[j] = '\0';
@@ -160,27 +158,10 @@ void print_network_id(uint8_t *in, char *out) {
     }
 }
 
-void print_operation_type(uint8_t type, char *out) {
-    if (((const char*) PIC(operationCaptions[type][0]))) {
-        strcpy(out, ((const char*) PIC(operationCaptions[type][0])));
-    }
-}
-
-void print_amount_title(uint8_t type, char *out) {
-    if (((const char*) PIC(operationCaptions[type][1]))) {
-        strcpy(out, ((const char*) PIC(operationCaptions[type][1])));
-    }
-}
-
-void print_alt_amount_title(uint8_t type, char *out) {
-    if (((const char*) PIC(operationCaptions[type][2]))) {
-        strcpy(out, ((const char*) PIC(operationCaptions[type][2])));
-    }
-}
-
-void print_asset_title(uint8_t type, char *out) {
-    if (((const char*) PIC(operationCaptions[type][3]))) {
-        strcpy(out, ((const char*) PIC(operationCaptions[type][3])));
+void print_caption(uint8_t operationType, uint8_t captionType, char *out) {
+    char *in = ((char*) PIC(captions[operationType][captionType]));
+    if (in) {
+        strcpy(out, in);
     }
 }
 

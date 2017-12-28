@@ -40,7 +40,6 @@ extern bool fidoActivated;
 
 #endif
 
-bagl_element_t tmp_element;
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
 uint32_t set_result_get_publicKey(void);
@@ -91,15 +90,15 @@ transactionContext_t txCtx;
 txContent_t txContent;
 
 volatile uint8_t fidoTransport;
+volatile uint8_t operationType;
 volatile char memoSummary[15];
-volatile char operationType[15];
-volatile char offerId[22];
-volatile char hashSummary[16];
-volatile char amountTitle[18];
-volatile char altAmountTitle[8];
-volatile char assetTitle[6];
-
-bagl_element_t tmp_element;
+volatile char operationCaption[15];
+volatile char amount1Caption[18];
+volatile char amount2Caption[8];
+volatile char assetCaption[6];
+volatile char destinationCaption[12];
+volatile char extraCaption[10];
+volatile char extraValue[22];
 
 #ifdef HAVE_U2F
 
@@ -202,7 +201,7 @@ const ux_menu_entry_t menu_main[] = {
 const uint8_t ui_elements_map[][8] = {
   { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x00 }, // create account
   { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x00 }, // payment
-  { 0x01, 0x02, 0x03, 0x13, 0x05, 0x06, 0x07, 0x00 }, // path payment
+  { 0x01, 0x02, 0x03, 0x04, 0x13, 0x05, 0x06, 0x07 }, // path payment
   { 0x01, 0x02, 0x08, 0x03, 0x13, 0x05, 0x06, 0x07 }, // create offer
   { 0x01, 0x02, 0x12, 0x05, 0x06, 0x07, 0x00, 0x00 }, // delete offer
   { 0x01, 0x02, 0x08, 0x03, 0x13, 0x05, 0x06, 0x07 }, // change offer
@@ -210,28 +209,18 @@ const uint8_t ui_elements_map[][8] = {
   { 0x01, 0x02, 0x20, 0x05, 0x06, 0x07, 0x00, 0x00 }, // set options
   { 0x01, 0x02, 0x08, 0x05, 0x06, 0x07, 0x00, 0x00 }, // change trust
   { 0x01, 0x02, 0x08, 0x05, 0x06, 0x07, 0x00, 0x00 }, // remove trust
-  { 0x01, 0x02, 0x20, 0x05, 0x06, 0x07, 0x00, 0x00 }, // allow trust
-  { 0x01, 0x02, 0x20, 0x05, 0x06, 0x07, 0x00, 0x00 }, // account merge
-  { 0x01, 0x02, 0x20, 0x05, 0x06, 0x07, 0x00, 0x00 }, // inflation
-  { 0x01, 0x02, 0x20, 0x05, 0x06, 0x07, 0x00, 0x00 }, // manage data
-  { 0x01, 0x02, 0x20, 0x05, 0x06, 0x07, 0x00, 0x00 }  // unknown
+  { 0x01, 0x02, 0x04, 0x08, 0x05, 0x06, 0x07, 0x00 }, // allow trust
+  { 0x01, 0x02, 0x04, 0x08, 0x05, 0x06, 0x07, 0x00 }, // revoke trust
+  { 0x01, 0x02, 0x04, 0x05, 0x06, 0x07, 0x00, 0x00 }, // account merge
+  { 0x01, 0x02, 0x05, 0x06, 0x07, 0x00, 0x00, 0x00 }, // inflation
+  { 0x01, 0x02, 0x12, 0x05, 0x06, 0x07, 0x00, 0x00 }, // manage data
+  { 0x01, 0x02, 0x20, 0x12, 0x05, 0x06, 0x07, 0x00 }  // unknown
 };
 
 unsigned int ui_tx_approval_prepro(const bagl_element_t *element) {
     unsigned int display = 1;
     if (element->component.userid > 0) {
-        display = (ui_elements_map[txContent.operationType][ux_step] == element->component.userid);
-        if (display) {
-            UX_CALLBACK_SET_INTERVAL(2000);
-        }
-    }
-    return display;
-}
-
-unsigned int ui_tx_hash_approval_prepro(const bagl_element_t *element) {
-    unsigned int display = 1;
-    if (element->component.userid > 0) {
-        display = (ux_step == element->component.userid - 1);
+        display = (ui_elements_map[operationType][ux_step] == element->component.userid);
         if (display) {
             UX_CALLBACK_SET_INTERVAL(2000);
         }
@@ -314,7 +303,7 @@ const bagl_element_t ui_approve_tx_nanos[] = {
      NULL},
     {{BAGL_LABELINE, 0x02, 16, 26, 96, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     (char*) operationType,
+     (char*) operationCaption,
      0,
      0,
      0,
@@ -324,7 +313,7 @@ const bagl_element_t ui_approve_tx_nanos[] = {
 
     {{BAGL_LABELINE, 0x03, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     (char*) amountTitle,
+     (char*) amount1Caption,
      0,
      0,
      0,
@@ -343,7 +332,7 @@ const bagl_element_t ui_approve_tx_nanos[] = {
 
     {{BAGL_LABELINE, 0x04, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Destination",
+     (char*) destinationCaption,
      0,
      0,
      0,
@@ -419,7 +408,7 @@ const bagl_element_t ui_approve_tx_nanos[] = {
 
     {{BAGL_LABELINE, 0x08, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     (char *) assetTitle,
+     (char *) assetCaption,
      0,
      0,
      0,
@@ -438,7 +427,7 @@ const bagl_element_t ui_approve_tx_nanos[] = {
 
     {{BAGL_LABELINE, 0x12, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Offer Id",
+     (char*) extraCaption,
      0,
      0,
      0,
@@ -447,7 +436,7 @@ const bagl_element_t ui_approve_tx_nanos[] = {
      NULL},
     {{BAGL_LABELINE, 0x12, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-     (char *) offerId,
+     (char *) extraValue,
      0,
      0,
      0,
@@ -457,7 +446,7 @@ const bagl_element_t ui_approve_tx_nanos[] = {
 
     {{BAGL_LABELINE, 0x13, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     (char *) altAmountTitle,
+     (char *) amount2Caption,
      0,
      0,
      0,
@@ -494,110 +483,6 @@ const bagl_element_t ui_approve_tx_nanos[] = {
      NULL}
 
 };
-
-const bagl_element_t ui_approve_hash_nanos[] = {
-    // {
-    //     {type, userid, x, y, width, height, stroke, radius, fill, fgcolor,
-    //      bgcolor, font_id, icon_id},
-    //     text,
-    //     touch_area_brim,
-    //     overfgcolor,
-    //     overbgcolor,
-    //     tap,
-    //     out,
-    //     over}
-    // }
-
-    {{BAGL_RECTANGLE, 0x00, 0, 0, 128, 32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF,
-      0, 0},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-
-    {{BAGL_ICON, 0x00, 3, 12, 7, 7, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
-      BAGL_GLYPH_ICON_CROSS},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    {{BAGL_ICON, 0x00, 117, 13, 8, 6, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
-      BAGL_GLYPH_ICON_CHECK},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-
-    //{{BAGL_ICON                           , 0x01,  21,   9,  14,  14, 0, 0, 0
-    //, 0xFFFFFF, 0x000000, 0, BAGL_GLYPH_ICON_TRANSACTION_BADGE  }, NULL, 0, 0,
-    //0, NULL, NULL, NULL },
-    {{BAGL_LABELINE, 0x01, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Confirm",
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    {{BAGL_LABELINE, 0x01, 0, 26, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "transaction",
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-
-    {{BAGL_LABELINE, 0x02, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "No details",
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    {{BAGL_LABELINE, 0x02, 23, 26, 82, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "available",
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-
-    {{BAGL_LABELINE, 0x03, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Hash",
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    {{BAGL_LABELINE, 0x03, 16, 26, 96, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     (char *)hashSummary,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL}
-};
-
 
 void ui_idle(void) {
   UX_MENU_DISPLAY(0, menu_main, NULL);
@@ -902,17 +787,22 @@ void handleSignTx(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLeng
 
     // prepare for display
     os_memset((char *)memoSummary, 0, sizeof(memoSummary));
-    os_memset((char *)operationType, 0, sizeof(operationType));
-    os_memset((char *)amountTitle, 0, sizeof(amountTitle));
-    os_memset((char *)altAmountTitle, 0, sizeof(altAmountTitle));
-    os_memset((char *)assetTitle, 0, sizeof(assetTitle));
-    os_memset((char *)offerId, 0, sizeof(offerId));
+    os_memset((char *)operationCaption, 0, sizeof(operationCaption));
+    os_memset((char *)amount1Caption, 0, sizeof(amount1Caption));
+    os_memset((char *)amount2Caption, 0, sizeof(amount2Caption));
+    os_memset((char *)assetCaption, 0, sizeof(assetCaption));
+    os_memset((char *)destinationCaption, 0, sizeof(destinationCaption));
+    os_memset((char *)extraCaption, 0, sizeof(extraCaption));
+    os_memset((char *)extraValue, 0, sizeof(extraValue));
+    operationType = txContent.operationType;
     print_summary(txContent.memo, (char *)memoSummary);
-    print_operation_type(txContent.operationType, (char *)operationType);
-    print_amount_title(txContent.operationType, (char *)amountTitle);
-    print_alt_amount_title(txContent.operationType, (char *)altAmountTitle);
-    print_asset_title(txContent.operationType, (char *)assetTitle);
-    print_id(txContent.offerId, (char *)offerId, 22);
+    print_caption(operationType, CAPTION_TYPE_OPERATION, (char *)operationCaption);
+    print_caption(operationType, CAPTION_TYPE_DESTINATION, (char *)destinationCaption);
+    print_caption(operationType, CAPTION_TYPE_AMOUNT1, (char *)amount1Caption);
+    print_caption(operationType, CAPTION_TYPE_AMOUNT2, (char *)amount2Caption);
+    print_caption(operationType, CAPTION_TYPE_ASSET, (char *)assetCaption);
+    print_caption(operationType, CAPTION_TYPE_EXTRA, (char *)extraCaption);
+    strcpy(extraValue, txContent.extra);
 
     // hash transaction
     cx_hash_sha256(txCtx.rawTx, txCtx.rawTxLength, txCtx.txHash);
@@ -935,12 +825,17 @@ void handleSignTxHash(uint8_t *dataBuffer, uint16_t dataLength, volatile unsigne
     os_memmove(txCtx.txHash, dataBuffer, dataLength);
 
     // prepare for display
-    os_memset((char *)hashSummary, 0, sizeof(hashSummary));
-    print_hash_summary(txCtx.txHash, (char *)hashSummary);
+    operationType = OPERATION_TYPE_UNKNOWN;
+    os_memset((char *)operationCaption, 0, sizeof(operationCaption));
+    os_memset((char *)extraCaption, 0, sizeof(extraCaption));
+    os_memset((char *)extraValue, 0, sizeof(extraValue));
+    print_caption(operationType, CAPTION_TYPE_OPERATION, (char *)operationCaption);
+    print_caption(operationType, CAPTION_TYPE_EXTRA, (char *)extraCaption);
+    print_hash_summary(txCtx.txHash, (char *)extraValue);
 
     ux_step = 0;
-    ux_step_count = 3;
-    UX_DISPLAY(ui_approve_hash_nanos, ui_tx_hash_approval_prepro);
+    ux_step_count = 4;
+    UX_DISPLAY(ui_approve_tx_nanos, ui_tx_approval_prepro);
 
     *flags |= IO_ASYNCH_REPLY;
 }

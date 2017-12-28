@@ -30,7 +30,7 @@ void test_print_amount(uint64_t amount, char *expected) {
 
 void test_print_id(uint64_t id, char* expected) {
     char printed[24];
-    print_id(id, printed, 22);
+    print_id(id, printed);
     if (strcmp(printed, expected) != 0) {
         printf("test_print_id_memo failed. Expected: %s; Actual: %s\n", expected, printed);
     }
@@ -52,11 +52,11 @@ void test_print_hash(uint8_t *hash, char *expected) {
     }
 }
 
-void test_print_operation_type(uint8_t type, char *expected) {
+void test_print_caption(uint8_t operationType, uint8_t captionType, char *expected) {
     char s[15];
-    print_operation_type(type, s);
+    print_caption(operationType, captionType, s);
     if (strcmp(s, expected) != 0) {
-        printf("test_print_operation_type failed. Expected: %s; Actual: %s\n", expected, s);
+        printf("test_print_caption failed. Expected: %s; Actual: %s\n", expected, s);
     }
 }
 
@@ -81,7 +81,7 @@ int main(int argc, char *argv[]) {
         hash[i] = i;
     }
     test_print_hash(hash, "000102...3D3E3F");
-    test_print_operation_type(14, "Unknown");
+    test_print_caption(15, 0, "Unknown");
     return 0;
 
 }

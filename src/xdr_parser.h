@@ -31,7 +31,7 @@ typedef struct txContent_t {
     char amount[35];
     char amount_alt[35];
     char asset[13];
-    uint64_t offerId;
+    char extra[22];
 } txContent_t;
 
 void parseTxXdr(uint8_t *buffer, txContent_t *txContent);

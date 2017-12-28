@@ -12,5 +12,9 @@ gcc test/parsertest.c src/stlr_utils.c src/base32.c src/crc16.c src/xdr_parser.c
 ./obj/parsertest test/txChangeTrust.hex
 ./obj/parsertest test/txManageOffer.hex
 ./obj/parsertest test/txCreateAccount.hex
+./obj/parsertest test/txPathPayment.hex
+./obj/parsertest test/txAccountMerge.hex
+./obj/parsertest test/txManageData.hex
+./obj/parsertest test/txAllowTrust.hex
 gcc test/utilstest.c src/stlr_utils.c src/base32.c src/crc16.c test/test_utils.c -o obj/utilstest -I src/ -I test/ -D TEST
 ./obj/utilstest

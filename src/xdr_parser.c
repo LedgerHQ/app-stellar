@@ -24,6 +24,8 @@
 
 static const uint8_t PUBLIC_KEY_TYPE_ED25519 = 0;
 static const uint8_t MEMO_TEXT_MAX_SIZE = 28;
+static const uint8_t DATA_NAME_MAX_SIZE = 64;
+
 
 uint32_t readUInt32Block(uint8_t *buffer) {
     return buffer[3] + (buffer[2] << 8) + (buffer[1] <<  16) + (buffer[0] << 24);
@@ -70,7 +72,7 @@ uint8_t parseMemo(uint8_t *buffer, txContent_t *txContent) {
             memcpy(txContent->memo, "[none]", 7);
             return 4;
         case MEMO_TYPE_ID:
-            print_id(readUInt64Block(buffer), txContent->memo, 22);
+            print_id(readUInt64Block(buffer), txContent->memo);
             return 4 + 8; // type + value
         case MEMO_TYPE_TEXT: {
             uint8_t size = readUInt32Block(buffer);
@@ -124,7 +126,7 @@ uint8_t parseAsset(uint8_t *buffer, char *asset) {
             return 4 + 12 + 36; // type + code12 + accountId
         }
         default:
-            THROW(0x6c28); // unknown memo type
+            THROW(0x6c28); // unknown asset type
     }
 }
 
@@ -169,8 +171,8 @@ void parsePathPaymentOpXdr(uint8_t *buffer, txContent_t *txContent) {
     buffer += 8;
     print_amount(amount, asset, txContent->amount, 22);
     PRINTF("send: %s\n", txContent->amount);
-    uint32_t sourceAccountType = readUInt32Block(buffer);
-    if (sourceAccountType != PUBLIC_KEY_TYPE_ED25519) {
+    uint32_t destinationAccountType = readUInt32Block(buffer);
+    if (destinationAccountType != PUBLIC_KEY_TYPE_ED25519) {
         THROW(0x6c2b);
     }
     buffer += 4;
@@ -186,24 +188,71 @@ void parsePathPaymentOpXdr(uint8_t *buffer, txContent_t *txContent) {
     PRINTF("receive: %s\n", txContent->amount_alt);
 }
 
-void parseSetOptionsOpXdr(uint8_t *buffer, txContent_t *txContent) {
-    // TODO
-}
+uint8_t parseAllowTrustOpXdr(uint8_t *buffer, txContent_t *txContent) {
+    uint32_t trustorAccountType = readUInt32Block(buffer);
+    if (trustorAccountType != PUBLIC_KEY_TYPE_ED25519) {
+        THROW(0x6c2b);
+    }
+    buffer += 4;
+    char trustor[57];
+    public_key_to_address(buffer, trustor);
+    print_summary(trustor, txContent->destination);
+    PRINTF("trustor: %s\n", txContent->destination);
 
-void parseAllowTrustOpXdr(uint8_t *buffer, txContent_t *txContent) {
-    // TODO
+    buffer += 32;
+    uint32_t assetType = readUInt32Block(buffer);
+    buffer += 4;
+    switch (assetType) {
+        case ASSET_TYPE_CREDIT_ALPHANUM4: {
+            memcpy(txContent->asset, buffer, 4);
+            txContent->asset[4] = '\0';
+            buffer += 4;
+            break;
+        }
+        case ASSET_TYPE_CREDIT_ALPHANUM12: {
+            memcpy(txContent->asset, buffer, 12);
+            txContent->asset[12] = '\0';
+            buffer += 12;
+            break;
+        }
+        default:
+            THROW(0x6c28); // unknown asset type
+    }
+    PRINTF("asset: %s\n", txContent->asset);
+    if (readUInt32Block(buffer)) {
+        return OPERATION_TYPE_ALLOW_TRUST;
+    } else {
+        return OPERATION_TYPE_REVOKE_TRUST;
+    }
 }
 
 void parseAccountMergeOpXdr(uint8_t *buffer, txContent_t *txContent) {
-    // TODO
-}
-
-void parseInflationOpXdr(uint8_t *buffer, txContent_t *txContent) {
-    // TODO
+    uint32_t destinationAccountType = readUInt32Block(buffer);
+    if (destinationAccountType != PUBLIC_KEY_TYPE_ED25519) {
+        THROW(0x6c2b);
+    }
+    buffer += 4;
+    char destination[57];
+    public_key_to_address(buffer, destination);
+    print_summary(destination, txContent->destination);
+    PRINTF("destination: %s\n", txContent->destination);
 }
 
 void parseManageDataOpXdr(uint8_t *buffer, txContent_t *txContent) {
-    // TODO
+    uint32_t size = readUInt32Block(buffer);
+    if (size > DATA_NAME_MAX_SIZE) {
+        THROW(0x6c2f);
+    }
+    buffer += 4;
+    char dataName[size];
+    memcpy(dataName, buffer, size);
+    dataName[size] = '\0';
+    print_summary(dataName, txContent->extra);
+    checkPadding(buffer, size, numBytes(size)); // security check
+    buffer += numBytes(size);
+
+    PRINTF("data name: %s\n", txContent->extra);
+    // discard value
 }
 
 uint8_t parseOfferOpXdr(uint8_t *buffer, txContent_t *txContent, uint32_t operationType) {
@@ -223,13 +272,16 @@ uint8_t parseOfferOpXdr(uint8_t *buffer, txContent_t *txContent, uint32_t operat
     PRINTF("price: %s\n", txContent->amount_alt);
 
     if (operationType == XDR_OPERATION_TYPE_MANAGE_OFFER) {
-        txContent->offerId = readUInt64Block(buffer);
-        if (txContent->offerId == 0) {
+        uint64_t offerId = readUInt64Block(buffer);
+        if (offerId == 0) {
             return OPERATION_TYPE_CREATE_OFFER;
-        } else if (amount == 0) {
-            return OPERATION_TYPE_DELETE_OFFER;
         } else {
-            return OPERATION_TYPE_CHANGE_OFFER;
+            print_id(offerId, txContent->extra);
+            if (amount == 0) {
+                return OPERATION_TYPE_DELETE_OFFER;
+            } else {
+                return OPERATION_TYPE_CHANGE_OFFER;
+            }
         }
     } else {
         return OPERATION_TYPE_CREATE_PASSIVE_OFFER;
@@ -287,7 +339,6 @@ void parseOpXdr(uint8_t *buffer, txContent_t *txContent) {
         }
         case XDR_OPERATION_TYPE_SET_OPTIONS: {
             txContent->operationType = OPERATION_TYPE_SET_OPTIONS;
-            parseSetOptionsOpXdr(buffer, txContent);
             break;
         }
         case XDR_OPERATION_TYPE_CHANGE_TRUST: {
@@ -295,8 +346,7 @@ void parseOpXdr(uint8_t *buffer, txContent_t *txContent) {
             break;
         }
         case XDR_OPERATION_TYPE_ALLOW_TRUST: {
-            txContent->operationType = OPERATION_TYPE_ALLOW_TRUST;
-            parseAllowTrustOpXdr(buffer, txContent);
+            txContent->operationType = parseAllowTrustOpXdr(buffer, txContent);
             break;
         }
         case XDR_OPERATION_TYPE_ACCOUNT_MERGE: {
@@ -306,7 +356,6 @@ void parseOpXdr(uint8_t *buffer, txContent_t *txContent) {
         }
         case XDR_OPERATION_TYPE_INFLATION: {
             txContent->operationType = OPERATION_TYPE_INFLATION;
-            parseInflationOpXdr(buffer, txContent);
             break;
         }
         case XDR_OPERATION_TYPE_MANAGE_DATA: {
