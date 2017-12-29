@@ -73,7 +73,7 @@ uint8_t parseMemo(uint8_t *buffer, txContent_t *txContent) {
             memcpy(txContent->memo, "[none]", 7);
             return 4;
         case MEMO_TYPE_ID:
-            print_id(readUInt64Block(buffer), txContent->memo);
+            print_long(readUInt64Block(buffer), txContent->memo);
             return 4 + 8; // type + value
         case MEMO_TYPE_TEXT: {
             uint8_t size = readUInt32Block(buffer);
@@ -308,10 +308,16 @@ uint8_t parseChangeTrustOpXdr(uint8_t *buffer, txContent_t *txContent) {
     buffer += parseAsset(buffer, txContent->details1, txContent->details2);
     PRINTF("asset: %s\n", txContent->details1);
     PRINTF("issuer: %s\n", txContent->details2);
-    uint64_t amount = readUInt64Block(buffer);
-    if (amount == 0) {
+    uint64_t limit = readUInt64Block(buffer);
+    if (limit == 0) {
         return OPERATION_TYPE_REMOVE_TRUST;
     } else {
+        if (limit == 9223372036854775807) {
+            strcpy(txContent->details3, "max");
+        } else {
+            print_long(limit, txContent->details3);
+        }
+        PRINTF("limit: %s\n", txContent->details3);
         return OPERATION_TYPE_CHANGE_TRUST;
     }
 }
@@ -325,6 +331,7 @@ uint8_t printBits(uint8_t *buffer, char *out, char *prefix) {
         uint8_t i = strlen(out);
         if (i > 0) {
             out[i++] = ';';
+            out[i++] = ' ';
         }
         strcpy(out+i, prefix);
         i += strlen(prefix);
@@ -344,6 +351,7 @@ uint8_t printInt(uint8_t *buffer, char *out, char *prefix) {
         uint8_t i = strlen(out);
         if (i > 0) {
             out[i++] = ';';
+            out[i++] = ' ';
         }
         strcpy(out+i, prefix);
         i += strlen(prefix);
@@ -372,8 +380,8 @@ void parseSetOptionsOpXdr(uint8_t *buffer, txContent_t *txContent) {
     }
     PRINTF("inflation destination: %s\n", txContent->details1);
 
-    buffer += printBits(buffer, txContent->details2, "-");
-    buffer += printBits(buffer, txContent->details2, "+");
+    buffer += printBits(buffer, txContent->details2, "clear:");
+    buffer += printBits(buffer, txContent->details2, "set:");
     if (!txContent->details2[0]) {
         strcpy(txContent->details2, "<not set>");
     }
@@ -396,10 +404,8 @@ void parseSetOptionsOpXdr(uint8_t *buffer, txContent_t *txContent) {
             THROW(0x6c2f);
         }
         buffer += 4;
-        char homeDomain[size];
-        memcpy(homeDomain, buffer, size);
-        homeDomain[size] = '\0';
-        print_summary(homeDomain, txContent->details4);
+        memcpy(txContent->details4, buffer, size);
+        txContent->details4[size] = '\0';
         checkPadding(buffer, size, numBytes(size)); // security check
         buffer += numBytes(size);
     } else {

@@ -83,7 +83,7 @@ void print_summary(char *in, char *out);
 
 void print_amount(uint64_t amount, char *asset, char *out, uint8_t len);
 
-void print_id(uint64_t id, char *out);
+void print_long(uint64_t id, char *out);
 
 void print_network_id(uint8_t *in, char *out);
 

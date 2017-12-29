@@ -43,7 +43,7 @@ static const char * captions[][6] = {
     {"Change Offer", "Buy", "Sell", "Price", NULL, NULL},
     {"Passive Offer", "Buy", "Sell", "Price", NULL, NULL},
     {"Set Options", "Inflation Dest", "Flags", "Thresholds", "Home Domain", NULL},
-    {"Change Trust", "Asset", "Issuer", NULL, NULL, NULL},
+    {"Change Trust", "Asset", "Issuer", "Limit", NULL, NULL},
     {"Remove Trust", "Asset", "Issuer", NULL, NULL, NULL},
     {"Allow Trust", "Account ID", "Asset", NULL, NULL, NULL},
     {"Revoke Trust", "Account ID", "Asset", NULL, NULL, NULL},
@@ -128,7 +128,7 @@ void print_amount(uint64_t amount, char *asset, char *out, uint8_t len) {
 
 }
 
-void print_id(uint64_t id, char *out) {
+void print_long(uint64_t id, char *out) {
     char buffer[22];
     uint64_t dVal = id;
     int i, j;
