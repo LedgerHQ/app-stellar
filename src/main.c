@@ -93,12 +93,11 @@ volatile uint8_t fidoTransport;
 volatile uint8_t operationType;
 volatile char memoSummary[15];
 volatile char operationCaption[15];
-volatile char amount1Caption[18];
-volatile char amount2Caption[8];
-volatile char assetCaption[6];
-volatile char destinationCaption[12];
-volatile char extraCaption[10];
-volatile char extraValue[22];
+volatile char details1Caption[18];
+volatile char details2Caption[18];
+volatile char details3Caption[18];
+volatile char details4Caption[18];
+volatile char details5Caption[18];
 
 #ifdef HAVE_U2F
 
@@ -198,23 +197,23 @@ const ux_menu_entry_t menu_main[] = {
     UX_MENU_END};
 
 // component id steps for different types of operations
-const uint8_t ui_elements_map[][8] = {
-  { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x00 }, // create account
-  { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x00 }, // payment
-  { 0x01, 0x02, 0x03, 0x04, 0x13, 0x05, 0x06, 0x07 }, // path payment
-  { 0x01, 0x02, 0x08, 0x03, 0x13, 0x05, 0x06, 0x07 }, // create offer
-  { 0x01, 0x02, 0x12, 0x05, 0x06, 0x07, 0x00, 0x00 }, // delete offer
-  { 0x01, 0x02, 0x08, 0x03, 0x13, 0x05, 0x06, 0x07 }, // change offer
-  { 0x01, 0x02, 0x08, 0x03, 0x13, 0x05, 0x06, 0x07 }, // passive offer
-  { 0x01, 0x02, 0x20, 0x05, 0x06, 0x07, 0x00, 0x00 }, // set options
-  { 0x01, 0x02, 0x08, 0x05, 0x06, 0x07, 0x00, 0x00 }, // change trust
-  { 0x01, 0x02, 0x08, 0x05, 0x06, 0x07, 0x00, 0x00 }, // remove trust
-  { 0x01, 0x02, 0x04, 0x08, 0x05, 0x06, 0x07, 0x00 }, // allow trust
-  { 0x01, 0x02, 0x04, 0x08, 0x05, 0x06, 0x07, 0x00 }, // revoke trust
-  { 0x01, 0x02, 0x04, 0x05, 0x06, 0x07, 0x00, 0x00 }, // account merge
-  { 0x01, 0x02, 0x05, 0x06, 0x07, 0x00, 0x00, 0x00 }, // inflation
-  { 0x01, 0x02, 0x12, 0x05, 0x06, 0x07, 0x00, 0x00 }, // manage data
-  { 0x01, 0x02, 0x20, 0x12, 0x05, 0x06, 0x07, 0x00 }  // unknown
+const uint8_t ui_elements_map[][9] = {
+  { 0x01, 0x02, 0x03, 0x04, 0x08, 0x09, 0x10, 0x00, 0x00 }, // create account
+  { 0x01, 0x02, 0x03, 0x04, 0x08, 0x09, 0x10, 0x00, 0x00 }, // payment
+  { 0x01, 0x02, 0x03, 0x04, 0x05, 0x08, 0x09, 0x10, 0x00 }, // path payment
+  { 0x01, 0x02, 0x03, 0x04, 0x05, 0x08, 0x09, 0x10, 0x00 }, // create offer
+  { 0x01, 0x02, 0x03, 0x04, 0x05, 0x08, 0x09, 0x10, 0x00 }, // delete offer
+  { 0x01, 0x02, 0x03, 0x04, 0x05, 0x08, 0x09, 0x10, 0x00 }, // change offer
+  { 0x01, 0x02, 0x03, 0x04, 0x05, 0x08, 0x09, 0x10, 0x00 }, // passive offer
+  { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x08, 0x09, 0x10 }, // set options
+  { 0x01, 0x02, 0x03, 0x04, 0x08, 0x09, 0x10, 0x00, 0x00 }, // change trust
+  { 0x01, 0x02, 0x03, 0x04, 0x08, 0x09, 0x10, 0x00, 0x00 }, // remove trust
+  { 0x01, 0x02, 0x03, 0x04, 0x08, 0x09, 0x10, 0x00, 0x00 }, // allow trust
+  { 0x01, 0x02, 0x03, 0x04, 0x08, 0x09, 0x10, 0x00, 0x00 }, // revoke trust
+  { 0x01, 0x02, 0x03, 0x08, 0x09, 0x10, 0x00, 0x00, 0x00 }, // account merge
+  { 0x01, 0x02, 0x08, 0x09, 0x10, 0x00, 0x00, 0x00, 0x00 }, // inflation
+  { 0x01, 0x02, 0x03, 0x04, 0x08, 0x09, 0x10, 0x00, 0x00 }, // manage data
+  { 0x01, 0x02, 0x20, 0x03, 0x08, 0x09, 0x10, 0x00, 0x00 }  // unknown
 };
 
 unsigned int ui_tx_approval_prepro(const bagl_element_t *element) {
@@ -222,7 +221,7 @@ unsigned int ui_tx_approval_prepro(const bagl_element_t *element) {
     if (element->component.userid > 0) {
         display = (ui_elements_map[operationType][ux_step] == element->component.userid);
         if (display) {
-            UX_CALLBACK_SET_INTERVAL(2000);
+            UX_CALLBACK_SET_INTERVAL(MAX(2000, 1000 + bagl_label_roundtrip_duration_ms(element, 7)));
         }
     }
     return display;
@@ -313,16 +312,16 @@ const bagl_element_t ui_approve_tx_nanos[] = {
 
     {{BAGL_LABELINE, 0x03, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     (char*) amount1Caption,
+     (char*) details1Caption,
      0,
      0,
      0,
      NULL,
      NULL,
      NULL},
-    {{BAGL_LABELINE, 0x03, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
+    {{BAGL_LABELINE, 0x03, 16, 26, 96, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-     txContent.amount,
+     txContent.details1,
      0,
      0,
      0,
@@ -332,16 +331,16 @@ const bagl_element_t ui_approve_tx_nanos[] = {
 
     {{BAGL_LABELINE, 0x04, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     (char*) destinationCaption,
+     (char *) details2Caption,
      0,
      0,
      0,
      NULL,
      NULL,
      NULL},
-    {{BAGL_LABELINE, 0x04, 16, 26, 96, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     txContent.destination,
+    {{BAGL_LABELINE, 0x04, 16, 26, 96, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
+     txContent.details2,
      0,
      0,
      0,
@@ -351,7 +350,7 @@ const bagl_element_t ui_approve_tx_nanos[] = {
 
     {{BAGL_LABELINE, 0x05, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Memo",
+     (char*) details3Caption,
      0,
      0,
      0,
@@ -360,7 +359,7 @@ const bagl_element_t ui_approve_tx_nanos[] = {
      NULL},
     {{BAGL_LABELINE, 0x05, 16, 26, 96, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     (char *)memoSummary,
+     txContent.details3,
      0,
      0,
      0,
@@ -370,16 +369,16 @@ const bagl_element_t ui_approve_tx_nanos[] = {
 
     {{BAGL_LABELINE, 0x06, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Fee",
+     (char *) details4Caption,
      0,
      0,
      0,
      NULL,
      NULL,
      NULL},
-    {{BAGL_LABELINE, 0x06, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
+    {{BAGL_LABELINE, 0x06, 16, 26, 96, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-     txContent.fee,
+     txContent.details4,
      0,
      0,
      0,
@@ -389,16 +388,16 @@ const bagl_element_t ui_approve_tx_nanos[] = {
 
     {{BAGL_LABELINE, 0x07, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Network",
+     (char*) details5Caption,
      0,
      0,
      0,
      NULL,
      NULL,
      NULL},
-    {{BAGL_LABELINE, 0x07, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
+    {{BAGL_LABELINE, 0x07, 16, 26, 96, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-     txContent.networkId,
+     (char *) txContent.details5,
      0,
      0,
      0,
@@ -408,35 +407,16 @@ const bagl_element_t ui_approve_tx_nanos[] = {
 
     {{BAGL_LABELINE, 0x08, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     (char *) assetCaption,
+     "Memo",
      0,
      0,
      0,
      NULL,
      NULL,
      NULL},
-    {{BAGL_LABELINE, 0x08, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-     txContent.asset,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-
-    {{BAGL_LABELINE, 0x12, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     (char*) extraCaption,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    {{BAGL_LABELINE, 0x12, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-     (char *) extraValue,
+    {{BAGL_LABELINE, 0x08, 16, 26, 96, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     (char *)memoSummary,
      0,
      0,
      0,
@@ -444,18 +424,37 @@ const bagl_element_t ui_approve_tx_nanos[] = {
      NULL,
      NULL},
 
-    {{BAGL_LABELINE, 0x13, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
+    {{BAGL_LABELINE, 0x09, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     (char *) amount2Caption,
+     "Fee",
      0,
      0,
      0,
      NULL,
      NULL,
      NULL},
-    {{BAGL_LABELINE, 0x13, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
+    {{BAGL_LABELINE, 0x09, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-     txContent.amount_alt,
+     txContent.fee,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
+    {{BAGL_LABELINE, 0x10, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     "Network",
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+    {{BAGL_LABELINE, 0x10, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
+     txContent.networkId,
      0,
      0,
      0,
@@ -788,21 +787,19 @@ void handleSignTx(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLeng
     // prepare for display
     os_memset((char *)memoSummary, 0, sizeof(memoSummary));
     os_memset((char *)operationCaption, 0, sizeof(operationCaption));
-    os_memset((char *)amount1Caption, 0, sizeof(amount1Caption));
-    os_memset((char *)amount2Caption, 0, sizeof(amount2Caption));
-    os_memset((char *)assetCaption, 0, sizeof(assetCaption));
-    os_memset((char *)destinationCaption, 0, sizeof(destinationCaption));
-    os_memset((char *)extraCaption, 0, sizeof(extraCaption));
-    os_memset((char *)extraValue, 0, sizeof(extraValue));
+    os_memset((char *)details1Caption, 0, sizeof(details1Caption));
+    os_memset((char *)details2Caption, 0, sizeof(details2Caption));
+    os_memset((char *)details4Caption, 0, sizeof(details4Caption));
+    os_memset((char *)details3Caption, 0, sizeof(details3Caption));
+    os_memset((char *)details5Caption, 0, sizeof(details5Caption));
     operationType = txContent.operationType;
     print_summary(txContent.memo, (char *)memoSummary);
     print_caption(operationType, CAPTION_TYPE_OPERATION, (char *)operationCaption);
-    print_caption(operationType, CAPTION_TYPE_DESTINATION, (char *)destinationCaption);
-    print_caption(operationType, CAPTION_TYPE_AMOUNT1, (char *)amount1Caption);
-    print_caption(operationType, CAPTION_TYPE_AMOUNT2, (char *)amount2Caption);
-    print_caption(operationType, CAPTION_TYPE_ASSET, (char *)assetCaption);
-    print_caption(operationType, CAPTION_TYPE_EXTRA, (char *)extraCaption);
-    strcpy(extraValue, txContent.extra);
+    print_caption(operationType, CAPTION_TYPE_DETAILS1, (char *)details1Caption);
+    print_caption(operationType, CAPTION_TYPE_DETAILS2, (char *)details2Caption);
+    print_caption(operationType, CAPTION_TYPE_DETAILS3, (char *)details3Caption);
+    print_caption(operationType, CAPTION_TYPE_DETAILS4, (char *)details4Caption);
+    print_caption(operationType, CAPTION_TYPE_DETAILS5, (char *)details5Caption);
 
     // hash transaction
     cx_hash_sha256(txCtx.rawTx, txCtx.rawTxLength, txCtx.txHash);
@@ -827,11 +824,10 @@ void handleSignTxHash(uint8_t *dataBuffer, uint16_t dataLength, volatile unsigne
     // prepare for display
     operationType = OPERATION_TYPE_UNKNOWN;
     os_memset((char *)operationCaption, 0, sizeof(operationCaption));
-    os_memset((char *)extraCaption, 0, sizeof(extraCaption));
-    os_memset((char *)extraValue, 0, sizeof(extraValue));
+    os_memset((char *)details5Caption, 0, sizeof(details5Caption));
     print_caption(operationType, CAPTION_TYPE_OPERATION, (char *)operationCaption);
-    print_caption(operationType, CAPTION_TYPE_EXTRA, (char *)extraCaption);
-    print_hash_summary(txCtx.txHash, (char *)extraValue);
+    print_caption(operationType, CAPTION_TYPE_DETAILS1, (char *)details1Caption);
+    print_hash_summary(txCtx.txHash, txContent.details1);
 
     ux_step = 0;
     ux_step_count = 4;

@@ -35,22 +35,22 @@ static const uint8_t PUBLIC_NETWORK_ID_HASH[64] = {0x7a, 0xc3, 0x39, 0x97, 0x54,
                                                    0xe5, 0xcb, 0x2a, 0x3e, 0x10, 0x45, 0xa9, 0x79};
 
 static const char * captions[][6] = {
-    {"Create Account", "Account ID", "Starting Balance", NULL, NULL, NULL},
-    {"Payment", "Destination", "Amount", NULL, NULL, NULL},
-    {"Path Payment", "Destination", "Send", "Receive", NULL, NULL},
-    {"Create Offer", NULL, "Sell", "Price", "Buy", NULL},
-    {"Remove Offer", NULL, NULL, NULL, NULL, "Offer ID"},
-    {"Change Offer", NULL, "Sell", "Price", "Buy", NULL},
-    {"Passive Offer", NULL, "Sell", "Price", "Buy", NULL},
-    {"Set Options", NULL, NULL, NULL, NULL, NULL},
-    {"Change Trust", NULL, NULL, NULL, "Asset", NULL},
-    {"Remove Trust", NULL, NULL, NULL, "Asset", NULL},
-    {"Allow Trust", "Account ID", NULL, NULL, "Asset", NULL},
-    {"Revoke Trust", "Account ID", NULL, NULL, "Asset", NULL},
+    {"Create Account", "Starting Balance", "Account ID", NULL, NULL, NULL},
+    {"Payment", "Amount", "Destination", NULL, NULL, NULL},
+    {"Path Payment", "Send", "Destination", "Receive", NULL, NULL},
+    {"Create Offer", "Buy", "Sell", "Price", NULL, NULL},
+    {"Remove Offer", "Buy", "Sell", "Price", NULL, NULL},
+    {"Change Offer", "Buy", "Sell", "Price", NULL, NULL},
+    {"Passive Offer", "Buy", "Sell", "Price", NULL, NULL},
+    {"Set Options", "Inflation Dest", "Flags", "Thresholds", "Home Domain", NULL},
+    {"Change Trust", "Asset", "Issuer", NULL, NULL, NULL},
+    {"Remove Trust", "Asset", "Issuer", NULL, NULL, NULL},
+    {"Allow Trust", "Account ID", "Asset", NULL, NULL, NULL},
+    {"Revoke Trust", "Account ID", "Asset", NULL, NULL, NULL},
     {"Account Merge", "Destination", NULL, NULL, NULL, NULL},
     {"Inflation", NULL, NULL, NULL, NULL, NULL},
-    {"Manage Data", NULL, NULL, NULL, NULL, "Data Name"},
-    {"Unknown", NULL, NULL, NULL, NULL, "Hash"}
+    {"Manage Data", "Name", "Value", NULL, NULL, NULL},
+    {"Unknown", "Hash", NULL, NULL, NULL, NULL}
 };
 
 static const char hexChars[] = "0123456789ABCDEF";
@@ -143,6 +143,50 @@ void print_id(uint64_t id, char *out) {
     }
     // reverse order
     for (i -= 1, j = 0; i >= 0 && j < 22-1; i--, j++) {
+        out[j] = buffer[i];
+    }
+    out[j] = '\0';
+}
+
+void print_int(uint32_t id, char *out) {
+    char buffer[10];
+    uint64_t dVal = id;
+    int i, j;
+
+    memset(buffer, 0, 10);
+    for (i = 0; dVal > 0; i++) {
+        buffer[i] = (dVal % 10) + '0';
+        dVal /= 10;
+        if (i >= 10) {
+            THROW(0x6700);
+        }
+    }
+    // reverse order
+    for (i -= 1, j = 0; i >= 0 && j < 10-1; i--, j++) {
+        out[j] = buffer[i];
+    }
+    if (j == 0) {
+        out[0] = '0';
+        j++;
+    }
+    out[j] = '\0';
+}
+
+void print_bits(uint32_t in, char *out) {
+    char buffer[12];
+    uint32_t dVal = in;
+    int i, j;
+
+    memset(buffer, 0, 12);
+    for (i = 0; dVal > 0; i++) {
+        buffer[i] = (dVal % 2) + '0';
+        dVal /= 2;
+        if (i >= 5) {
+            THROW(0x6700);
+        }
+    }
+    // reverse order
+    for (i -= 1, j = 0; i >= 0 && j < 12-1; i--, j++) {
         out[j] = buffer[i];
     }
     out[j] = '\0';

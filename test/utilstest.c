@@ -60,6 +60,14 @@ void test_print_caption(uint8_t operationType, uint8_t captionType, char *expect
     }
 }
 
+void test_print_bits(uint32_t in, char *expected) {
+    char s[13];
+    print_bits(in, s);
+    if (strcmp(s, expected) != 0) {
+        printf("test_print_bits failed. Expected: %s; Actual: %s\n", expected, s);
+    }
+}
+
 int main(int argc, char *argv[]) {
 
     test_print_amount(1, "0.0000001 XLM");
@@ -82,6 +90,7 @@ int main(int argc, char *argv[]) {
     }
     test_print_hash(hash, "000102...3D3E3F");
     test_print_caption(15, 0, "Unknown");
+    test_print_bits(6, "110");
     return 0;
 
 }

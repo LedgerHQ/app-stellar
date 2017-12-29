@@ -71,11 +71,11 @@
 #define OPERATION_TYPE_UNKNOWN 15;
 
 #define CAPTION_TYPE_OPERATION 0
-#define CAPTION_TYPE_DESTINATION 1
-#define CAPTION_TYPE_AMOUNT1 2
-#define CAPTION_TYPE_AMOUNT2 3
-#define CAPTION_TYPE_ASSET 4
-#define CAPTION_TYPE_EXTRA 5
+#define CAPTION_TYPE_DETAILS1 1
+#define CAPTION_TYPE_DETAILS2 2
+#define CAPTION_TYPE_DETAILS3 3
+#define CAPTION_TYPE_DETAILS4 4
+#define CAPTION_TYPE_DETAILS5 5
 
 void public_key_to_address(uint8_t *in, char *out);
 
@@ -90,6 +90,10 @@ void print_network_id(uint8_t *in, char *out);
 void print_caption(uint8_t operationType, uint8_t captionType, char *out);
 
 void print_hash_summary(uint8_t *in, char *out);
+
+void print_bits(uint32_t in, char *out);
+
+void print_int(uint32_t in, char *out);
 
 
 #endif // _STELLAR_UTILS_H_

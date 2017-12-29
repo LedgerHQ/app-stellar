@@ -25,6 +25,7 @@
 static const uint8_t PUBLIC_KEY_TYPE_ED25519 = 0;
 static const uint8_t MEMO_TEXT_MAX_SIZE = 28;
 static const uint8_t DATA_NAME_MAX_SIZE = 64;
+static const uint8_t HOME_DOMAIN_MAX_SIZE = 32;
 
 
 uint32_t readUInt32Block(uint8_t *buffer) {
@@ -94,7 +95,7 @@ uint8_t parseMemo(uint8_t *buffer, txContent_t *txContent) {
     }
 }
 
-uint8_t parseAsset(uint8_t *buffer, char *asset) {
+uint8_t parseAsset(uint8_t *buffer, char *asset, char *issuer) {
     uint32_t assetType = readUInt32Block(buffer);
     buffer += 4;
     switch (assetType) {
@@ -112,6 +113,11 @@ uint8_t parseAsset(uint8_t *buffer, char *asset) {
                 THROW(0x6c23);
             }
             buffer += 4;
+            if (issuer) {
+                char accountId[57];
+                public_key_to_address(buffer, accountId);
+                print_summary(accountId, issuer);
+            }
             return 4 + 4 + 36; // type + code4 + accountId
         }
         case ASSET_TYPE_CREDIT_ALPHANUM12: {
@@ -123,6 +129,11 @@ uint8_t parseAsset(uint8_t *buffer, char *asset) {
                 THROW(0x6c22);
             }
             buffer += 4;
+            if (issuer) {
+                char accountId[57];
+                public_key_to_address(buffer, accountId);
+                print_summary(accountId, issuer);
+            }
             return 4 + 12 + 36; // type + code12 + accountId
         }
         default:
@@ -138,12 +149,12 @@ void parseCreateAccountOpXdr(uint8_t *buffer, txContent_t *txContent) {
     buffer += 4;
     char destination[57];
     public_key_to_address(buffer, destination);
-    print_summary(destination, txContent->destination);
-    PRINTF("destination: %s\n", txContent->destination);
+    print_summary(destination, txContent->details2);
+    PRINTF("account id: %s\n", txContent->details2);
     buffer += 8*4;
     uint64_t amount = readUInt64Block(buffer);
-    print_amount(amount, "XLM", txContent->amount, 22);
-    PRINTF("amount: %s\n", txContent->amount);
+    print_amount(amount, "XLM", txContent->details1, 22);
+    PRINTF("starting balance: %s\n", txContent->details1);
 }
 
 void parsePaymentOpXdr(uint8_t *buffer, txContent_t *txContent) {
@@ -154,23 +165,23 @@ void parsePaymentOpXdr(uint8_t *buffer, txContent_t *txContent) {
     buffer += 4;
     char destination[57];
     public_key_to_address(buffer, destination);
-    print_summary(destination, txContent->destination);
-    PRINTF("destination: %s\n", txContent->destination);
+    print_summary(destination, txContent->details2);
+    PRINTF("destination: %s\n", txContent->details2);
     buffer += 8*4;
     char asset[13];
-    buffer += parseAsset(buffer, asset);
+    buffer += parseAsset(buffer, asset, NULL);
     uint64_t amount = readUInt64Block(buffer);
-    print_amount(amount, asset, txContent->amount, 22);
-    PRINTF("amount: %s\n", txContent->amount);
+    print_amount(amount, asset, txContent->details1, 22);
+    PRINTF("amount: %s\n", txContent->details1);
 }
 
 void parsePathPaymentOpXdr(uint8_t *buffer, txContent_t *txContent) {
     char asset[13];
-    buffer += parseAsset(buffer, asset);
-    uint64_t amount = readUInt64Block(buffer);
+    buffer += parseAsset(buffer, asset, NULL);
+    uint64_t send = readUInt64Block(buffer);
     buffer += 8;
-    print_amount(amount, asset, txContent->amount, 22);
-    PRINTF("send: %s\n", txContent->amount);
+    print_amount(send, asset, txContent->details1, 22);
+    PRINTF("send: %s\n", txContent->details1);
     uint32_t destinationAccountType = readUInt32Block(buffer);
     if (destinationAccountType != PUBLIC_KEY_TYPE_ED25519) {
         THROW(0x6c2b);
@@ -178,14 +189,14 @@ void parsePathPaymentOpXdr(uint8_t *buffer, txContent_t *txContent) {
     buffer += 4;
     char destination[57];
     public_key_to_address(buffer, destination);
-    print_summary(destination, txContent->destination);
-    PRINTF("destination: %s\n", txContent->destination);
+    print_summary(destination, txContent->details2);
+    PRINTF("destination: %s\n", txContent->details2);
     buffer += 32;
-    buffer += parseAsset(buffer, asset);
-    amount = readUInt64Block(buffer);
+    buffer += parseAsset(buffer, asset, NULL);
+    uint64_t receive = readUInt64Block(buffer);
     buffer += 8;
-    print_amount(amount, asset, txContent->amount_alt, 22);
-    PRINTF("receive: %s\n", txContent->amount_alt);
+    print_amount(receive, asset, txContent->details3, 22);
+    PRINTF("receive: %s\n", txContent->details3);
 }
 
 uint8_t parseAllowTrustOpXdr(uint8_t *buffer, txContent_t *txContent) {
@@ -196,29 +207,29 @@ uint8_t parseAllowTrustOpXdr(uint8_t *buffer, txContent_t *txContent) {
     buffer += 4;
     char trustor[57];
     public_key_to_address(buffer, trustor);
-    print_summary(trustor, txContent->destination);
-    PRINTF("trustor: %s\n", txContent->destination);
+    print_summary(trustor, txContent->details1);
+    PRINTF("trustor: %s\n", txContent->details1);
 
     buffer += 32;
     uint32_t assetType = readUInt32Block(buffer);
     buffer += 4;
     switch (assetType) {
         case ASSET_TYPE_CREDIT_ALPHANUM4: {
-            memcpy(txContent->asset, buffer, 4);
-            txContent->asset[4] = '\0';
+            memcpy(txContent->details2, buffer, 4);
+            txContent->details2[4] = '\0';
             buffer += 4;
             break;
         }
         case ASSET_TYPE_CREDIT_ALPHANUM12: {
-            memcpy(txContent->asset, buffer, 12);
-            txContent->asset[12] = '\0';
+            memcpy(txContent->details2, buffer, 12);
+            txContent->details2[12] = '\0';
             buffer += 12;
             break;
         }
         default:
             THROW(0x6c28); // unknown asset type
     }
-    PRINTF("asset: %s\n", txContent->asset);
+    PRINTF("asset: %s\n", txContent->details2);
     if (readUInt32Block(buffer)) {
         return OPERATION_TYPE_ALLOW_TRUST;
     } else {
@@ -234,8 +245,8 @@ void parseAccountMergeOpXdr(uint8_t *buffer, txContent_t *txContent) {
     buffer += 4;
     char destination[57];
     public_key_to_address(buffer, destination);
-    print_summary(destination, txContent->destination);
-    PRINTF("destination: %s\n", txContent->destination);
+    print_summary(destination, txContent->details1);
+    PRINTF("destination: %s\n", txContent->details1);
 }
 
 void parseManageDataOpXdr(uint8_t *buffer, txContent_t *txContent) {
@@ -247,36 +258,41 @@ void parseManageDataOpXdr(uint8_t *buffer, txContent_t *txContent) {
     char dataName[size];
     memcpy(dataName, buffer, size);
     dataName[size] = '\0';
-    print_summary(dataName, txContent->extra);
+    print_summary(dataName, txContent->details1);
     checkPadding(buffer, size, numBytes(size)); // security check
     buffer += numBytes(size);
 
-    PRINTF("data name: %s\n", txContent->extra);
-    // discard value
+    PRINTF("data name: %s\n", txContent->details1);
+
+    strcpy(txContent->details2, "<binary data>");
 }
 
 uint8_t parseOfferOpXdr(uint8_t *buffer, txContent_t *txContent, uint32_t operationType) {
     char selling[13];
-    buffer += parseAsset(buffer, selling);
-    buffer += parseAsset(buffer, txContent->asset);
+    buffer += parseAsset(buffer, selling, NULL);
+    buffer += parseAsset(buffer, txContent->details1, NULL);
+    PRINTF("buying: %s\n", txContent->details1);
     uint64_t amount  = readUInt64Block(buffer);
-    print_amount(amount, selling, txContent->amount, 22);
-    PRINTF("selling: %s\n", txContent->amount);
+    if (amount > 0) {
+        print_amount(amount, selling, txContent->details2, 22);
+    } else {
+        strcpy(txContent->details2, selling);
+    }
+    PRINTF("selling: %s\n", txContent->details2);
     buffer += 8;
     uint32_t numerator = readUInt32Block(buffer);
     buffer += 4;
     uint32_t denominator = readUInt32Block(buffer);
     buffer += 4;
     uint64_t price = (numerator * 10000000) / denominator;
-    print_amount(price, selling, txContent->amount_alt, 22);
-    PRINTF("price: %s\n", txContent->amount_alt);
+    print_amount(price, selling, txContent->details3, 22);
+    PRINTF("price: %s\n", txContent->details3);
 
     if (operationType == XDR_OPERATION_TYPE_MANAGE_OFFER) {
         uint64_t offerId = readUInt64Block(buffer);
         if (offerId == 0) {
             return OPERATION_TYPE_CREATE_OFFER;
         } else {
-            print_id(offerId, txContent->extra);
             if (amount == 0) {
                 return OPERATION_TYPE_DELETE_OFFER;
             } else {
@@ -289,14 +305,107 @@ uint8_t parseOfferOpXdr(uint8_t *buffer, txContent_t *txContent, uint32_t operat
 }
 
 uint8_t parseChangeTrustOpXdr(uint8_t *buffer, txContent_t *txContent) {
-    buffer += parseAsset(buffer, txContent->asset);
-    PRINTF("asset: %s\n", txContent->asset);
+    buffer += parseAsset(buffer, txContent->details1, txContent->details2);
+    PRINTF("asset: %s\n", txContent->details1);
+    PRINTF("issuer: %s\n", txContent->details2);
     uint64_t amount = readUInt64Block(buffer);
     if (amount == 0) {
         return OPERATION_TYPE_REMOVE_TRUST;
     } else {
         return OPERATION_TYPE_CHANGE_TRUST;
     }
+}
+
+uint8_t printBits(uint8_t *buffer, char *out, char *prefix) {
+    uint32_t bitsPresent = readUInt32Block(buffer);
+    buffer += 4;
+    if (bitsPresent) {
+        uint32_t bits = readUInt32Block(buffer);
+        buffer += 4;
+        uint8_t i = strlen(out);
+        if (i > 0) {
+            out[i++] = ';';
+        }
+        strcpy(out+i, prefix);
+        i += strlen(prefix);
+        print_bits(bits, out+i);
+        return 8;
+    } else {
+        return 4;
+    }
+}
+
+uint8_t printInt(uint8_t *buffer, char *out, char *prefix) {
+    uint32_t intPresent = readUInt32Block(buffer);
+    buffer += 4;
+    if (intPresent) {
+        uint32_t n = readUInt32Block(buffer);
+        buffer += 4;
+        uint8_t i = strlen(out);
+        if (i > 0) {
+            out[i++] = ';';
+        }
+        strcpy(out+i, prefix);
+        i += strlen(prefix);
+        print_int(n, out+i);
+        return 8;
+    } else {
+        return 4;
+    }
+}
+
+void parseSetOptionsOpXdr(uint8_t *buffer, txContent_t *txContent) {
+    uint32_t inflationDestinationPresent = readUInt32Block(buffer);
+    buffer += 4;
+    if (inflationDestinationPresent) {
+        uint32_t inflationDestinationAccountType = readUInt32Block(buffer);
+        if (inflationDestinationAccountType != PUBLIC_KEY_TYPE_ED25519) {
+            THROW(0x6c27);
+        }
+        buffer += 4;
+        char inflationDestination[57];
+        public_key_to_address(buffer, inflationDestination);
+        print_summary(inflationDestination, txContent->details1);
+        buffer += 32;
+    } else {
+        strcpy(txContent->details1, "<not set>");
+    }
+    PRINTF("inflation destination: %s\n", txContent->details1);
+
+    buffer += printBits(buffer, txContent->details2, "-");
+    buffer += printBits(buffer, txContent->details2, "+");
+    if (!txContent->details2[0]) {
+        strcpy(txContent->details2, "<not set>");
+    }
+    PRINTF("flags: %s\n", txContent->details2);
+
+    buffer += printInt(buffer, txContent->details3, "mw:");
+    buffer += printInt(buffer, txContent->details3, "low:");
+    buffer += printInt(buffer, txContent->details3, "med:");
+    buffer += printInt(buffer, txContent->details3, "high:");
+    if (!txContent->details3[0]) {
+        strcpy(txContent->details3, "<not set>");
+    }
+    PRINTF("thresholds: %s\n", txContent->details3);
+
+    uint32_t homeDomainPresent = readUInt32Block(buffer);
+    buffer += 4;
+    if (homeDomainPresent) {
+        uint32_t size = readUInt32Block(buffer);
+        if (size > HOME_DOMAIN_MAX_SIZE) {
+            THROW(0x6c2f);
+        }
+        buffer += 4;
+        char homeDomain[size];
+        memcpy(homeDomain, buffer, size);
+        homeDomain[size] = '\0';
+        print_summary(homeDomain, txContent->details4);
+        checkPadding(buffer, size, numBytes(size)); // security check
+        buffer += numBytes(size);
+    } else {
+        strcpy(txContent->details4, "<not set>");
+    }
+    PRINTF("home domain: %s\n", txContent->details4);
 }
 
 void parseOpXdr(uint8_t *buffer, txContent_t *txContent) {
@@ -339,6 +448,7 @@ void parseOpXdr(uint8_t *buffer, txContent_t *txContent) {
         }
         case XDR_OPERATION_TYPE_SET_OPTIONS: {
             txContent->operationType = OPERATION_TYPE_SET_OPTIONS;
+            parseSetOptionsOpXdr(buffer, txContent);
             break;
         }
         case XDR_OPERATION_TYPE_CHANGE_TRUST: {
