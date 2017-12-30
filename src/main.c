@@ -93,7 +93,6 @@ txContent_t txContent;
 
 volatile uint8_t fidoTransport;
 volatile uint8_t operationType;
-volatile char memoSummary[15];
 volatile char operationCaption[15];
 volatile char details1Caption[18];
 volatile char details2Caption[18];
@@ -416,9 +415,9 @@ const bagl_element_t ui_approve_tx_nanos[] = {
      NULL,
      NULL,
      NULL},
-    {{BAGL_LABELINE, 0x08, 16, 26, 96, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     (char *)memoSummary,
+    {{BAGL_LABELINE, 0x08, 16, 26, 96, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
+     (char *)txContent.memo,
      0,
      0,
      0,
@@ -787,7 +786,6 @@ void handleSignTx(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLeng
     parseTxXdr(txCtx.rawTx, &txContent);
 
     // prepare for display
-    os_memset((char *)memoSummary, 0, sizeof(memoSummary));
     os_memset((char *)operationCaption, 0, sizeof(operationCaption));
     os_memset((char *)details1Caption, 0, sizeof(details1Caption));
     os_memset((char *)details2Caption, 0, sizeof(details2Caption));
@@ -795,7 +793,6 @@ void handleSignTx(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLeng
     os_memset((char *)details3Caption, 0, sizeof(details3Caption));
     os_memset((char *)details5Caption, 0, sizeof(details5Caption));
     operationType = txContent.operationType;
-    print_summary(txContent.memo, (char *)memoSummary);
     print_caption(operationType, CAPTION_TYPE_OPERATION, (char *)operationCaption);
     print_caption(operationType, CAPTION_TYPE_DETAILS1, (char *)details1Caption);
     print_caption(operationType, CAPTION_TYPE_DETAILS2, (char *)details2Caption);

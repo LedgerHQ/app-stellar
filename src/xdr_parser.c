@@ -27,9 +27,6 @@ static const uint8_t MEMO_TEXT_MAX_SIZE = 28;
 static const uint8_t DATA_NAME_MAX_SIZE = 64;
 static const uint8_t HOME_DOMAIN_MAX_SIZE = 32;
 static const uint8_t SIGNER_KEY_TYPE_ED25519 = 0;
-static const uint8_t SIGNER_KEY_TYPE_PRE_AUTH_TX = 1;
-static const uint8_t SIGNER_KEY_TYPE_HASH_X = 2;
-
 
 
 uint32_t readUInt32Block(uint8_t *buffer) {
@@ -92,7 +89,7 @@ uint8_t parseMemo(uint8_t *buffer, txContent_t *txContent) {
         }
         case MEMO_TYPE_HASH:
         case MEMO_TYPE_RETURN:
-            memcpy(txContent->memo, "[hash]", 7);
+            print_hash_summary(buffer, txContent->memo);
             return 4 + 32; // type + hash block
         default:
             THROW(0x6c21); // unknown memo type
@@ -435,7 +432,8 @@ void parseSetOptionsOpXdr(uint8_t *buffer, txContent_t *txContent) {
         strcpy(txContent->details[4]+offset, "; weight = ");
         print_int(weight, txContent->details[4]+offset+11);
         PRINTF("signer: %s\n", txContent->details[4]);
-//        PRINTF("weight: %d\n", weight);
+    } else {
+        strcpy(txContent->details[4], "<not set>");
     }
 }
 
