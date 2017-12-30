@@ -27,11 +27,7 @@ typedef struct txContent_t {
     char fee[26];
     char memo[29];
     uint8_t operationType;
-    char details1[35];
-    char details2[35];
-    char details3[35];
-    char details4[35];
-    char details5[35];
+    char details[5][35];
 } txContent_t;
 
 void parseTxXdr(uint8_t *buffer, txContent_t *txContent);

@@ -83,12 +83,12 @@ int main(int argc, char *argv[]) {
     test_print_summary("sending starlight", "sendin...light");
     test_print_summary("GBGBTCCP7WG2E5XFYLQFJP2DYOQZPCCDCHK62K6TZD4BHMNYI5WSXESH", "GBGBTC...SXESH");
 
-    uint8_t hash[64];
+    uint8_t hash[32];
     uint8_t i;
-    for (i = 0; i < 64; i++) {
+    for (i = 0; i < 32; i++) {
         hash[i] = i;
     }
-    test_print_hash(hash, "000102...3D3E3F");
+    test_print_hash(hash, "000102...1D1E1F");
     test_print_caption(15, 0, "Unknown");
     test_print_bits(6, "110");
     return 0;

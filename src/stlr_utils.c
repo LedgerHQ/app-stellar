@@ -42,7 +42,7 @@ static const char * captions[][6] = {
     {"Remove Offer", "Buy", "Sell", "Price", NULL, NULL},
     {"Change Offer", "Buy", "Sell", "Price", NULL, NULL},
     {"Passive Offer", "Buy", "Sell", "Price", NULL, NULL},
-    {"Set Options", "Inflation Dest", "Flags", "Thresholds", "Home Domain", NULL},
+    {"Set Options", "Inflation Dest", "Flags", "Thresholds", "Home Domain", "Signer"},
     {"Change Trust", "Asset", "Issuer", "Limit", NULL, NULL},
     {"Remove Trust", "Asset", "Issuer", NULL, NULL, NULL},
     {"Allow Trust", "Account ID", "Asset", NULL, NULL, NULL},
@@ -218,7 +218,7 @@ void print_hash_summary(uint8_t *in, char *out) {
     out[j++] = '.';
     out[j++] = '.';
     out[j++] = '.';
-    for (i = 61; i < 64; i+=1, j+=2) {
+    for (i = 29; i < 32; i+=1, j+=2) {
         out[j] = hexChars[in[i] / 16];
         out[j+1] = hexChars[in[i] % 16];
     }
