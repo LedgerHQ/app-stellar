@@ -34,7 +34,7 @@ The operation to retrieve the public key implements an optional keypair verifica
 
 ## Approving a transaction
 
-There are two ways a transaction may be approved by the device. In the case of a single payment, createAccount, managerOffer, or changeTrust operation the transaction can be sent to the device in its xdr representation. The app then parses the xdr and shows the transaction details on the device for approval.
+There are two ways a transaction may be approved by the device. In the case of a single operation transaction the transaction can be sent to the device in its xdr representation. The app then parses the xdr and shows the transaction details on the device for approval.
 Alternatively, if a transaction contains more than a single operation and/or contains other types of operations than mentioned above a different method must be used that takes only the transaction hash. In this case the details of the operation cannot be shown to the user. A warning is shown that no data is available and you then a summary of the hash is shown. Only approve the transaction if you trust the companion application you are using on the host, because in this case you cannot be sure the host sent you the transaction you prepared there or has sent a different transaction to the device to sign.
 
 ## Troubleshooting

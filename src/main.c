@@ -40,7 +40,6 @@ extern bool fidoActivated;
 
 #endif
 
-bagl_element_t tmp_element;
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
 uint32_t set_result_get_publicKey(void);
@@ -68,6 +67,8 @@ uint32_t set_result_get_publicKey(void);
 #define OFFSET_LC 4
 #define OFFSET_CDATA 5
 
+#define MAX_UI_STEPS 10
+
 #define MAX_RAW_TX 1024
 
 typedef struct publicKeyContext_t {
@@ -91,21 +92,13 @@ transactionContext_t txCtx;
 txContent_t txContent;
 
 volatile uint8_t fidoTransport;
-volatile char addressSummary[15];
-volatile char memoSummary[15];
-volatile char amount[35];
-volatile char fee[26];
-volatile char networkId[8];
-volatile char operationType[14];
-volatile char trustAsset[13];
-volatile char trustLimit[35];
-volatile char buyAsset[13];
-volatile char sellAsset[13];
-volatile char price[22];
-volatile char offerId[22];
-volatile char hashSummary[16];
-
-bagl_element_t tmp_element;
+volatile uint8_t operationType;
+volatile char operationCaption[15];
+volatile char details1Caption[18];
+volatile char details2Caption[18];
+volatile char details3Caption[18];
+volatile char details4Caption[18];
+volatile char details5Caption[18];
 
 #ifdef HAVE_U2F
 
@@ -205,44 +198,31 @@ const ux_menu_entry_t menu_main[] = {
     UX_MENU_END};
 
 // component id steps for different types of operations
-const uint8_t ui_elements_map[][9] = {
-  { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x00, 0x00 }, // create account
-  { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x00, 0x00 }, // payment
-  { 0x01, 0x02, 0x10, 0x11, 0x03, 0x13, 0x05, 0x06, 0x07 }, // create offer
-  { 0x01, 0x02, 0x12, 0x05, 0x06, 0x07, 0x00, 0x00, 0x00 }, // delete offer
-  { 0x01, 0x02, 0x10, 0x11, 0x03, 0x13, 0x05, 0x06, 0x07 }, // change offer
-  { 0x01, 0x02, 0x08, 0x09, 0x05, 0x06, 0x07, 0x00, 0x00 }, // add trust
-  { 0x01, 0x02, 0x08, 0x05, 0x06, 0x07, 0x00, 0x00, 0x00 }  // remove trust
-};
-
-// number of steps involved in showing details for different types of operations
-const uint8_t ui_elements_step_count[] = {
-  7, // create account
-  7, // payment
-  9, // create offer
-  6, // delete offer
-  9, // change offer
-  7, // add trust
-  6  // remove trust
+const uint8_t ui_elements_map[][MAX_UI_STEPS] = {
+  { 0x01, 0x02, 0x03, 0x04, 0x08, 0x09, 0x10, 0x00, 0x00, 0x00 }, // create account
+  { 0x01, 0x02, 0x03, 0x04, 0x08, 0x09, 0x10, 0x00, 0x00, 0x00 }, // payment
+  { 0x01, 0x02, 0x03, 0x04, 0x05, 0x08, 0x09, 0x10, 0x00, 0x00 }, // path payment
+  { 0x01, 0x02, 0x03, 0x04, 0x05, 0x08, 0x09, 0x10, 0x00, 0x00 }, // create offer
+  { 0x01, 0x02, 0x03, 0x04, 0x05, 0x08, 0x09, 0x10, 0x00, 0x00 }, // delete offer
+  { 0x01, 0x02, 0x03, 0x04, 0x05, 0x08, 0x09, 0x10, 0x00, 0x00 }, // change offer
+  { 0x01, 0x02, 0x03, 0x04, 0x05, 0x08, 0x09, 0x10, 0x00, 0x00 }, // passive offer
+  { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10 }, // set options
+  { 0x01, 0x02, 0x03, 0x04, 0x05, 0x08, 0x09, 0x10, 0x00, 0x00 }, // change trust
+  { 0x01, 0x02, 0x03, 0x04, 0x08, 0x09, 0x10, 0x00, 0x00, 0x00 }, // remove trust
+  { 0x01, 0x02, 0x03, 0x04, 0x08, 0x09, 0x10, 0x00, 0x00, 0x00 }, // allow trust
+  { 0x01, 0x02, 0x03, 0x04, 0x08, 0x09, 0x10, 0x00, 0x00, 0x00 }, // revoke trust
+  { 0x01, 0x02, 0x03, 0x08, 0x09, 0x10, 0x00, 0x00, 0x00, 0x00 }, // account merge
+  { 0x01, 0x02, 0x08, 0x09, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00 }, // inflation
+  { 0x01, 0x02, 0x03, 0x04, 0x08, 0x09, 0x10, 0x00, 0x00, 0x00 }, // manage data
+  { 0x01, 0x02, 0x20, 0x03, 0x08, 0x09, 0x10, 0x00, 0x00, 0x00 }  // unknown
 };
 
 unsigned int ui_tx_approval_prepro(const bagl_element_t *element) {
     unsigned int display = 1;
     if (element->component.userid > 0) {
-        display = (ui_elements_map[txContent.operationType][ux_step] == element->component.userid);
+        display = (ui_elements_map[operationType][ux_step] == element->component.userid);
         if (display) {
-            UX_CALLBACK_SET_INTERVAL(2000);
-        }
-    }
-    return display;
-}
-
-unsigned int ui_tx_hash_approval_prepro(const bagl_element_t *element) {
-    unsigned int display = 1;
-    if (element->component.userid > 0) {
-        display = (ux_step == element->component.userid - 1);
-        if (display) {
-            UX_CALLBACK_SET_INTERVAL(2000);
+            UX_CALLBACK_SET_INTERVAL(MAX(2000, 1000 + bagl_label_roundtrip_duration_ms(element, 7)));
         }
     }
     return display;
@@ -314,16 +294,16 @@ const bagl_element_t ui_approve_tx_nanos[] = {
 
     {{BAGL_LABELINE, 0x02, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Type",
+     "Operation Type",
      0,
      0,
      0,
      NULL,
      NULL,
      NULL},
-    {{BAGL_LABELINE, 0x02, 23, 26, 82, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
+    {{BAGL_LABELINE, 0x02, 16, 26, 96, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     (char*) operationType,
+     (char*) operationCaption,
      0,
      0,
      0,
@@ -333,16 +313,16 @@ const bagl_element_t ui_approve_tx_nanos[] = {
 
     {{BAGL_LABELINE, 0x03, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Amount",
+     (char*) details1Caption,
      0,
      0,
      0,
      NULL,
      NULL,
      NULL},
-    {{BAGL_LABELINE, 0x03, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
+    {{BAGL_LABELINE, 0x03, 16, 26, 96, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-     (char *)amount,
+     (char*) txContent.details[0],
      0,
      0,
      0,
@@ -352,16 +332,16 @@ const bagl_element_t ui_approve_tx_nanos[] = {
 
     {{BAGL_LABELINE, 0x04, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Destination",
+     (char *) details2Caption,
      0,
      0,
      0,
      NULL,
      NULL,
      NULL},
-    {{BAGL_LABELINE, 0x04, 16, 26, 96, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     (char *)addressSummary,
+    {{BAGL_LABELINE, 0x04, 16, 26, 96, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
+     txContent.details[1],
      0,
      0,
      0,
@@ -371,16 +351,16 @@ const bagl_element_t ui_approve_tx_nanos[] = {
 
     {{BAGL_LABELINE, 0x05, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Memo",
+     (char*) details3Caption,
      0,
      0,
      0,
      NULL,
      NULL,
      NULL},
-    {{BAGL_LABELINE, 0x05, 16, 26, 96, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     (char *)memoSummary,
+    {{BAGL_LABELINE, 0x05, 16, 26, 96, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
+     txContent.details[2],
      0,
      0,
      0,
@@ -390,16 +370,16 @@ const bagl_element_t ui_approve_tx_nanos[] = {
 
     {{BAGL_LABELINE, 0x06, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Fee",
+     (char *) details4Caption,
      0,
      0,
      0,
      NULL,
      NULL,
      NULL},
-    {{BAGL_LABELINE, 0x06, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
+    {{BAGL_LABELINE, 0x06, 16, 26, 96, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-     (char *)fee,
+     txContent.details[3],
      0,
      0,
      0,
@@ -409,16 +389,16 @@ const bagl_element_t ui_approve_tx_nanos[] = {
 
     {{BAGL_LABELINE, 0x07, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Network",
+     (char*) details5Caption,
      0,
      0,
      0,
      NULL,
      NULL,
      NULL},
-    {{BAGL_LABELINE, 0x07, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
+    {{BAGL_LABELINE, 0x07, 16, 26, 96, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-     (char *)networkId,
+     txContent.details[4],
      0,
      0,
      0,
@@ -428,16 +408,16 @@ const bagl_element_t ui_approve_tx_nanos[] = {
 
     {{BAGL_LABELINE, 0x08, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Asset",
+     "Memo",
      0,
      0,
      0,
      NULL,
      NULL,
      NULL},
-    {{BAGL_LABELINE, 0x08, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
+    {{BAGL_LABELINE, 0x08, 16, 26, 96, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-     (char *) trustAsset,
+     (char *)txContent.memo,
      0,
      0,
      0,
@@ -447,7 +427,7 @@ const bagl_element_t ui_approve_tx_nanos[] = {
 
     {{BAGL_LABELINE, 0x09, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Limit",
+     "Fee",
      0,
      0,
      0,
@@ -456,7 +436,7 @@ const bagl_element_t ui_approve_tx_nanos[] = {
      NULL},
     {{BAGL_LABELINE, 0x09, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-     (char *) trustLimit,
+     txContent.fee,
      0,
      0,
      0,
@@ -466,7 +446,7 @@ const bagl_element_t ui_approve_tx_nanos[] = {
 
     {{BAGL_LABELINE, 0x10, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Buy",
+     "Network",
      0,
      0,
      0,
@@ -475,7 +455,7 @@ const bagl_element_t ui_approve_tx_nanos[] = {
      NULL},
     {{BAGL_LABELINE, 0x10, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-     (char *) buyAsset,
+     txContent.networkId,
      0,
      0,
      0,
@@ -483,130 +463,7 @@ const bagl_element_t ui_approve_tx_nanos[] = {
      NULL,
      NULL},
 
-    {{BAGL_LABELINE, 0x11, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Sell",
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    {{BAGL_LABELINE, 0x11, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-     (char *) sellAsset,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-
-    {{BAGL_LABELINE, 0x12, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Offer Id",
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    {{BAGL_LABELINE, 0x12, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-     (char *) offerId,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-
-    {{BAGL_LABELINE, 0x13, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Price",
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    {{BAGL_LABELINE, 0x13, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-     (char *) price,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-
-};
-
-const bagl_element_t ui_approve_hash_nanos[] = {
-    // {
-    //     {type, userid, x, y, width, height, stroke, radius, fill, fgcolor,
-    //      bgcolor, font_id, icon_id},
-    //     text,
-    //     touch_area_brim,
-    //     overfgcolor,
-    //     overbgcolor,
-    //     tap,
-    //     out,
-    //     over}
-    // }
-
-    {{BAGL_RECTANGLE, 0x00, 0, 0, 128, 32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF,
-      0, 0},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-
-    {{BAGL_ICON, 0x00, 3, 12, 7, 7, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
-      BAGL_GLYPH_ICON_CROSS},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    {{BAGL_ICON, 0x00, 117, 13, 8, 6, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
-      BAGL_GLYPH_ICON_CHECK},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-
-    //{{BAGL_ICON                           , 0x01,  21,   9,  14,  14, 0, 0, 0
-    //, 0xFFFFFF, 0x000000, 0, BAGL_GLYPH_ICON_TRANSACTION_BADGE  }, NULL, 0, 0,
-    //0, NULL, NULL, NULL },
-    {{BAGL_LABELINE, 0x01, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Confirm",
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    {{BAGL_LABELINE, 0x01, 0, 26, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "transaction",
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-
-    {{BAGL_LABELINE, 0x02, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
+    {{BAGL_LABELINE, 0x20, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
      "No details",
      0,
@@ -615,7 +472,7 @@ const bagl_element_t ui_approve_hash_nanos[] = {
      NULL,
      NULL,
      NULL},
-    {{BAGL_LABELINE, 0x02, 23, 26, 82, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
+    {{BAGL_LABELINE, 0x20, 23, 26, 82, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
      "available",
      0,
@@ -623,28 +480,9 @@ const bagl_element_t ui_approve_hash_nanos[] = {
      0,
      NULL,
      NULL,
-     NULL},
-
-    {{BAGL_LABELINE, 0x03, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Hash",
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    {{BAGL_LABELINE, 0x03, 16, 26, 96, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     (char *)hashSummary,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
      NULL}
-};
 
+};
 
 void ui_idle(void) {
   UX_MENU_DISPLAY(0, menu_main, NULL);
@@ -805,10 +643,14 @@ unsigned short io_exchange_al(unsigned char channel, unsigned short tx_len) {
     return 0;
 }
 
-bool isManagerOfferOperation(uint8_t operationType) {
-    return operationType == OPERATION_TYPE_CHANGE_OFFER
-        || operationType == OPERATION_TYPE_DELETE_OFFER
-        || operationType == OPERATION_TYPE_CREATE_OFFER;
+uint8_t countSteps(uint8_t operationType) {
+    uint8_t i;
+    for (i = 0; i < MAX_UI_STEPS; i++) {
+        if (ui_elements_map[operationType][i] == 0x00) {
+            return i;
+        }
+    }
+    return MAX_UI_STEPS;
 }
 
 uint32_t set_result_get_publicKey() {
@@ -944,37 +786,25 @@ void handleSignTx(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLeng
     parseTxXdr(txCtx.rawTx, &txContent);
 
     // prepare for display
-    os_memset((char *)addressSummary, 0, sizeof(addressSummary));
-    os_memset((char *)memoSummary, 0, sizeof(memoSummary));
-    os_memset((char *)fee, 0, sizeof(fee));
-    os_memset((char *)amount, 0, sizeof(amount));
-    os_memset((char *)networkId, 0, sizeof(networkId));
-    os_memset((char *)trustAsset, 0, sizeof(trustAsset));
-    os_memset((char *)trustLimit, 0, sizeof(trustLimit));
-    os_memset((char *)operationType, 0, sizeof(operationType));
-    os_memset((char *)buyAsset, 0, sizeof(buyAsset));
-    os_memset((char *)sellAsset, 0, sizeof(sellAsset));
-    os_memset((char *)price, 0, sizeof(price));
-    os_memset((char *)offerId, 0, sizeof(offerId));
-    print_summary(txContent.destination, (char *)addressSummary);
-    print_summary(txContent.memo, (char *)memoSummary);
-    print_summary(txContent.asset, (char *)trustAsset);
-    print_summary(txContent.buying, (char *)buyAsset);
-    print_summary(txContent.selling, (char *)sellAsset);
-    print_id(txContent.offerId, (char *)offerId, 22);
-    print_amount(txContent.fee, "XLM", (char *)fee, 22);
-    char * asset = (isManagerOfferOperation(txContent.operationType)) ? txContent.selling : txContent.asset;
-    print_amount(txContent.amount, asset, (char *)amount, 22);
-    print_amount(txContent.trustLimit, NULL, (char *)trustLimit, 22);
-    print_amount(txContent.price, txContent.buying, (char *)price, 22);
-    print_network_id(txContent.networkId, (char *)networkId);
-    print_operation_type(txContent.operationType, (char *)operationType);
+    os_memset((char *)operationCaption, 0, sizeof(operationCaption));
+    os_memset((char *)details1Caption, 0, sizeof(details1Caption));
+    os_memset((char *)details2Caption, 0, sizeof(details2Caption));
+    os_memset((char *)details4Caption, 0, sizeof(details4Caption));
+    os_memset((char *)details3Caption, 0, sizeof(details3Caption));
+    os_memset((char *)details5Caption, 0, sizeof(details5Caption));
+    operationType = txContent.operationType;
+    print_caption(operationType, CAPTION_TYPE_OPERATION, (char *)operationCaption);
+    print_caption(operationType, CAPTION_TYPE_DETAILS1, (char *)details1Caption);
+    print_caption(operationType, CAPTION_TYPE_DETAILS2, (char *)details2Caption);
+    print_caption(operationType, CAPTION_TYPE_DETAILS3, (char *)details3Caption);
+    print_caption(operationType, CAPTION_TYPE_DETAILS4, (char *)details4Caption);
+    print_caption(operationType, CAPTION_TYPE_DETAILS5, (char *)details5Caption);
 
     // hash transaction
     cx_hash_sha256(txCtx.rawTx, txCtx.rawTxLength, txCtx.txHash);
 
     ux_step = 0;
-    ux_step_count = ui_elements_step_count[txContent.operationType];
+    ux_step_count = countSteps(txContent.operationType);
     UX_DISPLAY(ui_approve_tx_nanos, ui_tx_approval_prepro);
 
     *flags |= IO_ASYNCH_REPLY;
@@ -991,12 +821,16 @@ void handleSignTxHash(uint8_t *dataBuffer, uint16_t dataLength, volatile unsigne
     os_memmove(txCtx.txHash, dataBuffer, dataLength);
 
     // prepare for display
-    os_memset((char *)hashSummary, 0, sizeof(hashSummary));
-    print_hash_summary(txCtx.txHash, (char *)hashSummary);
+    operationType = OPERATION_TYPE_UNKNOWN;
+    os_memset((char *)operationCaption, 0, sizeof(operationCaption));
+    os_memset((char *)details5Caption, 0, sizeof(details5Caption));
+    print_caption(operationType, CAPTION_TYPE_OPERATION, (char *)operationCaption);
+    print_caption(operationType, CAPTION_TYPE_DETAILS1, (char *)details1Caption);
+    print_hash_summary(txCtx.txHash, txContent.details[0]);
 
     ux_step = 0;
-    ux_step_count = 3;
-    UX_DISPLAY(ui_approve_hash_nanos, ui_tx_hash_approval_prepro);
+    ux_step_count = 4;
+    UX_DISPLAY(ui_approve_tx_nanos, ui_tx_approval_prepro);
 
     *flags |= IO_ASYNCH_REPLY;
 }
