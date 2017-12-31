@@ -22,11 +22,15 @@
 #include "stlr_utils.h"
 #include "xdr_parser.h"
 
+#define SIGNER_KEY_TYPE_ED25519 0
+#define SIGNER_KEY_TYPE_PRE_AUTH_TX 1
+#define SIGNER_KEY_TYPE_HASH_X 2
+
 static const uint8_t PUBLIC_KEY_TYPE_ED25519 = 0;
 static const uint8_t MEMO_TEXT_MAX_SIZE = 28;
 static const uint8_t DATA_NAME_MAX_SIZE = 64;
 static const uint8_t HOME_DOMAIN_MAX_SIZE = 32;
-static const uint8_t SIGNER_KEY_TYPE_ED25519 = 0;
+
 
 
 uint32_t readUInt32Block(uint8_t *buffer) {
@@ -154,7 +158,7 @@ void parseCreateAccountOpXdr(uint8_t *buffer, txContent_t *txContent) {
     PRINTF("account id: %s\n", txContent->details[1]);
     buffer += 8*4;
     uint64_t amount = readUInt64Block(buffer);
-    print_amount(amount, "XLM", txContent->details[0], 22);
+    print_amount(amount, "XLM", txContent->details[0]);
     PRINTF("starting balance: %s\n", txContent->details[0]);
 }
 
@@ -172,7 +176,7 @@ void parsePaymentOpXdr(uint8_t *buffer, txContent_t *txContent) {
     char asset[13];
     buffer += parseAsset(buffer, asset, NULL);
     uint64_t amount = readUInt64Block(buffer);
-    print_amount(amount, asset, txContent->details[0], 22);
+    print_amount(amount, asset, txContent->details[0]);
     PRINTF("amount: %s\n", txContent->details[0]);
 }
 
@@ -181,7 +185,7 @@ void parsePathPaymentOpXdr(uint8_t *buffer, txContent_t *txContent) {
     buffer += parseAsset(buffer, asset, NULL);
     uint64_t send = readUInt64Block(buffer);
     buffer += 8;
-    print_amount(send, asset, txContent->details[0], 22);
+    print_amount(send, asset, txContent->details[0]);
     PRINTF("send: %s\n", txContent->details[0]);
     uint32_t destinationAccountType = readUInt32Block(buffer);
     if (destinationAccountType != PUBLIC_KEY_TYPE_ED25519) {
@@ -196,7 +200,7 @@ void parsePathPaymentOpXdr(uint8_t *buffer, txContent_t *txContent) {
     buffer += parseAsset(buffer, asset, NULL);
     uint64_t receive = readUInt64Block(buffer);
     buffer += 8;
-    print_amount(receive, asset, txContent->details[2], 22);
+    print_amount(receive, asset, txContent->details[2]);
     PRINTF("receive: %s\n", txContent->details[2]);
 }
 
@@ -275,7 +279,7 @@ uint8_t parseOfferOpXdr(uint8_t *buffer, txContent_t *txContent, uint32_t operat
     PRINTF("buying: %s\n", txContent->details[0]);
     uint64_t amount  = readUInt64Block(buffer);
     if (amount > 0) {
-        print_amount(amount, selling, txContent->details[1], 22);
+        print_amount(amount, selling, txContent->details[1]);
     } else {
         strcpy(txContent->details[1], selling);
     }
@@ -286,7 +290,7 @@ uint8_t parseOfferOpXdr(uint8_t *buffer, txContent_t *txContent, uint32_t operat
     uint32_t denominator = readUInt32Block(buffer);
     buffer += 4;
     uint64_t price = (numerator * 10000000) / denominator;
-    print_amount(price, selling, txContent->details[2], 22);
+    print_amount(price, selling, txContent->details[2]);
     PRINTF("price: %s\n", txContent->details[2]);
 
     if (operationType == XDR_OPERATION_TYPE_MANAGE_OFFER) {
@@ -316,7 +320,7 @@ uint8_t parseChangeTrustOpXdr(uint8_t *buffer, txContent_t *txContent) {
         if (limit == 9223372036854775807) {
             strcpy(txContent->details[2], "max");
         } else {
-            print_long(limit, txContent->details[2]);
+            print_amount(limit, NULL, txContent->details[2]);
         }
         PRINTF("limit: %s\n", txContent->details[2]);
         return OPERATION_TYPE_CHANGE_TRUST;
@@ -419,12 +423,25 @@ void parseSetOptionsOpXdr(uint8_t *buffer, txContent_t *txContent) {
     if (signerPresent) {
         uint32_t signerType = readUInt32Block(buffer);
         buffer += 4;
-        if (signerType == SIGNER_KEY_TYPE_ED25519) {
-            char signer[57];
-            public_key_to_address(buffer, signer);
-            print_summary(signer, txContent->details[4]);
-        } else {
-            print_hash_summary(buffer, txContent->details[4]);
+        switch (signerType) {
+            case SIGNER_KEY_TYPE_ED25519: {
+                char signer[57];
+                public_key_to_address(buffer, signer);
+                strcpy(txContent->details[4], "pk: ");
+                print_summary(signer, txContent->details[4]+4);
+                break;
+            }
+            case SIGNER_KEY_TYPE_PRE_AUTH_TX: {
+                strcpy(txContent->details[4], "pre: ");
+                print_hash_summary(buffer, txContent->details[4]+5);
+                break;
+            }
+            case SIGNER_KEY_TYPE_HASH_X: {
+                strcpy(txContent->details[4], "hash: ");
+                print_hash_summary(buffer, txContent->details[4]+6);
+                break;
+            }
+            default: THROW(0x6cdd);
         }
         buffer += 32;
         uint32_t weight = readUInt32Block(buffer);
@@ -532,7 +549,7 @@ void parseTxXdr(uint8_t *buffer, txContent_t *txContent) {
     PRINTF("transaction source: %s\n", txContent->source);
     buffer += 8*4;
     uint32_t fee = readUInt32Block(buffer);
-    print_amount(fee, "XLM", txContent->fee, 22);
+    print_amount(fee, "XLM", txContent->fee);
     PRINTF("fee: %s\n", txContent->fee);
     buffer += 4;
     buffer += 8; // skip seqNum

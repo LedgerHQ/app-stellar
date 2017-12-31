@@ -77,11 +77,12 @@
 #define CAPTION_TYPE_DETAILS4 4
 #define CAPTION_TYPE_DETAILS5 5
 
+
 void public_key_to_address(uint8_t *in, char *out);
 
 void print_summary(char *in, char *out);
 
-void print_amount(uint64_t amount, char *asset, char *out, uint8_t len);
+void print_amount(uint64_t amount, char *asset, char *out);
 
 void print_long(uint64_t id, char *out);
 

@@ -21,7 +21,7 @@
 void test_print_amount(uint64_t amount, char *expected) {
     char *asset = "XLM";
     char printed[24];
-    print_amount(amount, asset, printed, 22);
+    print_amount(amount, asset, printed);
 
     if (strcmp(printed, expected) != 0) {
         printf("test_print_amount failed. Expected: %s; Actual: %s\n", expected, printed);
@@ -90,7 +90,9 @@ int main(int argc, char *argv[]) {
     }
     test_print_hash(hash, "000102...1D1E1F");
     test_print_caption(15, 0, "Unknown");
-    test_print_bits(6, "110");
+
+    uint32_t flags = (1 << 0) | (1 << 1);
+    test_print_bits(flags, "011");
     return 0;
 
 }

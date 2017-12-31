@@ -55,6 +55,8 @@ static const char * captions[][6] = {
 
 static const char hexChars[] = "0123456789ABCDEF";
 
+static const uint8_t AMOUNT_MAX_SIZE = 22;
+
 void public_key_to_address(uint8_t *in, char *out) {
     uint8_t buffer[35];
     buffer[0] = 6 << 3; // version bit 'G'
@@ -71,7 +73,7 @@ void public_key_to_address(uint8_t *in, char *out) {
 
 void print_summary(char *in, char *out) {
     size_t len = strlen(in);
-    if (strlen(in) > 15) {
+    if (len > 15) {
         memcpy(out, in, 6);
         out[6] = '.';
         out[7] = '.';
@@ -83,12 +85,12 @@ void print_summary(char *in, char *out) {
     }
 }
 
-void print_amount(uint64_t amount, char *asset, char *out, uint8_t len) {
-    char buffer[len];
+void print_amount(uint64_t amount, char *asset, char *out) {
+    char buffer[AMOUNT_MAX_SIZE];
     uint64_t dVal = amount;
     int i, j;
 
-    memset(buffer, 0, len);
+    memset(buffer, 0, AMOUNT_MAX_SIZE);
     for (i = 0; dVal > 0 || i < 9; i++) {
         if (dVal > 0) {
             buffer[i] = (dVal % 10) + '0';
@@ -100,12 +102,12 @@ void print_amount(uint64_t amount, char *asset, char *out, uint8_t len) {
             i += 1;
             buffer[i] = '.';
         }
-        if (i >= len) {
+        if (i >= AMOUNT_MAX_SIZE) {
             THROW(0x6700);
         }
     }
     // reverse order
-    for (i -= 1, j = 0; i >= 0 && j < len-1; i--, j++) {
+    for (i -= 1, j = 0; i >= 0 && j < AMOUNT_MAX_SIZE-1; i--, j++) {
         out[j] = buffer[i];
     }
     // strip trailing 0s
@@ -129,20 +131,20 @@ void print_amount(uint64_t amount, char *asset, char *out, uint8_t len) {
 }
 
 void print_long(uint64_t id, char *out) {
-    char buffer[22];
+    char buffer[AMOUNT_MAX_SIZE];
     uint64_t dVal = id;
     int i, j;
 
-    memset(buffer, 0, 22);
+    memset(buffer, 0, AMOUNT_MAX_SIZE);
     for (i = 0; dVal > 0; i++) {
         buffer[i] = (dVal % 10) + '0';
         dVal /= 10;
-        if (i >= 22) {
+        if (i >= AMOUNT_MAX_SIZE) {
             THROW(0x6700);
         }
     }
     // reverse order
-    for (i -= 1, j = 0; i >= 0 && j < 22-1; i--, j++) {
+    for (i -= 1, j = 0; i >= 0 && j < AMOUNT_MAX_SIZE-1; i--, j++) {
         out[j] = buffer[i];
     }
     out[j] = '\0';
@@ -172,24 +174,12 @@ void print_int(uint32_t id, char *out) {
     out[j] = '\0';
 }
 
-void print_bits(uint32_t in, char *out) {
-    char buffer[12];
-    uint32_t dVal = in;
-    int i, j;
 
-    memset(buffer, 0, 12);
-    for (i = 0; dVal > 0; i++) {
-        buffer[i] = (dVal % 2) + '0';
-        dVal /= 2;
-        if (i >= 5) {
-            THROW(0x6700);
-        }
-    }
-    // reverse order
-    for (i -= 1, j = 0; i >= 0 && j < 12-1; i--, j++) {
-        out[j] = buffer[i];
-    }
-    out[j] = '\0';
+void print_bits(uint32_t in, char *out) {
+    out[2] = (in & 0x01) ? '1' : '0';
+    out[1] = (in & 0x02) ? '1' : '0';
+    out[0] = (in & 0x04) ? '1' : '0';
+    out[3] = '\0';
 }
 
 void print_network_id(uint8_t *in, char *out) {
