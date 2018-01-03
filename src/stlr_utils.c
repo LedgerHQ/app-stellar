@@ -50,7 +50,7 @@ static const char * captions[][6] = {
     {"Account Merge", "Destination", NULL, NULL, NULL, NULL},
     {"Inflation", NULL, NULL, NULL, NULL, NULL},
     {"Manage Data", "Name", "Value", NULL, NULL, NULL},
-    {"Unknown", "Hash", NULL, NULL, NULL, NULL}
+    {"Unknown", "Warning", "Hash", NULL, NULL, NULL}
 };
 
 static const char hexChars[] = "0123456789ABCDEF";
@@ -209,6 +209,15 @@ void print_hash_summary(uint8_t *in, char *out) {
     out[j++] = '.';
     out[j++] = '.';
     for (i = 29; i < 32; i+=1, j+=2) {
+        out[j] = hexChars[in[i] / 16];
+        out[j+1] = hexChars[in[i] % 16];
+    }
+    out[j] = '\0';
+}
+
+void print_hash(uint8_t *in, char *out) {
+    uint8_t i, j;
+    for (i = 0, j = 0; i < 32; i+=1, j+=2) {
         out[j] = hexChars[in[i] / 16];
         out[j+1] = hexChars[in[i] % 16];
     }

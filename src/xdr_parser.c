@@ -381,14 +381,14 @@ void parseSetOptionsOpXdr(uint8_t *buffer, txContent_t *txContent) {
         print_summary(inflationDestination, txContent->details[0]);
         buffer += 32;
     } else {
-        strcpy(txContent->details[0], "<not set>");
+        strcpy(txContent->details[0], "[no update]");
     }
     PRINTF("inflation destination: %s\n", txContent->details[0]);
 
     buffer += printBits(buffer, txContent->details[1], "clear:");
     buffer += printBits(buffer, txContent->details[1], "set:");
     if (!txContent->details[1][0]) {
-        strcpy(txContent->details[1], "<not set>");
+        strcpy(txContent->details[1], "[no update]");
     }
     PRINTF("flags: %s\n", txContent->details[1]);
 
@@ -397,7 +397,7 @@ void parseSetOptionsOpXdr(uint8_t *buffer, txContent_t *txContent) {
     buffer += printInt(buffer, txContent->details[2], "med:");
     buffer += printInt(buffer, txContent->details[2], "high:");
     if (!txContent->details[2][0]) {
-        strcpy(txContent->details[2], "<not set>");
+        strcpy(txContent->details[2], "[no update]");
     }
     PRINTF("thresholds: %s\n", txContent->details[2]);
 
@@ -414,7 +414,7 @@ void parseSetOptionsOpXdr(uint8_t *buffer, txContent_t *txContent) {
         checkPadding(buffer, size, numBytes(size)); // security check
         buffer += numBytes(size);
     } else {
-        strcpy(txContent->details[3], "<not set>");
+        strcpy(txContent->details[3], "[no update]");
     }
     PRINTF("home domain: %s\n", txContent->details[3]);
 
@@ -450,7 +450,7 @@ void parseSetOptionsOpXdr(uint8_t *buffer, txContent_t *txContent) {
         print_int(weight, txContent->details[4]+offset+11);
         PRINTF("signer: %s\n", txContent->details[4]);
     } else {
-        strcpy(txContent->details[4], "<not set>");
+        strcpy(txContent->details[4], "[no update]");
     }
 }
 
