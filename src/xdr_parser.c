@@ -119,9 +119,7 @@ uint8_t parseAsset(uint8_t *buffer, char *asset, char *issuer) {
             }
             buffer += 4;
             if (issuer) {
-                char accountId[57];
-                public_key_to_address(buffer, accountId);
-                print_summary(accountId, issuer);
+                print_public_key(buffer, issuer);
             }
             return 4 + 4 + 36; // type + code4 + accountId
         }
@@ -135,9 +133,7 @@ uint8_t parseAsset(uint8_t *buffer, char *asset, char *issuer) {
             }
             buffer += 4;
             if (issuer) {
-                char accountId[57];
-                public_key_to_address(buffer, accountId);
-                print_summary(accountId, issuer);
+                print_public_key(buffer, issuer);
             }
             return 4 + 12 + 36; // type + code12 + accountId
         }
@@ -152,9 +148,7 @@ void parseCreateAccountOpXdr(uint8_t *buffer, txContent_t *txContent) {
         THROW(0x6c27);
     }
     buffer += 4;
-    char destination[57];
-    public_key_to_address(buffer, destination);
-    print_summary(destination, txContent->details[1]);
+    print_public_key(buffer, txContent->details[1]);
     PRINTF("account id: %s\n", txContent->details[1]);
     buffer += 8*4;
     uint64_t amount = readUInt64Block(buffer);
@@ -168,9 +162,7 @@ void parsePaymentOpXdr(uint8_t *buffer, txContent_t *txContent) {
         THROW(0x6c27);
     }
     buffer += 4;
-    char destination[57];
-    public_key_to_address(buffer, destination);
-    print_summary(destination, txContent->details[1]);
+    print_public_key(buffer, txContent->details[1]);
     PRINTF("destination: %s\n", txContent->details[1]);
     buffer += 8*4;
     char asset[13];
@@ -192,9 +184,7 @@ void parsePathPaymentOpXdr(uint8_t *buffer, txContent_t *txContent) {
         THROW(0x6c2b);
     }
     buffer += 4;
-    char destination[57];
-    public_key_to_address(buffer, destination);
-    print_summary(destination, txContent->details[1]);
+    print_public_key(buffer, txContent->details[1]);
     PRINTF("destination: %s\n", txContent->details[1]);
     buffer += 32;
     buffer += parseAsset(buffer, asset, NULL);
@@ -210,9 +200,7 @@ uint8_t parseAllowTrustOpXdr(uint8_t *buffer, txContent_t *txContent) {
         THROW(0x6c2b);
     }
     buffer += 4;
-    char trustor[57];
-    public_key_to_address(buffer, trustor);
-    print_summary(trustor, txContent->details[0]);
+    print_public_key(buffer, txContent->details[0]);
     PRINTF("trustor: %s\n", txContent->details[0]);
 
     buffer += 32;
@@ -248,9 +236,7 @@ void parseAccountMergeOpXdr(uint8_t *buffer, txContent_t *txContent) {
         THROW(0x6c2b);
     }
     buffer += 4;
-    char destination[57];
-    public_key_to_address(buffer, destination);
-    print_summary(destination, txContent->details[0]);
+    print_public_key(buffer, txContent->details[0]);
     PRINTF("destination: %s\n", txContent->details[0]);
 }
 
@@ -376,9 +362,7 @@ void parseSetOptionsOpXdr(uint8_t *buffer, txContent_t *txContent) {
             THROW(0x6c27);
         }
         buffer += 4;
-        char inflationDestination[57];
-        public_key_to_address(buffer, inflationDestination);
-        print_summary(inflationDestination, txContent->details[0]);
+        print_public_key(buffer, txContent->details[0]);
         buffer += 32;
     } else {
         strcpy(txContent->details[0], "<not set>");
@@ -463,11 +447,11 @@ void parseOpXdr(uint8_t *buffer, txContent_t *txContent) {
             THROW(0x6c2b);
         }
         buffer += 4;
-        char source[57];
-        public_key_to_address(buffer, source);
-        print_summary(source, txContent->source);
-        PRINTF("operation source: %s\n", txContent->source);
-        buffer += 8*4;
+//        char source[57];
+//        public_key_to_address(buffer, source);
+//        print_summary(source, txContent->source);
+//        PRINTF("operation source: %s\n", txContent->source);
+        buffer += 8*4; // skip source
     }
     uint32_t operationType = readUInt32Block(buffer);
     buffer += 4;
@@ -543,11 +527,11 @@ void parseTxXdr(uint8_t *buffer, txContent_t *txContent) {
         THROW(0x6c26);
     }
     buffer += 4;
-    char source[57];
-    public_key_to_address(buffer, source);
-    print_summary(source, txContent->source);
-    PRINTF("transaction source: %s\n", txContent->source);
-    buffer += 8*4;
+//    char source[57];
+//    public_key_to_address(buffer, source);
+//    print_summary(source, txContent->source);
+//    PRINTF("transaction source: %s\n", txContent->source);
+    buffer += 8*4; // skip source
     uint32_t fee = readUInt32Block(buffer);
     print_amount(fee, "XLM", txContent->fee);
     PRINTF("fee: %s\n", txContent->fee);

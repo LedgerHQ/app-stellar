@@ -23,11 +23,10 @@
 
 typedef struct txContent_t {
     char networkId[8];
-    char source[15];
     char fee[26];
     char memo[29];
     uint8_t operationType;
-    char details[5][35];
+    char details[5][57];
 } txContent_t;
 
 void parseTxXdr(uint8_t *buffer, txContent_t *txContent);

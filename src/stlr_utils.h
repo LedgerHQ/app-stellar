@@ -27,6 +27,7 @@
 #define THROW(code) { printf("error: %d", code); return; }
 #define PRINTF(msg, arg) printf(msg, arg)
 #define PIC(code) code
+#define TARGET_NANOS 1
 #else
 #include "os.h"
 #endif // TEST
@@ -82,6 +83,8 @@ void public_key_to_address(uint8_t *in, char *out);
 
 void print_summary(char *in, char *out);
 
+void print_public_key(uint8_t *in, char *out);
+
 void print_amount(uint64_t amount, char *asset, char *out);
 
 void print_long(uint64_t id, char *out);
@@ -91,6 +94,8 @@ void print_network_id(uint8_t *in, char *out);
 void print_caption(uint8_t operationType, uint8_t captionType, char *out);
 
 void print_hash_summary(uint8_t *in, char *out);
+
+void print_hash(uint8_t *in, char *out);
 
 void print_bits(uint32_t in, char *out);
 

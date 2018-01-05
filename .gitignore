@@ -5,7 +5,5 @@ obj
 src/glyphs.c
 src/glyphs.h
 .idea
-xrp-app
 nano-sdk
-eth-app
-btc-app
+blue-sdk

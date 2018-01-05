@@ -85,6 +85,16 @@ void print_summary(char *in, char *out) {
     }
 }
 
+void print_public_key(uint8_t *in, char *out) {
+#if defined(TARGET_NANOS)
+    char buffer[57];
+    public_key_to_address(in, buffer);
+    print_summary(buffer, out);
+#elif defined(TARGET_BLUE)
+    public_key_to_address(in, out);
+#endif
+}
+
 void print_amount(uint64_t amount, char *asset, char *out) {
     char buffer[AMOUNT_MAX_SIZE];
     uint64_t dVal = amount;
@@ -209,6 +219,15 @@ void print_hash_summary(uint8_t *in, char *out) {
     out[j++] = '.';
     out[j++] = '.';
     for (i = 29; i < 32; i+=1, j+=2) {
+        out[j] = hexChars[in[i] / 16];
+        out[j+1] = hexChars[in[i] % 16];
+    }
+    out[j] = '\0';
+}
+
+void print_hash(uint8_t *in, char *out) {
+    uint8_t i, j;
+    for (i = 0, j = 0; i < 32; i+=1, j+=2) {
         out[j] = hexChars[in[i] / 16];
         out[j+1] = hexChars[in[i] % 16];
     }
