@@ -93,17 +93,19 @@ txContent_t txContent;
 
 volatile uint8_t fidoTransport;
 volatile char operationCaption[15];
+volatile char subtitleCaption[16];
+
+#if defined(TARGET_NANOS)
 volatile char details1Caption[18];
 volatile char details2Caption[18];
 volatile char details3Caption[18];
 volatile char details4Caption[18];
 volatile char details5Caption[18];
-volatile char subtitleCaption[16];
-
+#elif defined(TARGET_BLUE)
 volatile char displayString[33];
 volatile char txHash[65];
-
 bagl_element_t tmp_element;
+#endif
 
 #ifdef HAVE_U2F
 
@@ -149,6 +151,8 @@ const bagl_element_t *ui_menu_item_out_over(const bagl_element_t *e) {
     return e;
 }
 
+#if defined(TARGET_BLUE)
+
 #define BAGL_FONT_OPEN_SANS_LIGHT_16_22PX_AVG_WIDTH 10
 #define BAGL_FONT_OPEN_SANS_REGULAR_10_13PX_AVG_WIDTH 8
 #define MAX_CHAR_PER_LINE 32
@@ -157,7 +161,6 @@ const bagl_element_t *ui_menu_item_out_over(const bagl_element_t *e) {
 #define COLOR_APP 0x27a2db
 #define COLOR_APP_LIGHT 0x93d1ed
 
-#if defined(TARGET_BLUE)
 const bagl_element_t ui_idle_blue[] = {
     // type                               userid    x    y   w    h  str rad
     // fill      fg        bg      fid iid  txt   touchparams...       ]
@@ -608,12 +611,12 @@ const char *ui_approval_blue_values[7];
 const char *const ui_approval_blue_details_name[][7] = {
     { "START BALANCE", "ACCOUNT ID", NULL, NULL, NULL, "FEE", "MEMO" },
     { "AMOUNT", "DESTINATION", NULL, NULL, NULL, "FEE", "MEMO" },
-    { "SEND", "DESTINATION", "RECEIVE", NULL, NULL, "FEE", "MEMO" },
-    { "BUY", "SELL", "PRICE", NULL, NULL, "FEE", "MEMO"},
-    { "BUY", "SELL", "PRICE", NULL, NULL, "FEE", "MEMO"},
-    { "BUY", "SELL", "PRICE", NULL, NULL, "FEE", "MEMO"},
-    { "BUY", "SELL", "PRICE", NULL, NULL, "FEE", "MEMO"},
-    { "INFLATION DEST", "FLAGS", "THRESHOLDS", "HOME DOMAIN", "SIGNER", "FEE", "MEMO"},
+    { "SEND", "RECEIVE", "DESTINATION", "PATH", NULL, "FEE", "MEMO" },
+    { "BUY", "PRICE", "SELL", NULL, NULL, "FEE", "MEMO"},
+    { "BUY", "PRICE", "OFFER ID", NULL, NULL, "FEE", "MEMO"},
+    { "BUY", "PRICE", "SELL", NULL, NULL, "FEE", "MEMO"},
+    { "BUY", "PRICE", "SELL", NULL, NULL, "FEE", "MEMO"},
+    { "INFL DEST", "FLAGS", "THRESHOLDS", "HOME DOMAIN", "SIGNER", "FEE", "MEMO"},
     { "ASSET", "ISSUER", "LIMIT", NULL, NULL, "FEE", "MEMO"},
     { "ASSET", "ISSUER", NULL, NULL, NULL, "FEE", "MEMO"},
     { "ACCOUNT ID", "ASSET", NULL, NULL, NULL, "FEE", "MEMO"},
@@ -1205,7 +1208,7 @@ void ui_approve_tx_hash_blue_init(void) {
 const uint8_t ui_elements_map[][MAX_UI_STEPS] = {
   { 0x01, 0x02, 0x03, 0x04, 0x08, 0x09, 0x10, 0x00, 0x00, 0x00 }, // create account
   { 0x01, 0x02, 0x03, 0x04, 0x08, 0x09, 0x10, 0x00, 0x00, 0x00 }, // payment
-  { 0x01, 0x02, 0x03, 0x04, 0x05, 0x08, 0x09, 0x10, 0x00, 0x00 }, // path payment
+  { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x08, 0x09, 0x10, 0x00 }, // path payment
   { 0x01, 0x02, 0x03, 0x04, 0x05, 0x08, 0x09, 0x10, 0x00, 0x00 }, // create offer
   { 0x01, 0x02, 0x03, 0x04, 0x05, 0x08, 0x09, 0x10, 0x00, 0x00 }, // delete offer
   { 0x01, 0x02, 0x03, 0x04, 0x05, 0x08, 0x09, 0x10, 0x00, 0x00 }, // change offer

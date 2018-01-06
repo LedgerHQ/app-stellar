@@ -184,14 +184,30 @@ void parsePathPaymentOpXdr(uint8_t *buffer, txContent_t *txContent) {
         THROW(0x6c2b);
     }
     buffer += 4;
-    print_public_key(buffer, txContent->details[1]);
-    PRINTF("destination: %s\n", txContent->details[1]);
+    print_public_key(buffer, txContent->details[2]);
+    PRINTF("destination: %s\n", txContent->details[2]);
     buffer += 32;
     buffer += parseAsset(buffer, asset, NULL);
     uint64_t receive = readUInt64Block(buffer);
     buffer += 8;
-    print_amount(receive, asset, txContent->details[2]);
-    PRINTF("receive: %s\n", txContent->details[2]);
+    print_amount(receive, asset, txContent->details[1]);
+    PRINTF("receive: %s\n", txContent->details[1]);
+    uint32_t pathArrayLength = readUInt32Block(buffer);
+    buffer += 4;
+    uint8_t i;
+    for (i = 0; i < pathArrayLength; i++) {
+        buffer += parseAsset(buffer, asset, NULL);
+        uint8_t offset = strlen(txContent->details[3]);
+        if (i > 0) {
+            strcpy(txContent->details[3]+offset, ", ");
+            offset += 2;
+        }
+        strcpy(txContent->details[3]+offset, asset);
+    }
+    if (pathArrayLength == 0) {
+        strcpy(txContent->details[3], "[none]");
+    }
+    PRINTF("path: %s\n", txContent->details[3]);
 }
 
 uint8_t parseAllowTrustOpXdr(uint8_t *buffer, txContent_t *txContent) {
@@ -265,19 +281,19 @@ uint8_t parseOfferOpXdr(uint8_t *buffer, txContent_t *txContent, uint32_t operat
     PRINTF("buying: %s\n", txContent->details[0]);
     uint64_t amount  = readUInt64Block(buffer);
     if (amount > 0) {
-        print_amount(amount, selling, txContent->details[1]);
+        print_amount(amount, selling, txContent->details[2]);
     } else {
-        strcpy(txContent->details[1], selling);
+        strcpy(txContent->details[2], selling);
     }
-    PRINTF("selling: %s\n", txContent->details[1]);
+    PRINTF("selling: %s\n", txContent->details[2]);
     buffer += 8;
     uint32_t numerator = readUInt32Block(buffer);
     buffer += 4;
     uint32_t denominator = readUInt32Block(buffer);
     buffer += 4;
     uint64_t price = (numerator * 10000000) / denominator;
-    print_amount(price, selling, txContent->details[2]);
-    PRINTF("price: %s\n", txContent->details[2]);
+    print_amount(price, selling, txContent->details[1]);
+    PRINTF("price: %s\n", txContent->details[1]);
 
     if (operationType == XDR_OPERATION_TYPE_MANAGE_OFFER) {
         uint64_t offerId = readUInt64Block(buffer);
@@ -285,6 +301,7 @@ uint8_t parseOfferOpXdr(uint8_t *buffer, txContent_t *txContent, uint32_t operat
             return OPERATION_TYPE_CREATE_OFFER;
         } else {
             if (amount == 0) {
+                print_long(offerId, txContent->details[2]);
                 return OPERATION_TYPE_DELETE_OFFER;
             } else {
                 return OPERATION_TYPE_CHANGE_OFFER;
@@ -522,11 +539,11 @@ void parseTxXdr(uint8_t *buffer, txContent_t *txContent) {
     print_network_id(buffer, txContent->networkId);
     buffer += 32;
     buffer += 4; // skip envelopeType
-    uint32_t sourceAccountType = readUInt32Block(buffer);
-    if (sourceAccountType != PUBLIC_KEY_TYPE_ED25519) {
-        THROW(0x6c26);
-    }
-    buffer += 4;
+//    uint32_t sourceAccountType = readUInt32Block(buffer);
+//    if (sourceAccountType != PUBLIC_KEY_TYPE_ED25519) {
+//        THROW(0x6c26);
+//    }
+    buffer += 4; // skip account type
 //    char source[57];
 //    public_key_to_address(buffer, source);
 //    print_summary(source, txContent->source);
