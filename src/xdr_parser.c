@@ -369,17 +369,17 @@ void parseSetOptionsOpXdr(uint8_t *buffer, txContent_t *txContent) {
     }
     PRINTF("inflation destination: %s\n", txContent->details[0]);
 
-    buffer += printBits(buffer, txContent->details[1], "clear:");
-    buffer += printBits(buffer, txContent->details[1], "set:");
+    buffer += printBits(buffer, txContent->details[1], "clear: ");
+    buffer += printBits(buffer, txContent->details[1], "set: ");
     if (!txContent->details[1][0]) {
         strcpy(txContent->details[1], "[no update]");
     }
     PRINTF("flags: %s\n", txContent->details[1]);
 
-    buffer += printInt(buffer, txContent->details[2], "mw:");
-    buffer += printInt(buffer, txContent->details[2], "low:");
-    buffer += printInt(buffer, txContent->details[2], "med:");
-    buffer += printInt(buffer, txContent->details[2], "high:");
+    buffer += printInt(buffer, txContent->details[2], "master weight: ");
+    buffer += printInt(buffer, txContent->details[2], "low: ");
+    buffer += printInt(buffer, txContent->details[2], "medium: ");
+    buffer += printInt(buffer, txContent->details[2], "high: ");
     if (!txContent->details[2][0]) {
         strcpy(txContent->details[2], "[no update]");
     }
@@ -411,18 +411,18 @@ void parseSetOptionsOpXdr(uint8_t *buffer, txContent_t *txContent) {
             case SIGNER_KEY_TYPE_ED25519: {
                 char signer[57];
                 public_key_to_address(buffer, signer);
-                strcpy(txContent->details[4], "pk: ");
-                print_summary(signer, txContent->details[4]+4);
+                strcpy(txContent->details[4], "public key: ");
+                print_summary(signer, txContent->details[4]+12);
                 break;
             }
             case SIGNER_KEY_TYPE_PRE_AUTH_TX: {
-                strcpy(txContent->details[4], "pre: ");
-                print_hash_summary(buffer, txContent->details[4]+5);
+                strcpy(txContent->details[4], "pre-auth: ");
+                print_hash_summary(buffer, txContent->details[4]+10);
                 break;
             }
             case SIGNER_KEY_TYPE_HASH_X: {
-                strcpy(txContent->details[4], "hash: ");
-                print_hash_summary(buffer, txContent->details[4]+6);
+                strcpy(txContent->details[4], "hash(x): ");
+                print_hash_summary(buffer, txContent->details[4]+9);
                 break;
             }
             default: THROW(0x6cdd);

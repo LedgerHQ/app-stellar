@@ -98,9 +98,10 @@ volatile char details2Caption[18];
 volatile char details3Caption[18];
 volatile char details4Caption[18];
 volatile char details5Caption[18];
-volatile char networkCaption[16];
+volatile char subtitleCaption[16];
 
 volatile char displayString[33];
+volatile char txHash[65];
 
 bagl_element_t tmp_element;
 
@@ -620,7 +621,7 @@ const char *const ui_approval_blue_details_name[][7] = {
     { "DESTINATION", NULL, NULL, NULL, NULL, "FEE", "MEMO"},
     {  NULL, NULL, NULL, NULL, NULL, "FEE", "MEMO"},
     { "NAME", "VALUE", NULL, NULL, NULL, "FEE", "MEMO"},
-    { "HASH", NULL, NULL, NULL, NULL, NULL }
+    {  NULL, NULL, NULL, NULL, NULL, "HASH", NULL }
 
 };
 
@@ -714,7 +715,7 @@ const bagl_element_t ui_approval_blue[] = {
      NULL},
 
     {{BAGL_LABELINE, 0x00, 100, 138, 320, 30, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_SEMIBOLD_8_11PX, 0},
-     networkCaption,
+     subtitleCaption,
      0,
      0,
      0,
@@ -1183,8 +1184,17 @@ void ui_approve_tx_blue_init(void) {
     ui_approval_blue_values[4] = txContent.details[4];
     ui_approval_blue_values[5] = txContent.fee;
     ui_approval_blue_values[6] = txContent.memo;
-    strcpy(networkCaption, txContent.networkId);
-    strcpy(networkCaption + strlen(txContent.networkId), " Network");
+    strcpy(subtitleCaption, txContent.networkId);
+    strcpy(subtitleCaption + strlen(txContent.networkId), " Network");
+    ui_approval_blue_init();
+}
+
+void ui_approve_tx_hash_blue_init(void) {
+    ui_approval_blue_ok = (bagl_element_callback_t)io_seproxyhal_touch_tx_ok;
+    ui_approval_blue_cancel = (bagl_element_callback_t)io_seproxyhal_touch_tx_cancel;
+    strcpy(subtitleCaption, "Untrusted transaction");
+    os_memset(ui_approval_blue_values, 0, sizeof(ui_approval_blue_values));
+    ui_approval_blue_values[5] = txHash;
     ui_approval_blue_init();
 }
 
@@ -1825,24 +1835,24 @@ void handleSignTxHash(uint8_t *dataBuffer, uint16_t dataLength, volatile unsigne
     txContent.operationType = OPERATION_TYPE_UNKNOWN;
     os_memset((char *)operationCaption, 0, sizeof(operationCaption));
     print_caption(txContent.operationType, CAPTION_TYPE_OPERATION, (char *)operationCaption);
-#if defined(TARGET_NANOS)
-    os_memset((char *)details1Caption, 0, sizeof(details1Caption));
-    print_caption(txContent.operationType, CAPTION_TYPE_DETAILS1, (char *)details1Caption);
-    print_caption(operationType, CAPTION_TYPE_DETAILS2, (char *)details2Caption);
-    strcpy(txContent.details[0], "Untrusted transaction");
-    print_hash(txCtx.txHash, txContent.details[1]);
-#elif defined(TARGET_BLUE)
-    print_hash(txCtx.txHash, txContent.details[0]);
-#endif
 
 #if defined(TARGET_NANOS)
+    os_memset((char *)details1Caption, 0, sizeof(details1Caption));
+    os_memset((char *)details2Caption, 0, sizeof(details2Caption));
+    print_caption(txContent.operationType, CAPTION_TYPE_DETAILS1, (char *)details1Caption);
+    print_caption(txContent.operationType, CAPTION_TYPE_DETAILS2, (char *)details2Caption);
+    strcpy(txContent.details[0], "Untrusted transaction");
+    print_hash_summary(txCtx.txHash, txContent.details[1]);
     ux_step = 0;
     ux_step_count = 5;
     UX_DISPLAY(ui_approve_tx_nanos, ui_tx_approval_prepro);
 #elif defined(TARGET_BLUE)
+    os_memset((char *)txHash, 0, sizeof(txHash));
+    print_hash(txCtx.txHash, txHash);
     ux_step_count = 0;
-    ui_approve_tx_blue_init();
-#endif // #if TARGET
+    ui_approve_tx_hash_blue_init();
+#endif
+
 
     *flags |= IO_ASYNCH_REPLY;
 }
