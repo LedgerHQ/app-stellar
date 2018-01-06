@@ -1208,7 +1208,7 @@ const uint8_t ui_elements_map[][MAX_UI_STEPS] = {
   { 0x01, 0x02, 0x03, 0x08, 0x09, 0x10, 0x00, 0x00, 0x00, 0x00 }, // account merge
   { 0x01, 0x02, 0x08, 0x09, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00 }, // inflation
   { 0x01, 0x02, 0x03, 0x04, 0x08, 0x09, 0x10, 0x00, 0x00, 0x00 }, // manage data
-  { 0x01, 0x02, 0x20, 0x03, 0x08, 0x09, 0x10, 0x00, 0x00, 0x00 }  // unknown
+  { 0x01, 0x03, 0x02, 0x20, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00 }  // unknown
 };
 
 unsigned int ui_tx_approval_prepro(const bagl_element_t *element) {
@@ -1828,14 +1828,16 @@ void handleSignTxHash(uint8_t *dataBuffer, uint16_t dataLength, volatile unsigne
 #if defined(TARGET_NANOS)
     os_memset((char *)details1Caption, 0, sizeof(details1Caption));
     print_caption(txContent.operationType, CAPTION_TYPE_DETAILS1, (char *)details1Caption);
-    print_hash_summary(txCtx.txHash, txContent.details[0]);
+    print_caption(operationType, CAPTION_TYPE_DETAILS2, (char *)details2Caption);
+    strcpy(txContent.details[0], "Untrusted transaction");
+    print_hash(txCtx.txHash, txContent.details[1]);
 #elif defined(TARGET_BLUE)
     print_hash(txCtx.txHash, txContent.details[0]);
 #endif
 
 #if defined(TARGET_NANOS)
     ux_step = 0;
-    ux_step_count = 4;
+    ux_step_count = 5;
     UX_DISPLAY(ui_approve_tx_nanos, ui_tx_approval_prepro);
 #elif defined(TARGET_BLUE)
     ux_step_count = 0;

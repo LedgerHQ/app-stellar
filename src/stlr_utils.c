@@ -50,7 +50,7 @@ static const char * captions[][6] = {
     {"Account Merge", "Destination", NULL, NULL, NULL, NULL},
     {"Inflation", NULL, NULL, NULL, NULL, NULL},
     {"Manage Data", "Name", "Value", NULL, NULL, NULL},
-    {"Unknown", "Hash", NULL, NULL, NULL, NULL}
+    {"Unknown", "Warning", "Hash", NULL, NULL, NULL}
 };
 
 static const char hexChars[] = "0123456789ABCDEF";
