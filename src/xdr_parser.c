@@ -520,9 +520,7 @@ void parseOpXdr(uint8_t *buffer, txContent_t *txContent) {
             parseManageDataOpXdr(buffer, txContent);
             break;
         }
-        default: {
-            txContent->operationType = OPERATION_TYPE_UNKNOWN;
-        }
+        default: THROW(0x6c24);
     }
 }
 

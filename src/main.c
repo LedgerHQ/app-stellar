@@ -50,7 +50,6 @@ uint32_t set_result_get_publicKey(void);
 #define INS_GET_PUBLIC_KEY 0x02
 #define INS_SIGN_TX 0x04
 #define INS_GET_APP_CONFIGURATION 0x06
-#define INS_SIGN_TX_HASH 0x08
 #define P1_NO_SIGNATURE 0x00
 #define P1_SIGNATURE 0x01
 #define P2_NO_CHAINCODE 0x00
@@ -103,7 +102,6 @@ volatile char details4Caption[18];
 volatile char details5Caption[18];
 #elif defined(TARGET_BLUE)
 volatile char displayString[33];
-volatile char txHash[65];
 bagl_element_t tmp_element;
 #endif
 
@@ -623,8 +621,7 @@ const char *const ui_approval_blue_details_name[][7] = {
     { "ACCOUNT ID", "ASSET", NULL, NULL, NULL, "FEE", "MEMO"},
     { "DESTINATION", NULL, NULL, NULL, NULL, "FEE", "MEMO"},
     {  NULL, NULL, NULL, NULL, NULL, "FEE", "MEMO"},
-    { "NAME", "VALUE", NULL, NULL, NULL, "FEE", "MEMO"},
-    {  NULL, NULL, NULL, NULL, NULL, "HASH", NULL }
+    { "NAME", "VALUE", NULL, NULL, NULL, "FEE", "MEMO"}
 
 };
 
@@ -1189,15 +1186,6 @@ void ui_approve_tx_blue_init(void) {
     ui_approval_blue_values[6] = txContent.memo;
     strcpy(subtitleCaption, txContent.networkId);
     strcpy(subtitleCaption + strlen(txContent.networkId), " Network");
-    ui_approval_blue_init();
-}
-
-void ui_approve_tx_hash_blue_init(void) {
-    ui_approval_blue_ok = (bagl_element_callback_t)io_seproxyhal_touch_tx_ok;
-    ui_approval_blue_cancel = (bagl_element_callback_t)io_seproxyhal_touch_tx_cancel;
-    strcpy(subtitleCaption, "Untrusted transaction");
-    os_memset(ui_approval_blue_values, 0, sizeof(ui_approval_blue_values));
-    ui_approval_blue_values[5] = txHash;
     ui_approval_blue_init();
 }
 
@@ -1825,39 +1813,8 @@ void handleSignTx(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLeng
 }
 
 void handleSignTxHash(uint8_t *dataBuffer, uint16_t dataLength, volatile unsigned int *flags, volatile unsigned int *tx) {
-
-    // read the bip32 path
-    txCtx.bip32PathLength = readBip32Path(dataBuffer, txCtx.bip32Path);
-    dataBuffer += 1 + txCtx.bip32PathLength * 4;
-    dataLength -= 1 + txCtx.bip32PathLength * 4;
-
-    // read the tx hash
-    os_memmove(txCtx.txHash, dataBuffer, dataLength);
-
-    // prepare for display
-    txContent.operationType = OPERATION_TYPE_UNKNOWN;
-    os_memset((char *)operationCaption, 0, sizeof(operationCaption));
-    print_caption(txContent.operationType, CAPTION_TYPE_OPERATION, (char *)operationCaption);
-
-#if defined(TARGET_NANOS)
-    os_memset((char *)details1Caption, 0, sizeof(details1Caption));
-    os_memset((char *)details2Caption, 0, sizeof(details2Caption));
-    print_caption(txContent.operationType, CAPTION_TYPE_DETAILS1, (char *)details1Caption);
-    print_caption(txContent.operationType, CAPTION_TYPE_DETAILS2, (char *)details2Caption);
-    strcpy(txContent.details[0], "Untrusted transaction");
-    print_hash_summary(txCtx.txHash, txContent.details[1]);
-    ux_step = 0;
-    ux_step_count = 5;
-    UX_DISPLAY(ui_approve_tx_nanos, ui_tx_approval_prepro);
-#elif defined(TARGET_BLUE)
-    os_memset((char *)txHash, 0, sizeof(txHash));
-    print_hash(txCtx.txHash, txHash);
-    ux_step_count = 0;
-    ui_approve_tx_hash_blue_init();
-#endif
-
-
-    *flags |= IO_ASYNCH_REPLY;
+    // no longer supported
+    THROW(0x6c66);
 }
 
 void handleApdu(volatile unsigned int *flags, volatile unsigned int *tx) {
@@ -1883,11 +1840,6 @@ void handleApdu(volatile unsigned int *flags, volatile unsigned int *tx) {
                              G_io_apdu_buffer[OFFSET_P2],
                              G_io_apdu_buffer + OFFSET_CDATA,
                              G_io_apdu_buffer[OFFSET_LC], flags, tx);
-                break;
-
-            case INS_SIGN_TX_HASH:
-                handleSignTxHash(G_io_apdu_buffer + OFFSET_CDATA,
-                           G_io_apdu_buffer[OFFSET_LC], flags, tx);
                 break;
 
             case INS_GET_APP_CONFIGURATION:
