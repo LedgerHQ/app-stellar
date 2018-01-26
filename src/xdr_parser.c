@@ -162,7 +162,7 @@ void parsePaymentOpXdr(uint8_t *buffer, txContent_t *txContent) {
         THROW(0x6c27);
     }
     buffer += 4;
-    print_public_key(buffer, txContent->details[1]);
+    public_key_to_address(buffer, txContent->details[1]);
     PRINTF("destination: %s\n", txContent->details[1]);
     buffer += 8*4;
     char asset[13];
@@ -184,7 +184,7 @@ void parsePathPaymentOpXdr(uint8_t *buffer, txContent_t *txContent) {
         THROW(0x6c2b);
     }
     buffer += 4;
-    print_public_key(buffer, txContent->details[2]);
+    public_key_to_address(buffer, txContent->details[2]);
     PRINTF("destination: %s\n", txContent->details[2]);
     buffer += 32;
     buffer += parseAsset(buffer, asset, NULL);
@@ -252,7 +252,7 @@ void parseAccountMergeOpXdr(uint8_t *buffer, txContent_t *txContent) {
         THROW(0x6c2b);
     }
     buffer += 4;
-    print_public_key(buffer, txContent->details[0]);
+    public_key_to_address(buffer, txContent->details[0]);
     PRINTF("destination: %s\n", txContent->details[0]);
 }
 
