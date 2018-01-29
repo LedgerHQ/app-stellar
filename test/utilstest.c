@@ -40,7 +40,7 @@ void test_print_summary(char *msg, char *expected) {
     char summery[16];
     print_summary(msg, summery);
     if (strcmp(summery, expected) != 0) {
-        printf("test_summerize_message failed. Expected: %s; Actual: %s\n", expected, summery);
+        printf("test_print_summary failed. Expected: %s; Actual: %s\n", expected, summery);
     }
 }
 
@@ -81,7 +81,7 @@ int main(int argc, char *argv[]) {
     test_print_long(100, "100");
 
     test_print_summary("sending starlight", "sendin...light");
-    test_print_summary("GBGBTCCP7WG2E5XFYLQFJP2DYOQZPCCDCHK62K6TZD4BHMNYI5WSXESH", "GBGBTC...SXESH");
+    test_print_summary("GADFVW3UXVKDOU626XUPYDJU2BFCGFJHQ6SREYOZ6IJV4XSHOALEQN2I", "GADFVW...EQN2I");
 
     uint8_t hash[32];
     uint8_t i;
@@ -89,7 +89,7 @@ int main(int argc, char *argv[]) {
         hash[i] = i;
     }
     test_print_hash(hash, "000102...1D1E1F");
-    test_print_caption(15, 0, "Unknown");
+    test_print_caption(0, 0, "Create Account");
 
     uint32_t flags = (1 << 0) | (1 << 1);
     test_print_bits(flags, "011");

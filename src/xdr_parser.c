@@ -148,7 +148,7 @@ void parseCreateAccountOpXdr(uint8_t *buffer, txContent_t *txContent) {
         THROW(0x6c27);
     }
     buffer += 4;
-    print_public_key(buffer, txContent->details[1]);
+    public_key_to_address(buffer, txContent->details[1]);
     PRINTF("account id: %s\n", txContent->details[1]);
     buffer += 8*4;
     uint64_t amount = readUInt64Block(buffer);
