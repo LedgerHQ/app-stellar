@@ -37,7 +37,7 @@ void test_print_long(uint64_t id, char* expected) {
 }
 
 void test_print_summary(char *msg, char *expected) {
-    char summery[16];
+    char summery[27];
     print_summary(msg, summery);
     if (strcmp(summery, expected) != 0) {
         printf("test_print_summary failed. Expected: %s; Actual: %s\n", expected, summery);
@@ -80,8 +80,7 @@ int main(int argc, char *argv[]) {
     test_print_long(12, "12");
     test_print_long(100, "100");
 
-    test_print_summary("sending starlight", "sendin...light");
-    test_print_summary("GADFVW3UXVKDOU626XUPYDJU2BFCGFJHQ6SREYOZ6IJV4XSHOALEQN2I", "GADFVW...EQN2I");
+    test_print_summary("GADFVW3UXVKDOU626XUPYDJU2BFCGFJHQ6SREYOZ6IJV4XSHOALEQN2I", "GADFVW3UXVKD...4XSHOALEQN2I");
 
     uint8_t hash[32];
     uint8_t i;
@@ -96,4 +95,3 @@ int main(int argc, char *argv[]) {
     return 0;
 
 }
-
