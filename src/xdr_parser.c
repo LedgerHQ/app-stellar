@@ -336,14 +336,16 @@ uint8_t printBits(uint8_t *buffer, char *out, char *prefix) {
     if (bitsPresent) {
         uint32_t bits = readUInt32Block(buffer);
         buffer += 4;
-        uint8_t i = strlen(out);
-        if (i > 0) {
-            out[i++] = ';';
-            out[i++] = ' ';
+        if (bits) {
+            uint8_t i = strlen(out);
+            if (i > 0) {
+                out[i++] = ';';
+                out[i++] = ' ';
+            }
+            strcpy(out+i, prefix);
+            i += strlen(prefix);
+            print_bits(bits, out+i);
         }
-        strcpy(out+i, prefix);
-        i += strlen(prefix);
-        print_bits(bits, out+i);
         return 8;
     } else {
         return 4;
