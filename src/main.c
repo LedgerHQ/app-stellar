@@ -1900,8 +1900,6 @@ uint32_t set_result_get_publicKey() {
         publicKey[31] |= 0x80;
     }
 
-    print_public_key(publicKey, pkCtx.address);
-
     os_memmove(G_io_apdu_buffer + tx, publicKey, 32);
 
     tx += 32;
@@ -1965,9 +1963,17 @@ void handleGetPublicKey(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t da
     }
     os_memset(&privateKey, 0, sizeof(privateKey));
 
-    *tx = set_result_get_publicKey();
-
     if (p2 & P2_CONFIRM) {
+        uint8_t publicKey[32];
+        // copy public key little endian to big endian
+        uint8_t i;
+        for (i = 0; i < 32; i++) {
+            publicKey[i] = pkCtx.publicKey.W[64 - i];
+        }
+        if ((pkCtx.publicKey.W[32] & 1) != 0) {
+            publicKey[31] |= 0x80;
+        }
+        print_public_key(publicKey, pkCtx.address);
 #if defined(TARGET_BLUE)
         UX_DISPLAY(ui_address_blue, ui_address_blue_prepro);
 #elif defined(TARGET_NANOS)
@@ -1977,6 +1983,7 @@ void handleGetPublicKey(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t da
 #endif // #if TARGET
         *flags |= IO_ASYNCH_REPLY;
     } else {
+        *tx = set_result_get_publicKey();
         THROW(0x9000);
     }
 }
