@@ -395,10 +395,10 @@ void parseSetOptionsOpXdr(uint8_t *buffer, txContent_t *txContent) {
     }
     PRINTF("flags: %s\n", txContent->details[1]);
 
-    buffer += printInt(buffer, txContent->details[2], "master weight: ");
-    buffer += printInt(buffer, txContent->details[2], "low: ");
-    buffer += printInt(buffer, txContent->details[2], "medium: ");
-    buffer += printInt(buffer, txContent->details[2], "high: ");
+    buffer += printInt(buffer, txContent->details[2], "mw: ");
+    buffer += printInt(buffer, txContent->details[2], "l: ");
+    buffer += printInt(buffer, txContent->details[2], "m: ");
+    buffer += printInt(buffer, txContent->details[2], "h: ");
     if (!txContent->details[2][0]) {
         strcpy(txContent->details[2], "[no update]");
     }
@@ -430,18 +430,15 @@ void parseSetOptionsOpXdr(uint8_t *buffer, txContent_t *txContent) {
             case SIGNER_KEY_TYPE_ED25519: {
                 char signer[57];
                 public_key_to_address(buffer, signer);
-                strcpy(txContent->details[4], "public key: ");
-                print_summary(signer, txContent->details[4]+12);
+                print_summary(signer, txContent->details[4]);
                 break;
             }
             case SIGNER_KEY_TYPE_PRE_AUTH_TX: {
-                strcpy(txContent->details[4], "pre-auth: ");
-                print_hash_summary(buffer, txContent->details[4]+10);
+                print_hash_summary(buffer, txContent->details[4]);
                 break;
             }
             case SIGNER_KEY_TYPE_HASH_X: {
-                strcpy(txContent->details[4], "hash(x): ");
-                print_hash_summary(buffer, txContent->details[4]+9);
+                print_hash_summary(buffer, txContent->details[4]);
                 break;
             }
             default: THROW(0x6cdd);
@@ -449,8 +446,8 @@ void parseSetOptionsOpXdr(uint8_t *buffer, txContent_t *txContent) {
         buffer += 32;
         uint32_t weight = readUInt32Block(buffer);
         uint8_t offset = strlen(txContent->details[4]);
-        strcpy(txContent->details[4]+offset, "; weight = ");
-        print_int(weight, txContent->details[4]+offset+11);
+        strcpy(txContent->details[4]+offset, " : ");
+        print_int(weight, txContent->details[4]+offset+3);
         PRINTF("signer: %s\n", txContent->details[4]);
     } else {
         strcpy(txContent->details[4], "[no update]");

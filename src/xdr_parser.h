@@ -26,7 +26,11 @@ typedef struct txContent_t {
     char fee[26];
     char memo[29];
     uint8_t operationType;
+#if defined(TARGET_NANOS)
+    char details[5][33];
+#elif defined(TARGET_BLUE)
     char details[5][57];
+#endif
 } txContent_t;
 
 void parseTxXdr(uint8_t *buffer, txContent_t *txContent);

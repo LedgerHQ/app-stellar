@@ -25,13 +25,14 @@
 
 #include "glyphs.h"
 
+#include "base32.h"
+#include "xdr_parser.h"
+#include "stlr_utils.h"
+
 #ifdef HAVE_U2F
 
 #include "u2f_service.h"
 #include "u2f_transport.h"
-#include "base32.h"
-#include "xdr_parser.h"
-#include "stlr_utils.h"
 
 volatile unsigned char u2fMessageBuffer[U2F_MAX_MESSAGE_SIZE];
 
@@ -89,9 +90,7 @@ publicKeyContext_t pkCtx;
 transactionContext_t txCtx;
 txContent_t txContent;
 
-volatile uint8_t fidoTransport;
 volatile char operationCaption[15];
-volatile char subtitleCaption[16];
 
 #if defined(TARGET_NANOS)
 volatile char details1Caption[18];
@@ -101,11 +100,13 @@ volatile char details4Caption[18];
 volatile char details5Caption[18];
 #elif defined(TARGET_BLUE)
 volatile char displayString[33];
+volatile char subtitleCaption[16];
 bagl_element_t tmp_element;
 #endif
 
 #ifdef HAVE_U2F
 
+volatile uint8_t fidoTransport;
 volatile u2f_service_t u2fService;
 
 #endif
