@@ -27,9 +27,17 @@ typedef struct txContent_t {
     char memo[29];
     uint8_t operationType;
 #if defined(TARGET_NANOS)
-    char details[5][33];
+    char details1[28];
+    char details2[28];
+    char details4[30];
+    char details5[45];
+    char details3[50];
 #elif defined(TARGET_BLUE)
-    char details[5][57];
+    char details5[45];
+    char details3[50];
+    char details1[57];
+    char details2[57];
+    char details4[57];
 #endif
 } txContent_t;
 

@@ -1400,11 +1400,11 @@ void ui_approve_tx_blue_init(void) {
     ui_approval_blue_ok = (bagl_element_callback_t)io_seproxyhal_touch_tx_ok;
     ui_approval_blue_cancel = (bagl_element_callback_t)io_seproxyhal_touch_tx_cancel;
     os_memset(ui_approval_blue_values, 0, sizeof(ui_approval_blue_values));
-    ui_approval_blue_values[0] = txContent.details[0];
-    ui_approval_blue_values[1] = txContent.details[1];
-    ui_approval_blue_values[2] = txContent.details[2];
-    ui_approval_blue_values[3] = txContent.details[3];
-    ui_approval_blue_values[4] = txContent.details[4];
+    ui_approval_blue_values[0] = txContent.details1;
+    ui_approval_blue_values[1] = txContent.details2;
+    ui_approval_blue_values[2] = txContent.details3;
+    ui_approval_blue_values[3] = txContent.details4;
+    ui_approval_blue_values[4] = txContent.details5;
     ui_approval_blue_values[5] = txContent.fee;
     ui_approval_blue_values[6] = txContent.memo;
     strcpy(subtitleCaption, txContent.networkId);
@@ -1540,7 +1540,7 @@ const bagl_element_t ui_approve_tx_nanos[] = {
      NULL},
     {{BAGL_LABELINE, 0x03, 16, 26, 96, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-     (char*) txContent.details[0],
+     (char*) txContent.details1,
      0,
      0,
      0,
@@ -1559,7 +1559,7 @@ const bagl_element_t ui_approve_tx_nanos[] = {
      NULL},
     {{BAGL_LABELINE, 0x04, 16, 26, 96, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-     txContent.details[1],
+     txContent.details2,
      0,
      0,
      0,
@@ -1578,7 +1578,7 @@ const bagl_element_t ui_approve_tx_nanos[] = {
      NULL},
     {{BAGL_LABELINE, 0x05, 16, 26, 96, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-     txContent.details[2],
+     txContent.details3,
      0,
      0,
      0,
@@ -1597,7 +1597,7 @@ const bagl_element_t ui_approve_tx_nanos[] = {
      NULL},
     {{BAGL_LABELINE, 0x06, 16, 26, 96, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-     txContent.details[3],
+     txContent.details4,
      0,
      0,
      0,
@@ -1616,7 +1616,7 @@ const bagl_element_t ui_approve_tx_nanos[] = {
      NULL},
     {{BAGL_LABELINE, 0x07, 16, 26, 96, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-     txContent.details[4],
+     txContent.details5,
      0,
      0,
      0,
