@@ -1,14 +1,14 @@
-# Stellar app for the Ledger Nano S
+# Stellar app for the Ledger Nano S and Ledger Blue
 
 ## Introduction
 
-This is a wallet app for the [Ledger Nano S](https://www.ledgerwallet.com/products/ledger-nano-s) that makes it possible to store your [Stellar](https://www.stellar.org/)-based assets on that device.
+This is a wallet app for the [Ledger Nano S](https://www.ledgerwallet.com/products/ledger-nano-s) and [Ledger Blue](https://www.ledgerwallet.com/products/ledger-blue) that makes it possible to store your [Stellar](https://www.stellar.org/)-based assets on those devices.
 
 A companion [Javascript library](https://github.com/lenondupe/stellar-ledger-api) is available to communicate with this app. It also includes some scripts with which to test the app.
 
 ## Building and installing
 
-To build and install the app on your Nano Ledger S you must set up the Nano Ledger S build environment. Please follow the Getting Started instructions at the [Ledger Nano S github repository](https://github.com/LedgerHQ/ledger-nano-s).
+To build and install the app on your Nano S or Blue you must set up the Nano Ledger S or Blue build environment. Please follow the Getting Started instructions at the [Ledger Nano S github repository](https://github.com/LedgerHQ/ledger-nano-s).
 
 Alternatively, you can set up the Vagrant Virtualbox Ledger environment maintained [here](https://github.com/fix/ledger-vagrant). This sets up an Ubuntu virtual machine with the Ledger build environment already set up. Note that if you are on a Mac, at the time of this writing this seems to be the only way to build and load the app.
 
@@ -34,7 +34,7 @@ The operation to retrieve the public key implements an optional keypair verifica
 
 ## Approving a transaction
 
-There are two ways a transaction may be approved by the device. In the case of a single payment, createAccount, managerOffer, or changeTrust operation the transaction can be sent to the device in its xdr representation. The app then parses the xdr and shows the transaction details on the device for approval.
+There are two ways a transaction may be approved by the device. In the case of a single operation transaction the transaction can be sent to the device in its xdr representation. The app then parses the xdr and shows the transaction details on the device for approval.
 Alternatively, if a transaction contains more than a single operation and/or contains other types of operations than mentioned above a different method must be used that takes only the transaction hash. In this case the details of the operation cannot be shown to the user. A warning is shown that no data is available and you then a summary of the hash is shown. Only approve the transaction if you trust the companion application you are using on the host, because in this case you cannot be sure the host sent you the transaction you prepared there or has sent a different transaction to the device to sign.
 
 ## Troubleshooting

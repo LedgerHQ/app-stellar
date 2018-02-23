@@ -23,14 +23,17 @@ include $(BOLOS_SDK)/Makefile.defines
 APPNAME = Stellar
 APP_LOAD_PARAMS=--appFlags 0x40 --path "44'/148'" --curve ed25519 $(COMMON_LOAD_PARAMS)
 
-APPVERSION_M=1
-APPVERSION_N=1
-APPVERSION_P=1
+APPVERSION_M=2
+APPVERSION_N=0
+APPVERSION_P=0
 APPVERSION=$(APPVERSION_M).$(APPVERSION_N).$(APPVERSION_P)
 
 #prepare hsm generation
+ifeq ($(TARGET_NAME),TARGET_BLUE)
+ICONNAME=blue_icon.gif
+else
 ICONNAME=icon.gif
-
+endif
 
 ################
 # Default rule #

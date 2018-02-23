@@ -22,20 +22,23 @@
 #include <stdint.h>
 
 typedef struct txContent_t {
-    uint8_t networkId[32];
-    char source[57];
-    uint32_t fee;
-    uint8_t memoType;
+    char networkId[8];
+    char fee[26];
     char memo[29];
     uint8_t operationType;
-    char destination[57];
-    uint64_t amount;
-    char asset[13];
-    uint64_t trustLimit;
-    char buying[13];
-    char selling[13];
-    uint64_t price;
-    uint64_t offerId;
+#if defined(TARGET_NANOS)
+    char details1[28];
+    char details2[28];
+    char details4[30];
+    char details5[45];
+    char details3[50];
+#elif defined(TARGET_BLUE)
+    char details5[45];
+    char details3[50];
+    char details1[57];
+    char details2[57];
+    char details4[57];
+#endif
 } txContent_t;
 
 void parseTxXdr(uint8_t *buffer, txContent_t *txContent);

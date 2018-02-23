@@ -48,16 +48,11 @@ the validity of the generated keypair.
 | Signature if requested                                                            | 64       |
 | Chain code if requested                                                           | 32       |
 
-### Sign Single Payment Transaction
+### Sign Single Operation Transaction
 
 #### Description
 
-This command signs a Stellar payment transaction after having the user validate the following parameters
-
-  - Amount
-  - Destination
-  - Memo
-  - Fee
+This command signs a Stellar any transaction containing a single operation and lets users validate the operation details
 
 #### Coding
 
@@ -86,37 +81,6 @@ This command signs a Stellar payment transaction after having the user validate 
 |-----------------------------------------------------------------------------------|----------|
 | Serialized transaction chunk size                                                 | 1        |
 | Serialized transaction chunk                                                      | variable |
-
-**Output data**
-
-| *Description*                                                                     | *Length* |
-|-----------------------------------------------------------------------------------|----------|
-| EDDSA encoded signature (ed25519)                                                 | variable |
-
-### Sign Transaction Hash
-
-#### Description
-
-This command signs any Stellar transaction given a transaction hash. The user is warned there is no data available to inspect.
-
-#### Coding
-
-**Command**
-
-| *CLA* | *INS*  | *P1*               | *P2*            | *Lc*     | *Le* |
-|-------|--------|--------------------|-----------------|----------|------|
-|   E0  |   08   |                    |                 |          |      |
-
-
-**Input data**
-
-| *Description*                                                                     | *Length* |
-|-----------------------------------------------------------------------------------|----------|
-| Number of BIP 32 derivations to perform (max 10)                                  | 1        |
-| First derivation index (big endian)                                               | 4        |
-| ...                                                                               | 4        |
-| Last derivation index (big endian)                                                | 4        |
-| Transaction hash                                                                  | 64       |
 
 **Output data**
 

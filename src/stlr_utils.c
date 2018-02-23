@@ -34,11 +34,28 @@ static const uint8_t PUBLIC_NETWORK_ID_HASH[64] = {0x7a, 0xc3, 0x39, 0x97, 0x54,
                                                    0xdb, 0x16, 0x50, 0x8c, 0x01, 0x16, 0x3f, 0x26,
                                                    0xe5, 0xcb, 0x2a, 0x3e, 0x10, 0x45, 0xa9, 0x79};
 
+static const char * captions[][6] = {
+    {"Create Account", "Starting Balance", "Account ID", NULL, NULL, NULL},
+    {"Payment", "Amount", "Destination", NULL, NULL, NULL},
+    {"Path Payment", "Send", "Receive", "Destination", "Path", NULL},
+    {"Create Offer", "Buy", "Price", "Sell", NULL, NULL},
+    {"Remove Offer", "Buy", "Price", "Offer ID", NULL, NULL},
+    {"Change Offer", "Buy", "Price", "Sell", NULL, NULL},
+    {"Passive Offer", "Buy", "Price", "Sell", NULL, NULL},
+    {"Set Options", "Inflation Dest", "Flags", "Thresholds", "Home Domain", "Signer"},
+    {"Change Trust", "Asset", "Issuer", "Limit", NULL, NULL},
+    {"Remove Trust", "Asset", "Issuer", NULL, NULL, NULL},
+    {"Allow Trust", "Account ID", "Asset", NULL, NULL, NULL},
+    {"Revoke Trust", "Account ID", "Asset", NULL, NULL, NULL},
+    {"Account Merge", "Destination", NULL, NULL, NULL, NULL},
+    {"Inflation", NULL, NULL, NULL, NULL, NULL},
+    {"Manage Data", "Name", "Value", NULL, NULL, NULL}
+};
+
 static const char hexChars[] = "0123456789ABCDEF";
 
-/**
- * convert the raw public key to a stellar address
- */
+static const uint8_t AMOUNT_MAX_SIZE = 22;
+
 void public_key_to_address(uint8_t *in, char *out) {
     uint8_t buffer[35];
     buffer[0] = 6 << 3; // version bit 'G'
@@ -55,24 +72,34 @@ void public_key_to_address(uint8_t *in, char *out) {
 
 void print_summary(char *in, char *out) {
     size_t len = strlen(in);
-    if (strlen(in) > 15) {
-        memcpy(out, in, 6);
-        out[6] = '.';
-        out[7] = '.';
-        out[8] = '.';
-        memcpy(out + 9, in + len - 5, 5);
-        out[14] = '\0';
+    if (len > 27) {
+        memcpy(out, in, 12);
+        out[12] = '.';
+        out[13] = '.';
+        out[14] = '.';
+        memcpy(out + 15, in + len - 12, 12);
+        out[27] = '\0';
     } else {
         memcpy(out, in, len);
     }
 }
 
-void print_amount(uint64_t amount, char *asset, char *out, uint8_t len) {
-    char buffer[len];
+void print_public_key(uint8_t *in, char *out) {
+#if defined(TARGET_NANOS)
+    char buffer[57];
+    public_key_to_address(in, buffer);
+    print_summary(buffer, out);
+#elif defined(TARGET_BLUE)
+    public_key_to_address(in, out);
+#endif
+}
+
+void print_amount(uint64_t amount, char *asset, char *out) {
+    char buffer[AMOUNT_MAX_SIZE];
     uint64_t dVal = amount;
     int i, j;
 
-    memset(buffer, 0, len);
+    memset(buffer, 0, AMOUNT_MAX_SIZE);
     for (i = 0; dVal > 0 || i < 9; i++) {
         if (dVal > 0) {
             buffer[i] = (dVal % 10) + '0';
@@ -84,12 +111,12 @@ void print_amount(uint64_t amount, char *asset, char *out, uint8_t len) {
             i += 1;
             buffer[i] = '.';
         }
-        if (i >= len) {
+        if (i >= AMOUNT_MAX_SIZE) {
             THROW(0x6700);
         }
     }
     // reverse order
-    for (i -= 1, j = 0; i >= 0 && j < len-1; i--, j++) {
+    for (i -= 1, j = 0; i >= 0 && j < AMOUNT_MAX_SIZE-1; i--, j++) {
         out[j] = buffer[i];
     }
     // strip trailing 0s
@@ -104,7 +131,7 @@ void print_amount(uint64_t amount, char *asset, char *out, uint8_t len) {
     if (asset) {
         // qualify amount
         out[j++] = ' ';
-        strncpy(out + j, asset, strlen(asset));
+        strcpy(out + j, asset);
         out[j+strlen(asset)] = '\0';
     } else {
         out[j] = '\0';
@@ -112,69 +139,72 @@ void print_amount(uint64_t amount, char *asset, char *out, uint8_t len) {
 
 }
 
-void print_id(uint64_t id, char *out, uint8_t len) {
-    char buffer[len];
+void print_long(uint64_t id, char *out) {
+    char buffer[AMOUNT_MAX_SIZE];
     uint64_t dVal = id;
     int i, j;
 
-    memset(buffer, 0, len);
+    memset(buffer, 0, AMOUNT_MAX_SIZE);
     for (i = 0; dVal > 0; i++) {
         buffer[i] = (dVal % 10) + '0';
         dVal /= 10;
-        if (i >= len) {
+        if (i >= AMOUNT_MAX_SIZE) {
             THROW(0x6700);
         }
     }
     // reverse order
-    for (i -= 1, j = 0; i >= 0 && j < len-1; i--, j++) {
+    for (i -= 1, j = 0; i >= 0 && j < AMOUNT_MAX_SIZE-1; i--, j++) {
         out[j] = buffer[i];
     }
     out[j] = '\0';
 }
 
+void print_int(uint32_t id, char *out) {
+    char buffer[10];
+    uint64_t dVal = id;
+    int i, j;
+
+    memset(buffer, 0, 10);
+    for (i = 0; dVal > 0; i++) {
+        buffer[i] = (dVal % 10) + '0';
+        dVal /= 10;
+        if (i >= 10) {
+            THROW(0x6700);
+        }
+    }
+    // reverse order
+    for (i -= 1, j = 0; i >= 0 && j < 10-1; i--, j++) {
+        out[j] = buffer[i];
+    }
+    if (j == 0) {
+        out[0] = '0';
+        j++;
+    }
+    out[j] = '\0';
+}
+
+
+void print_bits(uint32_t in, char *out) {
+    out[2] = (in & 0x01) ? '1' : '0';
+    out[1] = (in & 0x02) ? '1' : '0';
+    out[0] = (in & 0x04) ? '1' : '0';
+    out[3] = '\0';
+}
+
 void print_network_id(uint8_t *in, char *out) {
     if (memcmp(in, PUBLIC_NETWORK_ID_HASH, 32) == 0) {
-        strncpy(out, "Public", 7);
+        strcpy(out, "Public");
     } else if (memcmp(in, TEST_NETWORK_ID_HASH, 32) == 0) {
-        strncpy(out, "Test", 5);
+        strcpy(out, "Test");
     } else {
-        strncpy(out, "Unknown", 8);
+        strcpy(out, "Unknown");
     }
 }
 
-void print_operation_type(uint8_t type, char *out) {
-    switch (type) {
-        case OPERATION_TYPE_CREATE_ACCOUNT: {
-            strncpy(out, "Create Acc", 11);
-            break;
-        }
-        case OPERATION_TYPE_PAYMENT: {
-            strncpy(out, "Payment", 8);
-            break;
-        }
-        case OPERATION_TYPE_CREATE_OFFER: {
-            strncpy(out, "Create Offer", 13);
-            break;
-        }
-        case OPERATION_TYPE_DELETE_OFFER: {
-            strncpy(out, "Delete Offer", 13);
-            break;
-        }
-        case OPERATION_TYPE_CHANGE_OFFER: {
-            strncpy(out, "Change Offer", 13);
-            break;
-        }
-        case OPERATION_TYPE_ADD_TRUST: {
-            strncpy(out, "Add Trust", 10);
-            break;
-        }
-        case OPERATION_TYPE_REMOVE_TRUST: {
-            strncpy(out, "Remove Trust", 13);
-            break;
-        }
-        default: {
-            strncpy(out, "Unknown", 8);
-        }
+void print_caption(uint8_t operationType, uint8_t captionType, char *out) {
+    char *in = ((char*) PIC(captions[operationType][captionType]));
+    if (in) {
+        strcpy(out, in);
     }
 }
 
@@ -187,7 +217,16 @@ void print_hash_summary(uint8_t *in, char *out) {
     out[j++] = '.';
     out[j++] = '.';
     out[j++] = '.';
-    for (i = 61; i < 64; i+=1, j+=2) {
+    for (i = 29; i < 32; i+=1, j+=2) {
+        out[j] = hexChars[in[i] / 16];
+        out[j+1] = hexChars[in[i] % 16];
+    }
+    out[j] = '\0';
+}
+
+void print_hash(uint8_t *in, char *out) {
+    uint8_t i, j;
+    for (i = 0, j = 0; i < 32; i+=1, j+=2) {
         out[j] = hexChars[in[i] / 16];
         out[j+1] = hexChars[in[i] % 16];
     }
