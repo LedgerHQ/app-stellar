@@ -1792,7 +1792,11 @@ unsigned int io_seproxyhal_touch_tx_ok(const bagl_element_t *e) {
     os_memset(privateKeyData, 0, sizeof(privateKeyData));
 
     // sign hash
+#if CX_APILEVEL >= 8
+    tx = cx_eddsa_sign(&privateKey, CX_LAST, CX_SHA512, txCtx.txHash, 32, NULL, 0, G_io_apdu_buffer, NULL);
+#else    
     tx = cx_eddsa_sign(&privateKey, NULL, CX_LAST, CX_SHA512, txCtx.txHash, 32, G_io_apdu_buffer);
+#endif    
     os_memset(&privateKey, 0, sizeof(privateKey));
 
     G_io_apdu_buffer[tx++] = 0x90;
@@ -1960,7 +1964,11 @@ void handleGetPublicKey(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t da
     os_memset(privateKeyData, 0, sizeof(privateKeyData));
     cx_ecfp_generate_pair(CX_CURVE_Ed25519, &pkCtx.publicKey, &privateKey, 1);
     if (pkCtx.returnSignature) {
+#if CX_APILEVEL >= 8
+        cx_eddsa_sign(&privateKey, CX_LAST, CX_SHA512, msg, msgLength, NULL, 0, pkCtx.signature, NULL);
+#else        
         cx_eddsa_sign(&privateKey, NULL, CX_LAST, CX_SHA512, msg, msgLength, pkCtx.signature);
+#endif        
     }
     os_memset(&privateKey, 0, sizeof(privateKey));
 
