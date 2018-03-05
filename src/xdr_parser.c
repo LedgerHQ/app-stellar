@@ -291,7 +291,7 @@ uint8_t parseOfferOpXdr(uint8_t *buffer, txContent_t *txContent, uint32_t operat
     buffer += 4;
     uint32_t denominator = readUInt32Block(buffer);
     buffer += 4;
-    uint64_t price = (numerator * 10000000) / denominator;
+    uint64_t price = ((uint64_t)numerator * 10000000) / denominator;
     print_amount(price, selling, txContent->details2);
     PRINTF("price: %s\n", txContent->details2);
 
