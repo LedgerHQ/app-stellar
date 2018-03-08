@@ -51,6 +51,7 @@ uint32_t set_result_get_publicKey(void);
 #define INS_GET_PUBLIC_KEY 0x02
 #define INS_SIGN_TX 0x04
 #define INS_GET_APP_CONFIGURATION 0x06
+#define INS_SIGN_TX_HASH 0x08
 #define P1_NO_SIGNATURE 0x00
 #define P1_SIGNATURE 0x01
 #define P2_NO_CONFIRM 0x00
@@ -91,6 +92,7 @@ transactionContext_t txCtx;
 txContent_t txContent;
 
 volatile char operationCaption[15];
+volatile uint8_t unsafeMode;
 
 #if defined(TARGET_NANOS)
 volatile char details1Caption[18];
@@ -279,6 +281,7 @@ unsigned int ui_idle_blue_button(unsigned int button_mask, unsigned int button_m
 const ux_menu_entry_t menu_main[];
 const ux_menu_entry_t menu_settings[];
 const ux_menu_entry_t menu_settings_browser[];
+const ux_menu_entry_t menu_settings_unsafe[];
 
 // change the setting
 void menu_settings_browser_change(unsigned int enabled) {
@@ -290,10 +293,20 @@ void menu_settings_browser_change(unsigned int enabled) {
     UX_MENU_DISPLAY(1, menu_settings, NULL);
 }
 
+void menu_settings_unsafe_change(unsigned int enabled) {
+    unsafeMode = enabled;
+    UX_MENU_DISPLAY(1, menu_settings, NULL);
+}
+
 // show the currently activated entry
 void menu_settings_browser_init(unsigned int ignored) {
     UNUSED(ignored);
     UX_MENU_DISPLAY(N_storage.fidoTransport ? 1 : 0, menu_settings_browser, NULL);
+}
+
+void menu_settings_unsafe_init(unsigned int ignored) {
+    UNUSED(ignored);
+    UX_MENU_DISPLAY(unsafeMode ? 1 : 0, menu_settings_unsafe, NULL);
 }
 
 const ux_menu_entry_t menu_settings_browser[] = {
@@ -302,8 +315,15 @@ const ux_menu_entry_t menu_settings_browser[] = {
     UX_MENU_END
     };
 
+const ux_menu_entry_t menu_settings_unsafe[] = {
+    {NULL, menu_settings_unsafe_change, 0, NULL, "No", NULL, 0, 0},
+    {NULL, menu_settings_unsafe_change, 1, NULL, "Yes", NULL, 0, 0},
+    UX_MENU_END
+    };
+
 const ux_menu_entry_t menu_settings[] = {
     {NULL, menu_settings_browser_init, 0, NULL, "Browser support", NULL, 0, 0},
+    {NULL, menu_settings_unsafe_init, 0, NULL, "Unsafe Mode", NULL, 0, 0},
     {menu_main, NULL, 1, &C_icon_back, "Back", NULL, 61, 40},
     UX_MENU_END
     };
@@ -330,6 +350,19 @@ const bagl_element_t *ui_settings_blue_toggle_browser(const bagl_element_t *e) {
     // toggle setting and request redraw of settings elements
     uint8_t setting = N_storage.fidoTransport ? 0 : 1;
     nvm_write(&N_storage.fidoTransport, (void *)&setting, sizeof(uint8_t));
+    USB_power_U2F(0, 0);
+    USB_power_U2F(1, N_storage.fidoTransport);
+
+    // only refresh settings mutable drawn elements
+    UX_REDISPLAY_IDX(8);
+
+    // won't redisplay the bagl_none
+    return 0;
+}
+
+const bagl_element_t *ui_settings_blue_toggle_unsafe(const bagl_element_t *e) {
+    // toggle setting and request redraw of settings elements
+    unsafeMode = (unsafeMode == 0) ? 1 : 0;
 
     // only refresh settings mutable drawn elements
     UX_REDISPLAY_IDX(8);
@@ -437,6 +470,41 @@ const bagl_element_t ui_settings_blue[] = {
      NULL,
      NULL},
 #endif // HAVE_U2F
+
+    {{BAGL_LABELINE, 0x00, 30, 173, 160, 30, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX, 0},
+     "Unsafe mode",
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+    {{BAGL_LABELINE, 0x00, 30, 194, 260, 30, 0, 0, BAGL_FILL, 0x999999, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_8_11PX, 0},
+     "Enable hash signing ability",
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+    {{BAGL_NONE | BAGL_FLAG_TOUCHABLE, 0x00, 0, 146, 320, 68, 0, 0, BAGL_FILL, 0xFFFFFF, 0x000000, 0, 0},
+     NULL,
+     0,
+     0xEEEEEE,
+     0x000000,
+     ui_settings_blue_toggle_unsafe,
+     ui_settings_out_over,
+     ui_settings_out_over},
+
+    {{BAGL_ICON, 0x02, 258, 166, 32, 18, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, 0, 0},
+     NULL,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
 };
 
 const bagl_element_t *ui_settings_blue_prepro(const bagl_element_t *e) {
@@ -452,6 +520,14 @@ const bagl_element_t *ui_settings_blue_prepro(const bagl_element_t *e) {
         case 0x01:
             // swap icon content
             if (N_storage.fidoTransport) {
+                tmp_element.text = &C_icon_toggle_set;
+            } else {
+                tmp_element.text = &C_icon_toggle_reset;
+            }
+            break;
+        case 0x02:
+            // swap icon content
+            if (unsafeMode) {
                 tmp_element.text = &C_icon_toggle_set;
             } else {
                 tmp_element.text = &C_icon_toggle_reset;
@@ -844,8 +920,8 @@ const char *const ui_approval_blue_details_name[][7] = {
     { "ACCOUNT ID", "ASSET", NULL, NULL, NULL, "FEE", "MEMO"},
     { "DESTINATION", NULL, NULL, NULL, NULL, "FEE", "MEMO"},
     {  NULL, NULL, NULL, NULL, NULL, "FEE", "MEMO"},
-    { "NAME", "VALUE", NULL, NULL, NULL, "FEE", "MEMO"}
-
+    { "NAME", "VALUE", NULL, NULL, NULL, "FEE", "MEMO"},
+    {  NULL, NULL, NULL, NULL, NULL, "TX HASH", NULL}
 };
 
 const bagl_element_t *ui_approval_common_show_details(unsigned int detailidx) {
@@ -957,7 +1033,7 @@ const bagl_element_t ui_approval_blue[] = {
      NULL},
     // x-18 when ...
     {{BAGL_LABELINE, 0x15, 130, 179, 160, 20, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX | BAGL_FONT_ALIGNMENT_RIGHT, 0},
-     txContent.fee,
+     NULL,
      0,
      0,
      0,
@@ -1412,6 +1488,16 @@ void ui_approve_tx_blue_init(void) {
     ui_approval_blue_init();
 }
 
+void ui_approve_tx_hash_blue_init(void) {
+    ui_approval_blue_ok = (bagl_element_callback_t)io_seproxyhal_touch_tx_ok;
+    ui_approval_blue_cancel = (bagl_element_callback_t)io_seproxyhal_touch_tx_cancel;
+    os_memset(ui_approval_blue_values, 0, sizeof(ui_approval_blue_values));
+    ui_approval_blue_values[5] = txContent.details1;
+    strcpy(operationCaption, "Unsafe mode");
+    strcpy(subtitleCaption, "No details available");
+    ui_approval_blue_init();
+}
+
 #endif // #if defined(TARGET_BLUE)
 
 #if defined(TARGET_NANOS)
@@ -1432,7 +1518,7 @@ const uint8_t ui_elements_map[][MAX_UI_STEPS] = {
   { 0x01, 0x02, 0x03, 0x08, 0x09, 0x10, 0x00, 0x00, 0x00, 0x00 }, // account merge
   { 0x01, 0x02, 0x08, 0x09, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00 }, // inflation
   { 0x01, 0x02, 0x03, 0x04, 0x08, 0x09, 0x10, 0x00, 0x00, 0x00 }, // manage data
-  { 0x01, 0x03, 0x02, 0x20, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00 }  // unknown
+  { 0x01, 0x20, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }  // unknown
 };
 
 unsigned int ui_tx_approval_prepro(const bagl_element_t *element) {
@@ -1683,16 +1769,16 @@ const bagl_element_t ui_approve_tx_nanos[] = {
 
     {{BAGL_LABELINE, 0x20, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "No details",
+     "WARNING",
      0,
      0,
      0,
      NULL,
      NULL,
      NULL},
-    {{BAGL_LABELINE, 0x20, 23, 26, 82, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "available",
+    {{BAGL_LABELINE, 0x20, 16, 26, 96, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
+     "Unsafe mode: no details available",
      0,
      0,
      0,
@@ -2074,8 +2160,41 @@ void handleSignTx(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLeng
 }
 
 void handleSignTxHash(uint8_t *dataBuffer, uint16_t dataLength, volatile unsigned int *flags, volatile unsigned int *tx) {
-    // no longer supported
-    THROW(0x6c66);
+
+    if (!unsafeMode) {
+        THROW(0x6c66);
+    }
+
+    os_memset(&txCtx, 0, sizeof(txCtx));
+
+    // read the bip32 path
+    txCtx.bip32PathLength = readBip32Path(dataBuffer, txCtx.bip32Path);
+    dataBuffer += 1 + txCtx.bip32PathLength * 4;
+    dataLength -= 1 + txCtx.bip32PathLength * 4;
+
+    // read the tx hash
+    os_memmove(txCtx.txHash, dataBuffer, dataLength);
+
+    // prepare for display
+    os_memset(&txContent, 0, sizeof(txContent));
+    txContent.operationType = OPERATION_TYPE_UNKNOWN;
+    print_hash_summary(txCtx.txHash, (char *)txContent.details1);
+
+#if defined(TARGET_NANOS)
+    os_memset((char *)details1Caption, 0, sizeof(details1Caption));
+    print_caption(txContent.operationType, CAPTION_TYPE_DETAILS1, (char *)details1Caption);
+#endif // #if TARGET
+
+#if defined(TARGET_BLUE)
+    ux_step_count = 0;
+    ui_approve_tx_hash_blue_init();
+#elif defined(TARGET_NANOS)
+    ux_step = 0;
+    ux_step_count = countSteps(txContent.operationType);
+    UX_DISPLAY(ui_approve_tx_nanos, ui_tx_approval_prepro);
+#endif // #if TARGET
+
+    *flags |= IO_ASYNCH_REPLY;
 }
 
 void handleApdu(volatile unsigned int *flags, volatile unsigned int *tx) {
@@ -2101,6 +2220,11 @@ void handleApdu(volatile unsigned int *flags, volatile unsigned int *tx) {
                              G_io_apdu_buffer[OFFSET_P2],
                              G_io_apdu_buffer + OFFSET_CDATA,
                              G_io_apdu_buffer[OFFSET_LC], flags, tx);
+                break;
+
+            case INS_SIGN_TX_HASH:
+                handleSignTxHash(G_io_apdu_buffer + OFFSET_CDATA,
+                                 G_io_apdu_buffer[OFFSET_LC], flags, tx);
                 break;
 
             case INS_GET_APP_CONFIGURATION:
@@ -2139,7 +2263,10 @@ void handleApdu(volatile unsigned int *flags, volatile unsigned int *tx) {
     END_TRY;
 }
 
-void sample_main(void) {
+void stellar_main(void) {
+    // unsafe mode is not persistent
+    unsafeMode = 0;
+
     volatile unsigned int rx = 0;
     volatile unsigned int tx = 0;
     volatile unsigned int flags = 0;
@@ -2314,7 +2441,7 @@ __attribute__((section(".boot"))) int main(void) {
                 UX_SET_STATUS_BAR_COLOR(0xFFFFFF, COLOR_APP);
 #endif // #if defined(TARGET_BLUE)
 
-                sample_main();
+                stellar_main();
             }
             CATCH(EXCEPTION_IO_RESET) {
                 // reset IO and UX
