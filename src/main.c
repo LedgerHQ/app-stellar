@@ -437,7 +437,7 @@ const bagl_element_t ui_settings_blue[] = {
 
 #ifdef HAVE_U2F
     {{BAGL_LABELINE, 0x00, 30, 105, 160, 30, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX, 0},
-     "Browser support",
+     "Unsafe mode",
      0,
      0,
      0,
@@ -445,7 +445,7 @@ const bagl_element_t ui_settings_blue[] = {
      NULL,
      NULL},
     {{BAGL_LABELINE, 0x00, 30, 126, 260, 30, 0, 0, BAGL_FILL, 0x999999, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_8_11PX, 0},
-     "Enable integrated browser support",
+     "Enable hash signing ability",
      0,
      0,
      0,
@@ -457,7 +457,7 @@ const bagl_element_t ui_settings_blue[] = {
      0,
      0xEEEEEE,
      0x000000,
-     ui_settings_blue_toggle_browser,
+     ui_settings_blue_toggle_unsafe,
      ui_settings_out_over,
      ui_settings_out_over},
 
@@ -472,7 +472,7 @@ const bagl_element_t ui_settings_blue[] = {
 #endif // HAVE_U2F
 
     {{BAGL_LABELINE, 0x00, 30, 173, 160, 30, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX, 0},
-     "Unsafe mode",
+     "Browser support",
      0,
      0,
      0,
@@ -480,7 +480,7 @@ const bagl_element_t ui_settings_blue[] = {
      NULL,
      NULL},
     {{BAGL_LABELINE, 0x00, 30, 194, 260, 30, 0, 0, BAGL_FILL, 0x999999, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_8_11PX, 0},
-     "Enable hash signing ability",
+     "Enable integrated browser support",
      0,
      0,
      0,
@@ -492,7 +492,7 @@ const bagl_element_t ui_settings_blue[] = {
      0,
      0xEEEEEE,
      0x000000,
-     ui_settings_blue_toggle_unsafe,
+     ui_settings_blue_toggle_browser,
      ui_settings_out_over,
      ui_settings_out_over},
 
@@ -519,7 +519,7 @@ const bagl_element_t *ui_settings_blue_prepro(const bagl_element_t *e) {
         switch (e->component.userid) {
         case 0x01:
             // swap icon content
-            if (N_storage.fidoTransport) {
+            if (unsafeMode) {
                 tmp_element.text = &C_icon_toggle_set;
             } else {
                 tmp_element.text = &C_icon_toggle_reset;
@@ -527,7 +527,7 @@ const bagl_element_t *ui_settings_blue_prepro(const bagl_element_t *e) {
             break;
         case 0x02:
             // swap icon content
-            if (unsafeMode) {
+            if (N_storage.fidoTransport) {
                 tmp_element.text = &C_icon_toggle_set;
             } else {
                 tmp_element.text = &C_icon_toggle_reset;
