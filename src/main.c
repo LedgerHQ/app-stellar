@@ -92,7 +92,7 @@ transactionContext_t txCtx;
 txContent_t txContent;
 
 volatile char operationCaption[15];
-volatile uint8_t unsafeMode;
+volatile uint8_t multiOpsSupport;
 
 #if defined(TARGET_NANOS)
 volatile char details1Caption[18];
@@ -281,7 +281,7 @@ unsigned int ui_idle_blue_button(unsigned int button_mask, unsigned int button_m
 const ux_menu_entry_t menu_main[];
 const ux_menu_entry_t menu_settings[];
 const ux_menu_entry_t menu_settings_browser[];
-const ux_menu_entry_t menu_settings_unsafe[];
+const ux_menu_entry_t menu_settings_multi_ops[];
 
 // change the setting
 void menu_settings_browser_change(unsigned int enabled) {
@@ -293,8 +293,8 @@ void menu_settings_browser_change(unsigned int enabled) {
     UX_MENU_DISPLAY(1, menu_settings, NULL);
 }
 
-void menu_settings_unsafe_change(unsigned int enabled) {
-    unsafeMode = enabled;
+void menu_settings_multi_ops_change(unsigned int enabled) {
+    multiOpsSupport = enabled;
     UX_MENU_DISPLAY(1, menu_settings, NULL);
 }
 
@@ -304,9 +304,9 @@ void menu_settings_browser_init(unsigned int ignored) {
     UX_MENU_DISPLAY(N_storage.fidoTransport ? 1 : 0, menu_settings_browser, NULL);
 }
 
-void menu_settings_unsafe_init(unsigned int ignored) {
+void menu_settings_multi_ops_init(unsigned int ignored) {
     UNUSED(ignored);
-    UX_MENU_DISPLAY(unsafeMode ? 1 : 0, menu_settings_unsafe, NULL);
+    UX_MENU_DISPLAY(multiOpsSupport ? 1 : 0, menu_settings_multi_ops, NULL);
 }
 
 const ux_menu_entry_t menu_settings_browser[] = {
@@ -315,15 +315,15 @@ const ux_menu_entry_t menu_settings_browser[] = {
     UX_MENU_END
     };
 
-const ux_menu_entry_t menu_settings_unsafe[] = {
-    {NULL, menu_settings_unsafe_change, 0, NULL, "No", NULL, 0, 0},
-    {NULL, menu_settings_unsafe_change, 1, NULL, "Yes", NULL, 0, 0},
+const ux_menu_entry_t menu_settings_multi_ops[] = {
+    {NULL, menu_settings_multi_ops_change, 0, NULL, "No", NULL, 0, 0},
+    {NULL, menu_settings_multi_ops_change, 1, NULL, "Yes", NULL, 0, 0},
     UX_MENU_END
     };
 
 const ux_menu_entry_t menu_settings[] = {
     {NULL, menu_settings_browser_init, 0, NULL, "Browser support", NULL, 0, 0},
-    {NULL, menu_settings_unsafe_init, 0, NULL, "Unsafe Mode", NULL, 0, 0},
+    {NULL, menu_settings_multi_ops_init, 0, NULL, "Enable multi-ops", NULL, 0, 0},
     {menu_main, NULL, 1, &C_icon_back, "Back", NULL, 61, 40},
     UX_MENU_END
     };
@@ -360,9 +360,9 @@ const bagl_element_t *ui_settings_blue_toggle_browser(const bagl_element_t *e) {
     return 0;
 }
 
-const bagl_element_t *ui_settings_blue_toggle_unsafe(const bagl_element_t *e) {
+const bagl_element_t *ui_settings_blue_toggle_multi_ops(const bagl_element_t *e) {
     // toggle setting and request redraw of settings elements
-    unsafeMode = (unsafeMode == 0) ? 1 : 0;
+    multiOpsSupport = (multiOpsSupport == 0) ? 1 : 0;
 
     // only refresh settings mutable drawn elements
     UX_REDISPLAY_IDX(8);
@@ -437,7 +437,7 @@ const bagl_element_t ui_settings_blue[] = {
 
 #ifdef HAVE_U2F
     {{BAGL_LABELINE, 0x00, 30, 105, 160, 30, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX, 0},
-     "Unsafe mode",
+     "Enable multi-ops",
      0,
      0,
      0,
@@ -445,7 +445,7 @@ const bagl_element_t ui_settings_blue[] = {
      NULL,
      NULL},
     {{BAGL_LABELINE, 0x00, 30, 126, 260, 30, 0, 0, BAGL_FILL, 0x999999, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_8_11PX, 0},
-     "Enable hash signing ability",
+     "Enable multi-operation support",
      0,
      0,
      0,
@@ -457,7 +457,7 @@ const bagl_element_t ui_settings_blue[] = {
      0,
      0xEEEEEE,
      0x000000,
-     ui_settings_blue_toggle_unsafe,
+     ui_settings_blue_toggle_multi_ops,
      ui_settings_out_over,
      ui_settings_out_over},
 
@@ -519,7 +519,7 @@ const bagl_element_t *ui_settings_blue_prepro(const bagl_element_t *e) {
         switch (e->component.userid) {
         case 0x01:
             // swap icon content
-            if (unsafeMode) {
+            if (multiOpsSupport) {
                 tmp_element.text = &C_icon_toggle_set;
             } else {
                 tmp_element.text = &C_icon_toggle_reset;
@@ -921,7 +921,7 @@ const char *const ui_approval_blue_details_name[][7] = {
     { "DESTINATION", NULL, NULL, NULL, NULL, "FEE", "MEMO"},
     {  NULL, NULL, NULL, NULL, NULL, "FEE", "MEMO"},
     { "NAME", "VALUE", NULL, NULL, NULL, "FEE", "MEMO"},
-    {  NULL, NULL, NULL, NULL, NULL, "TX HASH", NULL}
+    {  NULL, NULL, NULL, NULL, NULL, "HASH", NULL}
 };
 
 const bagl_element_t *ui_approval_common_show_details(unsigned int detailidx) {
@@ -1493,7 +1493,7 @@ void ui_approve_tx_hash_blue_init(void) {
     ui_approval_blue_cancel = (bagl_element_callback_t)io_seproxyhal_touch_tx_cancel;
     os_memset(ui_approval_blue_values, 0, sizeof(ui_approval_blue_values));
     ui_approval_blue_values[5] = txContent.details1;
-    strcpy(operationCaption, "Unsafe mode");
+    strcpy(operationCaption, "WARNING");
     strcpy(subtitleCaption, "No details available");
     ui_approval_blue_init();
 }
@@ -1778,7 +1778,7 @@ const bagl_element_t ui_approve_tx_nanos[] = {
      NULL},
     {{BAGL_LABELINE, 0x20, 16, 26, 96, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-     "Unsafe mode: no details available",
+     "no details available",
      0,
      0,
      0,
@@ -2161,7 +2161,7 @@ void handleSignTx(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLeng
 
 void handleSignTxHash(uint8_t *dataBuffer, uint16_t dataLength, volatile unsigned int *flags, volatile unsigned int *tx) {
 
-    if (!unsafeMode) {
+    if (!multiOpsSupport) {
         THROW(0x6c66);
     }
 
@@ -2264,8 +2264,8 @@ void handleApdu(volatile unsigned int *flags, volatile unsigned int *tx) {
 }
 
 void stellar_main(void) {
-    // unsafe mode is not persistent
-    unsafeMode = 0;
+    // multi-ops support is not persistent
+    multiOpsSupport = 0;
 
     volatile unsigned int rx = 0;
     volatile unsigned int tx = 0;
