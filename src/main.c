@@ -2084,7 +2084,7 @@ void handleGetPublicKey(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t da
 }
 
 void handleGetAppConfiguration(volatile unsigned int *tx) {
-    G_io_apdu_buffer[0] = 0x00;
+    G_io_apdu_buffer[0] = multiOpsSupport ? 0x01 : 0x00;
     G_io_apdu_buffer[1] = LEDGER_MAJOR_VERSION;
     G_io_apdu_buffer[2] = LEDGER_MINOR_VERSION;
     G_io_apdu_buffer[3] = LEDGER_PATCH_VERSION;
