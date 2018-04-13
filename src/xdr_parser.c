@@ -292,7 +292,7 @@ uint8_t parseOfferOpXdr(uint8_t *buffer, txContent_t *txContent, uint32_t operat
     uint32_t denominator = readUInt32Block(buffer);
     buffer += 4;
     uint64_t price = ((uint64_t)numerator * 10000000) / denominator;
-    print_amount(price, selling, txContent->details2);
+    print_amount(price, NULL, txContent->details2);
     PRINTF("price: %s\n", txContent->details2);
 
     if (operationType == XDR_OPERATION_TYPE_MANAGE_OFFER) {
