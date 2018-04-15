@@ -2,8 +2,6 @@
  *   Ledger Stellar App
  *   (c) 2017 Ledger
  *
- *  adapted from https://github.com/mjg59/tpmtotp/blob/master/base32.h
- *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
  *  You may obtain a copy of the License at
@@ -69,6 +67,7 @@
 #define OPERATION_TYPE_ACCOUNT_MERGE 12
 #define OPERATION_TYPE_INFLATION 13
 #define OPERATION_TYPE_MANAGE_DATA 14
+#define OPERATION_TYPE_UNKNOWN 15
 
 #define CAPTION_TYPE_OPERATION 0
 #define CAPTION_TYPE_DETAILS1 1
@@ -93,8 +92,6 @@ void print_network_id(uint8_t *in, char *out);
 void print_caption(uint8_t operationType, uint8_t captionType, char *out);
 
 void print_hash_summary(uint8_t *in, char *out);
-
-void print_hash(uint8_t *in, char *out);
 
 void print_bits(uint32_t in, char *out);
 

@@ -2,8 +2,6 @@
  *   Ledger Stellar App
  *   (c) 2017 Ledger
  *
- *  adapted from https://github.com/mjg59/tpmtotp/blob/master/base32.h
- *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
  *  You may obtain a copy of the License at
@@ -49,7 +47,8 @@ static const char * captions[][6] = {
     {"Revoke Trust", "Account ID", "Asset", NULL, NULL, NULL},
     {"Account Merge", "Destination", NULL, NULL, NULL, NULL},
     {"Inflation", NULL, NULL, NULL, NULL, NULL},
-    {"Manage Data", "Name", "Value", NULL, NULL, NULL}
+    {"Manage Data", "Name", "Value", NULL, NULL, NULL},
+    {NULL, "Hash", NULL, NULL, NULL, NULL}
 };
 
 static const char hexChars[] = "0123456789ABCDEF";
@@ -210,23 +209,14 @@ void print_caption(uint8_t operationType, uint8_t captionType, char *out) {
 
 void print_hash_summary(uint8_t *in, char *out) {
     uint8_t i, j;
-    for (i = 0, j = 0; i < 3; i+=1, j+=2) {
+    for (i = 0, j = 0; i < 4; i+=1, j+=2) {
         out[j] = hexChars[in[i] / 16];
         out[j+1] = hexChars[in[i] % 16];
     }
     out[j++] = '.';
     out[j++] = '.';
     out[j++] = '.';
-    for (i = 29; i < 32; i+=1, j+=2) {
-        out[j] = hexChars[in[i] / 16];
-        out[j+1] = hexChars[in[i] % 16];
-    }
-    out[j] = '\0';
-}
-
-void print_hash(uint8_t *in, char *out) {
-    uint8_t i, j;
-    for (i = 0, j = 0; i < 32; i+=1, j+=2) {
+    for (i = 28; i < 32; i+=1, j+=2) {
         out[j] = hexChars[in[i] / 16];
         out[j+1] = hexChars[in[i] % 16];
     }

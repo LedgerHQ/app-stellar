@@ -2,8 +2,6 @@
  *   Ledger Stellar App
  *   (c) 2017 Ledger
  *
- *  adapted from https://github.com/mjg59/tpmtotp/blob/master/base32.h
- *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
  *  You may obtain a copy of the License at
@@ -292,7 +290,7 @@ uint8_t parseOfferOpXdr(uint8_t *buffer, txContent_t *txContent, uint32_t operat
     uint32_t denominator = readUInt32Block(buffer);
     buffer += 4;
     uint64_t price = ((uint64_t)numerator * 10000000) / denominator;
-    print_amount(price, selling, txContent->details2);
+    print_amount(price, NULL, txContent->details2);
     PRINTF("price: %s\n", txContent->details2);
 
     if (operationType == XDR_OPERATION_TYPE_MANAGE_OFFER) {
