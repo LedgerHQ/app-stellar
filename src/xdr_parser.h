@@ -1,6 +1,6 @@
 /*******************************************************************************
  *   Ledger Stellar App
- *   (c) 2017 Ledger
+ *   (c) 2017-2018 Ledger
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -19,26 +19,12 @@
 
 #include <stdint.h>
 
-typedef struct txContent_t {
-    char networkId[8];
-    char fee[26];
-    char memo[29];
-    uint8_t operationType;
-#if defined(TARGET_NANOS)
-    char details1[28];
-    char details2[28];
-    char details4[30];
-    char details5[45];
-    char details3[50];
-#elif defined(TARGET_BLUE)
-    char details5[45];
-    char details3[50];
-    char details1[57];
-    char details2[57];
-    char details4[57];
-#endif
-} txContent_t;
+typedef struct {
+    uint8_t opType;
+    char txDetails[4][29];
+    char opDetails[5][50];
+} tx_content_t;
 
-void parseTxXdr(uint8_t *buffer, txContent_t *txContent);
+void parseTxXdr(uint8_t *buffer, tx_content_t *content);
 
 #endif

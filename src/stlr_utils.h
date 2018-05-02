@@ -1,6 +1,6 @@
 /*******************************************************************************
  *   Ledger Stellar App
- *   (c) 2017 Ledger
+ *   (c) 2017-2018 Ledger
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -56,46 +56,37 @@
 #define OPERATION_TYPE_PAYMENT 1
 #define OPERATION_TYPE_PATH_PAYMENT 2
 #define OPERATION_TYPE_CREATE_OFFER 3
-#define OPERATION_TYPE_DELETE_OFFER 4
+#define OPERATION_TYPE_REMOVE_OFFER 4
 #define OPERATION_TYPE_CHANGE_OFFER 5
-#define OPERATION_TYPE_CREATE_PASSIVE_OFFER 6
-#define OPERATION_TYPE_SET_OPTIONS 7
-#define OPERATION_TYPE_CHANGE_TRUST 8
-#define OPERATION_TYPE_REMOVE_TRUST 9
-#define OPERATION_TYPE_ALLOW_TRUST 10
-#define OPERATION_TYPE_REVOKE_TRUST 11
-#define OPERATION_TYPE_ACCOUNT_MERGE 12
-#define OPERATION_TYPE_INFLATION 13
-#define OPERATION_TYPE_MANAGE_DATA 14
+#define OPERATION_TYPE_SET_OPTIONS 6
+#define OPERATION_TYPE_CHANGE_TRUST 7
+#define OPERATION_TYPE_REMOVE_TRUST 8
+#define OPERATION_TYPE_ALLOW_TRUST 9
+#define OPERATION_TYPE_REVOKE_TRUST 10
+#define OPERATION_TYPE_ACCOUNT_MERGE 11
+#define OPERATION_TYPE_INFLATION 12
+#define OPERATION_TYPE_SET_DATA 13
+#define OPERATION_TYPE_REMOVE_DATA 14
 #define OPERATION_TYPE_UNKNOWN 15
-
-#define CAPTION_TYPE_OPERATION 0
-#define CAPTION_TYPE_DETAILS1 1
-#define CAPTION_TYPE_DETAILS2 2
-#define CAPTION_TYPE_DETAILS3 3
-#define CAPTION_TYPE_DETAILS4 4
-#define CAPTION_TYPE_DETAILS5 5
-
 
 void public_key_to_address(uint8_t *in, char *out);
 
 void print_summary(char *in, char *out);
 
+void print_short_summary(char *in, char *out);
+
 void print_public_key(uint8_t *in, char *out);
 
 void print_amount(uint64_t amount, char *asset, char *out);
 
-void print_long(uint64_t id, char *out);
-
 void print_network_id(uint8_t *in, char *out);
-
-void print_caption(uint8_t operationType, uint8_t captionType, char *out);
 
 void print_hash_summary(uint8_t *in, char *out);
 
 void print_bits(uint32_t in, char *out);
 
-void print_int(uint32_t in, char *out);
+uint8_t print_int(uint64_t l, char *out);
 
+void print_asset(char *code, char *issuer, char *out);
 
 #endif // _STELLAR_UTILS_H_
