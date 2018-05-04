@@ -164,110 +164,36 @@ const bagl_element_t ui_idle_blue[] = {
     // type                               userid    x    y   w    h  str rad
     // fill      fg        bg      fid iid  txt   touchparams...       ]
     {{BAGL_RECTANGLE, 0x00, 0, 68, 320, 413, 0, 0, BAGL_FILL, COLOR_BG_1, 0x000000, 0, 0},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     NULL, 0, 0, 0, NULL, NULL, NULL},
 
     // erase screen (only under the status bar)
     {{BAGL_RECTANGLE, 0x00, 0, 20, 320, 48, 0, 0, BAGL_FILL, COLOR_APP, COLOR_APP, 0, 0},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     NULL, 0, 0, 0, NULL, NULL, NULL},
 
     /// TOP STATUS BAR
-    {{BAGL_LABELINE, 0x00, 0, 45, 320, 30, 0, 0, BAGL_FILL, 0xFFFFFF, COLOR_APP,
-      BAGL_FONT_OPEN_SANS_SEMIBOLD_10_13PX | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "STELLAR",
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+    {{BAGL_LABELINE, 0x00, 0, 45, 320, 30, 0, 0, BAGL_FILL, 0xFFFFFF, COLOR_APP, BAGL_FONT_OPEN_SANS_SEMIBOLD_10_13PX | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     "STELLAR", 0, 0, 0, NULL, NULL, NULL},
 
-    {{BAGL_RECTANGLE | BAGL_FLAG_TOUCHABLE, 0x00, 0, 19, 56, 44, 0, 0,
-      BAGL_FILL, COLOR_APP, COLOR_APP_LIGHT,
-      BAGL_FONT_SYMBOLS_0 | BAGL_FONT_ALIGNMENT_CENTER |
-          BAGL_FONT_ALIGNMENT_MIDDLE,
-      0},
-     BAGL_FONT_SYMBOLS_0_SETTINGS,
-     0,
-     COLOR_APP,
-     0xFFFFFF,
-     io_seproxyhal_touch_settings,
-     NULL,
-     NULL},
-    {{BAGL_RECTANGLE | BAGL_FLAG_TOUCHABLE, 0x00, 264, 19, 56, 44, 0, 0,
-      BAGL_FILL, COLOR_APP, COLOR_APP_LIGHT,
-      BAGL_FONT_SYMBOLS_0 | BAGL_FONT_ALIGNMENT_CENTER |
-          BAGL_FONT_ALIGNMENT_MIDDLE,
-      0},
-     BAGL_FONT_SYMBOLS_0_DASHBOARD,
-     0,
-     COLOR_APP,
-     0xFFFFFF,
-     io_seproxyhal_touch_exit,
-     NULL,
-     NULL},
+    {{BAGL_RECTANGLE | BAGL_FLAG_TOUCHABLE, 0x00, 0, 19, 56, 44, 0, 0, BAGL_FILL, COLOR_APP, COLOR_APP_LIGHT,
+      BAGL_FONT_SYMBOLS_0 | BAGL_FONT_ALIGNMENT_CENTER | BAGL_FONT_ALIGNMENT_MIDDLE, 0},
+     BAGL_FONT_SYMBOLS_0_SETTINGS, 0, COLOR_APP, 0xFFFFFF, io_seproxyhal_touch_settings, NULL, NULL},
+    {{BAGL_RECTANGLE | BAGL_FLAG_TOUCHABLE, 0x00, 264, 19, 56, 44, 0, 0, BAGL_FILL, COLOR_APP, COLOR_APP_LIGHT,
+      BAGL_FONT_SYMBOLS_0 | BAGL_FONT_ALIGNMENT_CENTER | BAGL_FONT_ALIGNMENT_MIDDLE, 0},
+     BAGL_FONT_SYMBOLS_0_DASHBOARD, 0, COLOR_APP, 0xFFFFFF, io_seproxyhal_touch_exit, NULL, NULL},
 
-    // BADGE_RIPPLE.GIF
+    // BADGE_STELLAR.GIF
     {{BAGL_ICON, 0x00, 135, 178, 50, 50, 0, 0, BAGL_FILL, 0, COLOR_BG_1, 0, 0},
-     &C_badge_stellar,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     &C_badge_stellar, 0, 0, 0, NULL, NULL, NULL},
 
-    {{BAGL_LABELINE, 0x00, 0, 270, 320, 30, 0, 0, BAGL_FILL, 0x000000,
-      COLOR_BG_1,
-      BAGL_FONT_OPEN_SANS_LIGHT_16_22PX | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Open Stellar wallet",
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    {{BAGL_LABELINE, 0x00, 0, 308, 320, 30, 0, 0, BAGL_FILL, 0x000000,
-      COLOR_BG_1,
-      BAGL_FONT_OPEN_SANS_REGULAR_10_13PX | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Connect the Ledger Blue and open your",
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    {{BAGL_LABELINE, 0x00, 0, 331, 320, 30, 0, 0, BAGL_FILL, 0x000000,
-      COLOR_BG_1,
-      BAGL_FONT_OPEN_SANS_REGULAR_10_13PX | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "preferred wallet to view your accounts.",
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+    {{BAGL_LABELINE, 0x00, 0, 270, 320, 30, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_LIGHT_16_22PX | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     "Open Stellar wallet", 0, 0, 0, NULL, NULL, NULL},
+    {{BAGL_LABELINE, 0x00, 0, 308, 320, 30, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     "Connect the Ledger Blue and open your", 0, 0, 0, NULL, NULL, NULL},
+    {{BAGL_LABELINE, 0x00, 0, 331, 320, 30, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     "preferred wallet to view your accounts.", 0, 0, 0, NULL, NULL, NULL},
 
-    {{BAGL_LABELINE, 0x00, 0, 450, 320, 14, 0, 0, 0, 0x999999, COLOR_BG_1,
-      BAGL_FONT_OPEN_SANS_REGULAR_8_11PX | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Approval requests will show automatically.",
-     10,
-     0,
-     COLOR_BG_1,
-     NULL,
-     NULL,
-     NULL},
+    {{BAGL_LABELINE, 0x00, 0, 450, 320, 14, 0, 0, 0, 0x999999, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_8_11PX | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     "Approval requests will show automatically.", 10, 0, COLOR_BG_1, NULL, NULL, NULL},
 };
 
 unsigned int ui_idle_blue_button(unsigned int button_mask, unsigned int button_mask_counter) {
@@ -381,128 +307,45 @@ unsigned int ui_settings_back_callback(const bagl_element_t *e) {
 }
 
 const bagl_element_t ui_settings_blue[] = {
-    // type                               userid    x    y   w    h  str rad
-    // fill      fg        bg      fid iid  txt   touchparams...       ]
     {{BAGL_RECTANGLE, 0x00, 0, 68, 320, 413, 0, 0, BAGL_FILL, COLOR_BG_1, 0x000000, 0, 0},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     NULL, 0, 0, 0, NULL, NULL, NULL},
 
     // erase screen (only under the status bar)
     {{BAGL_RECTANGLE, 0x00, 0, 20, 320, 48, 0, 0, BAGL_FILL, COLOR_APP, COLOR_APP, 0, 0},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     NULL, 0, 0, 0, NULL, NULL, NULL},
 
     /// TOP STATUS BAR
     {{BAGL_LABELINE, 0x00, 0, 45, 320, 30, 0, 0, BAGL_FILL, 0xFFFFFF, COLOR_APP, BAGL_FONT_OPEN_SANS_SEMIBOLD_10_13PX | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "SETTINGS",
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     "SETTINGS", 0, 0, 0, NULL, NULL, NULL},
 
     {{BAGL_RECTANGLE | BAGL_FLAG_TOUCHABLE, 0x00, 0, 19, 50, 44, 0, 0, BAGL_FILL, COLOR_APP, COLOR_APP_LIGHT,
       BAGL_FONT_SYMBOLS_0 | BAGL_FONT_ALIGNMENT_CENTER | BAGL_FONT_ALIGNMENT_MIDDLE, 0},
-     BAGL_FONT_SYMBOLS_0_LEFT,
-     0,
-     COLOR_APP,
-     0xFFFFFF,
-     ui_settings_back_callback,
-     NULL,
-     NULL},
-    {{BAGL_RECTANGLE | BAGL_FLAG_TOUCHABLE, 0x00, 264, 19, 56, 44, 0, 0,
-      BAGL_FILL, COLOR_APP, COLOR_APP_LIGHT,
-      BAGL_FONT_SYMBOLS_0 | BAGL_FONT_ALIGNMENT_CENTER |
-          BAGL_FONT_ALIGNMENT_MIDDLE,
-      0},
-     BAGL_FONT_SYMBOLS_0_DASHBOARD,
-     0,
-     COLOR_APP,
-     0xFFFFFF,
-     io_seproxyhal_touch_exit,
-     NULL,
-     NULL},
+     BAGL_FONT_SYMBOLS_0_LEFT, 0, COLOR_APP, 0xFFFFFF, ui_settings_back_callback, NULL, NULL},
+    {{BAGL_RECTANGLE | BAGL_FLAG_TOUCHABLE, 0x00, 264, 19, 56, 44, 0, 0, BAGL_FILL, COLOR_APP, COLOR_APP_LIGHT,
+      BAGL_FONT_SYMBOLS_0 | BAGL_FONT_ALIGNMENT_CENTER | BAGL_FONT_ALIGNMENT_MIDDLE, 0},
+     BAGL_FONT_SYMBOLS_0_DASHBOARD, 0, COLOR_APP, 0xFFFFFF, io_seproxyhal_touch_exit, NULL, NULL},
 
 #ifdef HAVE_U2F
     {{BAGL_LABELINE, 0x00, 30, 105, 160, 30, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX, 0},
-     "Enable multi-ops",
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     "Enable multi-ops", 0, 0, 0, NULL, NULL, NULL},
     {{BAGL_LABELINE, 0x00, 30, 126, 260, 30, 0, 0, BAGL_FILL, 0x999999, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_8_11PX, 0},
-     "Enable multi-operation support",
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     "Enable multi-operation support", 0, 0, 0, NULL, NULL, NULL},
     {{BAGL_NONE | BAGL_FLAG_TOUCHABLE, 0x00, 0, 78, 320, 68, 0, 0, BAGL_FILL, 0xFFFFFF, 0x000000, 0, 0},
-     NULL,
-     0,
-     0xEEEEEE,
-     0x000000,
-     ui_settings_blue_toggle_multi_ops,
-     ui_settings_out_over,
-     ui_settings_out_over},
+     NULL, 0, 0xEEEEEE, 0x000000, ui_settings_blue_toggle_multi_ops, ui_settings_out_over, ui_settings_out_over},
 
     {{BAGL_ICON, 0x01, 258, 98, 32, 18, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, 0, 0},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     NULL, 0, 0, 0, NULL, NULL, NULL},
 #endif // HAVE_U2F
 
     {{BAGL_LABELINE, 0x00, 30, 173, 160, 30, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX, 0},
-     "Browser support",
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     "Browser support", 0, 0, 0, NULL, NULL, NULL},
     {{BAGL_LABELINE, 0x00, 30, 194, 260, 30, 0, 0, BAGL_FILL, 0x999999, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_8_11PX, 0},
-     "Enable integrated browser support",
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     "Enable integrated browser support", 0, 0, 0, NULL, NULL, NULL},
     {{BAGL_NONE | BAGL_FLAG_TOUCHABLE, 0x00, 0, 146, 320, 68, 0, 0, BAGL_FILL, 0xFFFFFF, 0x000000, 0, 0},
-     NULL,
-     0,
-     0xEEEEEE,
-     0x000000,
-     ui_settings_blue_toggle_browser,
-     ui_settings_out_over,
-     ui_settings_out_over},
+     NULL, 0, 0xEEEEEE, 0x000000, ui_settings_blue_toggle_browser, ui_settings_out_over, ui_settings_out_over},
 
     {{BAGL_ICON, 0x02, 258, 166, 32, 18, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, 0, 0},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     NULL, 0, 0, 0, NULL, NULL, NULL},
 
 };
 
@@ -546,97 +389,31 @@ unsigned int ui_settings_blue_button(unsigned int button_mask, unsigned int butt
 
 #if defined(TARGET_BLUE)
 const bagl_element_t ui_address_blue[] = {
-    {{BAGL_RECTANGLE, 0x00, 0, 68, 320, 413, 0, 0, BAGL_FILL, COLOR_BG_1,
-      0x000000, 0, 0},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+    {{BAGL_RECTANGLE, 0x00, 0, 68, 320, 413, 0, 0, BAGL_FILL, COLOR_BG_1, 0x000000, 0, 0},
+     NULL, 0, 0, 0, NULL, NULL, NULL},
 
     // erase screen (only under the status bar)
-    {{BAGL_RECTANGLE, 0x00, 0, 20, 320, 48, 0, 0, BAGL_FILL, COLOR_APP,
-      COLOR_APP, 0, 0},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+    {{BAGL_RECTANGLE, 0x00, 0, 20, 320, 48, 0, 0, BAGL_FILL, COLOR_APP, COLOR_APP, 0, 0},
+     NULL, 0, 0, 0, NULL, NULL, NULL},
 
     /// TOP STATUS BAR
-    {{BAGL_LABELINE, 0x00, 0, 45, 320, 30, 0, 0, BAGL_FILL, 0xFFFFFF, COLOR_APP,
-      BAGL_FONT_OPEN_SANS_SEMIBOLD_10_13PX | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "CONFIRM ADDRESS",
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+    {{BAGL_LABELINE, 0x00, 0, 45, 320, 30, 0, 0, BAGL_FILL, 0xFFFFFF, COLOR_APP, BAGL_FONT_OPEN_SANS_SEMIBOLD_10_13PX | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     "CONFIRM ADDRESS", 0, 0, 0, NULL, NULL, NULL},
 
-    //{{BAGL_RECTANGLE | BAGL_FLAG_TOUCHABLE, 0x00, 264,  19,  56,  44, 0, 0,
-    // BAGL_FILL, COLOR_APP, COLOR_APP_LIGHT,
-    // BAGL_FONT_SYMBOLS_0|BAGL_FONT_ALIGNMENT_CENTER|BAGL_FONT_ALIGNMENT_MIDDLE,
-    // 0 }, " " /*BAGL_FONT_SYMBOLS_0_DASHBOARD*/, 0, COLOR_APP, 0xFFFFFF,
-    // io_seproxyhal_touch_exit, NULL, NULL},
+    {{BAGL_LABELINE, 0x00, 30, 106, 320, 30, 0, 0, BAGL_FILL, 0x999999, COLOR_BG_1, BAGL_FONT_OPEN_SANS_SEMIBOLD_8_11PX, 0},
+     "ADDRESS", 0, 0, 0, NULL, NULL, NULL},
 
-    {{BAGL_LABELINE, 0x00, 30, 106, 320, 30, 0, 0, BAGL_FILL, 0x999999,
-      COLOR_BG_1, BAGL_FONT_OPEN_SANS_SEMIBOLD_8_11PX, 0},
-     "ADDRESS",
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+    {{BAGL_LABELINE, 0x10, 30, 136, 260, 30, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX, 0},
+     displayString, 0, 0, 0, NULL, NULL, NULL},
+    {{BAGL_LABELINE, 0x11, 30, 159, 260, 30, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX, 0},
+     displayString, 0, 0, 0, NULL, NULL, NULL},
 
-    {{BAGL_LABELINE, 0x10, 30, 136, 260, 30, 0, 0, BAGL_FILL, 0x000000,
-      COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX, 0},
-     displayString,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    {{BAGL_LABELINE, 0x11, 30, 159, 260, 30, 0, 0, BAGL_FILL, 0x000000,
-      COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX, 0},
-     displayString,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-
-    {{BAGL_RECTANGLE | BAGL_FLAG_TOUCHABLE, 0x00, 40, 414, 115, 36, 0, 18,
-      BAGL_FILL, 0xCCCCCC, COLOR_BG_1,
-      BAGL_FONT_OPEN_SANS_REGULAR_11_14PX | BAGL_FONT_ALIGNMENT_CENTER |
-          BAGL_FONT_ALIGNMENT_MIDDLE,
-      0},
-     "REJECT",
-     0,
-     0xB7B7B7,
-     COLOR_BG_1,
-     io_seproxyhal_touch_address_cancel,
-     NULL,
-     NULL},
-    {{BAGL_RECTANGLE | BAGL_FLAG_TOUCHABLE, 0x00, 165, 414, 115, 36, 0, 18,
-      BAGL_FILL, 0x41ccb4, COLOR_BG_1,
-      BAGL_FONT_OPEN_SANS_REGULAR_11_14PX | BAGL_FONT_ALIGNMENT_CENTER |
-          BAGL_FONT_ALIGNMENT_MIDDLE,
-      0},
-     "CONFIRM",
-     0,
-     0x3ab7a2,
-     COLOR_BG_1,
-     io_seproxyhal_touch_address_ok,
-     NULL,
-     NULL},
+    {{BAGL_RECTANGLE | BAGL_FLAG_TOUCHABLE, 0x00, 40, 414, 115, 36, 0, 18, BAGL_FILL, 0xCCCCCC, COLOR_BG_1,
+      BAGL_FONT_OPEN_SANS_REGULAR_11_14PX | BAGL_FONT_ALIGNMENT_CENTER | BAGL_FONT_ALIGNMENT_MIDDLE, 0},
+     "REJECT", 0, 0xB7B7B7, COLOR_BG_1, io_seproxyhal_touch_address_cancel, NULL, NULL},
+    {{BAGL_RECTANGLE | BAGL_FLAG_TOUCHABLE, 0x00, 165, 414, 115, 36, 0, 18, BAGL_FILL, 0x41ccb4, COLOR_BG_1,
+      BAGL_FONT_OPEN_SANS_REGULAR_11_14PX | BAGL_FONT_ALIGNMENT_CENTER | BAGL_FONT_ALIGNMENT_MIDDLE, 0},
+     "CONFIRM", 0, 0x3ab7a2, COLOR_BG_1, io_seproxyhal_touch_address_ok, NULL, NULL},
 };
 
 unsigned int ui_address_blue_prepro(const bagl_element_t *element) {
@@ -702,94 +479,34 @@ const bagl_element_t * ui_details_blue_back_callback(const bagl_element_t *eleme
 }
 
 const bagl_element_t ui_details_blue[] = {
-    // type                               userid    x    y   w    h  str rad
-    // fill      fg        bg      fid iid  txt   touchparams...       ]
-
     // erase screen (only under the status bar)
     {{BAGL_RECTANGLE, 0x00, 0, 68, 320, 413, 0, 0, BAGL_FILL, COLOR_BG_1, 0x000000, 0, 0},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     NULL, 0, 0, 0, NULL, NULL, NULL},
 
     {{BAGL_RECTANGLE, 0x00, 0, 20, 320, 48, 0, 0, BAGL_FILL, COLOR_APP, COLOR_APP, 0, 0},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     NULL, 0, 0, 0, NULL, NULL, NULL},
 
     /// TOP STATUS BAR
     {{BAGL_LABELINE, 0x01, 0, 45, 320, 30, 0, 0, BAGL_FILL, 0xFFFFFF, COLOR_APP,
-      BAGL_FONT_OPEN_SANS_SEMIBOLD_10_13PX | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     displayString,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     BAGL_FONT_OPEN_SANS_SEMIBOLD_10_13PX | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     displayString, 0, 0, 0, NULL, NULL, NULL},
 
     {{BAGL_RECTANGLE | BAGL_FLAG_TOUCHABLE, 0x00, 0, 19, 50, 44, 0, 0,
-      BAGL_FILL, COLOR_APP, COLOR_APP_LIGHT,
-      BAGL_FONT_SYMBOLS_0 | BAGL_FONT_ALIGNMENT_CENTER |
-          BAGL_FONT_ALIGNMENT_MIDDLE,
-      0},
-     BAGL_FONT_SYMBOLS_0_LEFT,
-     0,
-     COLOR_APP,
-     0xFFFFFF,
-     ui_details_blue_back_callback,
-     NULL,
-     NULL},
+     BAGL_FILL, COLOR_APP, COLOR_APP_LIGHT, BAGL_FONT_SYMBOLS_0 | BAGL_FONT_ALIGNMENT_CENTER | BAGL_FONT_ALIGNMENT_MIDDLE, 0},
+     BAGL_FONT_SYMBOLS_0_LEFT, 0, COLOR_APP, 0xFFFFFF, ui_details_blue_back_callback, NULL, NULL},
 
     {{BAGL_LABELINE, 0x00, 30, 106, 320, 30, 0, 0, BAGL_FILL, 0x999999, COLOR_BG_1, BAGL_FONT_OPEN_SANS_SEMIBOLD_8_11PX, 0},
-     "VALUE",
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     "VALUE", 0, 0, 0, NULL, NULL, NULL},
 
     {{BAGL_LABELINE, 0x10, 30, 136, 320, 30, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX, 0},
-     displayString,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     displayString, 0, 0, 0, NULL, NULL, NULL},
     {{BAGL_LABELINE, 0x11, 30, 159, 320, 30, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX, 0},
-     displayString,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     displayString, 0, 0, 0, NULL, NULL, NULL},
     {{BAGL_LABELINE, 0x12, 30, 182, 320, 30, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX, 0},
-     displayString,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     displayString, 0, 0, 0, NULL, NULL, NULL},
 
     {{BAGL_LABELINE, 0x00, 0, 450, 320, 14, 0, 0, 0, 0x999999, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_8_11PX | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Review the whole value before continuing.",
-     10,
-     0,
-     COLOR_BG_1,
-     NULL,
-     NULL,
-     NULL}
+     "Review the whole value before continuing.", 10, 0, COLOR_BG_1, NULL, NULL, NULL}
 };
 
 unsigned int ui_details_blue_prepro(const bagl_element_t *element) {
@@ -797,12 +514,10 @@ unsigned int ui_details_blue_prepro(const bagl_element_t *element) {
         strcpy(displayString, (const char *)PIC(ui_details_title));
     } else if (element->component.userid > 0) {
         unsigned int length = strlen(ui_details_content);
-        if (length >= (element->component.userid & 0xF) * MAX_CHAR_PER_LINE) {
+        unsigned int offset = (element->component.userid & 0xF) * MAX_CHAR_PER_LINE;
+        if (length >= offset) {
             os_memset(displayString, 0, MAX_CHAR_PER_LINE + 1);
-            os_memmove(
-                displayString,
-                ui_details_content + (element->component.userid & 0xF) * MAX_CHAR_PER_LINE,
-                MIN(length - (element->component.userid & 0xF) * MAX_CHAR_PER_LINE, MAX_CHAR_PER_LINE));
+            os_memmove(displayString, ui_details_content + offset, MIN(length - offset, MAX_CHAR_PER_LINE));
             return 1;
         }
         // nothing to draw for this line
@@ -817,81 +532,60 @@ unsigned int ui_details_blue_button(unsigned int button_mask, unsigned int butto
 
 void ui_approval_blue_init(void);
 
-bagl_element_callback_t ui_approval_blue_ok;
-bagl_element_callback_t ui_approval_blue_cancel;
+static const char *op_names[16] =
+    {"Create Account", "Payment", "Path Payment", "New Offer", "Remove Offer", "Change Offer",
+     "Set Options", "Change Trust", "Remove Trust", "Allow Trust", "Revoke Trust",
+     "Merge Account", "Inflation", "Set Data", "Remove Data", "Unknown"};
 
-const bagl_element_t *ui_approval_blue_ok_callback(const bagl_element_t *e) {
-    return ui_approval_blue_ok(e);
-}
-
-const bagl_element_t * ui_approval_blue_cancel_callback(const bagl_element_t *e) {
-    return ui_approval_blue_cancel(e);
-}
-
-const char *ui_approval_blue_values[7];
-
-static const char *op_captions[16] = {
-                            "Create Account", "Payment", "Path Payment", "New Offer", "Remove Offer", "Change Offer",
-                            "Set Options", "Change Trust", "Remove Trust", "Allow Trust", "Revoke Trust",
-                            "Merge Account", "Inflation", "Set Data", "Remove Data", "Unknown" };
-
-const char *const ui_approval_blue_details_name[][7] = {
-    { "ACCOUNT ID", "START BALANCE", NULL, NULL, NULL, "FEE", "MEMO" },
-    { "AMOUNT", "DESTINATION", NULL, NULL, NULL, "FEE", "MEMO" },
-    { "SEND", "DESTINATION", "RECEIVE", "VIA", NULL, "FEE", "MEMO" },
-    { "TYPE", "BUY", "PRICE", "SELL", NULL, "FEE", "MEMO"},
-    { "OFFER ID", NULL, NULL, NULL, NULL, "FEE", "MEMO"},
-    { "OFFER ID", "BUY", "PRICE", "SELL", NULL, "FEE", "MEMO"},
-    { "INFL DEST", "FLAGS", "THRESHOLDS", "HOME DOMAIN", "SIGNER", "FEE", "MEMO"},
-    { "ASSET", "LIMIT", NULL, NULL, NULL, "FEE", "MEMO"},
-    { "ASSET", NULL, NULL, NULL, NULL, "FEE", "MEMO"},
-    { "ASSET", "ACCOUNT ID", NULL, NULL, NULL, "FEE", "MEMO"},
-    { "ASSET", "ACCOUNT ID", NULL, NULL, NULL, "FEE", "MEMO"},
-    { "DESTINATION", NULL, NULL, NULL, NULL, "FEE", "MEMO"},
-    {  NULL, NULL, NULL, NULL, NULL, "FEE", "MEMO"},
-    { "NAME", "VALUE", NULL, NULL, NULL, "FEE", "MEMO"},
-    { "NAME", NULL, NULL, NULL, NULL, "FEE", "MEMO"},
-    { "HASH", NULL, NULL, NULL, NULL, NULL, NULL}
+const char *const detail_names_table[][5] = {
+    {"ACCOUNT ID", "START BALANCE", NULL, NULL, NULL},
+    {"AMOUNT", "DESTINATION", NULL, NULL, NULL},
+    {"SEND", "DESTINATION", "RECEIVE", "VIA", NULL},
+    {"TYPE", "BUY", "PRICE", "SELL", NULL},
+    {"OFFER ID", NULL, NULL, NULL, NULL},
+    {"OFFER ID", "BUY", "PRICE", "SELL", NULL},
+    {"INFL DEST", "FLAGS", "THRESHOLDS", "HOME DOMAIN", "SIGNER"},
+    {"ASSET", "LIMIT", NULL, NULL, NULL},
+    {"ASSET", NULL, NULL, NULL, NULL},
+    {"ASSET", "ACCOUNT ID", NULL, NULL, NULL},
+    {"ASSET", "ACCOUNT ID", NULL, NULL, NULL},
+    {"DESTINATION", NULL, NULL, NULL, NULL},
+    {NULL, NULL, NULL, NULL, NULL},
+    {"NAME", "VALUE", NULL, NULL, NULL},
+    {"NAME", NULL, NULL, NULL, NULL}
 };
 
-const bagl_element_t *ui_approval_common_show_details(unsigned int detailidx) {
-    if (ui_approval_blue_values[detailidx] != NULL &&
-        strlen(ui_approval_blue_values[detailidx]) * BAGL_FONT_OPEN_SANS_LIGHT_16_22PX_AVG_WIDTH >= 160) {
+const char *detail_names[7];
+const char *detail_values[7];
+
+const void init_details() {
+    os_memset(detail_names, 0, sizeof(detail_names));
+    os_memset(detail_values, 0, sizeof(detail_values));
+    detail_names[0] = ((char *)PIC("MEMO"));
+    detail_names[1] = ((char *)PIC("FEE"));
+    detail_values[0] = ctx.tx.content.txDetails[0];
+    detail_values[1] = ctx.tx.content.txDetails[1];
+    uint8_t i, j;
+    for (i = 0, j = 2; i < 5; i++) {
+        if (ctx.tx.content.opDetails[i][0] != '\0') {
+            detail_names[j] = ((char *)PIC(detail_names_table[ctx.tx.content.opType][i]));
+            detail_values[j] = ctx.tx.content.opDetails[i];
+            j++;
+        }
+    }
+}
+
+const bagl_element_t *ui_approval_common_show_details(const bagl_element_t *e) {
+    uint8_t detailIdx = e->component.userid & 0xF;
+    char * detailVal = detail_values[detailIdx];
+    if (detailVal != NULL && strlen(detailVal) * BAGL_FONT_OPEN_SANS_REGULAR_10_13PX_AVG_WIDTH >= 160) {
         // display details screen
-        ui_details_title = ui_approval_blue_details_name[ctx.tx.content.opType][detailidx];
-        ui_details_content = ui_approval_blue_values[detailidx];
+        ui_details_title = detail_names[detailIdx];
+        ui_details_content = detailVal;
         ui_details_back_callback = ui_approval_blue_init;
         UX_DISPLAY(ui_details_blue, ui_details_blue_prepro);
     }
     return NULL;
-}
-
-const bagl_element_t *ui_approval_blue_1_details(const bagl_element_t *e) {
-    return ui_approval_common_show_details(0);
-}
-
-const bagl_element_t *ui_approval_blue_2_details(const bagl_element_t *e) {
-    return ui_approval_common_show_details(1);
-}
-
-const bagl_element_t *ui_approval_blue_3_details(const bagl_element_t *e) {
-    return ui_approval_common_show_details(2);
-}
-
-const bagl_element_t *ui_approval_blue_4_details(const bagl_element_t *e) {
-    return ui_approval_common_show_details(3);
-}
-
-const bagl_element_t *ui_approval_blue_5_details(const bagl_element_t *e) {
-    return ui_approval_common_show_details(4);
-}
-
-const bagl_element_t *ui_approval_blue_fee_details(const bagl_element_t *e) {
-    return ui_approval_common_show_details(5);
-}
-
-const bagl_element_t *ui_approval_blue_memo_details(const bagl_element_t *e) {
-    return ui_approval_common_show_details(6);
 }
 
 const bagl_element_t ui_approval_blue[] = {
@@ -907,405 +601,119 @@ const bagl_element_t ui_approval_blue[] = {
      "CONFIRM TRANSACTION", 0, 0, 0, NULL, NULL, NULL},
 
     // BADGE_TRANSACTION.GIF
-    {{BAGL_ICON, 0x40, 30, 98, 50, 50, 0, 0, BAGL_FILL, 0, COLOR_BG_1, 0, 0},
-     &C_badge_transaction, 0, 0, 0, NULL, NULL, NULL},
+    {{BAGL_ICON, 0x40, 30, 88, 50, 50, 0, 0, BAGL_FILL, 0, COLOR_BG_1, 0, 0}, &C_badge_transaction, 0, 0, 0, NULL, NULL, NULL},
 
-    {{BAGL_LABELINE, 0x50, 100, 117, 320, 30, 0, 0, BAGL_FILL, 0x999999, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX, 0},
-     operationCaption,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+    {{BAGL_LABELINE, 0x50, 100, 107, 320, 30, 0, 0, BAGL_FILL, 0x999999, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX, 0},
+     operationCaption, 0, 0, 0, NULL, NULL, NULL},
 
-    {{BAGL_LABELINE, 0x00, 100, 138, 320, 30, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_SEMIBOLD_8_11PX, 0},
-     subtitleCaption,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+    {{BAGL_LABELINE, 0x00, 100, 128, 320, 30, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_SEMIBOLD_8_11PX, 0},
+     subtitleCaption, 0, 0, 0, NULL, NULL, NULL},
 
     // Fee
-    {{BAGL_LABELINE, 0x75, 30, 179, 120, 20, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_SEMIBOLD_8_11PX, 0},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    // x-18 when ...
-    {{BAGL_LABELINE, 0x15, 130, 179, 160, 20, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX | BAGL_FONT_ALIGNMENT_RIGHT, 0},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    {{BAGL_LABELINE, 0x25, 284, 179, 6, 16, 0, 0, BAGL_FILL, 0x999999, COLOR_BG_1, BAGL_FONT_SYMBOLS_0 | BAGL_FONT_ALIGNMENT_RIGHT, 0},
-     BAGL_FONT_SYMBOLS_0_MINIRIGHT,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+    {{BAGL_LABELINE, 0x70, 30, 179, 120, 20, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_SEMIBOLD_8_11PX, 0},
+     NULL, 0, 0, 0, NULL, NULL, NULL},
+    {{BAGL_LABELINE, 0x10, 130, 179, 160, 20, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX | BAGL_FONT_ALIGNMENT_RIGHT, 0},
+     NULL, 0, 0, 0, NULL, NULL, NULL},
+    {{BAGL_LABELINE, 0x20, 284, 179, 6, 16, 0, 0, BAGL_FILL, 0x999999, COLOR_BG_1, BAGL_FONT_SYMBOLS_0 | BAGL_FONT_ALIGNMENT_RIGHT, 0},
+     BAGL_FONT_SYMBOLS_0_MINIRIGHT, 0, 0, 0, NULL, NULL, NULL},
     {{BAGL_NONE | BAGL_FLAG_TOUCHABLE, 0x80, 0, 158, 320, 34, 0, 9, BAGL_FILL, 0xFFFFFF, 0x000000, 0, 0},
-     NULL,
-     0,
-     0xEEEEEE,
-     0x000000,
-     ui_approval_blue_fee_details,
-     ui_menu_item_out_over,
-     ui_menu_item_out_over},
-    {{BAGL_RECTANGLE, 0x25, 0, 158, 5, 34, 0, 0, BAGL_FILL, COLOR_BG_1, COLOR_BG_1, 0, 0},
-     NULL,
-     0,
-     0x41CCB4,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     NULL, 0, 0xEEEEEE, 0x000000, ui_approval_common_show_details, ui_menu_item_out_over, ui_menu_item_out_over},
+    {{BAGL_RECTANGLE, 0x20, 0, 158, 5, 34, 0, 0, BAGL_FILL, COLOR_BG_1, COLOR_BG_1, 0, 0},
+     NULL, 0, 0x41CCB4, 0, NULL, NULL, NULL},
 
-    {{BAGL_RECTANGLE, 0x35, 30, 192, 260, 1, 1, 0, 0, 0xEEEEEE, COLOR_BG_1, 0, 0},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+    {{BAGL_RECTANGLE, 0x30, 30, 192, 260, 1, 1, 0, 0, 0xEEEEEE, COLOR_BG_1, 0, 0},
+     NULL, 0, 0, 0, NULL, NULL, NULL},
 
     // Memo
-    {{BAGL_LABELINE, 0x76, 30, 214, 100, 23, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_SEMIBOLD_8_11PX, 0},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    // x-18 when ...
-    {{BAGL_LABELINE, 0x16, 130, 214, 160, 23, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX | BAGL_FONT_ALIGNMENT_RIGHT, 0},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    {{BAGL_LABELINE, 0x26, 284, 214, 6, 16, 0, 0, BAGL_FILL, 0x999999, COLOR_BG_1, BAGL_FONT_SYMBOLS_0 | BAGL_FONT_ALIGNMENT_RIGHT, 0},
-     BAGL_FONT_SYMBOLS_0_MINIRIGHT,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    {{BAGL_NONE | BAGL_FLAG_TOUCHABLE, 0x80, 0, 193, 320, 34, 0, 9, BAGL_FILL, 0xFFFFFF, 0x000000, 0, 0},
-     NULL,
-     0,
-     0xEEEEEE,
-     0x000000,
-     ui_approval_blue_memo_details,
-     ui_menu_item_out_over,
-     ui_menu_item_out_over},
-    {{BAGL_RECTANGLE, 0x26, 0, 193, 5, 34, 0, 0, BAGL_FILL, COLOR_BG_1, COLOR_BG_1, 0, 0},
-     NULL,
-     0,
-     0x41CCB4,
-     0,
-     NULL,
-     NULL,
-     NULL},
+    {{BAGL_LABELINE, 0x71, 30, 214, 100, 23, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_SEMIBOLD_8_11PX, 0},
+     NULL, 0, 0, 0, NULL, NULL, NULL},
+    {{BAGL_LABELINE, 0x11, 130, 214, 160, 23, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX | BAGL_FONT_ALIGNMENT_RIGHT, 0},
+     NULL, 0, 0, 0, NULL, NULL, NULL},
+    {{BAGL_LABELINE, 0x21, 284, 214, 6, 16, 0, 0, BAGL_FILL, 0x999999, COLOR_BG_1, BAGL_FONT_SYMBOLS_0 | BAGL_FONT_ALIGNMENT_RIGHT, 0},
+     BAGL_FONT_SYMBOLS_0_MINIRIGHT, 0, 0, 0, NULL, NULL, NULL},
+    {{BAGL_NONE | BAGL_FLAG_TOUCHABLE, 0x81, 0, 193, 320, 34, 0, 9, BAGL_FILL, 0xFFFFFF, 0x000000, 0, 0},
+     NULL, 0, 0xEEEEEE, 0x000000, ui_approval_common_show_details, ui_menu_item_out_over, ui_menu_item_out_over},
+    {{BAGL_RECTANGLE, 0x21, 0, 193, 5, 34, 0, 0, BAGL_FILL, COLOR_BG_1, COLOR_BG_1, 0, 0},
+     NULL, 0, 0x41CCB4, 0, NULL, NULL, NULL},
 
-    {{BAGL_RECTANGLE, 0x36, 30, 227, 260, 1, 1, 0, 0, 0xEEEEEE, COLOR_BG_1, 0, 0},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+    {{BAGL_RECTANGLE, 0x31, 30, 227, 260, 1, 1, 0, 0, 0xEEEEEE, COLOR_BG_1, 0, 0},
+     NULL, 0, 0, 0, NULL, NULL, NULL},
 
     // Details 1
-    {{BAGL_LABELINE, 0x70, 30, 249, 120, 20, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_SEMIBOLD_8_11PX, 0},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    // x-18 when ...
-    {{BAGL_LABELINE, 0x10, 130, 249, 160, 20, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX | BAGL_FONT_ALIGNMENT_RIGHT, 0},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    {{BAGL_LABELINE, 0x20, 284, 249, 6, 16, 0, 0, BAGL_FILL, 0x999999, COLOR_BG_1, BAGL_FONT_SYMBOLS_0 | BAGL_FONT_ALIGNMENT_RIGHT, 0},
-     BAGL_FONT_SYMBOLS_0_MINIRIGHT,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    {{BAGL_NONE | BAGL_FLAG_TOUCHABLE, 0x80, 0, 228, 320, 34, 0, 9, BAGL_FILL, 0xFFFFFF, 0x000000, 0, 0},
-     NULL,
-     0,
-     0xEEEEEE,
-     0x000000,
-     ui_approval_blue_1_details,
-     ui_menu_item_out_over,
-     ui_menu_item_out_over},
-    {{BAGL_RECTANGLE, 0x20, 0, 228, 5, 34, 0, 0, BAGL_FILL, COLOR_BG_1, COLOR_BG_1, 0, 0},
-     NULL,
-     0,
-     0x41CCB4,
-     0,
-     NULL,
-     NULL,
-     NULL},
+    {{BAGL_LABELINE, 0x72, 30, 249, 120, 20, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_SEMIBOLD_8_11PX, 0},
+     NULL, 0, 0, 0, NULL, NULL, NULL},
+    {{BAGL_LABELINE, 0x12, 130, 249, 160, 20, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX | BAGL_FONT_ALIGNMENT_RIGHT, 0},
+     NULL, 0, 0, 0, NULL, NULL, NULL},
+    {{BAGL_LABELINE, 0x22, 284, 249, 6, 16, 0, 0, BAGL_FILL, 0x999999, COLOR_BG_1, BAGL_FONT_SYMBOLS_0 | BAGL_FONT_ALIGNMENT_RIGHT, 0},
+     BAGL_FONT_SYMBOLS_0_MINIRIGHT, 0, 0, 0, NULL, NULL, NULL},
+    {{BAGL_NONE | BAGL_FLAG_TOUCHABLE, 0x82, 0, 228, 320, 34, 0, 9, BAGL_FILL, 0xFFFFFF, 0x000000, 0, 0},
+     NULL, 0, 0xEEEEEE, 0x000000, ui_approval_common_show_details, ui_menu_item_out_over, ui_menu_item_out_over},
+    {{BAGL_RECTANGLE, 0x22, 0, 228, 5, 34, 0, 0, BAGL_FILL, COLOR_BG_1, COLOR_BG_1, 0, 0},
+     NULL, 0, 0x41CCB4, 0, NULL, NULL, NULL},
 
-    {{BAGL_RECTANGLE, 0x31, 30, 262, 260, 1, 1, 0, 0, 0xEEEEEE, COLOR_BG_1, 0, 0},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+    {{BAGL_RECTANGLE, 0x32, 30, 262, 260, 1, 1, 0, 0, 0xEEEEEE, COLOR_BG_1, 0, 0},
+     NULL, 0, 0, 0, NULL, NULL, NULL},
 
     // Details 2
-    {{BAGL_LABELINE, 0x71, 30, 284, 100, 23, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_SEMIBOLD_8_11PX, 0},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    // x-18 when ...
-    {{BAGL_LABELINE, 0x11, 130, 284, 160, 23, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX | BAGL_FONT_ALIGNMENT_RIGHT, 0},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    {{BAGL_LABELINE, 0x21, 284, 284, 6, 16, 0, 0, BAGL_FILL, 0x999999, COLOR_BG_1, BAGL_FONT_SYMBOLS_0 | BAGL_FONT_ALIGNMENT_RIGHT, 0},
-     BAGL_FONT_SYMBOLS_0_MINIRIGHT,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    {{BAGL_NONE | BAGL_FLAG_TOUCHABLE, 0x80, 0, 263, 320, 34, 0, 9, BAGL_FILL, 0xFFFFFF, 0x000000, 0, 0},
-     NULL,
-     0,
-     0xEEEEEE,
-     0x000000,
-     ui_approval_blue_2_details,
-     ui_menu_item_out_over,
-     ui_menu_item_out_over},
-    {{BAGL_RECTANGLE, 0x21, 0, 263, 5, 34, 0, 0, BAGL_FILL, COLOR_BG_1, COLOR_BG_1, 0, 0},
-     NULL,
-     0,
-     0x41CCB4,
-     0,
-     NULL,
-     NULL,
-     NULL},
+    {{BAGL_LABELINE, 0x73, 30, 284, 100, 23, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_SEMIBOLD_8_11PX, 0},
+     NULL, 0, 0, 0, NULL, NULL, NULL},
+    {{BAGL_LABELINE, 0x13, 130, 284, 160, 23, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX | BAGL_FONT_ALIGNMENT_RIGHT, 0},
+     NULL, 0, 0, 0, NULL, NULL, NULL},
+    {{BAGL_LABELINE, 0x23, 284, 284, 6, 16, 0, 0, BAGL_FILL, 0x999999, COLOR_BG_1, BAGL_FONT_SYMBOLS_0 | BAGL_FONT_ALIGNMENT_RIGHT, 0},
+     BAGL_FONT_SYMBOLS_0_MINIRIGHT, 0, 0, 0, NULL, NULL, NULL},
+    {{BAGL_NONE | BAGL_FLAG_TOUCHABLE, 0x83, 0, 263, 320, 34, 0, 9, BAGL_FILL, 0xFFFFFF, 0x000000, 0, 0},
+     NULL, 0, 0xEEEEEE, 0x000000, ui_approval_common_show_details, ui_menu_item_out_over, ui_menu_item_out_over},
+    {{BAGL_RECTANGLE, 0x23, 0, 263, 5, 34, 0, 0, BAGL_FILL, COLOR_BG_1, COLOR_BG_1, 0, 0},
+     NULL, 0, 0x41CCB4, 0, NULL, NULL, NULL},
 
-    {{BAGL_RECTANGLE, 0x32, 30, 297, 260, 1, 1, 0, 0, 0xEEEEEE, COLOR_BG_1, 0, 0},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+    {{BAGL_RECTANGLE, 0x33, 30, 297, 260, 1, 1, 0, 0, 0xEEEEEE, COLOR_BG_1, 0, 0},
+     NULL, 0, 0, 0, NULL, NULL, NULL},
 
-    {{BAGL_LABELINE, 0x72, 30, 319, 100, 23, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_SEMIBOLD_8_11PX, 0},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    // x-18 when ...
-    {{BAGL_LABELINE, 0x12, 130, 319, 160, 23, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX | BAGL_FONT_ALIGNMENT_RIGHT, 0},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    {{BAGL_LABELINE, 0x22, 284, 319, 6, 16, 0, 0, BAGL_FILL, 0x999999, COLOR_BG_1, BAGL_FONT_SYMBOLS_0 | BAGL_FONT_ALIGNMENT_RIGHT, 0},
-     BAGL_FONT_SYMBOLS_0_MINIRIGHT,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    {{BAGL_NONE | BAGL_FLAG_TOUCHABLE, 0x80, 0, 298, 320, 34, 0, 9, BAGL_FILL, 0xFFFFFF, 0x000000, 0, 0},
-     NULL,
-     0,
-     0xEEEEEE,
-     0x000000,
-     ui_approval_blue_3_details,
-     ui_menu_item_out_over,
-     ui_menu_item_out_over},
-    {{BAGL_RECTANGLE, 0x22, 0, 298, 5, 34, 0, 0, BAGL_FILL, COLOR_BG_1, COLOR_BG_1, 0, 0},
-     NULL,
-     0,
-     0x41CCB4,
-     0,
-     NULL,
-     NULL,
-     NULL},
+    {{BAGL_LABELINE, 0x74, 30, 319, 100, 23, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_SEMIBOLD_8_11PX, 0},
+     NULL, 0, 0, 0, NULL, NULL, NULL},
+    {{BAGL_LABELINE, 0x14, 130, 319, 160, 23, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX | BAGL_FONT_ALIGNMENT_RIGHT, 0},
+     NULL, 0, 0, 0, NULL, NULL, NULL},
+    {{BAGL_LABELINE, 0x24, 284, 319, 6, 16, 0, 0, BAGL_FILL, 0x999999, COLOR_BG_1, BAGL_FONT_SYMBOLS_0 | BAGL_FONT_ALIGNMENT_RIGHT, 0},
+     BAGL_FONT_SYMBOLS_0_MINIRIGHT, 0, 0, 0, NULL, NULL, NULL},
+    {{BAGL_NONE | BAGL_FLAG_TOUCHABLE, 0x84, 0, 298, 320, 34, 0, 9, BAGL_FILL, 0xFFFFFF, 0x000000, 0, 0},
+     NULL, 0, 0xEEEEEE, 0x000000, ui_approval_common_show_details, ui_menu_item_out_over, ui_menu_item_out_over},
+    {{BAGL_RECTANGLE, 0x24, 0, 298, 5, 34, 0, 0, BAGL_FILL, COLOR_BG_1, COLOR_BG_1, 0, 0},
+     NULL, 0, 0x41CCB4, 0, NULL, NULL, NULL},
 
-    {{BAGL_RECTANGLE, 0x33, 30, 332, 260, 1, 1, 0, 0, 0xEEEEEE, COLOR_BG_1, 0, 0},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+    {{BAGL_RECTANGLE, 0x34, 30, 332, 260, 1, 1, 0, 0, 0xEEEEEE, COLOR_BG_1, 0, 0},
+     NULL, 0, 0, 0, NULL, NULL, NULL},
 
-    {{BAGL_LABELINE, 0x73, 30, 354, 100, 23, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_SEMIBOLD_8_11PX, 0},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    // x-18 when ...
-    {{BAGL_LABELINE, 0x13, 130, 354, 160, 23, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX | BAGL_FONT_ALIGNMENT_RIGHT, 0},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    {{BAGL_LABELINE, 0x23, 284, 354, 6, 16, 0, 0, BAGL_FILL, 0x999999, COLOR_BG_1, BAGL_FONT_SYMBOLS_0 | BAGL_FONT_ALIGNMENT_RIGHT, 0},
-     BAGL_FONT_SYMBOLS_0_MINIRIGHT,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    {{BAGL_NONE | BAGL_FLAG_TOUCHABLE, 0x80, 0, 333, 320, 34, 0, 9, BAGL_FILL, 0xFFFFFF, 0x000000, 0, 0},
-     NULL,
-     0,
-     0xEEEEEE,
-     0x000000,
-     ui_approval_blue_4_details,
-     ui_menu_item_out_over,
-     ui_menu_item_out_over},
-    {{BAGL_RECTANGLE, 0x23, 0, 333, 5, 34, 0, 0, BAGL_FILL, COLOR_BG_1, COLOR_BG_1, 0, 0},
-     NULL,
-     0,
-     0x41CCB4,
-     0,
-     NULL,
-     NULL,
-     NULL},
+    {{BAGL_LABELINE, 0x75, 30, 354, 100, 23, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_SEMIBOLD_8_11PX, 0},
+     NULL, 0, 0, 0, NULL, NULL, NULL},
+    {{BAGL_LABELINE, 0x15, 130, 354, 160, 23, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX | BAGL_FONT_ALIGNMENT_RIGHT, 0},
+     NULL, 0, 0, 0, NULL, NULL, NULL},
+    {{BAGL_LABELINE, 0x25, 284, 354, 6, 16, 0, 0, BAGL_FILL, 0x999999, COLOR_BG_1, BAGL_FONT_SYMBOLS_0 | BAGL_FONT_ALIGNMENT_RIGHT, 0},
+     BAGL_FONT_SYMBOLS_0_MINIRIGHT, 0, 0, 0, NULL, NULL, NULL},
+    {{BAGL_NONE | BAGL_FLAG_TOUCHABLE, 0x85, 0, 333, 320, 34, 0, 9, BAGL_FILL, 0xFFFFFF, 0x000000, 0, 0},
+     NULL, 0, 0xEEEEEE, 0x000000, ui_approval_common_show_details, ui_menu_item_out_over, ui_menu_item_out_over},
+    {{BAGL_RECTANGLE, 0x25, 0, 333, 5, 34, 0, 0, BAGL_FILL, COLOR_BG_1, COLOR_BG_1, 0, 0},
+     NULL, 0, 0x41CCB4, 0, NULL, NULL, NULL},
 
-    {{BAGL_RECTANGLE, 0x34, 30, 367, 260, 1, 1, 0, 0, 0xEEEEEE, COLOR_BG_1, 0, 0},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+    {{BAGL_RECTANGLE, 0x35, 30, 367, 260, 1, 1, 0, 0, 0xEEEEEE, COLOR_BG_1, 0, 0},
+     NULL, 0, 0, 0, NULL, NULL, NULL},
 
-    // Details 5
-    {{BAGL_LABELINE, 0x74, 30, 389, 100, 23, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_SEMIBOLD_8_11PX, 0},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    // x-18 when ...
-    {{BAGL_LABELINE, 0x14, 130, 389, 160, 23, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX | BAGL_FONT_ALIGNMENT_RIGHT, 0},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    {{BAGL_LABELINE, 0x24, 284, 389, 6, 16, 0, 0, BAGL_FILL, 0x999999, COLOR_BG_1, BAGL_FONT_SYMBOLS_0 | BAGL_FONT_ALIGNMENT_RIGHT, 0},
-     BAGL_FONT_SYMBOLS_0_MINIRIGHT,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    {{BAGL_NONE | BAGL_FLAG_TOUCHABLE, 0x80, 0, 368, 320, 34, 0, 9, BAGL_FILL, 0xFFFFFF, 0x000000, 0, 0},
-     NULL,
-     0,
-     0xEEEEEE,
-     0x000000,
-     ui_approval_blue_5_details,
-     ui_menu_item_out_over,
-     ui_menu_item_out_over},
-    {{BAGL_RECTANGLE, 0x24, 0, 368, 5, 34, 0, 0, BAGL_FILL, COLOR_BG_1, COLOR_BG_1, 0, 0},
-     NULL,
-     0,
-     0x41CCB4,
-     0,
-     NULL,
-     NULL,
-     NULL},
+    {{BAGL_LABELINE, 0x76, 30, 389, 100, 23, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_SEMIBOLD_8_11PX, 0},
+     NULL, 0, 0, 0, NULL, NULL, NULL},
+    {{BAGL_LABELINE, 0x16, 130, 389, 160, 23, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX | BAGL_FONT_ALIGNMENT_RIGHT, 0},
+     NULL, 0, 0, 0, NULL, NULL, NULL},
+    {{BAGL_LABELINE, 0x26, 284, 389, 6, 16, 0, 0, BAGL_FILL, 0x999999, COLOR_BG_1, BAGL_FONT_SYMBOLS_0 | BAGL_FONT_ALIGNMENT_RIGHT, 0},
+     BAGL_FONT_SYMBOLS_0_MINIRIGHT, 0, 0, 0, NULL, NULL, NULL},
+    {{BAGL_NONE | BAGL_FLAG_TOUCHABLE, 0x86, 0, 368, 320, 34, 0, 9, BAGL_FILL, 0xFFFFFF, 0x000000, 0, 0},
+     NULL, 0, 0xEEEEEE, 0x000000, ui_approval_common_show_details, ui_menu_item_out_over, ui_menu_item_out_over},
+    {{BAGL_RECTANGLE, 0x26, 0, 368, 5, 34, 0, 0, BAGL_FILL, COLOR_BG_1, COLOR_BG_1, 0, 0},
+     NULL, 0, 0x41CCB4, 0, NULL, NULL, NULL},
 
-    {{BAGL_RECTANGLE | BAGL_FLAG_TOUCHABLE, 0x00, 40, 414, 115, 36, 0, 18,
-      BAGL_FILL, 0xCCCCCC, COLOR_BG_1,
-      BAGL_FONT_OPEN_SANS_REGULAR_11_14PX | BAGL_FONT_ALIGNMENT_CENTER |
-          BAGL_FONT_ALIGNMENT_MIDDLE,
-      0},
-     "REJECT",
-     0,
-     0xB7B7B7,
-     COLOR_BG_1,
-     ui_approval_blue_cancel_callback,
-     NULL,
-     NULL},
-    {{BAGL_RECTANGLE | BAGL_FLAG_TOUCHABLE, 0x00, 165, 414, 115, 36, 0, 18,
-      BAGL_FILL, 0x41ccb4, COLOR_BG_1,
-      BAGL_FONT_OPEN_SANS_REGULAR_11_14PX | BAGL_FONT_ALIGNMENT_CENTER |
-          BAGL_FONT_ALIGNMENT_MIDDLE,
-      0},
-     "CONFIRM",
-     0,
-     0x3ab7a2,
-     COLOR_BG_1,
-     ui_approval_blue_ok_callback,
-     NULL,
-     NULL},
-
+    {{BAGL_RECTANGLE | BAGL_FLAG_TOUCHABLE, 0x00, 40, 414, 115, 36, 0, 18, BAGL_FILL, 0xCCCCCC, COLOR_BG_1,
+      BAGL_FONT_OPEN_SANS_REGULAR_11_14PX | BAGL_FONT_ALIGNMENT_CENTER | BAGL_FONT_ALIGNMENT_MIDDLE, 0},
+      "REJECT", 0, 0xB7B7B7, COLOR_BG_1, io_seproxyhal_touch_tx_cancel, NULL, NULL},
+    {{BAGL_RECTANGLE | BAGL_FLAG_TOUCHABLE, 0x00, 165, 414, 115, 36, 0, 18, BAGL_FILL, 0x41ccb4, COLOR_BG_1,
+      BAGL_FONT_OPEN_SANS_REGULAR_11_14PX | BAGL_FONT_ALIGNMENT_CENTER | BAGL_FONT_ALIGNMENT_MIDDLE, 0},
+      "CONFIRM", 0, 0x3ab7a2, COLOR_BG_1, io_seproxyhal_touch_tx_ok, NULL, NULL},
 };
 
 const bagl_element_t *ui_approval_blue_prepro(const bagl_element_t *element) {
@@ -1330,39 +738,45 @@ const bagl_element_t *ui_approval_blue_prepro(const bagl_element_t *element) {
 
         // details label
         case 0x70:
-            if (!ui_approval_blue_details_name[ctx.tx.content.opType][element->component.userid & 0xF]) {
+            if (!detail_names[element->component.userid & 0xF]) {
+                return NULL;
+            }
+            if (!detail_values[element->component.userid & 0xF]) {
                 return NULL;
             }
             os_memmove(&tmp_element, element, sizeof(bagl_element_t));
-            tmp_element.text = ui_approval_blue_details_name[ctx.tx.content.opType][element->component.userid & 0xF];
+            tmp_element.text = detail_names[element->component.userid & 0xF];
             return &tmp_element;
 
         // detail value
         case 0x10:
-            if (!ui_approval_blue_details_name[ctx.tx.content.opType][element->component.userid & 0xF]) {
+            if (!detail_names[element->component.userid & 0xF]) {
+                return NULL;
+            }
+            if (!detail_values[element->component.userid & 0xF]) {
                 return NULL;
             }
             os_memmove(&tmp_element, element, sizeof(bagl_element_t));
-            tmp_element.text = ui_approval_blue_values[(element->component.userid & 0xF)];
+            tmp_element.text = detail_values[element->component.userid & 0xF];
 
             // x -= 18 when overflow is detected
-            if (strlen(ui_approval_blue_values[(element->component.userid & 0xF)]) * BAGL_FONT_OPEN_SANS_REGULAR_10_13PX_AVG_WIDTH >= 160) {
+            if (strlen(tmp_element.text) * BAGL_FONT_OPEN_SANS_REGULAR_10_13PX_AVG_WIDTH >= 160) {
                 tmp_element.component.x -= 18;
             }
             return &tmp_element;
 
         // right arrow and left selection rectangle
         case 0x20:
-            if (!ui_approval_blue_details_name[ctx.tx.content.opType][element->component.userid & 0xF]) {
+            if (!detail_names[element->component.userid & 0xF]) {
                 return NULL;
             }
-            if (strlen(ui_approval_blue_values[(element->component.userid & 0xF)]) * BAGL_FONT_OPEN_SANS_REGULAR_10_13PX_AVG_WIDTH < 160) {
+            if (strlen(detail_values[element->component.userid & 0xF]) * BAGL_FONT_OPEN_SANS_REGULAR_10_13PX_AVG_WIDTH < 160) {
                 return NULL;
             }
 
         // horizontal delimiter
         case 0x30:
-            return ui_approval_blue_details_name[ctx.tx.content.opType][element->component.userid & 0xF] != NULL ? element : NULL;
+            return detail_names[element->component.userid & 0xF] ? element : NULL;
         }
     }
     return element;
@@ -1376,28 +790,18 @@ void ui_approval_blue_init(void) {
 }
 
 void ui_approve_tx_blue_init(void) {
-    ui_approval_blue_ok = (bagl_element_callback_t)io_seproxyhal_touch_tx_ok;
-    ui_approval_blue_cancel = (bagl_element_callback_t)io_seproxyhal_touch_tx_cancel;
-    os_memset(ui_approval_blue_values, 0, sizeof(ui_approval_blue_values));
-    ui_approval_blue_values[0] = ctx.tx.content.opDetails[0];
-    ui_approval_blue_values[1] = ctx.tx.content.opDetails[1];
-    ui_approval_blue_values[2] = ctx.tx.content.opDetails[2];
-    ui_approval_blue_values[3] = ctx.tx.content.opDetails[3];
-    ui_approval_blue_values[4] = ctx.tx.content.opDetails[4];
-    ui_approval_blue_values[5] = ctx.tx.content.txDetails[1];
-    ui_approval_blue_values[6] = ctx.tx.content.txDetails[0];
-
-    strcpy(operationCaption, ((char *)PIC(op_captions[ctx.tx.content.opType])));
+    init_details();
+    strcpy(operationCaption, ((char *)PIC(op_names[ctx.tx.content.opType])));
     strcpy(subtitleCaption, ctx.tx.content.txDetails[2]);
     strcpy(subtitleCaption + strlen(ctx.tx.content.txDetails[2]), " Network");
     ui_approval_blue_init();
 }
 
 void ui_approve_tx_hash_blue_init(void) {
-    ui_approval_blue_ok = (bagl_element_callback_t)io_seproxyhal_touch_tx_ok;
-    ui_approval_blue_cancel = (bagl_element_callback_t)io_seproxyhal_touch_tx_cancel;
-    os_memset(ui_approval_blue_values, 0, sizeof(ui_approval_blue_values));
-    ui_approval_blue_values[0] = ctx.tx.content.opDetails[0];
+    os_memset(detail_names, 0, sizeof(detail_names));
+    os_memset(detail_values, 0, sizeof(detail_values));
+    detail_names[0] = ((char *)PIC("Hash"));
+    detail_values[0] = ctx.tx.content.txDetails[0];
     strcpy(operationCaption, "WARNING");
     strcpy(subtitleCaption, "No details available");
     ui_approval_blue_init();
@@ -1572,8 +976,7 @@ unsigned int io_seproxyhal_touch_address_cancel(const bagl_element_t *e) {
 }
 
 #if defined(TARGET_NANOS)
-unsigned int ui_address_nanos_button(unsigned int button_mask,
-                                     unsigned int button_mask_counter) {
+unsigned int ui_address_nanos_button(unsigned int button_mask, unsigned int button_mask_counter) {
     switch (button_mask) {
     case BUTTON_EVT_RELEASED | BUTTON_LEFT: // CANCEL
         io_seproxyhal_touch_address_cancel(NULL);
@@ -1881,7 +1284,7 @@ void handleSignTxHash(uint8_t *dataBuffer, uint16_t dataLength, volatile unsigne
     ctx.tx.content.opType = OPERATION_TYPE_UNKNOWN;
 
 #if defined(TARGET_BLUE)
-    print_hash_summary(ctx.tx.hash, (char *)ctx.tx.content.opDetails[0]);
+    print_hash_summary(ctx.tx.hash, (char *)ctx.tx.content.txDetails[0]);
     ui_approve_tx_hash_blue_init();
 #elif defined(TARGET_NANOS)
     strcpy((char *)ctx.tx.content.opDetails[0], "No details");
