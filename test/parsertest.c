@@ -33,7 +33,10 @@ int main(int argc, char *argv[]) {
     int read = read_file(filename, buffer, 4096);
     if (read) {
 //        printHexBlocks(buffer, read/2);
-        parseTxXdr(buffer, &txContent);
+        uint16_t offset = 0;
+        while ((offset = parseTxXdr(buffer, &txContent, offset))) {
+            printf("\n");
+        }
     }
 
     return 0;

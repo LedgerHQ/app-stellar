@@ -21,10 +21,12 @@
 
 typedef struct {
     uint8_t opType;
+    uint8_t opCount;
+    uint8_t opIdx;
     char txDetails[4][29];
     char opDetails[5][50];
 } tx_content_t;
 
-void parseTxXdr(uint8_t *buffer, tx_content_t *content);
+uint16_t parseTxXdr(uint8_t *buffer, tx_content_t *content, uint16_t offset);
 
 #endif
