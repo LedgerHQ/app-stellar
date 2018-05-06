@@ -543,7 +543,7 @@ static const char *op_names[16] =
      "Set Options", "Change Trust", "Remove Trust", "Allow Trust", "Revoke Trust",
      "Merge Account", "Inflation", "Set Data", "Remove Data", "Unknown"};
 
-const char *const detail_names_table[][5] = {
+const char *const detailNamesTable[][5] = {
     {"ACCOUNT ID", "START BALANCE", NULL, NULL, NULL},
     {"AMOUNT", "DESTINATION", NULL, NULL, NULL},
     {"SEND", "DESTINATION", "RECEIVE", "VIA", NULL},
@@ -561,36 +561,66 @@ const char *const detail_names_table[][5] = {
     {"NAME", NULL, NULL, NULL, NULL}
 };
 
-const char *detail_names[7];
-const char *detail_values[7];
+const char *detailNames[7];
+const char *detailValues[7];
+uint8_t currentScreen;
+uint16_t offsets[10];
 
-const void init_details() {
-    os_memset(detail_names, 0, sizeof(detail_names));
-    os_memset(detail_values, 0, sizeof(detail_values));
-    detail_names[0] = ((char *)PIC("MEMO"));
-    detail_names[1] = ((char *)PIC("FEE"));
-    detail_values[0] = ctx.req.tx.content.txDetails[0];
-    detail_values[1] = ctx.req.tx.content.txDetails[1];
-    uint8_t i, j;
-    for (i = 0, j = 2; i < 5; i++) {
-        if (ctx.req.tx.content.opDetails[i][0] != '\0') {
-            detail_names[j] = ((char *)PIC(detail_names_table[ctx.req.tx.content.opType][i]));
-            detail_values[j] = ctx.req.tx.content.opDetails[i];
-            j++;
+const void initDetails() {
+    os_memset(detailNames, 0, sizeof(detailNames));
+    os_memset(detailValues, 0, sizeof(detailValues));
+    if (ctx.req.tx.rawLength > 0) { // parse raw tx
+        if (currentScreen > 0 && offsets[currentScreen] == 0) { // transaction details (memo/fee/etc)
+            strcpy(operationCaption, ((char *)PIC("Extra details")));
+            detailNames[0] = ((char *)PIC("MEMO"));
+            detailNames[1] = ((char *)PIC("FEE"));
+            detailNames[2] = ((char *)PIC("NETWORK"));
+            detailValues[0] = ctx.req.tx.content.txDetails[0];
+            detailValues[1] = ctx.req.tx.content.txDetails[1];
+            detailValues[2] = ctx.req.tx.content.txDetails[2];
+        } else { // operation details
+            os_memset(&ctx.req.tx.content.opDetails, 0, sizeof(ctx.req.tx.content.opDetails));
+            offsets[currentScreen+1] = parseTxXdr(ctx.req.tx.raw, &ctx.req.tx.content, offsets[currentScreen]);
+            strcpy(operationCaption, ((char *)PIC(op_names[ctx.req.tx.content.opType])));
+            uint8_t i, j;
+            for (i = 0, j = 0; i < 5; i++) {
+                if (ctx.req.tx.content.opDetails[i][0] != '\0') {
+                    detailNames[j] = ((char *)PIC(detailNamesTable[ctx.req.tx.content.opType][i]));
+                    detailValues[j] = ctx.req.tx.content.opDetails[i];
+                    j++;
+                }
+            }
         }
+//        strcpy(subtitleCaption, ctx.req.tx.content.txDetails[3]);
     }
 }
 
+
+
 const bagl_element_t *ui_approval_common_show_details(const bagl_element_t *e) {
     uint8_t detailIdx = e->component.userid & 0xF;
-    char * detailVal = detail_values[detailIdx];
+    char * detailVal = detailValues[detailIdx];
     if (detailVal != NULL && strlen(detailVal) * BAGL_FONT_OPEN_SANS_REGULAR_10_13PX_AVG_WIDTH >= 160) {
         // display details screen
-        ui_details_title = detail_names[detailIdx];
+        ui_details_title = detailNames[detailIdx];
         ui_details_content = detailVal;
         ui_details_back_callback = ui_approval_blue_init;
         UX_DISPLAY(ui_details_blue, ui_details_blue_prepro);
     }
+    return NULL;
+}
+
+const bagl_element_t *ui_approval_prev(const bagl_element_t *e) {
+    currentScreen--;
+    initDetails();
+    ui_approval_blue_init();
+    return NULL;
+}
+
+const bagl_element_t *ui_approval_next(const bagl_element_t *e) {
+    currentScreen++;
+    initDetails();
+    ui_approval_blue_init();
     return NULL;
 }
 
@@ -605,6 +635,14 @@ const bagl_element_t ui_approval_blue[] = {
     /// TOP STATUS BAR
     {{BAGL_LABELINE, 0x60, 0, 45, 320, 30, 0, 0, BAGL_FILL, 0xFFFFFF, COLOR_APP, BAGL_FONT_OPEN_SANS_SEMIBOLD_10_13PX | BAGL_FONT_ALIGNMENT_CENTER, 0},
      "CONFIRM TRANSACTION", 0, 0, 0, NULL, NULL, NULL},
+
+    {{BAGL_RECTANGLE | BAGL_FLAG_TOUCHABLE, 0x01, 0, 19, 50, 44, 0, 0,
+     BAGL_FILL, COLOR_APP, COLOR_APP_LIGHT, BAGL_FONT_SYMBOLS_0 | BAGL_FONT_ALIGNMENT_CENTER | BAGL_FONT_ALIGNMENT_MIDDLE, 0},
+     BAGL_FONT_SYMBOLS_0_LEFT, 0, COLOR_APP, 0xFFFFFF, ui_approval_prev, NULL, NULL},
+
+    {{BAGL_RECTANGLE | BAGL_FLAG_TOUCHABLE, 0x02, 270, 19, 50, 44, 0, 0,
+     BAGL_FILL, COLOR_APP, COLOR_APP_LIGHT, BAGL_FONT_SYMBOLS_0 | BAGL_FONT_ALIGNMENT_CENTER | BAGL_FONT_ALIGNMENT_MIDDLE, 0},
+     BAGL_FONT_SYMBOLS_0_MINIRIGHT, 0, COLOR_APP, 0xFFFFFF, ui_approval_next, NULL, NULL},
 
     // BADGE_TRANSACTION.GIF
     {{BAGL_ICON, 0x40, 30, 88, 50, 50, 0, 0, BAGL_FILL, 0, COLOR_BG_1, 0, 0}, &C_badge_transaction, 0, 0, 0, NULL, NULL, NULL},
@@ -675,6 +713,7 @@ const bagl_element_t ui_approval_blue[] = {
     {{BAGL_RECTANGLE, 0x33, 30, 297, 260, 1, 1, 0, 0, 0xEEEEEE, COLOR_BG_1, 0, 0},
      NULL, 0, 0, 0, NULL, NULL, NULL},
 
+    // Details 3
     {{BAGL_LABELINE, 0x74, 30, 319, 100, 23, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_SEMIBOLD_8_11PX, 0},
      NULL, 0, 0, 0, NULL, NULL, NULL},
     {{BAGL_LABELINE, 0x14, 130, 319, 160, 23, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX | BAGL_FONT_ALIGNMENT_RIGHT, 0},
@@ -689,6 +728,7 @@ const bagl_element_t ui_approval_blue[] = {
     {{BAGL_RECTANGLE, 0x34, 30, 332, 260, 1, 1, 0, 0, 0xEEEEEE, COLOR_BG_1, 0, 0},
      NULL, 0, 0, 0, NULL, NULL, NULL},
 
+    // Details 4
     {{BAGL_LABELINE, 0x75, 30, 354, 100, 23, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_SEMIBOLD_8_11PX, 0},
      NULL, 0, 0, 0, NULL, NULL, NULL},
     {{BAGL_LABELINE, 0x15, 130, 354, 160, 23, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX | BAGL_FONT_ALIGNMENT_RIGHT, 0},
@@ -703,6 +743,7 @@ const bagl_element_t ui_approval_blue[] = {
     {{BAGL_RECTANGLE, 0x35, 30, 367, 260, 1, 1, 0, 0, 0xEEEEEE, COLOR_BG_1, 0, 0},
      NULL, 0, 0, 0, NULL, NULL, NULL},
 
+    // Details 5
     {{BAGL_LABELINE, 0x76, 30, 389, 100, 23, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_SEMIBOLD_8_11PX, 0},
      NULL, 0, 0, 0, NULL, NULL, NULL},
     {{BAGL_LABELINE, 0x16, 130, 389, 160, 23, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX | BAGL_FONT_ALIGNMENT_RIGHT, 0},
@@ -723,17 +764,21 @@ const bagl_element_t ui_approval_blue[] = {
 };
 
 const bagl_element_t *ui_approval_blue_prepro(const bagl_element_t *element) {
-    if (element->component.userid == 0) {
+    if (element->component.userid == 0x00) {
         return 1;
     }
+    if (element->component.userid == 0x01) {
+        return currentScreen > 0;
+    }
+    if (element->component.userid == 0x02) {
+        return currentScreen < ctx.req.tx.content.opCount;
+    }
+
     // none elements are skipped
     if ((element->component.type & (~BAGL_FLAG_TOUCHABLE)) == BAGL_NONE) {
         return 0;
     } else {
         switch (element->component.userid & 0xF0) {
-        // touchable nonetype entries, skip them to avoid latencies (to be fixed in the sdk later on)
-        case 0x80:
-            return 0;
         // icon
         case 0x40:
         // TITLE
@@ -744,26 +789,26 @@ const bagl_element_t *ui_approval_blue_prepro(const bagl_element_t *element) {
 
         // details label
         case 0x70:
-            if (!detail_names[element->component.userid & 0xF]) {
+            if (!detailNames[element->component.userid & 0xF]) {
                 return NULL;
             }
-            if (!detail_values[element->component.userid & 0xF]) {
+            if (!detailValues[element->component.userid & 0xF]) {
                 return NULL;
             }
             os_memmove(&tmp_element, element, sizeof(bagl_element_t));
-            tmp_element.text = detail_names[element->component.userid & 0xF];
+            tmp_element.text = detailNames[element->component.userid & 0xF];
             return &tmp_element;
 
         // detail value
         case 0x10:
-            if (!detail_names[element->component.userid & 0xF]) {
+            if (!detailNames[element->component.userid & 0xF]) {
                 return NULL;
             }
-            if (!detail_values[element->component.userid & 0xF]) {
+            if (!detailValues[element->component.userid & 0xF]) {
                 return NULL;
             }
             os_memmove(&tmp_element, element, sizeof(bagl_element_t));
-            tmp_element.text = detail_values[element->component.userid & 0xF];
+            tmp_element.text = detailValues[element->component.userid & 0xF];
 
             // x -= 18 when overflow is detected
             if (strlen(tmp_element.text) * BAGL_FONT_OPEN_SANS_REGULAR_10_13PX_AVG_WIDTH >= 160) {
@@ -773,16 +818,16 @@ const bagl_element_t *ui_approval_blue_prepro(const bagl_element_t *element) {
 
         // right arrow and left selection rectangle
         case 0x20:
-            if (!detail_names[element->component.userid & 0xF]) {
+            if (!detailNames[element->component.userid & 0xF]) {
                 return NULL;
             }
-            if (strlen(detail_values[element->component.userid & 0xF]) * BAGL_FONT_OPEN_SANS_REGULAR_10_13PX_AVG_WIDTH < 160) {
+            if (strlen(detailValues[element->component.userid & 0xF]) * BAGL_FONT_OPEN_SANS_REGULAR_10_13PX_AVG_WIDTH < 160) {
                 return NULL;
             }
 
         // horizontal delimiter
         case 0x30:
-            return detail_names[element->component.userid & 0xF] ? element : NULL;
+            return detailNames[element->component.userid & 0xF] ? element : NULL;
         }
     }
     return element;
@@ -796,18 +841,17 @@ void ui_approval_blue_init(void) {
 }
 
 void ui_approve_tx_blue_init(void) {
-    init_details();
-    strcpy(operationCaption, ((char *)PIC(op_names[ctx.req.tx.content.opType])));
-    strcpy(subtitleCaption, ctx.req.tx.content.txDetails[2]);
-    strcpy(subtitleCaption + strlen(ctx.req.tx.content.txDetails[2]), " Network");
+    currentScreen = 0;
+    offsets[0] = 0;
+    initDetails();
     ui_approval_blue_init();
 }
 
 void ui_approve_tx_hash_blue_init(void) {
-    os_memset(detail_names, 0, sizeof(detail_names));
-    os_memset(detail_values, 0, sizeof(detail_values));
-    detail_names[0] = ((char *)PIC("Hash"));
-    detail_values[0] = ctx.req.tx.content.txDetails[0];
+    os_memset(detailNames, 0, sizeof(detailNames));
+    os_memset(detailValues, 0, sizeof(detailValues));
+    detailNames[0] = ((char *)PIC("Hash"));
+    detailValues[0] = ctx.req.tx.content.txDetails[0];
     strcpy(operationCaption, "WARNING");
     strcpy(subtitleCaption, "No details available");
     ui_approval_blue_init();
