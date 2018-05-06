@@ -857,9 +857,11 @@ const uint8_t countSteps() {
 }
 
 const void prepareDetails() {
-    os_memset(&ctx.req.tx.content.opDetails, 0, sizeof(ctx.req.tx.content.opDetails));
-    ctx.req.tx.offset = parseTxXdr(ctx.req.tx.raw, &ctx.req.tx.content, ctx.req.tx.offset);
-    ux_step_count = countSteps();
+    if (ctx.req.tx.rawLength > 0) { // parse raw tx
+        os_memset(&ctx.req.tx.content.opDetails, 0, sizeof(ctx.req.tx.content.opDetails));
+        ctx.req.tx.offset = parseTxXdr(ctx.req.tx.raw, &ctx.req.tx.content, ctx.req.tx.offset);
+        ux_step_count = countSteps();
+    }
 }
 
 
@@ -1301,6 +1303,7 @@ void handleSignTxHash(uint8_t *dataBuffer, uint16_t dataLength, volatile unsigne
     // prepare for display
     os_memset(&ctx.req.tx.content, 0, sizeof(ctx.req.tx.content));
     ctx.req.tx.content.opType = OPERATION_TYPE_UNKNOWN;
+    ctx.req.tx.rawLength = 0;
 
 #if defined(TARGET_BLUE)
     print_hash_summary(ctx.req.tx.hash, (char *)ctx.req.tx.content.txDetails[0]);
