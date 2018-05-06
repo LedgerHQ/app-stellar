@@ -292,6 +292,7 @@ uint16_t parseAccountMergeOpXdr(uint8_t *buffer, tx_content_t *txContent) {
 }
 
 uint16_t parseManageDataOpXdr(uint8_t *buffer, tx_content_t *txContent) {
+
     uint32_t size = readUInt32Block(buffer);
     if (size > DATA_NAME_MAX_SIZE) {
         THROW(0x6c2f);
@@ -306,18 +307,21 @@ uint16_t parseManageDataOpXdr(uint8_t *buffer, tx_content_t *txContent) {
     checkPadding(buffer + offset, size, numBytes(size)); // security check
     offset += numBytes(size);
 
-    size = readUInt32Block(buffer + offset);
-    if (size > DATA_VALUE_MAX_SIZE) {
-        THROW(0x6c2f);
-    }
+    uint32_t hasValue = readUInt32Block(buffer + offset);
     offset += 4;
 
-    if (size == 0) {
-        txContent->opType = OPERATION_TYPE_REMOVE_DATA;
-    } else {
+    if (hasValue) {
+        size = readUInt32Block(buffer + offset);
+        if (size > DATA_VALUE_MAX_SIZE) {
+            THROW(0x6c2f);
+        }
+        offset += 4;
         strcpy(txContent->opDetails[1], "<binary data>");
         txContent->opType = OPERATION_TYPE_SET_DATA;
+        checkPadding(buffer + offset, size, numBytes(size)); // security check
         offset += numBytes(size);
+    } else {
+        txContent->opType = OPERATION_TYPE_REMOVE_DATA;
     }
     return offset;
 }
@@ -604,7 +608,7 @@ uint16_t parseTxXdr(uint8_t *buffer, tx_content_t *txContent, uint16_t offset) {
 
         txContent->opIdx = 0;
     }
-//    printHexBlocks(buffer, 20);
+//    printHexBlocks(buffer+offset, 20);
     offset = parseOpXdr(buffer + offset, txContent) + offset;
     if (txContent->opCount == txContent->opIdx) {
         return 0; // start from beginning next time
