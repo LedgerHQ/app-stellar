@@ -36,6 +36,8 @@ int main(int argc, char *argv[]) {
         uint16_t offset = 0;
         while ((offset = parseTxXdr(buffer, &txContent, offset))) {
             printf("\n");
+            printf("offset: %d", offset);
+            printf("\n");
         }
     }
 

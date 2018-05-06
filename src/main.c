@@ -52,6 +52,7 @@ uint32_t set_result_get_publicKey(void);
 #define INS_SIGN_TX 0x04
 #define INS_GET_APP_CONFIGURATION 0x06
 #define INS_SIGN_TX_HASH 0x08
+#define INS_KEEP_ALIVE 0x10
 #define P1_NO_SIGNATURE 0x00
 #define P1_SIGNATURE 0x01
 #define P2_NO_CONFIRM 0x00
@@ -95,8 +96,7 @@ typedef struct {
         pk_context_t pk;
         tx_context_t tx;
     } req;
-    uint8_t busy;
-    uint8_t timeout;
+    uint16_t u2fTimer;
 } stellar_context_t;
 
 stellar_context_t ctx;
@@ -1054,7 +1054,6 @@ unsigned int io_seproxyhal_touch_tx_ok(const bagl_element_t *e) {
 #endif // HAVE_U2F
     // Display back the original UX
     ui_idle();
-
     return 0; // do not redraw the widget
 }
 
@@ -1098,8 +1097,6 @@ unsigned short io_exchange_al(unsigned char channel, unsigned short tx_len) {
     switch (channel & ~(IO_FLAGS)) {
     case CHANNEL_KEYBOARD:
         break;
-
-    // multiplexed io exchange over a SPI channel and TLV encapsulated protocol
     case CHANNEL_SPI:
         if (tx_len) {
             io_seproxyhal_spi_send(G_io_apdu_buffer, tx_len);
@@ -1107,13 +1104,10 @@ unsigned short io_exchange_al(unsigned char channel, unsigned short tx_len) {
             if (channel & IO_RESET_AFTER_REPLIED) {
                 reset();
             }
-            return 0; // nothing received from the master so far (it's a tx
-                      // transaction)
+            return 0;
         } else {
-            return io_seproxyhal_spi_recv(G_io_apdu_buffer,
-                                          sizeof(G_io_apdu_buffer), 0);
+            return io_seproxyhal_spi_recv(G_io_apdu_buffer, sizeof(G_io_apdu_buffer), 0);
         }
-
     default:
         THROW(INVALID_PARAMETER);
     }
@@ -1322,40 +1316,50 @@ void handleSignTxHash(uint8_t *dataBuffer, uint16_t dataLength, volatile unsigne
     *flags |= IO_ASYNCH_REPLY;
 }
 
+void handleKeepAlive(volatile unsigned int *flags) {
+    *flags |= IO_ASYNCH_REPLY;
+}
+
 void handleApdu(volatile unsigned int *flags, volatile unsigned int *tx) {
     unsigned short sw = 0;
 
     BEGIN_TRY {
         TRY {
             if (G_io_apdu_buffer[OFFSET_CLA] != CLA) {
-                THROW(0x6E00);
+                THROW(0x6e00);
             }
 
-            switch (G_io_apdu_buffer[OFFSET_INS]) {
+            uint8_t ins = G_io_apdu_buffer[OFFSET_INS];
+            uint8_t p1 = G_io_apdu_buffer[OFFSET_P1];
+            uint8_t p2 = G_io_apdu_buffer[OFFSET_P2];
+            uint8_t dataLength = G_io_apdu_buffer[OFFSET_LC];
+            uint8_t *dataBuffer = G_io_apdu_buffer + OFFSET_CDATA;
+
+#ifdef HAVE_U2F
+            // reset keep-alive for u2f just short of 30sec
+            ctx.u2fTimer = 28000;
+#endif // HAVE_U2F
+
+            switch (ins) {
             case INS_GET_PUBLIC_KEY:
-                handleGetPublicKey(G_io_apdu_buffer[OFFSET_P1],
-                                   G_io_apdu_buffer[OFFSET_P2],
-                                   G_io_apdu_buffer + OFFSET_CDATA,
-                                   G_io_apdu_buffer[OFFSET_LC],
-                                   flags, tx);
+                handleGetPublicKey(p1, p2, dataBuffer, dataLength, flags, tx);
                 break;
 
             case INS_SIGN_TX:
-                handleSignTx(G_io_apdu_buffer[OFFSET_P1],
-                             G_io_apdu_buffer[OFFSET_P2],
-                             G_io_apdu_buffer + OFFSET_CDATA,
-                             G_io_apdu_buffer[OFFSET_LC], flags, tx);
+                handleSignTx(p1, p2, dataBuffer, dataLength, flags, tx);
                 break;
 
             case INS_SIGN_TX_HASH:
-                handleSignTxHash(G_io_apdu_buffer + OFFSET_CDATA,
-                                 G_io_apdu_buffer[OFFSET_LC], flags, tx);
+                handleSignTxHash(dataBuffer, dataLength, flags, tx);
                 break;
 
             case INS_GET_APP_CONFIGURATION:
                 handleGetAppConfiguration(tx);
                 break;
 
+            case INS_KEEP_ALIVE:
+                handleKeepAlive(flags);
+                break;
             default:
                 THROW(0x6D00);
                 break;
@@ -1391,6 +1395,7 @@ void handleApdu(volatile unsigned int *flags, volatile unsigned int *tx) {
 void stellar_main(void) {
     // multi-ops support is not persistent
     multiOpsSupport = 0;
+    ctx.u2fTimer = 0;
 
     volatile unsigned int rx = 0;
     volatile unsigned int tx = 0;
@@ -1408,8 +1413,8 @@ void stellar_main(void) {
         BEGIN_TRY {
             TRY {
                 rx = tx;
-                tx = 0; // ensure no race in catch_other if io_exchange throws
-                        // an error
+                tx = 0;
+
                 rx = io_exchange(CHANNEL_APDU | flags, rx);
                 flags = 0;
 
@@ -1457,6 +1462,15 @@ void io_seproxyhal_display(const bagl_element_t *element) {
     io_seproxyhal_display_default((bagl_element_t *)element);
 }
 
+#ifdef HAVE_U2F
+void sendKeepAlive() {
+    ctx.u2fTimer = 0;
+    G_io_apdu_buffer[0] = 0x6e;
+    G_io_apdu_buffer[1] = 0x02;
+    u2f_proxy_response((u2f_service_t *)&u2fService, 2);
+}
+#endif // HAVE_U2F
+
 unsigned char io_event(unsigned char channel) {
     // nothing done with the event, throw an error on the transport layer if
     // needed
@@ -1487,6 +1501,16 @@ unsigned char io_event(unsigned char channel) {
         break;
 
     case SEPROXYHAL_TAG_TICKER_EVENT:
+
+        #ifdef HAVE_U2F
+        if (fidoActivated && ctx.u2fTimer > 0) {
+            ctx.u2fTimer -= 100;
+            if (ctx.u2fTimer <= 0) {
+                sendKeepAlive();
+            }
+        }
+        #endif // HAVE_U2F
+
         UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer, {
             if (UX_ALLOWED) {
                 if (ux_step_count) {
