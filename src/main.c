@@ -19,15 +19,15 @@
 #include "cx.h"
 #include <stdbool.h>
 #include <limits.h>
+#include <stdio.h>
 
 #include "os_io_seproxyhal.h"
 #include "string.h"
 
 #include "glyphs.h"
 
-#include "base32.h"
-#include "xdr_parser.h"
-#include "stlr_utils.h"
+#include "stellar_types.h"
+#include "stellar_api.h"
 
 #ifdef HAVE_U2F
 
@@ -45,70 +45,14 @@ unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
 uint32_t set_result_get_publicKey(void);
 
-#define MAX_BIP32_LEN 10
-
-#define CLA 0xE0
-#define INS_GET_PUBLIC_KEY 0x02
-#define INS_SIGN_TX 0x04
-#define INS_GET_APP_CONFIGURATION 0x06
-#define INS_SIGN_TX_HASH 0x08
-#define INS_KEEP_ALIVE 0x10
-#define P1_NO_SIGNATURE 0x00
-#define P1_SIGNATURE 0x01
-#define P2_NO_CONFIRM 0x00
-#define P2_CONFIRM 0x01
-#define P1_FIRST 0x00
-#define P1_MORE 0x80
-#define P2_LAST 0x00
-#define P2_MORE 0x80
-
-#define OFFSET_CLA 0
-#define OFFSET_INS 1
-#define OFFSET_P1 2
-#define OFFSET_P2 3
-#define OFFSET_LC 4
-#define OFFSET_CDATA 5
-
-#define MAX_UI_STEPS 10
-
-#define MAX_RAW_TX 1024
-
-typedef struct {
-    cx_ecfp_public_key_t publicKey;
-    char address[57];
-    uint8_t signature[64];
-    bool returnSignature;
-
-} pk_context_t;
-
-typedef struct {
-    uint8_t bip32Len;
-    uint32_t bip32[MAX_BIP32_LEN];
-    uint8_t raw[MAX_RAW_TX];
-    uint32_t rawLength;
-    uint8_t hash[32];
-    tx_content_t content;
-    uint16_t offset;
-} tx_context_t;
-
-typedef struct {
-    union {
-        pk_context_t pk;
-        tx_context_t tx;
-    } req;
-    uint16_t u2fTimer;
-} stellar_context_t;
-
 stellar_context_t ctx;
-
-volatile uint8_t multiOpsSupport;
 
 bagl_element_t tmp_element;
 
 #if defined(TARGET_BLUE)
-volatile char operationCaption[15];
-volatile char displayString[33];
+volatile char titleCaption[26];
 volatile char subtitleCaption[16];
+volatile char displayString[33];
 #endif
 
 #ifdef HAVE_U2F
@@ -130,13 +74,8 @@ ux_state_t ux;
 uint8_t ux_step;
 uint8_t ux_step_count;
 
-typedef struct internalStorage_t {
-    uint8_t fidoTransport;
-    uint8_t initialized;
-} internalStorage_t;
-
-WIDE internalStorage_t N_storage_real;
-#define N_storage (*(WIDE internalStorage_t *)PIC(&N_storage_real))
+WIDE internal_storage_t N_storage_real;
+#define N_storage (*(WIDE internal_storage_t *)PIC(&N_storage_real))
 
 #ifdef HAVE_U2F
 
@@ -225,7 +164,7 @@ void menu_settings_browser_change(unsigned int enabled) {
 }
 
 void menu_settings_multi_ops_change(unsigned int enabled) {
-    multiOpsSupport = enabled;
+    ctx.multiOpsSupport = enabled;
     UX_MENU_DISPLAY(1, menu_settings, NULL);
 }
 
@@ -237,7 +176,7 @@ void menu_settings_browser_init(unsigned int ignored) {
 
 void menu_settings_multi_ops_init(unsigned int ignored) {
     UNUSED(ignored);
-    UX_MENU_DISPLAY(multiOpsSupport ? 1 : 0, menu_settings_multi_ops, NULL);
+    UX_MENU_DISPLAY(ctx.multiOpsSupport, menu_settings_multi_ops, NULL);
 }
 
 const ux_menu_entry_t menu_settings_browser[] = {
@@ -293,7 +232,7 @@ const bagl_element_t *ui_settings_blue_toggle_browser(const bagl_element_t *e) {
 
 const bagl_element_t *ui_settings_blue_toggle_multi_ops(const bagl_element_t *e) {
     // toggle setting and request redraw of settings elements
-    multiOpsSupport = (multiOpsSupport == 0) ? 1 : 0;
+    ctx.multiOpsSupport = (ctx.multiOpsSupport == 0x00) ? 0x01 : 0x00;
 
     // only refresh settings mutable drawn elements
     UX_REDISPLAY_IDX(8);
@@ -367,7 +306,7 @@ const bagl_element_t *ui_settings_blue_prepro(const bagl_element_t *e) {
         switch (e->component.userid) {
         case 0x01:
             // swap icon content
-            if (multiOpsSupport) {
+            if (ctx.multiOpsSupport) {
                 tmp_element.text = &C_icon_toggle_set;
             } else {
                 tmp_element.text = &C_icon_toggle_reset;
@@ -538,7 +477,7 @@ unsigned int ui_details_blue_button(unsigned int button_mask, unsigned int butto
 
 void ui_approval_blue_init(void);
 
-static const char *op_names[16] =
+static const char *opNames[16] =
     {"Create Account", "Payment", "Path Payment", "New Offer", "Remove Offer", "Change Offer",
      "Set Options", "Change Trust", "Remove Trust", "Allow Trust", "Revoke Trust",
      "Merge Account", "Inflation", "Set Data", "Remove Data", "Unknown"};
@@ -561,27 +500,35 @@ const char *const detailNamesTable[][5] = {
     {"NAME", NULL, NULL, NULL, NULL}
 };
 
-const char *detailNames[7];
-const char *detailValues[7];
+const char *detailNames[6];
+const char *detailValues[6];
 uint8_t currentScreen;
-uint16_t offsets[10];
+uint16_t offsets[MAX_OPS];
 
 const void initDetails() {
     os_memset(detailNames, 0, sizeof(detailNames));
     os_memset(detailValues, 0, sizeof(detailValues));
     if (ctx.req.tx.rawLength > 0) { // parse raw tx
-        if (currentScreen > 0 && offsets[currentScreen] == 0) { // transaction details (memo/fee/etc)
-            strcpy(operationCaption, ((char *)PIC("Extra details")));
+        if (currentScreen > 0 && offsets[currentScreen] == 0) { // transaction details (memo/fee/network)
+            strcpy(titleCaption, ((char *)PIC("Transaction level details")));
+            subtitleCaption[0] = '\0';
             detailNames[0] = ((char *)PIC("MEMO"));
             detailNames[1] = ((char *)PIC("FEE"));
             detailNames[2] = ((char *)PIC("NETWORK"));
+            detailNames[3] = ((char *)PIC("SOURCE"));
             detailValues[0] = ctx.req.tx.content.txDetails[0];
             detailValues[1] = ctx.req.tx.content.txDetails[1];
             detailValues[2] = ctx.req.tx.content.txDetails[2];
+            detailValues[3] = ctx.req.tx.content.txDetails[3];
         } else { // operation details
-            os_memset(&ctx.req.tx.content.opDetails, 0, sizeof(ctx.req.tx.content.opDetails));
             offsets[currentScreen+1] = parseTxXdr(ctx.req.tx.raw, &ctx.req.tx.content, offsets[currentScreen]);
-            strcpy(operationCaption, ((char *)PIC(op_names[ctx.req.tx.content.opType])));
+            strcpy(titleCaption, ((char *)PIC("Operation ")));
+            if (ctx.req.tx.content.opCount > 1) {
+                print_int(currentScreen+1, titleCaption+strlen(titleCaption));
+                strcpy(titleCaption+strlen(titleCaption), ((char *)PIC(" of ")));
+                print_int(ctx.req.tx.content.opCount, titleCaption+strlen(titleCaption));
+            }
+            strcpy(subtitleCaption, ((char *)PIC(opNames[ctx.req.tx.content.opType])));
             uint8_t i, j;
             for (i = 0, j = 0; i < 5; i++) {
                 if (ctx.req.tx.content.opDetails[i][0] != '\0') {
@@ -590,8 +537,11 @@ const void initDetails() {
                     j++;
                 }
             }
+            if (ctx.req.tx.content.opSource[0] != '\0') {
+                detailNames[j] = ((char *)PIC("SOURCE"));
+                detailValues[j] = ctx.req.tx.content.opSource;
+            }
         }
-//        strcpy(subtitleCaption, ctx.req.tx.content.txDetails[3]);
     }
 }
 
@@ -648,12 +598,12 @@ const bagl_element_t ui_approval_blue[] = {
     {{BAGL_ICON, 0x40, 30, 88, 50, 50, 0, 0, BAGL_FILL, 0, COLOR_BG_1, 0, 0}, &C_badge_transaction, 0, 0, 0, NULL, NULL, NULL},
 
     {{BAGL_LABELINE, 0x50, 100, 107, 320, 30, 0, 0, BAGL_FILL, 0x999999, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX, 0},
-     operationCaption, 0, 0, 0, NULL, NULL, NULL},
+     titleCaption, 0, 0, 0, NULL, NULL, NULL},
 
     {{BAGL_LABELINE, 0x00, 100, 128, 320, 30, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_SEMIBOLD_8_11PX, 0},
      subtitleCaption, 0, 0, 0, NULL, NULL, NULL},
 
-    // Fee
+    // Details 1
     {{BAGL_LABELINE, 0x70, 30, 179, 120, 20, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_SEMIBOLD_8_11PX, 0},
      NULL, 0, 0, 0, NULL, NULL, NULL},
     {{BAGL_LABELINE, 0x10, 130, 179, 160, 20, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX | BAGL_FONT_ALIGNMENT_RIGHT, 0},
@@ -668,7 +618,7 @@ const bagl_element_t ui_approval_blue[] = {
     {{BAGL_RECTANGLE, 0x30, 30, 192, 260, 1, 1, 0, 0, 0xEEEEEE, COLOR_BG_1, 0, 0},
      NULL, 0, 0, 0, NULL, NULL, NULL},
 
-    // Memo
+    // Details 2
     {{BAGL_LABELINE, 0x71, 30, 214, 100, 23, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_SEMIBOLD_8_11PX, 0},
      NULL, 0, 0, 0, NULL, NULL, NULL},
     {{BAGL_LABELINE, 0x11, 130, 214, 160, 23, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX | BAGL_FONT_ALIGNMENT_RIGHT, 0},
@@ -683,7 +633,7 @@ const bagl_element_t ui_approval_blue[] = {
     {{BAGL_RECTANGLE, 0x31, 30, 227, 260, 1, 1, 0, 0, 0xEEEEEE, COLOR_BG_1, 0, 0},
      NULL, 0, 0, 0, NULL, NULL, NULL},
 
-    // Details 1
+    // Details 3
     {{BAGL_LABELINE, 0x72, 30, 249, 120, 20, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_SEMIBOLD_8_11PX, 0},
      NULL, 0, 0, 0, NULL, NULL, NULL},
     {{BAGL_LABELINE, 0x12, 130, 249, 160, 20, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX | BAGL_FONT_ALIGNMENT_RIGHT, 0},
@@ -698,7 +648,7 @@ const bagl_element_t ui_approval_blue[] = {
     {{BAGL_RECTANGLE, 0x32, 30, 262, 260, 1, 1, 0, 0, 0xEEEEEE, COLOR_BG_1, 0, 0},
      NULL, 0, 0, 0, NULL, NULL, NULL},
 
-    // Details 2
+    // Details 4
     {{BAGL_LABELINE, 0x73, 30, 284, 100, 23, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_SEMIBOLD_8_11PX, 0},
      NULL, 0, 0, 0, NULL, NULL, NULL},
     {{BAGL_LABELINE, 0x13, 130, 284, 160, 23, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX | BAGL_FONT_ALIGNMENT_RIGHT, 0},
@@ -713,7 +663,7 @@ const bagl_element_t ui_approval_blue[] = {
     {{BAGL_RECTANGLE, 0x33, 30, 297, 260, 1, 1, 0, 0, 0xEEEEEE, COLOR_BG_1, 0, 0},
      NULL, 0, 0, 0, NULL, NULL, NULL},
 
-    // Details 3
+    // Details 5
     {{BAGL_LABELINE, 0x74, 30, 319, 100, 23, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_SEMIBOLD_8_11PX, 0},
      NULL, 0, 0, 0, NULL, NULL, NULL},
     {{BAGL_LABELINE, 0x14, 130, 319, 160, 23, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX | BAGL_FONT_ALIGNMENT_RIGHT, 0},
@@ -728,7 +678,7 @@ const bagl_element_t ui_approval_blue[] = {
     {{BAGL_RECTANGLE, 0x34, 30, 332, 260, 1, 1, 0, 0, 0xEEEEEE, COLOR_BG_1, 0, 0},
      NULL, 0, 0, 0, NULL, NULL, NULL},
 
-    // Details 4
+    // Details 6
     {{BAGL_LABELINE, 0x75, 30, 354, 100, 23, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_SEMIBOLD_8_11PX, 0},
      NULL, 0, 0, 0, NULL, NULL, NULL},
     {{BAGL_LABELINE, 0x15, 130, 354, 160, 23, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX | BAGL_FONT_ALIGNMENT_RIGHT, 0},
@@ -742,18 +692,6 @@ const bagl_element_t ui_approval_blue[] = {
 
     {{BAGL_RECTANGLE, 0x35, 30, 367, 260, 1, 1, 0, 0, 0xEEEEEE, COLOR_BG_1, 0, 0},
      NULL, 0, 0, 0, NULL, NULL, NULL},
-
-    // Details 5
-    {{BAGL_LABELINE, 0x76, 30, 389, 100, 23, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_SEMIBOLD_8_11PX, 0},
-     NULL, 0, 0, 0, NULL, NULL, NULL},
-    {{BAGL_LABELINE, 0x16, 130, 389, 160, 23, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX | BAGL_FONT_ALIGNMENT_RIGHT, 0},
-     NULL, 0, 0, 0, NULL, NULL, NULL},
-    {{BAGL_LABELINE, 0x26, 284, 389, 6, 16, 0, 0, BAGL_FILL, 0x999999, COLOR_BG_1, BAGL_FONT_SYMBOLS_0 | BAGL_FONT_ALIGNMENT_RIGHT, 0},
-     BAGL_FONT_SYMBOLS_0_MINIRIGHT, 0, 0, 0, NULL, NULL, NULL},
-    {{BAGL_NONE | BAGL_FLAG_TOUCHABLE, 0x86, 0, 368, 320, 34, 0, 9, BAGL_FILL, 0xFFFFFF, 0x000000, 0, 0},
-     NULL, 0, 0xEEEEEE, 0x000000, ui_approval_common_show_details, ui_menu_item_out_over, ui_menu_item_out_over},
-    {{BAGL_RECTANGLE, 0x26, 0, 368, 5, 34, 0, 0, BAGL_FILL, COLOR_BG_1, COLOR_BG_1, 0, 0},
-     NULL, 0, 0x41CCB4, 0, NULL, NULL, NULL},
 
     {{BAGL_RECTANGLE | BAGL_FLAG_TOUCHABLE, 0x00, 40, 414, 115, 36, 0, 18, BAGL_FILL, 0xCCCCCC, COLOR_BG_1,
       BAGL_FONT_OPEN_SANS_REGULAR_11_14PX | BAGL_FONT_ALIGNMENT_CENTER | BAGL_FONT_ALIGNMENT_MIDDLE, 0},
@@ -852,7 +790,7 @@ void ui_approve_tx_hash_blue_init(void) {
     os_memset(detailValues, 0, sizeof(detailValues));
     detailNames[0] = ((char *)PIC("Hash"));
     detailValues[0] = ctx.req.tx.content.txDetails[0];
-    strcpy(operationCaption, "WARNING");
+    strcpy(titleCaption, "WARNING");
     strcpy(subtitleCaption, "No details available");
     ui_approval_blue_init();
 }
@@ -874,7 +812,7 @@ static const char * op_captions[][6] = {
     {"Allow Trust", "Account ID", NULL, NULL, NULL},
     {"Revoke Trust", "Account ID", NULL, NULL, NULL},
     {"Merge Account", NULL, NULL, NULL, NULL},
-    {"Operation", NULL, NULL, NULL, NULL},
+    {"Inflation", NULL, NULL, NULL, NULL},
     {"Set Data", "Value", NULL, NULL, NULL},
     {"Remove Data", NULL, NULL, NULL, NULL},
     {"WARNING", "Hash", NULL, NULL, NULL}
@@ -1266,7 +1204,7 @@ void handleGetPublicKey(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t da
 }
 
 void handleGetAppConfiguration(volatile unsigned int *tx) {
-    G_io_apdu_buffer[0] = multiOpsSupport ? 0x01 : 0x00;
+    G_io_apdu_buffer[0] = ctx.multiOpsSupport;
     G_io_apdu_buffer[1] = LEDGER_MAJOR_VERSION;
     G_io_apdu_buffer[2] = LEDGER_MINOR_VERSION;
     G_io_apdu_buffer[3] = LEDGER_PATCH_VERSION;
@@ -1330,7 +1268,7 @@ void handleSignTx(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLeng
 
 void handleSignTxHash(uint8_t *dataBuffer, uint16_t dataLength, volatile unsigned int *flags, volatile unsigned int *tx) {
 
-    if (!multiOpsSupport) {
+    if (!ctx.multiOpsSupport) {
         THROW(0x6c66);
     }
 
@@ -1441,7 +1379,7 @@ void handleApdu(volatile unsigned int *flags, volatile unsigned int *tx) {
 
 void stellar_main(void) {
     // multi-ops support is not persistent
-    multiOpsSupport = 0;
+    ctx.multiOpsSupport = 0;
     ctx.u2fTimer = 0;
 
     volatile unsigned int rx = 0;
@@ -1608,10 +1546,10 @@ __attribute__((section(".boot"))) int main(void) {
                 io_seproxyhal_init();
 
                 if (N_storage.initialized != 0x01) {
-                    internalStorage_t storage;
+                    internal_storage_t storage;
                     storage.fidoTransport = 0x01;
                     storage.initialized = 0x01;
-                    nvm_write(&N_storage, (void *)&storage, sizeof(internalStorage_t));
+                    nvm_write(&N_storage, (void *)&storage, sizeof(internal_storage_t));
                 }
 
 #ifdef HAVE_U2F

@@ -17,8 +17,8 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
-#include "stlr_utils.h"
-#include "xdr_parser.h"
+#include "stellar_types.h"
+#include "stellar_api.h"
 
 #define SIGNER_KEY_TYPE_ED25519 0
 #define SIGNER_KEY_TYPE_PRE_AUTH_TX 1
@@ -516,6 +516,9 @@ uint16_t parseSetOptionsOpXdr(uint8_t *buffer, tx_content_t *txContent) {
 }
 
 uint16_t parseOpXdr(uint8_t *buffer, tx_content_t *txContent) {
+    os_memset(txContent->opDetails, 0, sizeof(txContent->opDetails));
+    os_memset(txContent->opSource, 0, sizeof(txContent->opSource));
+
     txContent->opIdx += 1;
 
     uint32_t hasAccountId = readUInt32Block(buffer);
@@ -528,9 +531,9 @@ uint16_t parseOpXdr(uint8_t *buffer, tx_content_t *txContent) {
         offset += 4;
         char tmp[57];
         public_key_to_address(buffer+offset, tmp);
-        print_short_summary(tmp, txContent->txDetails[3]);
-        PRINTF("operation source: %s\n", txContent->txDetails[3]);
-        offset += 8*4;
+        print_short_summary(tmp, txContent->opSource);
+        PRINTF("operation source: %s\n", txContent->opSource);
+        offset += 32;
     }
     uint32_t opType = readUInt32Block(buffer+offset);
     offset += 4;
@@ -562,8 +565,8 @@ uint16_t parseOpXdr(uint8_t *buffer, tx_content_t *txContent) {
         }
         case XDR_OPERATION_TYPE_INFLATION: {
             txContent->opType = OPERATION_TYPE_INFLATION;
-            strcpy(txContent->opDetails[0], "Inflation");
-            return offset;
+            strcpy(txContent->opDetails[0], "Run now");
+            break;
         }
         case XDR_OPERATION_TYPE_MANAGE_DATA: {
             return parseManageDataOpXdr(buffer + offset, txContent) + offset;
@@ -575,6 +578,8 @@ uint16_t parseOpXdr(uint8_t *buffer, tx_content_t *txContent) {
 
 uint16_t parseTxXdr(uint8_t *buffer, tx_content_t *txContent, uint16_t offset) {
     if (offset == 0) {
+        os_memset(txContent->txDetails, 0, sizeof(txContent->txDetails));
+
         print_network_id(buffer, txContent->txDetails[2]);
         offset += 32;
 
@@ -604,6 +609,11 @@ uint16_t parseTxXdr(uint8_t *buffer, tx_content_t *txContent, uint16_t offset) {
 
         txContent->opCount = readUInt32Block(buffer + offset);
         PRINTF("op count: %d\n\n", txContent->opCount);
+
+        if (txContent->opCount > MAX_OPS) {
+            THROW(0x6c30);
+        }
+
         offset += 4;
 
         txContent->opIdx = 0;

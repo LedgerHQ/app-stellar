@@ -18,9 +18,8 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "stlr_utils.h"
-#include "crc16.h"
-#include "base32.h"
+#include "stellar_types.h"
+#include "stellar_api.h"
 
 static const uint8_t TEST_NETWORK_ID_HASH[64] = {0xce, 0xe0, 0x30, 0x2d, 0x59, 0x84, 0x4d, 0x32,
                                                  0xbd, 0xca, 0x91, 0x5c, 0x82, 0x03, 0xdd, 0x44,
@@ -187,4 +186,80 @@ void print_hash_summary(uint8_t *in, char *out) {
         out[j+1] = hexChars[in[i] % 16];
     }
     out[j] = '\0';
+}
+
+unsigned short crc16(char *ptr, int count) {
+   int  crc;
+   char i;
+   crc = 0;
+   while (--count >= 0) {
+      crc = crc ^ (int) *ptr++ << 8;
+      i = 8;
+      do
+      {
+         if (crc & 0x8000)
+            crc = crc << 1 ^ 0x1021;
+         else
+            crc = crc << 1;
+      } while(--i);
+   }
+   return (crc);
+}
+
+/**
+ * adapted from https://stash.forgerock.org/projects/OPENAM/repos/forgerock-authenticator-ios/browse/ForgeRock-Authenticator/base32.c
+ */
+int base32_encode(const uint8_t *data, int length, char *result, int bufSize) {
+    int count = 0;
+    int quantum = 8;
+
+    if (length < 0 || length > (1 << 28)) {
+        return -1;
+    }
+
+    if (length > 0) {
+        int buffer = data[0];
+        int next = 1;
+        int bitsLeft = 8;
+
+        while (count < bufSize && (bitsLeft > 0 || next < length)) {
+            if (bitsLeft < 5) {
+                if (next < length) {
+                    buffer <<= 8;
+                    buffer |= data[next++] & 0xFF;
+                    bitsLeft += 8;
+                } else {
+                    int pad = 5 - bitsLeft;
+                    buffer <<= pad;
+                    bitsLeft += pad;
+                }
+            }
+
+            int index = 0x1F & (buffer >> (bitsLeft - 5));
+            bitsLeft -= 5;
+            result[count++] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"[index];
+
+            // Track the characters which make up a single quantum of 8 characters
+            quantum--;
+            if (quantum == 0) {
+                quantum = 8;
+            }
+        }
+
+        // If the number of encoded characters does not make a full quantum, insert padding
+        if (quantum != 8) {
+            while (quantum > 0 && count < bufSize) {
+                result[count++] = '=';
+                quantum--;
+            }
+        }
+    }
+
+    // Finally check if we exceeded buffer size.
+    if (count < bufSize) {
+        result[count] = '\000';
+        return count;
+    } else {
+        return -1;
+    }
 }

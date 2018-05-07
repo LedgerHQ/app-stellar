@@ -14,21 +14,39 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  ********************************************************************************/
+#ifndef _STELLAR_TYPES_H_
+#define _STELLAR_TYPES_H_
 
-#ifndef _STELLAR_UTILS_H_
-#define _STELLAR_UTILS_H_
-
-#include <stdint.h>
-
-#ifdef TEST
-#include <stdio.h>
-#define THROW(code) { printf("error: %d", code); return; }
-#define PRINTF(msg, arg) printf(msg, arg)
-#define PIC(code) code
-#define TARGET_NANOS 1
-#else
 #include "os.h"
-#endif // TEST
+#include <stdint.h>
+#include <stdbool.h>
+
+
+#define CLA 0xe0
+#define INS_GET_PUBLIC_KEY 0x02
+#define INS_SIGN_TX 0x04
+#define INS_GET_APP_CONFIGURATION 0x06
+#define INS_SIGN_TX_HASH 0x08
+#define INS_KEEP_ALIVE 0x10
+#define P1_NO_SIGNATURE 0x00
+#define P1_SIGNATURE 0x01
+#define P2_NO_CONFIRM 0x00
+#define P2_CONFIRM 0x01
+#define P1_FIRST 0x00
+#define P1_MORE 0x80
+#define P2_LAST 0x00
+#define P2_MORE 0x80
+
+#define OFFSET_CLA 0
+#define OFFSET_INS 1
+#define OFFSET_P1 2
+#define OFFSET_P2 3
+#define OFFSET_LC 4
+#define OFFSET_CDATA 5
+
+#define MAX_RAW_TX 1024
+#define MAX_OPS 20
+#define MAX_BIP32_LEN 10
 
 #define ASSET_TYPE_NATIVE 0
 #define ASSET_TYPE_CREDIT_ALPHANUM4 1
@@ -69,24 +87,54 @@
 #define OPERATION_TYPE_REMOVE_DATA 14
 #define OPERATION_TYPE_UNKNOWN 15
 
-void public_key_to_address(uint8_t *in, char *out);
+#ifdef TEST
+#include <stdio.h>
+#define THROW(code) { printf("error: %d", code); return; }
+#define PRINTF(msg, arg) printf(msg, arg)
+#define PIC(code) code
+#define TARGET_NANOS 1
+#endif // TEST
 
-void print_summary(char *in, char *out);
 
-void print_short_summary(char *in, char *out);
+typedef struct {
+    uint8_t opType;
+    uint8_t opCount;
+    uint8_t opIdx;
+    char opSource[9];
+    char txDetails[4][29];
+    char opDetails[5][50];
+} tx_content_t;
 
-void print_public_key(uint8_t *in, char *out);
+typedef struct {
+    cx_ecfp_public_key_t publicKey;
+    char address[28];
+    uint8_t signature[64];
+    bool returnSignature;
 
-void print_amount(uint64_t amount, char *asset, char *out);
+} pk_context_t;
 
-void print_network_id(uint8_t *in, char *out);
+typedef struct {
+    uint8_t bip32Len;
+    uint32_t bip32[MAX_BIP32_LEN];
+    uint8_t raw[MAX_RAW_TX];
+    uint32_t rawLength;
+    uint8_t hash[32];
+    tx_content_t content;
+    uint16_t offset;
+} tx_context_t;
 
-void print_hash_summary(uint8_t *in, char *out);
+typedef struct {
+    union {
+        pk_context_t pk;
+        tx_context_t tx;
+    } req;
+    uint16_t u2fTimer;
+    uint8_t multiOpsSupport;
+} stellar_context_t;
 
-void print_bits(uint32_t in, char *out);
+typedef struct {
+    uint8_t fidoTransport;
+    uint8_t initialized;
+} internal_storage_t;
 
-uint8_t print_int(uint64_t l, char *out);
-
-void print_asset(char *code, char *issuer, char *out);
-
-#endif // _STELLAR_UTILS_H_
+#endif
