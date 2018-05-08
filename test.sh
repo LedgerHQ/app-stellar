@@ -1,6 +1,6 @@
 #!/bin/bash
 mkdir -p obj
-gcc test/parsertest.c src/stlr_utils.c src/base32.c src/crc16.c src/xdr_parser.c test/test_utils.c -o obj/parsertest -I src/ -I test/ -D TEST
+gcc test/parsertest.c src/stellar_utils.c src/stellar_parser.c test/test_utils.c -o obj/parsertest -I src/ -I test/ -D TEST
 ./obj/parsertest test/txSimple.hex
 ./obj/parsertest test/txMemoId.hex
 ./obj/parsertest test/txMemoText.hex
@@ -18,5 +18,6 @@ gcc test/parsertest.c src/stlr_utils.c src/base32.c src/crc16.c src/xdr_parser.c
 ./obj/parsertest test/txAllowTrust.hex
 ./obj/parsertest test/txSetAllOptions.hex
 ./obj/parsertest test/txSetSomeOptions.hex
-gcc test/utilstest.c src/stlr_utils.c src/base32.c src/crc16.c test/test_utils.c -o obj/utilstest -I src/ -I test/ -D TEST
+./obj/parsertest test/txMultiOp2.hex
+gcc test/utilstest.c src/stellar_utils.c test/test_utils.c -o obj/utilstest -I src/ -I test/ -D TEST
 ./obj/utilstest

@@ -17,7 +17,6 @@
 #ifndef _STELLAR_TYPES_H_
 #define _STELLAR_TYPES_H_
 
-#include "os.h"
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -106,7 +105,7 @@ typedef struct {
 } tx_content_t;
 
 typedef struct {
-    cx_ecfp_public_key_t publicKey;
+    uint8_t publicKey[32];
     char address[28];
     uint8_t signature[64];
     bool returnSignature;

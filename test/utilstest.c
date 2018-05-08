@@ -16,7 +16,7 @@
  ********************************************************************************/
 #include <stdio.h>
 #include <string.h>
-#include "stlr_utils.h"
+#include "stellar_api.h"
 
 void test_print_amount(uint64_t amount, char *expected) {
     char *asset = "XLM";
@@ -38,7 +38,7 @@ void test_print_int(uint64_t id, char* expected) {
 
 void test_print_summary(char *msg, char *expected) {
     char summery[27];
-    print_summary(msg, summery);
+    print_summary(msg, summery, 12, 12);
     if (strcmp(summery, expected) != 0) {
         printf("test_print_summary failed. Expected: %s; Actual: %s\n", expected, summery);
     }
@@ -72,14 +72,14 @@ int main(int argc, char *argv[]) {
     test_print_int(12, "12");
     test_print_int(100, "100");
 
-    test_print_summary("GADFVW3UXVKDOU626XUPYDJU2BFCGFJHQ6SREYOZ6IJV4XSHOALEQN2I", "GADFVW3UXVKD...4XSHOALEQN2I");
+    test_print_summary("GADFVW3UXVKDOU626XUPYDJU2BFCGFJHQ6SREYOZ6IJV4XSHOALEQN2I", "GADFVW3UXVKD..4XSHOALEQN2I");
 
     uint8_t hash[32];
     uint8_t i;
     for (i = 0; i < 32; i++) {
         hash[i] = i;
     }
-    test_print_hash(hash, "00010203...1C1D1E1F");
+    test_print_hash(hash, "00010203..1C1D1E1F");
 
     uint32_t flags = (1 << 0) | (1 << 1);
     test_print_bits(flags, "011");

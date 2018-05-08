@@ -21,6 +21,11 @@
 #include "stellar_types.h"
 #include "stellar_api.h"
 
+#ifndef TEST
+#include "os.h"
+#endif
+
+
 static const uint8_t TEST_NETWORK_ID_HASH[64] = {0xce, 0xe0, 0x30, 0x2d, 0x59, 0x84, 0x4d, 0x32,
                                                  0xbd, 0xca, 0x91, 0x5c, 0x82, 0x03, 0xdd, 0x44,
                                                  0xb3, 0x3f, 0xbb, 0x7e, 0xdc, 0x19, 0x05, 0x1e,
@@ -49,37 +54,39 @@ void public_key_to_address(uint8_t *in, char *out) {
     out[56] = '\0';
 }
 
-void print_summary(char *in, char *out) {
-    size_t len = strlen(in);
-    if (len > 27) {
-        memcpy(out, in, 12);
-        out[12] = '.';
-        out[13] = '.';
-        out[14] = '.';
-        memcpy(out + 15, in + len - 12, 12);
-        out[27] = '\0';
+void print_summary(char *in, char *out, uint8_t numCharsL, uint8_t numCharsR) {
+    uint8_t outLength = numCharsL + numCharsR + 2;
+    uint16_t inLength = strlen(in);
+    if (inLength > outLength) {
+        memcpy(out, in, numCharsL);
+        out[numCharsL] = '.';
+        out[numCharsL+1] = '.';
+        memcpy(out + numCharsL+2, in + inLength - numCharsR, numCharsR);
+        out[outLength] = '\0';
     } else {
-        memcpy(out, in, len);
+        memcpy(out, in, inLength);
     }
 }
 
-void print_short_summary(char *in, char *out) {
-    size_t len = strlen(in);
-    if (len > 8) {
-        memcpy(out, in, 2);
-        out[2] = '.';
-        out[3] = '.';
-        memcpy(out + 4, in + len - 4, 4);
-        out[8] = '\0';
-    } else {
-        memcpy(out, in, len);
+void print_hash_summary(uint8_t *in, char *out) {
+    uint8_t i, j;
+    for (i = 0, j = 0; i < 4; i+=1, j+=2) {
+        out[j] = hexChars[in[i] / 16];
+        out[j+1] = hexChars[in[i] % 16];
     }
+    out[j++] = '.';
+    out[j++] = '.';
+    for (i = 28; i < 32; i+=1, j+=2) {
+        out[j] = hexChars[in[i] / 16];
+        out[j+1] = hexChars[in[i] % 16];
+    }
+    out[j] = '\0';
 }
 
-void print_public_key(uint8_t *in, char *out) {
+void print_public_key(uint8_t *in, char *out, uint8_t numCharsL, uint8_t numCharsR) {
     char buffer[57];
     public_key_to_address(in, buffer);
-    print_summary(buffer, out);
+    print_summary(buffer, out, numCharsL, numCharsR);
 }
 
 void print_amount(uint64_t amount, char *asset, char *out) {
@@ -127,7 +134,7 @@ void print_amount(uint64_t amount, char *asset, char *out) {
 
 }
 
-uint8_t print_int(uint64_t l, char *out) {
+void print_int(uint64_t l, char *out) {
     char buffer[AMOUNT_MAX_SIZE];
     uint64_t dVal = l;
     int i, j;
@@ -145,7 +152,6 @@ uint8_t print_int(uint64_t l, char *out) {
         out[j] = buffer[i];
     }
     out[j] = '\0';
-    return j;
 }
 
 void print_bits(uint32_t in, char *out) {
@@ -170,22 +176,6 @@ void print_asset(char *code, char *issuer, char *out) {
     strcpy(out, code);
     out[offset] = '@';
     strcpy(out+offset+1, issuer);
-}
-
-void print_hash_summary(uint8_t *in, char *out) {
-    uint8_t i, j;
-    for (i = 0, j = 0; i < 4; i+=1, j+=2) {
-        out[j] = hexChars[in[i] / 16];
-        out[j+1] = hexChars[in[i] % 16];
-    }
-    out[j++] = '.';
-    out[j++] = '.';
-    out[j++] = '.';
-    for (i = 28; i < 32; i+=1, j+=2) {
-        out[j] = hexChars[in[i] / 16];
-        out[j+1] = hexChars[in[i] % 16];
-    }
-    out[j] = '\0';
 }
 
 unsigned short crc16(char *ptr, int count) {

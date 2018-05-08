@@ -16,7 +16,7 @@
  ********************************************************************************/
 #include <stdio.h>
 
-#include "xdr_parser.h"
+#include "stellar_api.h"
 #include "test_utils.h"
 
 int main(int argc, char *argv[]) {

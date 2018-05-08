@@ -20,6 +20,10 @@
 #include "stellar_types.h"
 #include "stellar_api.h"
 
+#ifndef TEST
+#include "os.h"
+#endif
+
 #define SIGNER_KEY_TYPE_ED25519 0
 #define SIGNER_KEY_TYPE_PRE_AUTH_TX 1
 #define SIGNER_KEY_TYPE_HASH_X 2
@@ -117,9 +121,7 @@ uint8_t parseAsset(uint8_t *buffer, char *asset, char *issuer) {
             }
             buffer += 4;
             if (issuer) {
-                char tmp[57];
-                public_key_to_address(buffer, tmp);
-                print_short_summary(tmp, issuer);
+                print_public_key(buffer, issuer, 3, 4);
             }
             return 4 + 4 + 36; // type + code4 + accountId
         }
@@ -133,9 +135,7 @@ uint8_t parseAsset(uint8_t *buffer, char *asset, char *issuer) {
             }
             buffer += 4;
             if (issuer) {
-                char tmp[57];
-                public_key_to_address(buffer, tmp);
-                print_short_summary(tmp, issuer);
+                print_public_key(buffer, issuer, 3, 4);
             }
             return 4 + 12 + 36; // type + code12 + accountId
         }
@@ -153,7 +153,7 @@ uint16_t parseCreateAccountOpXdr(uint8_t *buffer, tx_content_t *txContent) {
     }
     uint16_t offset = 4;
 
-    print_public_key(buffer + offset, txContent->opDetails[0]);
+    print_public_key(buffer + offset, txContent->opDetails[0], 12, 12);
     PRINTF("account id: %s\n", txContent->opDetails[0]);
     offset += 32;
 
@@ -174,7 +174,7 @@ uint16_t parsePaymentOpXdr(uint8_t *buffer, tx_content_t *txContent) {
     }
     uint16_t offset = 4;
 
-    print_public_key(buffer + offset, txContent->opDetails[1]);
+    print_public_key(buffer + offset, txContent->opDetails[1], 12, 12);
     PRINTF("destination: %s\n", txContent->opDetails[1]);
     offset += 32;
 
@@ -206,7 +206,7 @@ uint16_t parsePathPaymentOpXdr(uint8_t *buffer, tx_content_t *txContent) {
     }
     offset += 4;
 
-    print_public_key(buffer + offset, txContent->opDetails[1]);
+    print_public_key(buffer + offset, txContent->opDetails[1], 12, 12);
     PRINTF("destination: %s\n", txContent->opDetails[1]);
     offset += 32;
 
@@ -241,7 +241,7 @@ uint16_t parseAllowTrustOpXdr(uint8_t *buffer, tx_content_t *txContent) {
     }
     uint16_t offset = 4;
 
-    print_public_key(buffer + offset, txContent->opDetails[1]);
+    print_public_key(buffer + offset, txContent->opDetails[1], 6, 6);
     PRINTF("trustor: %s\n", txContent->opDetails[1]);
     offset += 32;
 
@@ -284,7 +284,7 @@ uint16_t parseAccountMergeOpXdr(uint8_t *buffer, tx_content_t *txContent) {
     }
     uint16_t offset = 4;
 
-    print_public_key(buffer + offset, txContent->opDetails[0]);
+    print_public_key(buffer + offset, txContent->opDetails[0], 12, 12);
     PRINTF("destination: %s\n", txContent->opDetails[0]);
     offset += 32;
 
@@ -302,7 +302,7 @@ uint16_t parseManageDataOpXdr(uint8_t *buffer, tx_content_t *txContent) {
     char dataName[size];
     memcpy(dataName, buffer + offset, size);
     dataName[size] = '\0';
-    print_summary(dataName, txContent->opDetails[0]);
+    print_summary(dataName, txContent->opDetails[0], 12, 12);
     PRINTF("data name: %s\n", txContent->opDetails[0]);
     checkPadding(buffer + offset, size, numBytes(size)); // security check
     offset += numBytes(size);
@@ -448,7 +448,7 @@ uint16_t parseSetOptionsOpXdr(uint8_t *buffer, tx_content_t *txContent) {
             THROW(0x6c27);
         }
         offset += 4;
-        print_public_key(buffer + offset, txContent->opDetails[0]);
+        print_public_key(buffer + offset, txContent->opDetails[0], 6, 6);
         offset += 32;
     }
     PRINTF("inflation destination: %s\n", txContent->opDetails[0]);
@@ -487,14 +487,12 @@ uint16_t parseSetOptionsOpXdr(uint8_t *buffer, tx_content_t *txContent) {
         switch (signerType) {
             case SIGNER_KEY_TYPE_ED25519: {
                 strcpy(txContent->opDetails[4], "pk: ");
-                char signer[57];
-                public_key_to_address(buffer + offset, signer);
-                print_summary(signer, txContent->opDetails[4]+strlen(txContent->opDetails[4]));
+                print_public_key(buffer + offset, txContent->opDetails[4]+4, 12, 12);
                 break;
             }
             case SIGNER_KEY_TYPE_PRE_AUTH_TX: {
                 strcpy(txContent->opDetails[4], "pre-auth: ");
-                print_hash_summary(buffer + offset, txContent->opDetails[4]+strlen(txContent->opDetails[4]));
+                print_hash_summary(buffer + offset, txContent->opDetails[4]+10);
                 break;
             }
             case SIGNER_KEY_TYPE_HASH_X: {
@@ -516,8 +514,10 @@ uint16_t parseSetOptionsOpXdr(uint8_t *buffer, tx_content_t *txContent) {
 }
 
 uint16_t parseOpXdr(uint8_t *buffer, tx_content_t *txContent) {
+#ifndef TEST
     os_memset(txContent->opDetails, 0, sizeof(txContent->opDetails));
     os_memset(txContent->opSource, 0, sizeof(txContent->opSource));
+#endif
 
     txContent->opIdx += 1;
 
@@ -529,9 +529,7 @@ uint16_t parseOpXdr(uint8_t *buffer, tx_content_t *txContent) {
             THROW(0x6c2b);
         }
         offset += 4;
-        char tmp[57];
-        public_key_to_address(buffer+offset, tmp);
-        print_short_summary(tmp, txContent->opSource);
+        print_public_key(buffer+offset, txContent->opSource, 6, 6);
         PRINTF("operation source: %s\n", txContent->opSource);
         offset += 32;
     }
@@ -578,8 +576,9 @@ uint16_t parseOpXdr(uint8_t *buffer, tx_content_t *txContent) {
 
 uint16_t parseTxXdr(uint8_t *buffer, tx_content_t *txContent, uint16_t offset) {
     if (offset == 0) {
+#ifndef TEST
         os_memset(txContent->txDetails, 0, sizeof(txContent->txDetails));
-
+#endif
         print_network_id(buffer, txContent->txDetails[2]);
         offset += 32;
 
@@ -591,9 +590,7 @@ uint16_t parseTxXdr(uint8_t *buffer, tx_content_t *txContent, uint16_t offset) {
         }
         offset += 4;
 
-        char tmp[57];
-        public_key_to_address(buffer + offset, tmp);
-        print_short_summary(tmp, txContent->txDetails[3]);
+        print_public_key(buffer + offset, txContent->txDetails[3], 6, 6);
         PRINTF("transaction source: %s\n", txContent->txDetails[3]);
         offset += 32;
 
