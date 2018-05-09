@@ -68,6 +68,15 @@ void print_summary(char *in, char *out, uint8_t numCharsL, uint8_t numCharsR) {
     }
 }
 
+void print_hash(uint8_t *in, char *out) {
+    uint8_t i, j;
+    for (i = 0, j = 0; i < 32; i+=1, j+=2) {
+        out[j] = hexChars[in[i] / 16];
+        out[j+1] = hexChars[in[i] % 16];
+    }
+    out[j] = '\0';
+}
+
 void print_hash_summary(uint8_t *in, char *out) {
     uint8_t i, j;
     for (i = 0, j = 0; i < 4; i+=1, j+=2) {

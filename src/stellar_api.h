@@ -25,6 +25,7 @@ uint16_t parseTxXdr(uint8_t *buffer, tx_content_t *content, uint16_t offset);
 
 void print_public_key(uint8_t *in, char *out, uint8_t numCharsL, uint8_t numCharsR);
 void print_summary(char *in, char *out, uint8_t numCharsL, uint8_t numCharsR);
+void print_hash(uint8_t *in, char *out);
 void print_hash_summary(uint8_t *in, char *out);
 void print_amount(uint64_t amount, char *asset, char *out);
 void print_network_id(uint8_t *in, char *out);
