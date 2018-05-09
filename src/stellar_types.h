@@ -46,6 +46,7 @@
 #define MAX_RAW_TX 1024
 #define MAX_OPS 20
 #define MAX_BIP32_LEN 10
+#define AMOUNT_MAX_SIZE 22
 
 #define ASSET_TYPE_NATIVE 0
 #define ASSET_TYPE_CREDIT_ALPHANUM4 1
@@ -56,6 +57,10 @@
 #define MEMO_TYPE_ID 2
 #define MEMO_TYPE_HASH 3
 #define MEMO_TYPE_RETURN 4
+
+#define NETWORK_TYPE_PUBLIC 0
+#define NETWORK_TYPE_TEST 1
+#define NETWORK_TYPE_UNKNOWN 2
 
 #define XDR_OPERATION_TYPE_CREATE_ACCOUNT 0
 #define XDR_OPERATION_TYPE_PAYMENT 1
@@ -95,13 +100,32 @@
 #endif // TEST
 
 
+static const uint8_t NETWORK_ID_PUBLIC_HASH[64] = {0x7a, 0xc3, 0x39, 0x97, 0x54, 0x4e, 0x31, 0x75,
+                                                   0xd2, 0x66, 0xbd, 0x02, 0x24, 0x39, 0xb2, 0x2c,
+                                                   0xdb, 0x16, 0x50, 0x8c, 0x01, 0x16, 0x3f, 0x26,
+                                                   0xe5, 0xcb, 0x2a, 0x3e, 0x10, 0x45, 0xa9, 0x79};
+
+static const uint8_t NETWORK_ID_TEST_HASH[64] = {0xce, 0xe0, 0x30, 0x2d, 0x59, 0x84, 0x4d, 0x32,
+                                                 0xbd, 0xca, 0x91, 0x5c, 0x82, 0x03, 0xdd, 0x44,
+                                                 0xb3, 0x3f, 0xbb, 0x7e, 0xdc, 0x19, 0x05, 0x1e,
+                                                 0xa3, 0x7a, 0xbe, 0xdf, 0x28, 0xec, 0xd4, 0x72};
+
+
+static const char * NETWORK_NAMES[3] = { "Public", "Test", "Unknown" };
+
 typedef struct {
+    uint8_t network;
     uint8_t opType;
     uint8_t opCount;
     uint8_t opIdx;
     char opSource[9];
+#ifdef TARGET_NANOS
     char txDetails[4][29];
     char opDetails[5][50];
+#else
+    char txDetails[4][57];
+    char opDetails[5][57];
+#endif
 } tx_content_t;
 
 typedef struct {

@@ -25,20 +25,7 @@
 #include "os.h"
 #endif
 
-
-static const uint8_t TEST_NETWORK_ID_HASH[64] = {0xce, 0xe0, 0x30, 0x2d, 0x59, 0x84, 0x4d, 0x32,
-                                                 0xbd, 0xca, 0x91, 0x5c, 0x82, 0x03, 0xdd, 0x44,
-                                                 0xb3, 0x3f, 0xbb, 0x7e, 0xdc, 0x19, 0x05, 0x1e,
-                                                 0xa3, 0x7a, 0xbe, 0xdf, 0x28, 0xec, 0xd4, 0x72};
-
-static const uint8_t PUBLIC_NETWORK_ID_HASH[64] = {0x7a, 0xc3, 0x39, 0x97, 0x54, 0x4e, 0x31, 0x75,
-                                                   0xd2, 0x66, 0xbd, 0x02, 0x24, 0x39, 0xb2, 0x2c,
-                                                   0xdb, 0x16, 0x50, 0x8c, 0x01, 0x16, 0x3f, 0x26,
-                                                   0xe5, 0xcb, 0x2a, 0x3e, 0x10, 0x45, 0xa9, 0x79};
-
 static const char hexChars[] = "0123456789ABCDEF";
-
-static const uint8_t AMOUNT_MAX_SIZE = 22;
 
 void public_key_to_address(uint8_t *in, char *out) {
     uint8_t buffer[35];
@@ -93,9 +80,29 @@ void print_hash_summary(uint8_t *in, char *out) {
 }
 
 void print_public_key(uint8_t *in, char *out, uint8_t numCharsL, uint8_t numCharsR) {
-    char buffer[57];
-    public_key_to_address(in, buffer);
-    print_summary(buffer, out, numCharsL, numCharsR);
+    if (numCharsL > 0) {
+        char buffer[57];
+        public_key_to_address(in, buffer);
+        print_summary(buffer, out, numCharsL, numCharsR);
+    } else {
+        public_key_to_address(in, out);
+    }
+}
+
+void print_public_key_short(uint8_t *in, char *out) {
+#ifdef TARGET_NANOS
+    print_public_key(in, out, 6, 6);
+#else
+    print_public_key(in, out, 0, 0);
+#endif
+}
+
+void print_public_key_long(uint8_t *in, char *out) {
+#ifdef TARGET_NANOS
+    print_public_key(in, out, 12, 12);
+#else
+    print_public_key(in, out, 0, 0);
+#endif
 }
 
 void print_amount(uint64_t amount, char *asset, char *out) {
@@ -168,16 +175,6 @@ void print_bits(uint32_t in, char *out) {
     out[1] = (in & 0x02) ? '1' : '0';
     out[0] = (in & 0x04) ? '1' : '0';
     out[3] = '\0';
-}
-
-void print_network_id(uint8_t *in, char *out) {
-    if (memcmp(in, PUBLIC_NETWORK_ID_HASH, 32) == 0) {
-        strcpy(out, "Public");
-    } else if (memcmp(in, TEST_NETWORK_ID_HASH, 32) == 0) {
-        strcpy(out, "Test");
-    } else {
-        strcpy(out, "Unknown");
-    }
 }
 
 void print_asset(char *code, char *issuer, char *out) {

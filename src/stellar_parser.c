@@ -102,18 +102,17 @@ uint8_t parseMemo(uint8_t *buffer, tx_content_t *txContent) {
     }
 }
 
-uint8_t parseAsset(uint8_t *buffer, char *asset, char *issuer) {
+uint8_t parseAsset(uint8_t *buffer, char *code, char *issuer, char *nativeCode) {
     uint32_t assetType = readUInt32Block(buffer);
     buffer += 4;
     switch (assetType) {
         case ASSET_TYPE_NATIVE: {
-            strcpy(asset, "XLM");
-            asset[3] = '\0';
+            strcpy(code, nativeCode);
             return 4; // type
         }
         case ASSET_TYPE_CREDIT_ALPHANUM4: {
-            memcpy(asset, buffer, 4);
-            asset[4] = '\0';
+            memcpy(code, buffer, 4);
+            code[4] = '\0';
             buffer += 4;
             uint32_t sourceAccountType = readUInt32Block(buffer);
             if (sourceAccountType != PUBLIC_KEY_TYPE_ED25519) {
@@ -126,8 +125,8 @@ uint8_t parseAsset(uint8_t *buffer, char *asset, char *issuer) {
             return 4 + 4 + 36; // type + code4 + accountId
         }
         case ASSET_TYPE_CREDIT_ALPHANUM12: {
-            memcpy(asset, buffer, 12);
-            asset[12] = '\0';
+            memcpy(code, buffer, 12);
+            code[12] = '\0';
             buffer += 12;
             uint32_t sourceAccountType = readUInt32Block(buffer);
             if (sourceAccountType != PUBLIC_KEY_TYPE_ED25519) {
@@ -144,6 +143,13 @@ uint8_t parseAsset(uint8_t *buffer, char *asset, char *issuer) {
     }
 }
 
+char *getNativeCode(tx_content_t *txContent) {
+    if (txContent->network == NETWORK_TYPE_UNKNOWN) {
+        return "native";
+    }
+    return "XLM";
+}
+
 uint16_t parseCreateAccountOpXdr(uint8_t *buffer, tx_content_t *txContent) {
     txContent->opType = OPERATION_TYPE_CREATE_ACCOUNT;
 
@@ -153,12 +159,12 @@ uint16_t parseCreateAccountOpXdr(uint8_t *buffer, tx_content_t *txContent) {
     }
     uint16_t offset = 4;
 
-    print_public_key(buffer + offset, txContent->opDetails[0], 12, 12);
+    print_public_key_long(buffer + offset, txContent->opDetails[0]);
     PRINTF("account id: %s\n", txContent->opDetails[0]);
     offset += 32;
 
     uint64_t amount = readUInt64Block(buffer + offset);
-    print_amount(amount, "XLM", txContent->opDetails[1]);
+    print_amount(amount, getNativeCode(txContent), txContent->opDetails[1]);
     PRINTF("starting balance: %s\n", txContent->opDetails[1]);
     offset += 8;
 
@@ -174,15 +180,15 @@ uint16_t parsePaymentOpXdr(uint8_t *buffer, tx_content_t *txContent) {
     }
     uint16_t offset = 4;
 
-    print_public_key(buffer + offset, txContent->opDetails[1], 12, 12);
+    print_public_key_long(buffer + offset, txContent->opDetails[1]);
     PRINTF("destination: %s\n", txContent->opDetails[1]);
     offset += 32;
 
-    char asset[13];
-    offset += parseAsset(buffer + offset, asset, NULL);
+    char assetCode[13];
+    offset += parseAsset(buffer + offset, assetCode, NULL, getNativeCode(txContent));
 
     uint64_t amount = readUInt64Block(buffer + offset);
-    print_amount(amount, asset, txContent->opDetails[0]);
+    print_amount(amount, assetCode, txContent->opDetails[0]);
     PRINTF("amount: %s\n", txContent->opDetails[0]);
     offset += 8;
 
@@ -192,11 +198,11 @@ uint16_t parsePaymentOpXdr(uint8_t *buffer, tx_content_t *txContent) {
 uint16_t parsePathPaymentOpXdr(uint8_t *buffer, tx_content_t *txContent) {
     txContent->opType = OPERATION_TYPE_PATH_PAYMENT;
 
-    char asset[13];
-    uint16_t offset = parseAsset(buffer, asset, NULL);
+    char assetCode[13];
+    uint16_t offset = parseAsset(buffer, assetCode, NULL, getNativeCode(txContent));
 
     uint64_t send = readUInt64Block(buffer + offset);
-    print_amount(send, asset, txContent->opDetails[0]);
+    print_amount(send, assetCode, txContent->opDetails[0]);
     PRINTF("send: %s\n", txContent->opDetails[0]);
     offset += 8;
 
@@ -206,14 +212,14 @@ uint16_t parsePathPaymentOpXdr(uint8_t *buffer, tx_content_t *txContent) {
     }
     offset += 4;
 
-    print_public_key(buffer + offset, txContent->opDetails[1], 12, 12);
+    print_public_key_long(buffer + offset, txContent->opDetails[1]);
     PRINTF("destination: %s\n", txContent->opDetails[1]);
     offset += 32;
 
-    offset += parseAsset(buffer + offset, asset, NULL);
+    offset += parseAsset(buffer + offset, assetCode, NULL, getNativeCode(txContent));
 
     uint64_t receive = readUInt64Block(buffer + offset);
-    print_amount(receive, asset, txContent->opDetails[2]);
+    print_amount(receive, assetCode, txContent->opDetails[2]);
     PRINTF("receive: %s\n", txContent->opDetails[2]);
     offset += 8;
 
@@ -221,13 +227,13 @@ uint16_t parsePathPaymentOpXdr(uint8_t *buffer, tx_content_t *txContent) {
     offset += 4;
     uint8_t i;
     for (i = 0; i < pathArrayLength; i++) {
-        offset += parseAsset(buffer + offset, asset, NULL);
+        offset += parseAsset(buffer + offset, assetCode, NULL, getNativeCode(txContent));
         uint8_t len = strlen(txContent->opDetails[3]);
         if (i > 0) {
             strcpy(txContent->opDetails[3]+len, ", ");
             len += 2;
         }
-        strcpy(txContent->opDetails[3]+len, asset);
+        strcpy(txContent->opDetails[3]+len, assetCode);
     }
     PRINTF("path: %s\n", txContent->opDetails[3]);
 
@@ -241,7 +247,7 @@ uint16_t parseAllowTrustOpXdr(uint8_t *buffer, tx_content_t *txContent) {
     }
     uint16_t offset = 4;
 
-    print_public_key(buffer + offset, txContent->opDetails[1], 6, 6);
+    print_public_key_short(buffer + offset, txContent->opDetails[1]);
     PRINTF("trustor: %s\n", txContent->opDetails[1]);
     offset += 32;
 
@@ -284,7 +290,7 @@ uint16_t parseAccountMergeOpXdr(uint8_t *buffer, tx_content_t *txContent) {
     }
     uint16_t offset = 4;
 
-    print_public_key(buffer + offset, txContent->opDetails[0], 12, 12);
+    print_public_key_long(buffer + offset, txContent->opDetails[0]);
     PRINTF("destination: %s\n", txContent->opDetails[0]);
     offset += 32;
 
@@ -328,9 +334,9 @@ uint16_t parseManageDataOpXdr(uint8_t *buffer, tx_content_t *txContent) {
 
 uint16_t parseOfferOpXdr(uint8_t *buffer, tx_content_t *txContent, uint32_t opType) {
     char selling[13];
-    uint16_t offset = parseAsset(buffer, selling, NULL);
+    uint16_t offset = parseAsset(buffer, selling, NULL, getNativeCode(txContent));
 
-    offset += parseAsset(buffer + offset, txContent->opDetails[1], NULL);
+    offset += parseAsset(buffer + offset, txContent->opDetails[1], NULL, getNativeCode(txContent));
     PRINTF("buying: %s\n", txContent->opDetails[1]);
 
     uint64_t amount  = readUInt64Block(buffer + offset);
@@ -375,7 +381,7 @@ uint16_t parseOfferOpXdr(uint8_t *buffer, tx_content_t *txContent, uint32_t opTy
 uint16_t parseChangeTrustOpXdr(uint8_t *buffer, tx_content_t *txContent) {
     char code[13];
     char issuer[9];
-    uint16_t offset = parseAsset(buffer, code, issuer);
+    uint16_t offset = parseAsset(buffer, code, issuer, getNativeCode(txContent));
     print_asset(code, issuer, txContent->opDetails[0]);
     PRINTF("asset: %s\n", txContent->opDetails[0]);
 
@@ -448,7 +454,7 @@ uint16_t parseSetOptionsOpXdr(uint8_t *buffer, tx_content_t *txContent) {
             THROW(0x6c27);
         }
         offset += 4;
-        print_public_key(buffer + offset, txContent->opDetails[0], 6, 6);
+        print_public_key_short(buffer + offset, txContent->opDetails[0]);
         offset += 32;
     }
     PRINTF("inflation destination: %s\n", txContent->opDetails[0]);
@@ -529,7 +535,7 @@ uint16_t parseOpXdr(uint8_t *buffer, tx_content_t *txContent) {
             THROW(0x6c2b);
         }
         offset += 4;
-        print_public_key(buffer+offset, txContent->opSource, 6, 6);
+        print_public_key_short(buffer+offset, txContent->opSource);
         PRINTF("operation source: %s\n", txContent->opSource);
         offset += 32;
     }
@@ -579,7 +585,14 @@ uint16_t parseTxXdr(uint8_t *buffer, tx_content_t *txContent, uint16_t offset) {
 #ifndef TEST
         os_memset(txContent->txDetails, 0, sizeof(txContent->txDetails));
 #endif
-        print_network_id(buffer, txContent->txDetails[2]);
+        if (memcmp(buffer, NETWORK_ID_PUBLIC_HASH, 32) == 0) {
+            txContent->network = NETWORK_TYPE_PUBLIC;
+        } else if (memcmp(buffer, NETWORK_ID_TEST_HASH, 32) == 0) {
+            txContent->network = NETWORK_TYPE_TEST;
+        } else {
+            txContent->network = NETWORK_TYPE_UNKNOWN;
+        }
+        strcpy(txContent->txDetails[2], ((char *)PIC(NETWORK_NAMES[txContent->network])));
         offset += 32;
 
         offset += 4; // skip envelopeType
@@ -590,7 +603,7 @@ uint16_t parseTxXdr(uint8_t *buffer, tx_content_t *txContent, uint16_t offset) {
         }
         offset += 4;
 
-        print_public_key(buffer + offset, txContent->txDetails[3], 6, 6);
+        print_public_key_short(buffer + offset, txContent->txDetails[3]);
         PRINTF("transaction source: %s\n", txContent->txDetails[3]);
         offset += 32;
 
