@@ -284,14 +284,20 @@ uint16_t parseAllowTrustOpXdr(uint8_t *buffer, tx_content_t *txContent) {
 uint16_t parseAccountMergeOpXdr(uint8_t *buffer, tx_content_t *txContent) {
     txContent->opType = OPERATION_TYPE_ACCOUNT_MERGE;
 
+    if (txContent->opSource[0] != '\0') {
+        strcpy(txContent->opDetails[0], txContent->opSource);
+    } else {
+        strcpy(txContent->opDetails[0], txContent->txDetails[3]);
+    }
+
     uint32_t destinationAccountType = readUInt32Block(buffer);
     if (destinationAccountType != PUBLIC_KEY_TYPE_ED25519) {
         THROW(0x6c2b);
     }
     uint16_t offset = 4;
 
-    print_public_key_long(buffer + offset, txContent->opDetails[0]);
-    PRINTF("destination: %s\n", txContent->opDetails[0]);
+    print_public_key_long(buffer + offset, txContent->opDetails[1]);
+    PRINTF("destination: %s\n", txContent->opDetails[1]);
     offset += 32;
 
     return offset;
@@ -608,7 +614,7 @@ uint16_t parseTxXdr(uint8_t *buffer, tx_content_t *txContent, uint16_t offset) {
         offset += 32;
 
         uint32_t fee = readUInt32Block(buffer + offset);
-        print_amount(fee, "XLM", txContent->txDetails[1]);
+        print_amount(fee, getNativeCode(txContent), txContent->txDetails[1]);
         PRINTF("fee: %s\n", txContent->txDetails[1]);
         offset += 4;
 

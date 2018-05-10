@@ -17,6 +17,7 @@
 #ifndef _STELLAR_TYPES_H_
 #define _STELLAR_TYPES_H_
 
+#include "bolos_target.h"
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -118,11 +119,12 @@ typedef struct {
     uint8_t opType;
     uint8_t opCount;
     uint8_t opIdx;
-    char opSource[9];
-#ifdef TARGET_NANOS
+#if defined(TARGET_NANOS)
+    char opSource[15];
     char txDetails[4][29];
     char opDetails[5][50];
 #else
+    char opSource[57];
     char txDetails[4][57];
     char opDetails[5][57];
 #endif
@@ -130,7 +132,11 @@ typedef struct {
 
 typedef struct {
     uint8_t publicKey[32];
+#if defined(TARGET_NANOS)
     char address[28];
+#else
+    char address[57];
+#endif
     uint8_t signature[64];
     bool returnSignature;
 
