@@ -16,7 +16,7 @@
  ********************************************************************************/
 #include <stdio.h>
 
-#include "xdr_parser.h"
+#include "stellar_api.h"
 #include "test_utils.h"
 
 int main(int argc, char *argv[]) {
@@ -28,12 +28,17 @@ int main(int argc, char *argv[]) {
 
     char *filename = argv[1];
     uint8_t buffer[4096];
-    txContent_t txContent;
+    tx_content_t txContent;
 
     int read = read_file(filename, buffer, 4096);
     if (read) {
 //        printHexBlocks(buffer, read/2);
-        parseTxXdr(buffer, &txContent);
+        uint16_t offset = 0;
+        while ((offset = parseTxXdr(buffer, &txContent, offset))) {
+            printf("\n");
+            printf("offset: %d", offset);
+            printf("\n");
+        }
     }
 
     return 0;
