@@ -52,7 +52,7 @@ bagl_element_t tmp_element;
 
 #if defined(TARGET_BLUE)
 volatile char titleCaption[26];
-volatile char subtitleCaption[16];
+volatile char subtitleCaption[21];
 volatile char displayString[33];
 #endif
 
@@ -99,7 +99,7 @@ const bagl_element_t *ui_menu_item_out_over(const bagl_element_t *e) {
 
 #define COLOR_BG_1 0xF9F9F9
 #define COLOR_APP 0x07a2cc
-#define COLOR_APP_LIGHT 0x08b5e5
+#define COLOR_APP_LIGHT 0xd4eef7
 
 const bagl_element_t ui_idle_blue[] = {
     // type                               userid    x    y   w    h  str rad
@@ -115,12 +115,12 @@ const bagl_element_t ui_idle_blue[] = {
     {{BAGL_LABELINE, 0x00, 0, 45, 320, 30, 0, 0, BAGL_FILL, 0xFFFFFF, COLOR_APP, BAGL_FONT_OPEN_SANS_SEMIBOLD_10_13PX | BAGL_FONT_ALIGNMENT_CENTER, 0},
      "STELLAR", 0, 0, 0, NULL, NULL, NULL},
 
-    {{BAGL_RECTANGLE | BAGL_FLAG_TOUCHABLE, 0x00, 0, 19, 56, 44, 0, 0, BAGL_FILL, COLOR_APP, 0xFFFFFF,
+    {{BAGL_RECTANGLE | BAGL_FLAG_TOUCHABLE, 0x00, 0, 19, 56, 44, 0, 0, BAGL_FILL, COLOR_APP, COLOR_APP_LIGHT,
       BAGL_FONT_SYMBOLS_0 | BAGL_FONT_ALIGNMENT_CENTER | BAGL_FONT_ALIGNMENT_MIDDLE, 0},
-     BAGL_FONT_SYMBOLS_0_SETTINGS, 0, COLOR_APP, COLOR_APP_LIGHT, io_seproxyhal_touch_settings, NULL, NULL},
-    {{BAGL_RECTANGLE | BAGL_FLAG_TOUCHABLE, 0x00, 264, 19, 56, 44, 0, 0, BAGL_FILL, COLOR_APP, 0xFFFFFF,
+     BAGL_FONT_SYMBOLS_0_SETTINGS, 0, COLOR_APP, 0xFFFFFF, io_seproxyhal_touch_settings, NULL, NULL},
+    {{BAGL_RECTANGLE | BAGL_FLAG_TOUCHABLE, 0x00, 264, 19, 56, 44, 0, 0, BAGL_FILL, COLOR_APP, COLOR_APP_LIGHT,
       BAGL_FONT_SYMBOLS_0 | BAGL_FONT_ALIGNMENT_CENTER | BAGL_FONT_ALIGNMENT_MIDDLE, 0},
-     BAGL_FONT_SYMBOLS_0_DASHBOARD, 0, COLOR_APP, COLOR_APP_LIGHT, io_seproxyhal_touch_exit, NULL, NULL},
+     BAGL_FONT_SYMBOLS_0_DASHBOARD, 0, COLOR_APP, 0xFFFFFF, io_seproxyhal_touch_exit, NULL, NULL},
 
     // BADGE_STELLAR.GIF
     {{BAGL_ICON, 0x00, 135, 178, 50, 50, 0, 0, BAGL_FILL, 0, COLOR_BG_1, 0, 0},
@@ -259,12 +259,12 @@ const bagl_element_t ui_settings_blue[] = {
     {{BAGL_LABELINE, 0x00, 0, 45, 320, 30, 0, 0, BAGL_FILL, 0xFFFFFF, COLOR_APP, BAGL_FONT_OPEN_SANS_SEMIBOLD_10_13PX | BAGL_FONT_ALIGNMENT_CENTER, 0},
      "SETTINGS", 0, 0, 0, NULL, NULL, NULL},
 
-    {{BAGL_RECTANGLE | BAGL_FLAG_TOUCHABLE, 0x00, 0, 19, 50, 44, 0, 0, BAGL_FILL, COLOR_APP, 0xFFFFFF,
+    {{BAGL_RECTANGLE | BAGL_FLAG_TOUCHABLE, 0x00, 0, 19, 50, 44, 0, 0, BAGL_FILL, COLOR_APP, COLOR_APP_LIGHT,
       BAGL_FONT_SYMBOLS_0 | BAGL_FONT_ALIGNMENT_CENTER | BAGL_FONT_ALIGNMENT_MIDDLE, 0},
-     BAGL_FONT_SYMBOLS_0_LEFT, 0, COLOR_APP, COLOR_APP_LIGHT, ui_settings_back_callback, NULL, NULL},
-    {{BAGL_RECTANGLE | BAGL_FLAG_TOUCHABLE, 0x00, 264, 19, 56, 44, 0, 0, BAGL_FILL, COLOR_APP, 0xFFFFFF,
+     BAGL_FONT_SYMBOLS_0_LEFT, 0, COLOR_APP, 0xFFFFFF, ui_settings_back_callback, NULL, NULL},
+    {{BAGL_RECTANGLE | BAGL_FLAG_TOUCHABLE, 0x00, 264, 19, 56, 44, 0, 0, BAGL_FILL, COLOR_APP, COLOR_APP_LIGHT,
       BAGL_FONT_SYMBOLS_0 | BAGL_FONT_ALIGNMENT_CENTER | BAGL_FONT_ALIGNMENT_MIDDLE, 0},
-     BAGL_FONT_SYMBOLS_0_DASHBOARD, 0, COLOR_APP, COLOR_APP_LIGHT, io_seproxyhal_touch_exit, NULL, NULL},
+     BAGL_FONT_SYMBOLS_0_DASHBOARD, 0, COLOR_APP, 0xFFFFFF, io_seproxyhal_touch_exit, NULL, NULL},
 
 
     {{BAGL_LABELINE, 0x00, 30, 105, 160, 30, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX, 0},
@@ -293,7 +293,7 @@ const bagl_element_t ui_settings_blue[] = {
 const bagl_element_t *ui_settings_blue_prepro(const bagl_element_t *e) {
     // none elements are skipped
     if ((e->component.type & (~BAGL_FLAG_TOUCHABLE)) == BAGL_NONE) {
-        return 0;
+        return NULL;
     }
     // swap icon buffer to be displayed depending on if corresponding setting is
     // enabled or not.
@@ -319,7 +319,7 @@ const bagl_element_t *ui_settings_blue_prepro(const bagl_element_t *e) {
         }
         return &tmp_element;
     }
-    return 1;
+    return NULL;
 }
 
 unsigned int ui_settings_blue_button(unsigned int button_mask, unsigned int button_mask_counter) {
@@ -433,8 +433,8 @@ const bagl_element_t ui_details_blue[] = {
      displayString, 0, 0, 0, NULL, NULL, NULL},
 
     {{BAGL_RECTANGLE | BAGL_FLAG_TOUCHABLE, 0x00, 0, 19, 50, 44, 0, 0,
-     BAGL_FILL, COLOR_APP, 0xFFFFFF, BAGL_FONT_SYMBOLS_0 | BAGL_FONT_ALIGNMENT_CENTER | BAGL_FONT_ALIGNMENT_MIDDLE, 0},
-     BAGL_FONT_SYMBOLS_0_LEFT, 0, COLOR_APP, COLOR_APP_LIGHT, ui_details_blue_back_callback, NULL, NULL},
+     BAGL_FILL, COLOR_APP, COLOR_APP_LIGHT, BAGL_FONT_SYMBOLS_0 | BAGL_FONT_ALIGNMENT_CENTER | BAGL_FONT_ALIGNMENT_MIDDLE, 0},
+     BAGL_FONT_SYMBOLS_0_LEFT, 0, COLOR_APP, 0xFFFFFF, ui_details_blue_back_callback, NULL, NULL},
 
     {{BAGL_LABELINE, 0x00, 30, 106, 320, 30, 0, 0, BAGL_FILL, 0x999999, COLOR_BG_1, BAGL_FONT_OPEN_SANS_SEMIBOLD_8_11PX, 0},
      "VALUE", 0, 0, 0, NULL, NULL, NULL},
@@ -581,12 +581,12 @@ const bagl_element_t ui_approval_blue[] = {
      "CONFIRM TRANSACTION", 0, 0, 0, NULL, NULL, NULL},
 
     {{BAGL_RECTANGLE | BAGL_FLAG_TOUCHABLE, 0x01, 0, 19, 50, 44, 0, 0,
-     BAGL_FILL, COLOR_APP, 0xFFFFFF, BAGL_FONT_SYMBOLS_0 | BAGL_FONT_ALIGNMENT_CENTER | BAGL_FONT_ALIGNMENT_MIDDLE, 0},
-     BAGL_FONT_SYMBOLS_0_LEFT, 0, COLOR_APP, COLOR_APP_LIGHT, ui_approval_prev, NULL, NULL},
+     BAGL_FILL, COLOR_APP, COLOR_APP_LIGHT, BAGL_FONT_SYMBOLS_0 | BAGL_FONT_ALIGNMENT_CENTER | BAGL_FONT_ALIGNMENT_MIDDLE, 0},
+     BAGL_FONT_SYMBOLS_0_LEFT, 0, COLOR_APP, 0xFFFFFF, ui_approval_prev, NULL, NULL},
 
     {{BAGL_RECTANGLE | BAGL_FLAG_TOUCHABLE, 0x02, 270, 19, 50, 44, 0, 0,
-     BAGL_FILL, COLOR_APP, 0xFFFFFF, BAGL_FONT_SYMBOLS_0 | BAGL_FONT_ALIGNMENT_CENTER | BAGL_FONT_ALIGNMENT_MIDDLE, 0},
-     BAGL_FONT_SYMBOLS_0_MINIRIGHT, 0, COLOR_APP, COLOR_APP_LIGHT, ui_approval_next, NULL, NULL},
+     BAGL_FILL, COLOR_APP, COLOR_APP_LIGHT, BAGL_FONT_SYMBOLS_0 | BAGL_FONT_ALIGNMENT_CENTER | BAGL_FONT_ALIGNMENT_MIDDLE, 0},
+     BAGL_FONT_SYMBOLS_0_MINIRIGHT, 0, COLOR_APP, 0xFFFFFF, ui_approval_next, NULL, NULL},
 
     // BADGE_TRANSACTION.GIF
     {{BAGL_ICON, 0x40, 30, 88, 50, 50, 0, 0, BAGL_FILL, 0, COLOR_BG_1, 0, 0}, &C_badge_transaction, 0, 0, 0, NULL, NULL, NULL},
@@ -760,18 +760,11 @@ const bagl_element_t *ui_approval_blue_prepro(const bagl_element_t *element) {
 }
 
 unsigned int ui_approval_blue_button(unsigned int button_mask, unsigned int button_mask_counter) {
-    return io_seproxyhal_touch_tx_ok(NULL);
+    return 0;
 }
 
 void ui_approval_blue_init(void) {
     UX_DISPLAY(ui_approval_blue, ui_approval_blue_prepro);
-}
-
-void ui_approve_tx_blue_init(void) {
-    currentScreen = 0;
-    offsets[0] = 0;
-    initDetails();
-    ui_approval_blue_init();
 }
 
 void ui_approve_tx_hash_blue_init(void) {
@@ -784,6 +777,13 @@ void ui_approve_tx_hash_blue_init(void) {
     detailValues[0] = hashSummary;
     strcpy(titleCaption, "WARNING");
     strcpy(subtitleCaption, "No details available");
+    ui_approval_blue_init();
+}
+
+void ui_approve_tx_blue_init(void) {
+    currentScreen = 0;
+    offsets[0] = 0;
+    initDetails();
     ui_approval_blue_init();
 }
 
@@ -803,7 +803,7 @@ static const char * op_captions[][6] = {
     {"Remove Trust", NULL, NULL, NULL, NULL},
     {"Allow Trust", "Account ID", NULL, NULL, NULL},
     {"Revoke Trust", "Account ID", NULL, NULL, NULL},
-    {"Merge Account", NULL, NULL, NULL, NULL},
+    {"Merge Account", "Destination", NULL, NULL, NULL},
     {"Inflation", NULL, NULL, NULL, NULL},
     {"Set Data", "Value", NULL, NULL, NULL},
     {"Remove Data", NULL, NULL, NULL, NULL},
@@ -814,7 +814,7 @@ static const char * tx_captions[4] = {"Memo", "Fee", "Network", "Source Account"
 
 uint8_t countOpDetails() {
     uint8_t i;
-    for (i = 0; i < 5; i++) {
+    for (i = 0; i < 6; i++) {
         if (((char*) PIC(op_captions[ctx.req.tx.content.opType][i])) == NULL) {
             return i;
         }
@@ -831,7 +831,6 @@ uint8_t countSteps() {
 }
 
 void prepareDetails() {
-    os_memset(&ctx.req.tx.content.opDetails, 0, sizeof(ctx.req.tx.content.opDetails));
     ctx.req.tx.offset = parseTxXdr(ctx.req.tx.raw, &ctx.req.tx.content, ctx.req.tx.offset);
     ux_step_count = countSteps();
 }
@@ -1208,7 +1207,7 @@ void handleGetPublicKey(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t da
     }
 
     if (p2 & P2_CONFIRM) {
-        print_public_key(ctx.req.pk.publicKey, ctx.req.pk.address, 12, 12);
+        print_public_key_long(ctx.req.pk.publicKey, ctx.req.pk.address);
 #if defined(TARGET_BLUE)
         UX_DISPLAY(ui_address_blue, ui_address_blue_prepro);
 #elif defined(TARGET_NANOS)
