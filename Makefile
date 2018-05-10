@@ -1,6 +1,6 @@
 #*******************************************************************************
 #   Ledger Stellar App
-#   (c) 2017 Ledger
+#   (c) 2017-2018 Ledger
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -23,8 +23,8 @@ include $(BOLOS_SDK)/Makefile.defines
 APPNAME = Stellar
 APP_LOAD_PARAMS=--appFlags 0x40 --path "44'/148'" --curve ed25519 $(COMMON_LOAD_PARAMS)
 
-APPVERSION_M=2
-APPVERSION_N=2
+APPVERSION_M=3
+APPVERSION_N=0
 APPVERSION_P=0
 APPVERSION=$(APPVERSION_M).$(APPVERSION_N).$(APPVERSION_P)
 
