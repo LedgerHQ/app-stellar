@@ -319,7 +319,7 @@ const bagl_element_t *ui_settings_blue_prepro(const bagl_element_t *e) {
         }
         return &tmp_element;
     }
-    return NULL;
+    return 1;
 }
 
 unsigned int ui_settings_blue_button(unsigned int button_mask, unsigned int button_mask_counter) {
