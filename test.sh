@@ -18,6 +18,6 @@ gcc test/parsertest.c src/stellar_utils.c src/stellar_parser.c test/test_utils.c
 ./obj/parsertest test/txAllowTrust.hex
 ./obj/parsertest test/txSetAllOptions.hex
 ./obj/parsertest test/txSetSomeOptions.hex
-./obj/parsertest test/txMultiOp2.hex
+./obj/parsertest test/txMultiOp.hex
 gcc test/utilstest.c src/stellar_utils.c test/test_utils.c -o obj/utilstest -I src/ -I test/ -D TEST
 ./obj/utilstest

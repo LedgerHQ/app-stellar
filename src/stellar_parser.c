@@ -80,7 +80,7 @@ uint8_t parseMemo(uint8_t *buffer, tx_content_t *txContent) {
             memcpy(txContent->txDetails[0], "[none]", 7);
             return 4;
         case MEMO_TYPE_ID:
-            print_int(readUInt64Block(buffer), txContent->txDetails[0]);
+            print_uint(readUInt64Block(buffer), txContent->txDetails[0]);
             return 4 + 8; // type + value
         case MEMO_TYPE_TEXT: {
             uint8_t size = readUInt32Block(buffer);
@@ -369,7 +369,7 @@ uint16_t parseOfferOpXdr(uint8_t *buffer, tx_content_t *txContent, uint32_t opTy
             txContent->opType = OPERATION_TYPE_CREATE_OFFER;
             strcpy(txContent->opDetails[0], "non-passive");
         } else {
-            print_int(offerId, txContent->opDetails[0]);
+            print_uint(offerId, txContent->opDetails[0]);
             if (amount == 0) {
                 txContent->opType = OPERATION_TYPE_REMOVE_OFFER;
             } else {
@@ -442,7 +442,7 @@ uint8_t printInt(uint8_t *buffer, char *out, char *prefix) {
         }
         strcpy(out+i, prefix);
         i += strlen(prefix);
-        print_int(n, out+i);
+        print_uint(n, out+i);
         return 8;
     } else {
         return 4;
@@ -518,11 +518,20 @@ uint16_t parseSetOptionsOpXdr(uint8_t *buffer, tx_content_t *txContent) {
 
         uint32_t weight = readUInt32Block(buffer + offset);
         strcpy(txContent->opDetails[4]+strlen(txContent->opDetails[4]), "; weight: ");
-        print_int(weight, txContent->opDetails[4]+strlen(txContent->opDetails[4]));
+        print_uint(weight, txContent->opDetails[4]+strlen(txContent->opDetails[4]));
         PRINTF("signer: %s\n", txContent->opDetails[4]);
         offset += 4;
     }
     return offset;
+}
+
+uint16_t parseBumpSequenceOpXdr(uint8_t *buffer, tx_content_t *txContent) {
+    txContent->opType = OPERATION_TYPE_BUMP_SEQUENCE;
+
+    int64_t bumpTo = (int64_t) readUInt64Block(buffer);
+    print_int(bumpTo, txContent->opDetails[0]);
+
+    return 8;
 }
 
 uint16_t parseOpXdr(uint8_t *buffer, tx_content_t *txContent) {
@@ -580,6 +589,9 @@ uint16_t parseOpXdr(uint8_t *buffer, tx_content_t *txContent) {
         }
         case XDR_OPERATION_TYPE_MANAGE_DATA: {
             return parseManageDataOpXdr(buffer + offset, txContent) + offset;
+        }
+        case XDR_OPERATION_TYPE_BUMP_SEQUENCE: {
+            return parseBumpSequenceOpXdr(buffer + offset, txContent) + offset;
         }
         default: THROW(0x6c24);
     }

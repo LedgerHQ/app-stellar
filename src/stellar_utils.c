@@ -150,7 +150,31 @@ void print_amount(uint64_t amount, char *asset, char *out) {
 
 }
 
-void print_int(uint64_t l, char *out) {
+void print_int(int64_t l, char *out) {
+    char buffer[AMOUNT_MAX_SIZE];
+    int64_t dVal = l < 0 ? -l : l;
+    int i;
+
+    memset(buffer, 0, AMOUNT_MAX_SIZE);
+    for (i = 0; dVal > 0; i++) {
+        buffer[i] = (dVal % 10) + '0';
+        dVal /= 10;
+        if (i >= AMOUNT_MAX_SIZE) {
+            THROW(0x6700);
+        }
+    }
+    int j = 0;
+    if (l < 0) {
+        out[j++] = '-';
+    }
+    // reverse order
+    for (i -= 1; i >= 0 && j < AMOUNT_MAX_SIZE-1; i--, j++) {
+        out[j] = buffer[i];
+    }
+    out[j] = '\0';
+}
+
+void print_uint(uint64_t l, char *out) {
     char buffer[AMOUNT_MAX_SIZE];
     uint64_t dVal = l;
     int i, j;

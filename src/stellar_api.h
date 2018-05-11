@@ -32,7 +32,8 @@ void print_hash_summary(uint8_t *in, char *out);
 void print_amount(uint64_t amount, char *asset, char *out);
 void print_bits(uint32_t in, char *out);
 void print_asset(char *code, char *issuer, char *out);
-void print_int(uint64_t l, char *out);
+void print_int(int64_t l, char *out);
+void print_uint(uint64_t l, char *out);
 
 unsigned short crc16(char *ptr, int count);
 int base32_encode(const uint8_t *data, int length, char *result, int bufSize);

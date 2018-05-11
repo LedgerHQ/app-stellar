@@ -17,7 +17,9 @@
 #ifndef _STELLAR_TYPES_H_
 #define _STELLAR_TYPES_H_
 
+#ifndef TEST
 #include "bolos_target.h"
+#endif
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -74,6 +76,7 @@
 #define XDR_OPERATION_TYPE_ACCOUNT_MERGE 8
 #define XDR_OPERATION_TYPE_INFLATION 9
 #define XDR_OPERATION_TYPE_MANAGE_DATA 10
+#define XDR_OPERATION_TYPE_BUMP_SEQUENCE 11
 
 #define OPERATION_TYPE_CREATE_ACCOUNT 0
 #define OPERATION_TYPE_PAYMENT 1
@@ -90,7 +93,8 @@
 #define OPERATION_TYPE_INFLATION 12
 #define OPERATION_TYPE_SET_DATA 13
 #define OPERATION_TYPE_REMOVE_DATA 14
-#define OPERATION_TYPE_UNKNOWN 15
+#define OPERATION_TYPE_BUMP_SEQUENCE 15
+#define OPERATION_TYPE_UNKNOWN 16
 
 #ifdef TEST
 #include <stdio.h>

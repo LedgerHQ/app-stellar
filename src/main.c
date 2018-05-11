@@ -476,7 +476,7 @@ void ui_approval_blue_init(void);
 static const char *opNames[16] =
     {"Create Account", "Payment", "Path Payment", "New Offer", "Remove Offer", "Change Offer",
      "Set Options", "Change Trust", "Remove Trust", "Allow Trust", "Revoke Trust",
-     "Merge Account", "Inflation", "Set Data", "Remove Data", "Unknown"};
+     "Merge Account", "Inflation", "Set Data", "Remove Data", "Bump Sequence", "Unknown"};
 
 const char *const detailNamesTable[][5] = {
     {"ACCOUNT ID", "START BALANCE", NULL, NULL, NULL},
@@ -493,7 +493,8 @@ const char *const detailNamesTable[][5] = {
     {"DESTINATION", NULL, NULL, NULL, NULL},
     {NULL, NULL, NULL, NULL, NULL},
     {"NAME", "VALUE", NULL, NULL, NULL},
-    {"NAME", NULL, NULL, NULL, NULL}
+    {"NAME", NULL, NULL, NULL, NULL},
+    {"BUMP TO", NULL, NULL, NULL, NULL}
 };
 
 const char *detailNames[6];
@@ -519,9 +520,9 @@ const void initDetails() {
         offsets[currentScreen+1] = parseTxXdr(ctx.req.tx.raw, &ctx.req.tx.content, offsets[currentScreen]);
         strcpy(titleCaption, ((char *)PIC("Operation ")));
         if (ctx.req.tx.content.opCount > 1) {
-            print_int(currentScreen+1, titleCaption+strlen(titleCaption));
+            print_uint(currentScreen+1, titleCaption+strlen(titleCaption));
             strcpy(titleCaption+strlen(titleCaption), ((char *)PIC(" of ")));
-            print_int(ctx.req.tx.content.opCount, titleCaption+strlen(titleCaption));
+            print_uint(ctx.req.tx.content.opCount, titleCaption+strlen(titleCaption));
         }
         strcpy(subtitleCaption, ((char *)PIC(opNames[ctx.req.tx.content.opType])));
         uint8_t i, j;
@@ -807,6 +808,7 @@ static const char * op_captions[][6] = {
     {"Inflation", NULL, NULL, NULL, NULL},
     {"Set Data", "Value", NULL, NULL, NULL},
     {"Remove Data", NULL, NULL, NULL, NULL},
+    {"Bump Sequence", NULL, NULL, NULL, NULL},
     {"WARNING", "Hash", NULL, NULL, NULL}
 };
 
