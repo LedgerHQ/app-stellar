@@ -66,9 +66,9 @@ void checkPadding(uint8_t *buffer, uint8_t offset, uint8_t length) {
 uint8_t skipTimeBounds(uint8_t *buffer) {
     uint32_t timeBounds = readUInt32Block(buffer);
     if (timeBounds != 0) {
-        return 4 + 8 + 8; // timebounds on + unint64 + uint64
+        return 4 + 8 + 8;
     } else {
-        return 4;  // timebounds off
+        return 4;
     }
 }
 
@@ -114,8 +114,8 @@ uint8_t parseAsset(uint8_t *buffer, char *code, char *issuer, char *nativeCode) 
             memcpy(code, buffer, 4);
             code[4] = '\0';
             buffer += 4;
-            uint32_t sourceAccountType = readUInt32Block(buffer);
-            if (sourceAccountType != PUBLIC_KEY_TYPE_ED25519) {
+            uint32_t accountType = readUInt32Block(buffer);
+            if (accountType != PUBLIC_KEY_TYPE_ED25519) {
                 THROW(0x6c23);
             }
             buffer += 4;
@@ -128,8 +128,8 @@ uint8_t parseAsset(uint8_t *buffer, char *code, char *issuer, char *nativeCode) 
             memcpy(code, buffer, 12);
             code[12] = '\0';
             buffer += 12;
-            uint32_t sourceAccountType = readUInt32Block(buffer);
-            if (sourceAccountType != PUBLIC_KEY_TYPE_ED25519) {
+            uint32_t accountType = readUInt32Block(buffer);
+            if (accountType != PUBLIC_KEY_TYPE_ED25519) {
                 THROW(0x6c22);
             }
             buffer += 4;
@@ -153,8 +153,8 @@ char *getNativeCode(tx_content_t *txContent) {
 uint16_t parseCreateAccountOpXdr(uint8_t *buffer, tx_content_t *txContent) {
     txContent->opType = OPERATION_TYPE_CREATE_ACCOUNT;
 
-    uint32_t destinationAccountType = readUInt32Block(buffer);
-    if (destinationAccountType != PUBLIC_KEY_TYPE_ED25519) {
+    uint32_t accountType = readUInt32Block(buffer);
+    if (accountType != PUBLIC_KEY_TYPE_ED25519) {
         THROW(0x6c27);
     }
     uint16_t offset = 4;
@@ -174,8 +174,8 @@ uint16_t parseCreateAccountOpXdr(uint8_t *buffer, tx_content_t *txContent) {
 uint16_t parsePaymentOpXdr(uint8_t *buffer, tx_content_t *txContent) {
     txContent->opType = OPERATION_TYPE_PAYMENT;
 
-    uint32_t destinationAccountType = readUInt32Block(buffer);
-    if (destinationAccountType != PUBLIC_KEY_TYPE_ED25519) {
+    uint32_t accountType = readUInt32Block(buffer);
+    if (accountType != PUBLIC_KEY_TYPE_ED25519) {
         THROW(0x6c27);
     }
     uint16_t offset = 4;
@@ -206,8 +206,8 @@ uint16_t parsePathPaymentOpXdr(uint8_t *buffer, tx_content_t *txContent) {
     PRINTF("send: %s\n", txContent->opDetails[0]);
     offset += 8;
 
-    uint32_t destinationAccountType = readUInt32Block(buffer + offset);
-    if (destinationAccountType != PUBLIC_KEY_TYPE_ED25519) {
+    uint32_t accountType = readUInt32Block(buffer + offset);
+    if (accountType != PUBLIC_KEY_TYPE_ED25519) {
         THROW(0x6c2b);
     }
     offset += 4;
@@ -290,8 +290,8 @@ uint16_t parseAccountMergeOpXdr(uint8_t *buffer, tx_content_t *txContent) {
         strcpy(txContent->opDetails[0], txContent->txDetails[3]);
     }
 
-    uint32_t destinationAccountType = readUInt32Block(buffer);
-    if (destinationAccountType != PUBLIC_KEY_TYPE_ED25519) {
+    uint32_t accountType = readUInt32Block(buffer);
+    if (accountType != PUBLIC_KEY_TYPE_ED25519) {
         THROW(0x6c2b);
     }
     uint16_t offset = 4;
@@ -455,8 +455,8 @@ uint16_t parseSetOptionsOpXdr(uint8_t *buffer, tx_content_t *txContent) {
     uint32_t inflationDestinationPresent = readUInt32Block(buffer);
     uint16_t offset = 4;
     if (inflationDestinationPresent) {
-        uint32_t inflationDestinationAccountType = readUInt32Block(buffer + offset);
-        if (inflationDestinationAccountType != PUBLIC_KEY_TYPE_ED25519) {
+        uint32_t accountType = readUInt32Block(buffer + offset);
+        if (accountType != PUBLIC_KEY_TYPE_ED25519) {
             THROW(0x6c27);
         }
         offset += 4;
@@ -535,18 +535,16 @@ uint16_t parseBumpSequenceOpXdr(uint8_t *buffer, tx_content_t *txContent) {
 }
 
 uint16_t parseOpXdr(uint8_t *buffer, tx_content_t *txContent) {
-#ifndef TEST
-    os_memset(txContent->opDetails, 0, sizeof(txContent->opDetails));
-    os_memset(txContent->opSource, 0, sizeof(txContent->opSource));
-#endif
+    MEMCLEAR(txContent->opDetails);
+    MEMCLEAR(txContent->opSource);
 
     txContent->opIdx += 1;
 
     uint32_t hasAccountId = readUInt32Block(buffer);
     uint16_t offset = 4;
     if (hasAccountId) {
-        uint32_t sourceAccountType = readUInt32Block(buffer + offset);
-        if (sourceAccountType != PUBLIC_KEY_TYPE_ED25519) {
+        uint32_t accountType = readUInt32Block(buffer + offset);
+        if (accountType != PUBLIC_KEY_TYPE_ED25519) {
             THROW(0x6c2b);
         }
         offset += 4;
@@ -600,9 +598,8 @@ uint16_t parseOpXdr(uint8_t *buffer, tx_content_t *txContent) {
 
 uint16_t parseTxXdr(uint8_t *buffer, tx_content_t *txContent, uint16_t offset) {
     if (offset == 0) {
-#ifndef TEST
-        os_memset(txContent->txDetails, 0, sizeof(txContent->txDetails));
-#endif
+        MEMCLEAR(txContent->txDetails);
+
         if (memcmp(buffer, NETWORK_ID_PUBLIC_HASH, 32) == 0) {
             txContent->network = NETWORK_TYPE_PUBLIC;
         } else if (memcmp(buffer, NETWORK_ID_TEST_HASH, 32) == 0) {
@@ -615,8 +612,8 @@ uint16_t parseTxXdr(uint8_t *buffer, tx_content_t *txContent, uint16_t offset) {
 
         offset += 4; // skip envelopeType
 
-        uint32_t sourceAccountType = readUInt32Block(buffer + offset);
-        if (sourceAccountType != PUBLIC_KEY_TYPE_ED25519) {
+        uint32_t accountType = readUInt32Block(buffer + offset);
+        if (accountType != PUBLIC_KEY_TYPE_ED25519) {
             THROW(0x6c26);
         }
         offset += 4;

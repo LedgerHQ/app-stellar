@@ -20,6 +20,10 @@
 #include "stellar_types.h"
 #include <stddef.h>
 #include <stdint.h>
+#include <stdbool.h>
+
+extern bool fidoActivated;
+extern void USB_power_U2F(unsigned char enabled, unsigned char fido);
 
 uint16_t parseTxXdr(uint8_t *buffer, tx_content_t *content, uint16_t offset);
 
@@ -37,5 +41,14 @@ void print_uint(uint64_t l, char *out);
 
 unsigned short crc16(char *ptr, int count);
 int base32_encode(const uint8_t *data, int length, char *result, int bufSize);
+
+void handle_get_app_configuration(volatile unsigned int *tx);
+void handle_get_public_key(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLength, volatile unsigned int *flags, volatile unsigned int *tx);
+void handle_sign_tx(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLength, volatile unsigned int *flags, volatile unsigned int *tx);
+void handle_sign_tx_hash(uint8_t *dataBuffer, uint16_t dataLength, volatile unsigned int *flags, volatile unsigned int *tx);
+void handle_keep_alive(volatile unsigned int *flags);
+
+uint32_t set_result_sign_tx(void);
+uint32_t set_result_get_public_key();
 
 #endif

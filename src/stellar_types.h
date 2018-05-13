@@ -17,9 +17,6 @@
 #ifndef _STELLAR_TYPES_H_
 #define _STELLAR_TYPES_H_
 
-#ifndef TEST
-#include "bolos_target.h"
-#endif
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -102,8 +99,20 @@
 #define PRINTF(msg, arg) printf(msg, arg)
 #define PIC(code) code
 #define TARGET_NANOS 1
+#define MEMCLEAR(dest) { memset(dest, 0, sizeof(dest)); }
+#else
+#define MEMCLEAR(dest) { os_memset(dest, 0, sizeof(dest)); }
+#include "bolos_target.h"
 #endif // TEST
 
+#ifdef TARGET_BLUE
+#define COLOR_BG_1 0xF9F9F9
+#define COLOR_APP 0x07a2cc
+#define COLOR_APP_LIGHT 0xd4eef7
+#define BAGL_FONT_OPEN_SANS_LIGHT_16_22PX_AVG_WIDTH 10
+#define BAGL_FONT_OPEN_SANS_REGULAR_10_13PX_AVG_WIDTH 8
+#define MAX_CHAR_PER_LINE 28
+#endif
 
 static const uint8_t NETWORK_ID_PUBLIC_HASH[64] = {0x7a, 0xc3, 0x39, 0x97, 0x54, 0x4e, 0x31, 0x75,
                                                    0xd2, 0x66, 0xbd, 0x02, 0x24, 0x39, 0xb2, 0x2c,
@@ -123,7 +132,7 @@ typedef struct {
     uint8_t opType;
     uint8_t opCount;
     uint8_t opIdx;
-#if defined(TARGET_NANOS)
+#ifdef TARGET_NANOS
     char opSource[15];
     char txDetails[4][29];
     char opDetails[5][50];
@@ -136,7 +145,7 @@ typedef struct {
 
 typedef struct {
     uint8_t publicKey[32];
-#if defined(TARGET_NANOS)
+#ifdef TARGET_NANOS
     char address[28];
 #else
     char address[57];
@@ -163,11 +172,15 @@ typedef struct {
     } req;
     uint16_t u2fTimer;
     uint8_t multiOpsSupport;
+#ifdef TARGET_NANOS
+    uint8_t uxStep;
+    uint8_t uxStepCount;
+#endif
 } stellar_context_t;
 
 typedef struct {
     uint8_t fidoTransport;
     uint8_t initialized;
-} internal_storage_t;
+} stellar_nv_state_t;
 
 #endif

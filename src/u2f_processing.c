@@ -26,7 +26,7 @@
 #include "u2f_transport.h"
 #include "u2f_processing.h"
 
-void handleApdu(volatile unsigned int *flags, volatile unsigned int *tx);
+void handle_apdu(volatile unsigned int *flags, volatile unsigned int *tx);
 void u2f_proxy_response(u2f_service_t *service, unsigned int tx);
 
 static const uint8_t SW_SUCCESS[] = {0x90, 0x00};
@@ -119,7 +119,7 @@ void u2f_handle_sign(u2f_service_t *service, uint8_t p1, uint8_t p2,
     }
     // Check that it looks like an APDU
     os_memmove(G_io_apdu_buffer, buffer + 65, keyHandleLength);
-    handleApdu(&flags, &tx);
+    handle_apdu(&flags, &tx);
     if ((flags & IO_ASYNCH_REPLY) == 0) {
         u2f_proxy_response(service, tx);
     }
