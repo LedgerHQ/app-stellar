@@ -288,6 +288,7 @@ uint16_t parse_account_merge(uint8_t *buffer, tx_content_t *txContent) {
 
     if (txContent->opSource[0] != '\0') {
         strcpy(txContent->opDetails[0], txContent->opSource);
+        txContent->opSource[0] = '\0'; // don't show separately
     } else {
         strcpy(txContent->opDetails[0], txContent->txDetails[3]);
     }

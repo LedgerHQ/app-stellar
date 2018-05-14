@@ -51,7 +51,7 @@ const char *const detailNamesTable[][5] = {
     {"ASSET", NULL, NULL, NULL, NULL},
     {"ASSET", "ACCOUNT ID", NULL, NULL, NULL},
     {"ASSET", "ACCOUNT ID", NULL, NULL, NULL},
-    {"DESTINATION", NULL, NULL, NULL, NULL},
+    {"SOURCE", "DESTINATION", NULL, NULL, NULL},
     {NULL, NULL, NULL, NULL, NULL},
     {"NAME", "VALUE", NULL, NULL, NULL},
     {"NAME", NULL, NULL, NULL, NULL},
