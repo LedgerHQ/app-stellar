@@ -33,14 +33,6 @@
 
 volatile unsigned char u2fMessageBuffer[U2F_MAX_MESSAGE_SIZE];
 
-void u2f_proxy_response(u2f_service_t *service, unsigned int tx) {
-    os_memset(service->messageBuffer, 0, 5);
-    os_memmove(service->messageBuffer + 5, G_io_apdu_buffer, tx);
-    service->messageBuffer[tx + 5] = 0x90;
-    service->messageBuffer[tx + 6] = 0x00;
-    u2f_send_fragmented_response(service, U2F_CMD_MSG, service->messageBuffer, tx + 7, true);
-}
-
 unsigned short io_exchange_al(unsigned char channel, unsigned short tx_len) {
     switch (channel & ~(IO_FLAGS)) {
     case CHANNEL_KEYBOARD:
@@ -210,8 +202,6 @@ void sendKeepAlive() {
 }
 
 unsigned char io_event(unsigned char channel) {
-    // nothing done with the event, throw an error on the transport layer if
-    // needed
 
     if (fidoActivated && ctx.u2fTimer > 0) {
         ctx.u2fTimer -= 100;
@@ -282,7 +272,6 @@ void app_exit(void) {
     END_TRY_L(exit);
 }
 
-
 __attribute__((section(".boot"))) int main(void) {
     // exit critical section
     __asm volatile("cpsie i");
@@ -305,7 +294,6 @@ __attribute__((section(".boot"))) int main(void) {
                     nvm_write(N_stellar_pstate, (void *)&nv_state, sizeof(stellar_nv_state_t));
                 }
 
-#ifdef HAVE_U2F
                 os_memset((unsigned char *)&u2fService, 0, sizeof(u2fService));
                 u2fService.inputBuffer = G_io_apdu_buffer;
                 u2fService.outputBuffer = G_io_apdu_buffer;
@@ -314,9 +302,6 @@ __attribute__((section(".boot"))) int main(void) {
                 u2f_initialize_service((u2f_service_t *)&u2fService);
 
                 USB_power_U2F(1, N_stellar_pstate->fidoTransport);
-#else
-                USB_power_U2F(1, 0);
-#endif
 
                 ui_idle();
 

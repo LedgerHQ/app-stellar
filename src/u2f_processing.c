@@ -29,20 +29,19 @@
 void handle_apdu(volatile unsigned int *flags, volatile unsigned int *tx);
 void u2f_proxy_response(u2f_service_t *service, unsigned int tx);
 
-static const uint8_t SW_SUCCESS[] = {0x90, 0x00};
-static const uint8_t SW_PROOF_OF_PRESENCE_REQUIRED[] = {0x69, 0x85};
+//static const uint8_t SW_SUCCESS[] = {0x90, 0x00};
+//static const uint8_t SW_PROOF_OF_PRESENCE_REQUIRED[] = {0x69, 0x85};
 static const uint8_t SW_BAD_KEY_HANDLE[] = {0x6A, 0x80};
 
 static const uint8_t VERSION[] = {'U', '2', 'F', '_', 'V', '2', 0x90, 0x00};
-static const uint8_t DUMMY_ZERO[] = {0x00};
+//static const uint8_t DUMMY_ZERO[] = {0x00};
 
 static const uint8_t SW_UNKNOWN_INSTRUCTION[] = {0x6d, 0x00};
 static const uint8_t SW_UNKNOWN_CLASS[] = {0x6e, 0x00};
 static const uint8_t SW_WRONG_LENGTH[] = {0x67, 0x00};
 static const uint8_t SW_INTERNAL[] = {0x6F, 0x00};
 
-static const uint8_t NOTIFY_USER_PRESENCE_NEEDED[] = {
-    KEEPALIVE_REASON_TUP_NEEDED};
+//static const uint8_t NOTIFY_USER_PRESENCE_NEEDED[] = { KEEPALIVE_REASON_TUP_NEEDED};
 
 static const uint8_t PROXY_MAGIC[] = {'l', '0', 'v'};
 
@@ -68,7 +67,7 @@ static const uint8_t PROXY_MAGIC[] = {'l', '0', 'v'};
 #define MAX_SEQ_TIMEOUT_MS 500
 #define MAX_KEEPALIVE_TIMEOUT_MS 500
 
-static const uint8_t DUMMY_USER_PRESENCE[] = {SIGN_USER_PRESENCE_MASK};
+//static const uint8_t DUMMY_USER_PRESENCE[] = {SIGN_USER_PRESENCE_MASK};
 
 void u2f_handle_enroll(u2f_service_t *service, uint8_t p1, uint8_t p2,
                        uint8_t *buffer, uint16_t length) {

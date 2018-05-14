@@ -18,12 +18,15 @@
 *   limitations under the License.
 ********************************************************************************/
 
+#include "os.h"
 #include <stdint.h>
 #include <string.h>
 #include "u2f_service.h"
 #include "u2f_transport.h"
 #include "u2f_processing.h"
 #include "u2f_timer.h"
+#include "u2f_io.h"
+
 
 // not too fast blinking
 #define DEFAULT_TIMER_INTERVAL_MS 500

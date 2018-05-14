@@ -20,6 +20,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+// ------------------------------------------------------------------------- //
+//                       REQUEST PARSING CONSTANTS                           //
+// ------------------------------------------------------------------------- //
 
 #define CLA 0xe0
 #define INS_GET_PUBLIC_KEY 0x02
@@ -47,6 +50,11 @@
 #define MAX_OPS 20
 #define MAX_BIP32_LEN 10
 #define AMOUNT_MAX_SIZE 22
+
+
+// ------------------------------------------------------------------------- //
+//                       TRANSACTION PARSING CONSTANTS                       //
+// ------------------------------------------------------------------------- //
 
 #define ASSET_TYPE_NATIVE 0
 #define ASSET_TYPE_CREDIT_ALPHANUM4 1
@@ -93,27 +101,6 @@
 #define OPERATION_TYPE_BUMP_SEQUENCE 15
 #define OPERATION_TYPE_UNKNOWN 16
 
-#ifdef TEST
-#include <stdio.h>
-#define THROW(code) { printf("error: %d", code); return; }
-#define PRINTF(msg, arg) printf(msg, arg)
-#define PIC(code) code
-#define TARGET_NANOS 1
-#define MEMCLEAR(dest) { memset(dest, 0, sizeof(dest)); }
-#else
-#define MEMCLEAR(dest) { os_memset(dest, 0, sizeof(dest)); }
-#include "bolos_target.h"
-#endif // TEST
-
-#ifdef TARGET_BLUE
-#define COLOR_BG_1 0xF9F9F9
-#define COLOR_APP 0x07a2cc
-#define COLOR_APP_LIGHT 0xd4eef7
-#define BAGL_FONT_OPEN_SANS_LIGHT_16_22PX_AVG_WIDTH 10
-#define BAGL_FONT_OPEN_SANS_REGULAR_10_13PX_AVG_WIDTH 8
-#define MAX_CHAR_PER_LINE 28
-#endif
-
 static const uint8_t NETWORK_ID_PUBLIC_HASH[64] = {0x7a, 0xc3, 0x39, 0x97, 0x54, 0x4e, 0x31, 0x75,
                                                    0xd2, 0x66, 0xbd, 0x02, 0x24, 0x39, 0xb2, 0x2c,
                                                    0xdb, 0x16, 0x50, 0x8c, 0x01, 0x16, 0x3f, 0x26,
@@ -127,11 +114,47 @@ static const uint8_t NETWORK_ID_TEST_HASH[64] = {0xce, 0xe0, 0x30, 0x2d, 0x59, 0
 
 static const char * NETWORK_NAMES[3] = { "Public", "Test", "Unknown" };
 
+
+// ------------------------------------------------------------------------- //
+//                              UTILITIES                                    //
+// ------------------------------------------------------------------------- //
+
+#ifdef TEST
+#include <stdio.h>
+#define THROW(code) { printf("error: %d", code); return; }
+#define PRINTF(msg, arg) printf(msg, arg)
+#define PIC(code) code
+#define TARGET_NANOS 1
+#define MEMCLEAR(dest) { memset(dest, 0, sizeof(dest)); }
+#else
+#define MEMCLEAR(dest) { os_memset(dest, 0, sizeof(dest)); }
+#include "bolos_target.h"
+#endif // TEST
+
+// ------------------------------------------------------------------------- //
+//                           DISPLAY CONSTANTS                               //
+// ------------------------------------------------------------------------- //
+
+#ifdef TARGET_BLUE
+#define COLOR_BG_1 0xF9F9F9
+#define COLOR_APP 0x07a2cc
+#define COLOR_APP_LIGHT 0xd4eef7
+#define BAGL_FONT_OPEN_SANS_LIGHT_16_22PX_AVG_WIDTH 10
+#define BAGL_FONT_OPEN_SANS_REGULAR_10_13PX_AVG_WIDTH 8
+#define MAX_CHAR_PER_LINE 28
+#endif
+
+// ------------------------------------------------------------------------- //
+//                           TYPE DEFINITIONS                                //
+// ------------------------------------------------------------------------- //
+
+
 typedef struct {
     uint8_t network;
     uint8_t opType;
     uint8_t opCount;
     uint8_t opIdx;
+    bool timeBounds;
 #ifdef TARGET_NANOS
     char opSource[15];
     char txDetails[4][29];

@@ -45,7 +45,7 @@ static const char * opCaptions[][6] = {
     {"WARNING", "Hash", NULL, NULL, NULL}
 };
 
-static const char * txCaptions[4] = {"Memo", "Fee", "Network", "Source Account"};
+static const char * txCaptions[4] = {"Memo", "Fee", "Network", "Tx Source"};
 
 bagl_element_t tmp_element;
 
@@ -125,11 +125,11 @@ void ui_idle(void) {
 // ------------------------------------------------------------------------- //
 
 /** prepare show address screen */
-unsigned int ui_address_prepro(const bagl_element_t *element) {
+const bagl_element_t *ui_address_prepro(const bagl_element_t *element) {
     if (element->component.userid == 0x02) {
         UX_CALLBACK_SET_INTERVAL(MAX(1500, 1000 + bagl_label_roundtrip_duration_ms(element, 7)));
     }
-    return 1;
+    return element;
 }
 
 const bagl_element_t ui_address_nanos[] = {
@@ -174,30 +174,45 @@ void ui_show_address_init(void) {
 //                             APPROVE TRANSACTION                           //
 // ------------------------------------------------------------------------- //
 
-/** max number of details this operation contains */
-uint8_t count_op_details() {
-    uint8_t i;
-    for (i = 0; i < 6; i++) {
-        if (((char*) PIC(opCaptions[ctx.req.tx.content.opType][i])) == NULL) {
-            return i;
+const char *detailCaptions[12];
+const char *detailValues[12];
+
+/**
+ * Parse the next operation from the raw transaction xdr and populate the details to display.
+ * On the last operation in the transaction we also show the transaction level details (memo/fee/etc)
+ */
+void prepare_details() {
+    ctx.req.tx.offset = parse_tx_xdr(ctx.req.tx.raw, &ctx.req.tx.content, ctx.req.tx.offset);
+    MEMCLEAR(detailCaptions);
+    MEMCLEAR(detailValues);
+    uint8_t i, j;
+    for (i = 0, j = 0; i < 5; i++) {
+        char *caption = ((char *)PIC(opCaptions[ctx.req.tx.content.opType][i]));
+        char *value = ctx.req.tx.content.opDetails[i];
+        if (caption != NULL && value[0] != '\0') {
+            detailCaptions[j] = caption;
+            detailValues[j] = value;
+            j++;
         }
     }
-    return i;
-}
-
-/** number of steps to show this operation */
-uint8_t count_steps() {
-    if (ctx.req.tx.content.opIdx == ctx.req.tx.content.opCount) {
-        // last operation: also show tx details
-        return count_op_details() + 4 + 1;
+    if (ctx.req.tx.content.opSource[0] != '\0') {
+        detailCaptions[j] = ((char *)PIC("Op Source"));
+        detailValues[j] = ctx.req.tx.content.opSource;
+        j++;
     }
-    return count_op_details() + 1;
-}
-
-/** parse the next operation from the raw transaction xdr */
-void prepare_details() {
-    ctx.req.tx.offset = parseTxXdr(ctx.req.tx.raw, &ctx.req.tx.content, ctx.req.tx.offset);
-    ctx.uxStepCount = count_steps();
+    if (ctx.req.tx.content.opIdx == ctx.req.tx.content.opCount) { // last operation: also show tx details
+        for (i = 0; i < 4; i++) {
+            detailCaptions[j] = txCaptions[i];
+            detailValues[j] = ctx.req.tx.content.txDetails[i];
+            j++;
+        }
+        if (ctx.req.tx.content.timeBounds) {
+            detailCaptions[j] = ((char *)PIC("Time Bounds"));
+            detailValues[j] = ((char *)PIC("On"));
+            j++;
+        }
+    }
+    ctx.uxStepCount = j + 1;
 }
 
 /** prepare next sign transaction approval screen */
@@ -208,12 +223,12 @@ const bagl_element_t *ui_tx_approval_prepro(const bagl_element_t *element) {
     case 0x01:
     case 0x11: // "Confirm transaction"
         if (ctx.uxStep == 0) {
-            if (element->component.userid == 0x01) { // prepare details once per operation
+            if (element->component.userid == 0x01) {
                 prepare_details();
             }
-            // only show on the first operation
+            // only show before the first operation, else skip this step
             if (ctx.req.tx.content.opIdx == 1) {
-                UX_CALLBACK_SET_INTERVAL(1800);
+                UX_CALLBACK_SET_INTERVAL(1750);
                 return element;
             } else {
                 ctx.uxStep++;
@@ -224,36 +239,15 @@ const bagl_element_t *ui_tx_approval_prepro(const bagl_element_t *element) {
     case 0x02: // Details caption
     case 0x12: // Details value
         if (ctx.uxStep > 0) {
-            uint8_t opDetailsCount = count_op_details();
-            // first show operation details
-            while (ctx.uxStep > 0 && ctx.uxStep <= opDetailsCount) {
-                uint8_t detailIdx = ctx.uxStep - 1;
-                char *value = ctx.req.tx.content.opDetails[detailIdx];
-                if (value[0] == '\0') {
-                    ctx.uxStep++; // skip empty value
-                } else {
-                    os_memmove(&tmp_element, element, sizeof(bagl_element_t));
-                    if (element->component.userid == 0x12) { // value
-                        tmp_element.text = value;
-                    } else { // caption
-                        tmp_element.text = ((char*) PIC(opCaptions[ctx.req.tx.content.opType][detailIdx]));
-                    }
-                    UX_CALLBACK_SET_INTERVAL(MAX(1500, 1000 + bagl_label_roundtrip_duration_ms(&tmp_element, 7)));
-                    return &tmp_element;
-                }
+            uint8_t detailIdx = ctx.uxStep - 1;
+            os_memmove(&tmp_element, element, sizeof(bagl_element_t));
+            if (element->component.userid == 0x12) {
+                tmp_element.text = detailValues[detailIdx];
+            } else {
+                tmp_element.text = detailCaptions[detailIdx];
             }
-            // lastly show transaction level details (fee/memo/network)
-            if (ctx.uxStep > opDetailsCount) {
-                os_memmove(&tmp_element, element, sizeof(bagl_element_t));
-                uint8_t detailIdx = ctx.uxStep - opDetailsCount - 1;
-                if (element->component.userid == 0x12) { // value
-                    tmp_element.text = ctx.req.tx.content.txDetails[detailIdx];
-                } else { // caption
-                    tmp_element.text = txCaptions[detailIdx];
-                }
-                UX_CALLBACK_SET_INTERVAL(MAX(1500, 1000 + bagl_label_roundtrip_duration_ms(&tmp_element, 7)));
-                return &tmp_element;
-            }
+            UX_CALLBACK_SET_INTERVAL(MAX(1750, 1000 + bagl_label_roundtrip_duration_ms(&tmp_element, 7)));
+            return &tmp_element;
         }
     }
     return NULL;

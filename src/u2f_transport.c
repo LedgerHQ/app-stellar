@@ -18,10 +18,13 @@
 *   limitations under the License.
 ********************************************************************************/
 
+#include "os.h"
 #include <stdint.h>
 #include <string.h>
 #include "u2f_service.h"
 #include "u2f_transport.h"
+#include "u2f_io.h"
+
 
 #define U2F_MASK_COMMAND 0x80
 #define U2F_COMMAND_HEADER_SIZE 3

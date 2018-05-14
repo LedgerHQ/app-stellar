@@ -27,6 +27,82 @@
 
 static const char hexChars[] = "0123456789ABCDEF";
 
+unsigned short crc16(char *ptr, int count) {
+   int  crc;
+   char i;
+   crc = 0;
+   while (--count >= 0) {
+      crc = crc ^ (int) *ptr++ << 8;
+      i = 8;
+      do
+      {
+         if (crc & 0x8000)
+            crc = crc << 1 ^ 0x1021;
+         else
+            crc = crc << 1;
+      } while(--i);
+   }
+   return (crc);
+}
+
+/**
+ * adapted from https://stash.forgerock.org/projects/OPENAM/repos/forgerock-authenticator-ios/browse/ForgeRock-Authenticator/base32.c
+ */
+int base32_encode(const uint8_t *data, int length, char *result, int bufSize) {
+    int count = 0;
+    int quantum = 8;
+
+    if (length < 0 || length > (1 << 28)) {
+        return -1;
+    }
+
+    if (length > 0) {
+        int buffer = data[0];
+        int next = 1;
+        int bitsLeft = 8;
+
+        while (count < bufSize && (bitsLeft > 0 || next < length)) {
+            if (bitsLeft < 5) {
+                if (next < length) {
+                    buffer <<= 8;
+                    buffer |= data[next++] & 0xFF;
+                    bitsLeft += 8;
+                } else {
+                    int pad = 5 - bitsLeft;
+                    buffer <<= pad;
+                    bitsLeft += pad;
+                }
+            }
+
+            int index = 0x1F & (buffer >> (bitsLeft - 5));
+            bitsLeft -= 5;
+            result[count++] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"[index];
+
+            // Track the characters which make up a single quantum of 8 characters
+            quantum--;
+            if (quantum == 0) {
+                quantum = 8;
+            }
+        }
+
+        // If the number of encoded characters does not make a full quantum, insert padding
+        if (quantum != 8) {
+            while (quantum > 0 && count < bufSize) {
+                result[count++] = '=';
+                quantum--;
+            }
+        }
+    }
+
+    // Finally check if we exceeded buffer size.
+    if (count < bufSize) {
+        result[count] = '\000';
+        return count;
+    } else {
+        return -1;
+    }
+}
+
 void public_key_to_address(uint8_t *in, char *out) {
     uint8_t buffer[35];
     buffer[0] = 6 << 3; // version bit 'G'
@@ -208,78 +284,10 @@ void print_asset(char *code, char *issuer, char *out) {
     strcpy(out+offset+1, issuer);
 }
 
-unsigned short crc16(char *ptr, int count) {
-   int  crc;
-   char i;
-   crc = 0;
-   while (--count >= 0) {
-      crc = crc ^ (int) *ptr++ << 8;
-      i = 8;
-      do
-      {
-         if (crc & 0x8000)
-            crc = crc << 1 ^ 0x1021;
-         else
-            crc = crc << 1;
-      } while(--i);
-   }
-   return (crc);
-}
-
-/**
- * adapted from https://stash.forgerock.org/projects/OPENAM/repos/forgerock-authenticator-ios/browse/ForgeRock-Authenticator/base32.c
- */
-int base32_encode(const uint8_t *data, int length, char *result, int bufSize) {
-    int count = 0;
-    int quantum = 8;
-
-    if (length < 0 || length > (1 << 28)) {
-        return -1;
-    }
-
-    if (length > 0) {
-        int buffer = data[0];
-        int next = 1;
-        int bitsLeft = 8;
-
-        while (count < bufSize && (bitsLeft > 0 || next < length)) {
-            if (bitsLeft < 5) {
-                if (next < length) {
-                    buffer <<= 8;
-                    buffer |= data[next++] & 0xFF;
-                    bitsLeft += 8;
-                } else {
-                    int pad = 5 - bitsLeft;
-                    buffer <<= pad;
-                    bitsLeft += pad;
-                }
-            }
-
-            int index = 0x1F & (buffer >> (bitsLeft - 5));
-            bitsLeft -= 5;
-            result[count++] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"[index];
-
-            // Track the characters which make up a single quantum of 8 characters
-            quantum--;
-            if (quantum == 0) {
-                quantum = 8;
-            }
-        }
-
-        // If the number of encoded characters does not make a full quantum, insert padding
-        if (quantum != 8) {
-            while (quantum > 0 && count < bufSize) {
-                result[count++] = '=';
-                quantum--;
-            }
-        }
-    }
-
-    // Finally check if we exceeded buffer size.
-    if (count < bufSize) {
-        result[count] = '\000';
-        return count;
-    } else {
-        return -1;
-    }
+void u2f_proxy_response(u2f_service_t *service, unsigned int tx) {
+    os_memset(service->messageBuffer, 0, 5);
+    os_memmove(service->messageBuffer + 5, G_io_apdu_buffer, tx);
+    service->messageBuffer[tx + 5] = 0x90;
+    service->messageBuffer[tx + 6] = 0x00;
+    u2f_send_fragmented_response(service, U2F_CMD_MSG, service->messageBuffer, tx + 7, true);
 }

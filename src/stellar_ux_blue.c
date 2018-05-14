@@ -358,10 +358,10 @@ const char *detailValues[6];
 uint8_t currentScreen;
 uint16_t offsets[MAX_OPS];
 
-const void init_details() {
+void prepare_details() {
     os_memset(detailNames, 0, sizeof(detailNames));
     os_memset(detailValues, 0, sizeof(detailValues));
-    if (currentScreen > 0 && offsets[currentScreen] == 0) { // transaction details (memo/fee/network)
+    if (currentScreen > 0 && offsets[currentScreen] == 0) { // transaction details (memo/fee/etc)
         strcpy(titleCaption, ((char *)PIC("Transaction level details")));
         subtitleCaption[0] = '\0';
         detailNames[0] = ((char *)PIC("MEMO"));
@@ -372,8 +372,12 @@ const void init_details() {
         detailValues[1] = ctx.req.tx.content.txDetails[1];
         detailValues[2] = ctx.req.tx.content.txDetails[2];
         detailValues[3] = ctx.req.tx.content.txDetails[3];
+        if (ctx.req.tx.content.timeBounds) {
+            detailNames[4] = ((char *)PIC("TIME BOUNDS"));
+            detailValues[4] = ((char *)PIC("ON"));
+        }
     } else { // operation details
-        offsets[currentScreen+1] = parseTxXdr(ctx.req.tx.raw, &ctx.req.tx.content, offsets[currentScreen]);
+        offsets[currentScreen+1] = parse_tx_xdr(ctx.req.tx.raw, &ctx.req.tx.content, offsets[currentScreen]);
         strcpy(titleCaption, ((char *)PIC("Operation ")));
         if (ctx.req.tx.content.opCount > 1) {
             print_uint(currentScreen+1, titleCaption+strlen(titleCaption));
@@ -396,8 +400,6 @@ const void init_details() {
     }
 }
 
-
-
 const bagl_element_t *ui_approval_common_show_details(const bagl_element_t *e) {
     uint8_t detailIdx = e->component.userid & 0xF;
     char *detailVal = detailValues[detailIdx];
@@ -413,14 +415,14 @@ const bagl_element_t *ui_approval_common_show_details(const bagl_element_t *e) {
 
 const bagl_element_t *ui_approval_prev(const bagl_element_t *e) {
     currentScreen--;
-    init_details();
+    prepare_details();
     ui_approval_blue_init();
     return NULL;
 }
 
 const bagl_element_t *ui_approval_next(const bagl_element_t *e) {
     currentScreen++;
-    init_details();
+    prepare_details();
     ui_approval_blue_init();
     return NULL;
 }
@@ -646,7 +648,7 @@ void ui_approve_tx_hash_init(void) {
 void ui_approve_tx_init(void) {
     currentScreen = 0;
     offsets[0] = 0;
-    init_details();
+    prepare_details();
     ui_approval_blue_init();
 }
 

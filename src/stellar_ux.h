@@ -20,10 +20,18 @@
 
 #include "os_io_seproxyhal.h"
 
+// ------------------------------------------------------------------------- //
+//                     Implemented by stellar_ux_common.c                    //
+// ------------------------------------------------------------------------- //
+
 unsigned int io_seproxyhal_touch_tx_ok(const bagl_element_t *e);
 unsigned int io_seproxyhal_touch_tx_cancel(const bagl_element_t *e);
 unsigned int io_seproxyhal_touch_address_ok(const bagl_element_t *e);
 unsigned int io_seproxyhal_touch_address_cancel(const bagl_element_t *e);
+
+// ------------------------------------------------------------------------- //
+//        Implemented by both stellar_ux_nanos.c and stellar_ux_blue.c       //
+// ------------------------------------------------------------------------- //
 
 void ui_show_address_init(void);
 void ui_approve_tx_init(void);
