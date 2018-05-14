@@ -194,7 +194,7 @@ typedef struct {
         tx_context_t tx;
     } req;
     uint16_t u2fTimer;
-    uint8_t multiOpsSupport;
+    uint8_t hashSigning;
 #ifdef TARGET_NANOS
     uint8_t uxStep;
     uint8_t uxStepCount;

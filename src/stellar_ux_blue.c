@@ -39,7 +39,7 @@ static const char *opNames[16] =
      "Set Options", "Change Trust", "Remove Trust", "Allow Trust", "Revoke Trust",
      "Merge Account", "Inflation", "Set Data", "Remove Data", "Bump Sequence"};
 
-const char *const detailNamesTable[][5] = {
+static const char *const detailNamesTable[][5] = {
     {"ACCOUNT ID", "START BALANCE", NULL, NULL, NULL},
     {"AMOUNT", "DESTINATION", NULL, NULL, NULL},
     {"SEND", "DESTINATION", "RECEIVE", "VIA", NULL},
@@ -124,9 +124,9 @@ const bagl_element_t *ui_settings_blue_toggle_browser(const bagl_element_t *e) {
     return 0;
 }
 
-const bagl_element_t *ui_settings_blue_toggle_multi_ops(const bagl_element_t *e) {
+const bagl_element_t *ui_settings_blue_toggle_hash_signing(const bagl_element_t *e) {
     // toggle setting and request redraw of settings elements
-    ctx.multiOpsSupport = (ctx.multiOpsSupport == 0x00) ? 0x01 : 0x00;
+    ctx.hashSigning = (ctx.hashSigning == 0x00) ? 0x01 : 0x00;
 
     // only refresh settings mutable drawn elements
     UX_REDISPLAY_IDX(8);
@@ -166,11 +166,11 @@ const bagl_element_t ui_settings_blue[] = {
 
 
     {{BAGL_LABELINE, 0x00, 30, 105, 160, 30, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX, 0},
-     "Enable multi-ops", 0, 0, 0, NULL, NULL, NULL},
+     "Hash signing", 0, 0, 0, NULL, NULL, NULL},
     {{BAGL_LABELINE, 0x00, 30, 126, 260, 30, 0, 0, BAGL_FILL, 0x999999, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_8_11PX, 0},
-     "Enable multi-operation support", 0, 0, 0, NULL, NULL, NULL},
+     "Signing method for large transactions", 0, 0, 0, NULL, NULL, NULL},
     {{BAGL_NONE | BAGL_FLAG_TOUCHABLE, 0x00, 0, 78, 320, 68, 0, 0, BAGL_FILL, 0xFFFFFF, 0x000000, 0, 0},
-     NULL, 0, 0xEEEEEE, 0x000000, ui_settings_blue_toggle_multi_ops, ui_settings_out_over, ui_settings_out_over},
+     NULL, 0, 0xEEEEEE, 0x000000, ui_settings_blue_toggle_hash_signing, ui_settings_out_over, ui_settings_out_over},
 
     {{BAGL_ICON, 0x01, 258, 98, 32, 18, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, 0, 0},
      NULL, 0, 0, 0, NULL, NULL, NULL},
@@ -200,7 +200,7 @@ const bagl_element_t *ui_settings_blue_prepro(const bagl_element_t *e) {
         switch (e->component.userid) {
         case 0x01:
             // swap icon content
-            if (ctx.multiOpsSupport) {
+            if (ctx.hashSigning) {
                 tmp_element.text = &C_icon_toggle_set;
             } else {
                 tmp_element.text = &C_icon_toggle_reset;
@@ -362,26 +362,26 @@ void prepare_details() {
     os_memset(detailNames, 0, sizeof(detailNames));
     os_memset(detailValues, 0, sizeof(detailValues));
     if (currentScreen > 0 && offsets[currentScreen] == 0) { // transaction details (memo/fee/etc)
-        strcpy(titleCaption, ((char *)PIC("Transaction level details")));
+        strcpy(titleCaption, "Transaction level details");
         subtitleCaption[0] = '\0';
-        detailNames[0] = ((char *)PIC("MEMO"));
-        detailNames[1] = ((char *)PIC("FEE"));
-        detailNames[2] = ((char *)PIC("NETWORK"));
-        detailNames[3] = ((char *)PIC("TX SOURCE"));
+        detailNames[0] = "MEMO";
+        detailNames[1] = "FEE";
+        detailNames[2] = "NETWORK";
+        detailNames[3] = "TX SOURCE";
         detailValues[0] = ctx.req.tx.content.txDetails[0];
         detailValues[1] = ctx.req.tx.content.txDetails[1];
         detailValues[2] = ctx.req.tx.content.txDetails[2];
         detailValues[3] = ctx.req.tx.content.txDetails[3];
         if (ctx.req.tx.content.timeBounds) {
-            detailNames[4] = ((char *)PIC("TIME BOUNDS"));
-            detailValues[4] = ((char *)PIC("ON"));
+            detailNames[4] = "TIME BOUNDS";
+            detailValues[4] = "ON";
         }
     } else { // operation details
         offsets[currentScreen+1] = parse_tx_xdr(ctx.req.tx.raw, &ctx.req.tx.content, offsets[currentScreen]);
-        strcpy(titleCaption, ((char *)PIC("Operation ")));
+        strcpy(titleCaption, "Operation ");
         if (ctx.req.tx.content.opCount > 1) {
             print_uint(currentScreen+1, titleCaption+strlen(titleCaption));
-            strcpy(titleCaption+strlen(titleCaption), ((char *)PIC(" of ")));
+            strcpy(titleCaption+strlen(titleCaption), " of ");
             print_uint(ctx.req.tx.content.opCount, titleCaption+strlen(titleCaption));
         }
         strcpy(subtitleCaption, ((char *)PIC(opNames[ctx.req.tx.content.opType])));
@@ -394,7 +394,7 @@ void prepare_details() {
             }
         }
         if (ctx.req.tx.content.opSource[0] != '\0') {
-            detailNames[j] = ((char *)PIC("OP SOURCE"));
+            detailNames[j] = "OP SOURCE";
             detailValues[j] = ctx.req.tx.content.opSource;
         }
     }
@@ -636,10 +636,10 @@ void ui_approve_tx_hash_init(void) {
     currentScreen = 0;
     os_memset(detailNames, 0, sizeof(detailNames));
     os_memset(detailValues, 0, sizeof(detailValues));
-    detailNames[0] = ((char *)PIC("HASH"));;
-    char hashSummary[65];
-    print_hash(ctx.req.tx.hash, hashSummary);
-    detailValues[0] = hashSummary;
+    detailNames[0] = "HASH";
+    char hash[65];
+    print_hash(ctx.req.tx.hash, hash);
+    detailValues[0] = hash;
     strcpy(titleCaption, "WARNING");
     strcpy(subtitleCaption, "No details available");
     ui_approval_blue_init();

@@ -56,7 +56,7 @@ bagl_element_t tmp_element;
 const ux_menu_entry_t menu_main[];
 const ux_menu_entry_t menu_settings[];
 const ux_menu_entry_t menu_settings_browser[];
-const ux_menu_entry_t menu_settings_multi_ops[];
+const ux_menu_entry_t menu_settings_hash_signing[];
 
 // change the setting
 void menu_settings_browser_change(unsigned int enabled) {
@@ -67,8 +67,8 @@ void menu_settings_browser_change(unsigned int enabled) {
     UX_MENU_DISPLAY(1, menu_settings, NULL);
 }
 
-void menu_settings_multi_ops_change(unsigned int enabled) {
-    ctx.multiOpsSupport = enabled;
+void menu_settings_hash_signing_change(unsigned int enabled) {
+    ctx.hashSigning = enabled;
     UX_MENU_DISPLAY(1, menu_settings, NULL);
 }
 
@@ -78,9 +78,9 @@ void menu_settings_browser_init(unsigned int ignored) {
     UX_MENU_DISPLAY(N_stellar_pstate->fidoTransport ? 1 : 0, menu_settings_browser, NULL);
 }
 
-void menu_settings_multi_ops_init(unsigned int ignored) {
+void menu_settings_hash_siging_init(unsigned int ignored) {
     UNUSED(ignored);
-    UX_MENU_DISPLAY(ctx.multiOpsSupport, menu_settings_multi_ops, NULL);
+    UX_MENU_DISPLAY(ctx.hashSigning, menu_settings_hash_signing, NULL);
 }
 
 const ux_menu_entry_t menu_settings_browser[] = {
@@ -89,15 +89,15 @@ const ux_menu_entry_t menu_settings_browser[] = {
     UX_MENU_END
     };
 
-const ux_menu_entry_t menu_settings_multi_ops[] = {
-    {NULL, menu_settings_multi_ops_change, 0, NULL, "No", NULL, 0, 0},
-    {NULL, menu_settings_multi_ops_change, 1, NULL, "Yes", NULL, 0, 0},
+const ux_menu_entry_t menu_settings_hash_signing[] = {
+    {NULL, menu_settings_hash_signing_change, 0, NULL, "No", NULL, 0, 0},
+    {NULL, menu_settings_hash_signing_change, 1, NULL, "Yes", NULL, 0, 0},
     UX_MENU_END
     };
 
 const ux_menu_entry_t menu_settings[] = {
     {NULL, menu_settings_browser_init, 0, NULL, "Browser support", NULL, 0, 0},
-    {NULL, menu_settings_multi_ops_init, 0, NULL, "Enable multi-ops", NULL, 0, 0},
+    {NULL, menu_settings_hash_siging_init, 0, NULL, "Hash signing", NULL, 0, 0},
     {menu_main, NULL, 1, &C_icon_back, "Back", NULL, 61, 40},
     UX_MENU_END
     };
@@ -196,7 +196,7 @@ void prepare_details() {
         }
     }
     if (ctx.req.tx.content.opSource[0] != '\0') {
-        detailCaptions[j] = ((char *)PIC("Op Source"));
+        detailCaptions[j] = "Op Source";
         detailValues[j] = ctx.req.tx.content.opSource;
         j++;
     }
@@ -207,8 +207,8 @@ void prepare_details() {
             j++;
         }
         if (ctx.req.tx.content.timeBounds) {
-            detailCaptions[j] = ((char *)PIC("Time Bounds"));
-            detailValues[j] = ((char *)PIC("On"));
+            detailCaptions[j] = "Time Bounds";
+            detailValues[j] = "On";
             j++;
         }
     }
@@ -271,9 +271,9 @@ const bagl_element_t *ui_tx_approval_hash_prepro(const bagl_element_t *element) 
         if (ctx.uxStep == 1) {
             os_memmove(&tmp_element, element, sizeof(bagl_element_t));
             if (element->component.userid == 0x02) {
-                tmp_element.text = ((char *)PIC("WARNING"));
+                tmp_element.text = "WARNING";
             } else {
-                tmp_element.text = ((char *)PIC("No details"));
+                tmp_element.text = "No details";
             }
             UX_CALLBACK_SET_INTERVAL(MAX(1500, 1000 + bagl_label_roundtrip_duration_ms(&tmp_element, 7)));
             return &tmp_element;
@@ -281,7 +281,7 @@ const bagl_element_t *ui_tx_approval_hash_prepro(const bagl_element_t *element) 
         if (ctx.uxStep == 2) {
             os_memmove(&tmp_element, element, sizeof(bagl_element_t));
             if (element->component.userid == 0x02) {
-                tmp_element.text = ((char *)PIC("Transaction Hash"));
+                tmp_element.text = "Transaction Hash";
             } else {
                 print_hash_summary(ctx.req.tx.hash, ctx.req.tx.content.txDetails[0]);
                 tmp_element.text = ctx.req.tx.content.txDetails[0];

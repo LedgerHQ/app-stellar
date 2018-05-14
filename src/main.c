@@ -125,8 +125,8 @@ void handle_apdu(volatile unsigned int *flags, volatile unsigned int *tx) {
 }
 
 void stellar_main(void) {
-    // multi-ops support is not persistent
-    ctx.multiOpsSupport = 0;
+    // hash signing setting is not persistent
+    ctx.hashSigning = 0;
     ctx.u2fTimer = 0;
 
     volatile unsigned int rx = 0;

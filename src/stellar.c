@@ -38,7 +38,7 @@ uint8_t read_bip32(uint8_t *dataBuffer, uint32_t *bip32) {
 }
 
 void handle_get_app_configuration(volatile unsigned int *tx) {
-    G_io_apdu_buffer[0] = ctx.multiOpsSupport;
+    G_io_apdu_buffer[0] = ctx.hashSigning;
     G_io_apdu_buffer[1] = LEDGER_MAJOR_VERSION;
     G_io_apdu_buffer[2] = LEDGER_MINOR_VERSION;
     G_io_apdu_buffer[3] = LEDGER_PATCH_VERSION;
@@ -154,7 +154,7 @@ void handle_sign_tx(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLe
 
 void handle_sign_tx_hash(uint8_t *dataBuffer, uint16_t dataLength, volatile unsigned int *flags, volatile unsigned int *tx) {
 
-    if (!ctx.multiOpsSupport) {
+    if (!ctx.hashSigning) {
         THROW(0x6c66);
     }
 
