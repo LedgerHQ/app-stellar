@@ -367,7 +367,7 @@ void prepare_details() {
         detailNames[0] = ((char *)PIC("MEMO"));
         detailNames[1] = ((char *)PIC("FEE"));
         detailNames[2] = ((char *)PIC("NETWORK"));
-        detailNames[3] = ((char *)PIC("SOURCE"));
+        detailNames[3] = ((char *)PIC("TX SOURCE"));
         detailValues[0] = ctx.req.tx.content.txDetails[0];
         detailValues[1] = ctx.req.tx.content.txDetails[1];
         detailValues[2] = ctx.req.tx.content.txDetails[2];
@@ -394,7 +394,7 @@ void prepare_details() {
             }
         }
         if (ctx.req.tx.content.opSource[0] != '\0') {
-            detailNames[j] = ((char *)PIC("SOURCE"));
+            detailNames[j] = ((char *)PIC("OP SOURCE"));
             detailValues[j] = ctx.req.tx.content.opSource;
         }
     }
@@ -636,7 +636,7 @@ void ui_approve_tx_hash_init(void) {
     currentScreen = 0;
     os_memset(detailNames, 0, sizeof(detailNames));
     os_memset(detailValues, 0, sizeof(detailValues));
-    detailNames[0] = ((char *)PIC("Hash"));;
+    detailNames[0] = ((char *)PIC("HASH"));;
     char hashSummary[65];
     print_hash(ctx.req.tx.hash, hashSummary);
     detailValues[0] = hashSummary;
