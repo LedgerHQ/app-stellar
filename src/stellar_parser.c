@@ -14,6 +14,7 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  ********************************************************************************/
+
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
@@ -24,16 +25,18 @@
 #include "os.h"
 #endif
 
-#define SIGNER_KEY_TYPE_ED25519 0
-#define SIGNER_KEY_TYPE_PRE_AUTH_TX 1
-#define SIGNER_KEY_TYPE_HASH_X 2
+static const uint8_t NETWORK_ID_PUBLIC_HASH[64] = {0x7a, 0xc3, 0x39, 0x97, 0x54, 0x4e, 0x31, 0x75,
+                                                   0xd2, 0x66, 0xbd, 0x02, 0x24, 0x39, 0xb2, 0x2c,
+                                                   0xdb, 0x16, 0x50, 0x8c, 0x01, 0x16, 0x3f, 0x26,
+                                                   0xe5, 0xcb, 0x2a, 0x3e, 0x10, 0x45, 0xa9, 0x79};
 
-static const uint8_t PUBLIC_KEY_TYPE_ED25519 = 0;
-static const uint8_t MEMO_TEXT_MAX_SIZE = 28;
-static const uint8_t DATA_NAME_MAX_SIZE = 64;
-static const uint8_t DATA_VALUE_MAX_SIZE = 64;
-static const uint8_t HOME_DOMAIN_MAX_SIZE = 32;
+static const uint8_t NETWORK_ID_TEST_HASH[64] = {0xce, 0xe0, 0x30, 0x2d, 0x59, 0x84, 0x4d, 0x32,
+                                                 0xbd, 0xca, 0x91, 0x5c, 0x82, 0x03, 0xdd, 0x44,
+                                                 0xb3, 0x3f, 0xbb, 0x7e, 0xdc, 0x19, 0x05, 0x1e,
+                                                 0xa3, 0x7a, 0xbe, 0xdf, 0x28, 0xec, 0xd4, 0x72};
 
+
+static const char * NETWORK_NAMES[3] = { "Public", "Test", "Unknown" };
 
 uint32_t read_uint32_block(uint8_t *buffer) {
     return buffer[3] + (buffer[2] << 8) + (buffer[1] <<  16) + (buffer[0] << 24);

@@ -125,7 +125,7 @@ void handle_apdu(volatile unsigned int *flags, volatile unsigned int *tx) {
 }
 
 void stellar_main(void) {
-    // hash signing setting is not persistent
+    // hash sig support is not persistent
     ctx.hashSigning = 0;
     ctx.u2fTimer = 0;
 
@@ -203,13 +203,6 @@ void sendKeepAlive() {
 
 unsigned char io_event(unsigned char channel) {
 
-    if (fidoActivated && ctx.u2fTimer > 0) {
-        ctx.u2fTimer -= 100;
-        if (ctx.u2fTimer <= 0) {
-            sendKeepAlive();
-        }
-    }
-
     // can't have more than one tag in the reply, not supported yet.
     switch (G_io_seproxyhal_spi_buffer[0]) {
     case SEPROXYHAL_TAG_FINGER_EVENT:
@@ -235,9 +228,16 @@ unsigned char io_event(unsigned char channel) {
         UX_DISPLAYED_EVENT({});
         break;
 
-#ifdef TARGET_NANOS
     case SEPROXYHAL_TAG_TICKER_EVENT:
 
+        if (fidoActivated && ctx.u2fTimer > 0) {
+            ctx.u2fTimer -= 100;
+            if (ctx.u2fTimer <= 0) {
+                sendKeepAlive();
+            }
+        }
+
+#ifdef TARGET_NANOS
         UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer, {
             if (UX_ALLOWED) {
                 if (ctx.uxStepCount) {
@@ -248,8 +248,8 @@ unsigned char io_event(unsigned char channel) {
                 }
             }
         });
-        break;
 #endif
+        break;
     }
 
     // close the event if not done previously (by a display or whatever)

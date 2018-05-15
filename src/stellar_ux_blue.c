@@ -113,7 +113,7 @@ void ui_idle(void) {
 const bagl_element_t *ui_settings_blue_toggle_browser(const bagl_element_t *e) {
     // toggle setting and request redraw of settings elements
     uint8_t setting = N_stellar_pstate->fidoTransport ? 0 : 1;
-    nvm_write(N_stellar_pstate->fidoTransport, (void *)&setting, sizeof(uint8_t));
+    nvm_write(&N_stellar_pstate->fidoTransport, (void *)&setting, sizeof(uint8_t));
     USB_power_U2F(0, 0);
     USB_power_U2F(1, N_stellar_pstate->fidoTransport);
 

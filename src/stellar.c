@@ -178,9 +178,6 @@ void handle_keep_alive(volatile unsigned int *flags) {
 }
 
 uint32_t set_result_sign_tx(void) {
-
-    uint32_t tx;
-
     // initialize private key
     uint8_t privateKeyData[32];
     cx_ecfp_private_key_t privateKey;
@@ -190,10 +187,11 @@ uint32_t set_result_sign_tx(void) {
 
     // sign hash
 #if CX_APILEVEL >= 8
-    tx = cx_eddsa_sign(&privateKey, CX_LAST, CX_SHA512, ctx.req.tx.hash, 32, NULL, 0, G_io_apdu_buffer, 64, NULL);
+    uint32_t tx = cx_eddsa_sign(&privateKey, CX_LAST, CX_SHA512, ctx.req.tx.hash, 32, NULL, 0, G_io_apdu_buffer, 64, NULL);
 #else
-    tx = cx_eddsa_sign(&privateKey, NULL, CX_LAST, CX_SHA512, ctx.req.tx.hash, 32, G_io_apdu_buffer);
+    uint32_t tx = cx_eddsa_sign(&privateKey, NULL, CX_LAST, CX_SHA512, ctx.req.tx.hash, 32, G_io_apdu_buffer);
 #endif
+
     os_memset(&privateKey, 0, sizeof(privateKey));
 
     return tx;

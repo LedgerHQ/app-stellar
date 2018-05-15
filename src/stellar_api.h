@@ -25,12 +25,13 @@
 #include "u2f_transport.h"
 
 extern bool fidoActivated;
+
 extern void USB_power_U2F(unsigned char enabled, unsigned char fido);
 
 /**
  * Parsing of the raw transaction XDR.
  * Starts parsing the buffer at the given offset to populate the content struct.
- * Only a single operation is parsed during a single call.
+ * Only a single operation is parsed during each call.
  * Returns the offset to the next operation in the buffer or 0 if this was the last operation in the buffer.
  */
 uint16_t parse_tx_xdr(uint8_t *buffer, tx_content_t *content, uint16_t offset);
