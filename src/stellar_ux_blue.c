@@ -175,7 +175,6 @@ const bagl_element_t ui_settings_blue[] = {
     {{BAGL_ICON, 0x01, 258, 98, 32, 18, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, 0, 0},
      NULL, 0, 0, 0, NULL, NULL, NULL},
 
-#ifdef HAVE_U2F
     {{BAGL_LABELINE, 0x00, 30, 173, 160, 30, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX, 0},
      "Browser support", 0, 0, 0, NULL, NULL, NULL},
     {{BAGL_LABELINE, 0x00, 30, 194, 260, 30, 0, 0, BAGL_FILL, 0x999999, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_8_11PX, 0},
@@ -185,7 +184,7 @@ const bagl_element_t ui_settings_blue[] = {
 
     {{BAGL_ICON, 0x02, 258, 166, 32, 18, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, 0, 0},
      NULL, 0, 0, 0, NULL, NULL, NULL},
-#endif // HAVE_U2F
+
 };
 
 const bagl_element_t *ui_settings_blue_prepro(const bagl_element_t *e) {
