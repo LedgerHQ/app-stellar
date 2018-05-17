@@ -45,9 +45,12 @@ static const char * opCaptions[][6] = {
     {"WARNING", "Hash", NULL, NULL, NULL}
 };
 
+
 static const char * txCaptions[4] = {"Memo", "Fee", "Network", "Tx Source"};
 
 bagl_element_t tmp_element;
+
+char opCaption[20];
 
 // ------------------------------------------------------------------------- //
 //                                  MENUS                                    //
@@ -212,7 +215,7 @@ void prepare_details() {
             j++;
         }
     }
-    ctx.uxStepCount = j + 1;
+    ctx.uxStepCount = j + 2;
 }
 
 /** prepare next sign transaction approval screen */
@@ -233,18 +236,34 @@ const bagl_element_t *ui_tx_approval_prepro(const bagl_element_t *element) {
             } else {
                 ctx.uxStep++;
             }
-        } else {
-            return NULL;
         }
-    case 0x02: // Details caption
-    case 0x12: // Details value
-        if (ctx.uxStep > 0) {
-            uint8_t detailIdx = ctx.uxStep - 1;
-            os_memmove(&tmp_element, element, sizeof(bagl_element_t));
-            if (element->component.userid == 0x12) {
-                tmp_element.text = detailValues[detailIdx];
+        return NULL;
+    case 0x02: // "Operation x of y"
+        if (ctx.uxStep == 1) {
+            // only show if multiple operations, else skip this step
+            if (ctx.req.tx.content.opCount > 1) {
+                os_memmove(&tmp_element, element, sizeof(bagl_element_t));
+                strcpy(opCaption, "Operation ");
+                print_uint(ctx.req.tx.content.opIdx, opCaption+strlen(opCaption));
+                strcpy(opCaption+strlen(opCaption), " of ");
+                print_uint(ctx.req.tx.content.opCount, opCaption+strlen(opCaption));
+                tmp_element.text = opCaption;
+                UX_CALLBACK_SET_INTERVAL(MAX(1750, 1000 + bagl_label_roundtrip_duration_ms(&tmp_element, 7)));
+                return &tmp_element;
             } else {
+               ctx.uxStep++;
+            }
+        }
+        return NULL;
+    case 0x03: // Details caption
+    case 0x13: // Details value
+        if (ctx.uxStep > 1) {
+            uint8_t detailIdx = ctx.uxStep - 2;
+            os_memmove(&tmp_element, element, sizeof(bagl_element_t));
+            if (element->component.userid == 0x03) {
                 tmp_element.text = detailCaptions[detailIdx];
+            } else {
+                tmp_element.text = detailValues[detailIdx];
             }
             UX_CALLBACK_SET_INTERVAL(MAX(1750, 1000 + bagl_label_roundtrip_duration_ms(&tmp_element, 7)));
             return &tmp_element;
@@ -265,8 +284,8 @@ const bagl_element_t *ui_tx_approval_hash_prepro(const bagl_element_t *element) 
             return element;
         }
         break;
-    case 0x02: // Details caption
-    case 0x12: // Details value
+    case 0x03: // Details caption
+    case 0x13: // Details value
     {
         if (ctx.uxStep == 1) {
             os_memmove(&tmp_element, element, sizeof(bagl_element_t));
@@ -305,16 +324,18 @@ const bagl_element_t ui_approve_tx_nanos[] = {
     {{BAGL_ICON, 0x00, 117, 13, 8, 6, 0, 0, 0, 0xFFFFFF, 0x000000, 0, BAGL_GLYPH_ICON_CHECK},
      NULL, 0, 0, 0, NULL, NULL, NULL},
 
-    // Step 1: "Confirm transaction"
     {{BAGL_LABELINE, 0x01, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000, BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
      "Confirm", 0, 0, 0, NULL, NULL, NULL},
-    {{BAGL_LABELINE, 0x11, 0, 26, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000, BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+    {{BAGL_LABELINE, 0x11, 0, 26, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000, BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
      "transaction", 0, 0, 0, NULL, NULL, NULL},
 
-    // Details caption & value
-    {{BAGL_LABELINE, 0x02, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000, BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+    {{BAGL_LABELINE, 0x02, 0, 19, 128, 32, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000, BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
      NULL, 0, 0, 0, NULL, NULL, NULL},
-    {{BAGL_LABELINE, 0x12, 16, 26, 96, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000, BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
+
+    // Details caption & value
+    {{BAGL_LABELINE, 0x03, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000, BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     NULL, 0, 0, 0, NULL, NULL, NULL},
+    {{BAGL_LABELINE, 0x13, 16, 26, 96, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000, BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
      NULL, 0, 0, 0, NULL, NULL, NULL}
 
 };
