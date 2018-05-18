@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) {
     if (read) {
 //        printHexBlocks(buffer, read/2);
         uint16_t offset = 0;
-        while ((offset = parseTxXdr(buffer, &txContent, offset))) {
+        while ((offset = parse_tx_xdr(buffer, &txContent, offset))) {
             printf("\n");
             printf("offset: %d", offset);
             printf("\n");

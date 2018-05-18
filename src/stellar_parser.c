@@ -61,7 +61,7 @@ void check_padding(uint8_t *buffer, uint8_t offset, uint8_t length) {
     uint8_t i;
     for (i = 0; i < length - offset; i++) {
         if (buffer[offset + i] != 0x00) {
-             THROW(0x6c2e);
+             THROW(0x6c20);
         }
     }
 }
@@ -90,7 +90,7 @@ uint8_t parse_memo(uint8_t *buffer, tx_content_t *txContent) {
         case MEMO_TYPE_TEXT: {
             uint8_t size = read_uint32_block(buffer);
             if (size > MEMO_TEXT_MAX_SIZE) {
-                THROW(0x6c2f);
+                THROW(0x6c20);
             }
             buffer += 4;
             memcpy(txContent->txDetails[0], buffer, size);
@@ -103,7 +103,7 @@ uint8_t parse_memo(uint8_t *buffer, tx_content_t *txContent) {
             print_hash_summary(buffer, txContent->txDetails[0]);
             return 4 + 32; // type + hash block
         default:
-            THROW(0x6c21); // unknown memo type
+            THROW(0x6c20); // unknown memo type
     }
 }
 
@@ -121,7 +121,7 @@ uint8_t parse_asset(uint8_t *buffer, char *code, char *issuer, char *nativeCode)
             buffer += 4;
             uint32_t accountType = read_uint32_block(buffer);
             if (accountType != PUBLIC_KEY_TYPE_ED25519) {
-                THROW(0x6c23);
+                THROW(0x6c20);
             }
             buffer += 4;
             if (issuer) {
@@ -135,7 +135,7 @@ uint8_t parse_asset(uint8_t *buffer, char *code, char *issuer, char *nativeCode)
             buffer += 12;
             uint32_t accountType = read_uint32_block(buffer);
             if (accountType != PUBLIC_KEY_TYPE_ED25519) {
-                THROW(0x6c22);
+                THROW(0x6c20);
             }
             buffer += 4;
             if (issuer) {
@@ -144,7 +144,7 @@ uint8_t parse_asset(uint8_t *buffer, char *code, char *issuer, char *nativeCode)
             return 4 + 12 + 36; // type + code12 + accountId
         }
         default:
-            THROW(0x6c28); // unknown asset type
+            THROW(0x6c20); // unknown asset type
     }
 }
 
@@ -160,7 +160,7 @@ uint16_t parse_create_account(uint8_t *buffer, tx_content_t *txContent) {
 
     uint32_t accountType = read_uint32_block(buffer);
     if (accountType != PUBLIC_KEY_TYPE_ED25519) {
-        THROW(0x6c27);
+        THROW(0x6c20);
     }
     uint16_t offset = 4;
 
@@ -181,7 +181,7 @@ uint16_t parse_payment(uint8_t *buffer, tx_content_t *txContent) {
 
     uint32_t accountType = read_uint32_block(buffer);
     if (accountType != PUBLIC_KEY_TYPE_ED25519) {
-        THROW(0x6c27);
+        THROW(0x6c20);
     }
     uint16_t offset = 4;
 
@@ -213,7 +213,7 @@ uint16_t parse_path_payment(uint8_t *buffer, tx_content_t *txContent) {
 
     uint32_t accountType = read_uint32_block(buffer + offset);
     if (accountType != PUBLIC_KEY_TYPE_ED25519) {
-        THROW(0x6c2b);
+        THROW(0x6c20);
     }
     offset += 4;
 
@@ -248,7 +248,7 @@ uint16_t parse_path_payment(uint8_t *buffer, tx_content_t *txContent) {
 uint16_t parse_allow_trust(uint8_t *buffer, tx_content_t *txContent) {
     uint32_t trustorAccountType = read_uint32_block(buffer);
     if (trustorAccountType != PUBLIC_KEY_TYPE_ED25519) {
-        THROW(0x6c2b);
+        THROW(0x6c20);
     }
     uint16_t offset = 4;
 
@@ -273,7 +273,7 @@ uint16_t parse_allow_trust(uint8_t *buffer, tx_content_t *txContent) {
             break;
         }
         default:
-            THROW(0x6c28); // unknown asset type
+            THROW(0x6c20); // unknown asset type
     }
     PRINTF("asset: %s\n", txContent->opDetails[0]);
 
@@ -298,7 +298,7 @@ uint16_t parse_account_merge(uint8_t *buffer, tx_content_t *txContent) {
 
     uint32_t accountType = read_uint32_block(buffer);
     if (accountType != PUBLIC_KEY_TYPE_ED25519) {
-        THROW(0x6c2b);
+        THROW(0x6c20);
     }
     uint16_t offset = 4;
 
@@ -313,7 +313,7 @@ uint16_t parse_manage_data(uint8_t *buffer, tx_content_t *txContent) {
 
     uint32_t size = read_uint32_block(buffer);
     if (size > DATA_NAME_MAX_SIZE) {
-        THROW(0x6c2f);
+        THROW(0x6c20);
     }
     uint16_t offset = 4;
 
@@ -331,7 +331,7 @@ uint16_t parse_manage_data(uint8_t *buffer, tx_content_t *txContent) {
     if (hasValue) {
         size = read_uint32_block(buffer + offset);
         if (size > DATA_VALUE_MAX_SIZE) {
-            THROW(0x6c2f);
+            THROW(0x6c20);
         }
         offset += 4;
         strcpy(txContent->opDetails[1], "<binary data>");
@@ -466,7 +466,7 @@ uint16_t parse_set_options(uint8_t *buffer, tx_content_t *txContent) {
     if (inflationDestinationPresent) {
         uint32_t accountType = read_uint32_block(buffer + offset);
         if (accountType != PUBLIC_KEY_TYPE_ED25519) {
-            THROW(0x6c27);
+            THROW(0x6c20);
         }
         offset += 4;
         print_public_key_short(buffer + offset, txContent->opDetails[0]);
@@ -489,7 +489,7 @@ uint16_t parse_set_options(uint8_t *buffer, tx_content_t *txContent) {
     if (homeDomainPresent) {
         uint32_t size = read_uint32_block(buffer + offset);
         if (size > HOME_DOMAIN_MAX_SIZE) {
-            THROW(0x6c2f);
+            THROW(0x6c20);
         }
         offset += 4;
         memcpy(txContent->opDetails[3], buffer + offset, size);
@@ -521,7 +521,7 @@ uint16_t parse_set_options(uint8_t *buffer, tx_content_t *txContent) {
                 print_hash_summary(buffer + offset, txContent->opDetails[4]+strlen(txContent->opDetails[4]));
                 break;
             }
-            default: THROW(0x6cdd);
+            default: THROW(0x6c20);
         }
         offset += 32;
 
@@ -554,7 +554,7 @@ uint16_t parse_op_xdr(uint8_t *buffer, tx_content_t *txContent) {
     if (hasAccountId) {
         uint32_t accountType = read_uint32_block(buffer + offset);
         if (accountType != PUBLIC_KEY_TYPE_ED25519) {
-            THROW(0x6c2b);
+            THROW(0x6c20);
         }
         offset += 4;
         print_public_key_short(buffer+offset, txContent->opSource);
@@ -623,7 +623,7 @@ uint16_t parse_tx_xdr(uint8_t *buffer, tx_content_t *txContent, uint16_t offset)
 
         uint32_t accountType = read_uint32_block(buffer + offset);
         if (accountType != PUBLIC_KEY_TYPE_ED25519) {
-            THROW(0x6c26);
+            THROW(0x6c20);
         }
         offset += 4;
 
@@ -645,7 +645,7 @@ uint16_t parse_tx_xdr(uint8_t *buffer, tx_content_t *txContent, uint16_t offset)
         PRINTF("op count: %d\n\n", txContent->opCount);
 
         if (txContent->opCount > MAX_OPS) {
-            THROW(0x6c30);
+            THROW(0x6c20);
         }
 
         offset += 4;

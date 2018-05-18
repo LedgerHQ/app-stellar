@@ -78,11 +78,11 @@ void handle_apdu(volatile unsigned int *flags, volatile unsigned int *tx) {
                 break;
 
             case INS_SIGN_TX:
-                handle_sign_tx(p1, p2, dataBuffer, dataLength, flags, tx);
+                handle_sign_tx(p1, p2, dataBuffer, dataLength, flags);
                 break;
 
             case INS_SIGN_TX_HASH:
-                handle_sign_tx_hash(dataBuffer, dataLength, flags, tx);
+                handle_sign_tx_hash(dataBuffer, dataLength, flags);
                 break;
 
             case INS_GET_APP_CONFIGURATION:

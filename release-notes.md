@@ -6,9 +6,11 @@ Support for showing details of multi-operation transactions has been added. Prev
 
 A U2F connection keep-alive has been implemented to prevent connections from timing out after 30 seconds when using browser mode on Chrome.
 
-Adds support for showing operation source, transaction source and whether time bounds are set on the transaction.
+Transaction details now include operation source if present, transaction source and whether time bounds are set on the transaction.
 
 The native asset is no longer assumed to be XLM when showing amounts. Instead amounts in native assets are qualified as XLM only if the network id matches either Stellar public network or test network ids. Otherwise native amounts are qualified as 'native'.
+
+Support for new Stellar operation 'Bump Sequence'.
 
 ## v2.1 Hash signing support
 

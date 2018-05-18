@@ -185,7 +185,15 @@ const char *detailValues[12];
  * On the last operation in the transaction we also show the transaction level details (memo/fee/etc)
  */
 void prepare_details() {
-    ctx.req.tx.offset = parse_tx_xdr(ctx.req.tx.raw, &ctx.req.tx.content, ctx.req.tx.offset);
+    BEGIN_TRY {
+        TRY {
+            ctx.req.tx.offset = parse_tx_xdr(ctx.req.tx.raw, &ctx.req.tx.content, ctx.req.tx.offset);
+        } CATCH_OTHER(sw) {
+            io_seproxyhal_respond(sw, 0);
+            return;
+        } FINALLY {
+        }
+    } END_TRY;
     MEMCLEAR(detailCaptions);
     MEMCLEAR(detailValues);
     uint8_t i, j;
@@ -227,7 +235,15 @@ const bagl_element_t *ui_tx_approval_prepro(const bagl_element_t *element) {
     case 0x11: // "Confirm transaction"
         if (ctx.uxStep == 0) {
             if (element->component.userid == 0x01) {
-                prepare_details();
+                BEGIN_TRY {
+                    TRY {
+                        prepare_details();
+                    } CATCH_OTHER(sw) {
+                        io_seproxyhal_respond(sw, 0);
+                        return NULL;
+                    } FINALLY {
+                    }
+                } END_TRY;
             }
             // only show before the first operation, else skip this step
             if (ctx.req.tx.content.opIdx == 1) {
@@ -238,7 +254,7 @@ const bagl_element_t *ui_tx_approval_prepro(const bagl_element_t *element) {
             }
         }
         return NULL;
-    case 0x02: // "Operation x of y"
+    case 0x02: // "Operation i of n"
         if (ctx.uxStep == 1) {
             // only show if multiple operations, else skip this step
             if (ctx.req.tx.content.opCount > 1) {
@@ -289,7 +305,7 @@ const bagl_element_t *ui_tx_approval_hash_prepro(const bagl_element_t *element) 
     {
         if (ctx.uxStep == 1) {
             os_memmove(&tmp_element, element, sizeof(bagl_element_t));
-            if (element->component.userid == 0x02) {
+            if (element->component.userid == 0x03) {
                 tmp_element.text = "WARNING";
             } else {
                 tmp_element.text = "No details";
@@ -299,7 +315,7 @@ const bagl_element_t *ui_tx_approval_hash_prepro(const bagl_element_t *element) 
         }
         if (ctx.uxStep == 2) {
             os_memmove(&tmp_element, element, sizeof(bagl_element_t));
-            if (element->component.userid == 0x02) {
+            if (element->component.userid == 0x03) {
                 tmp_element.text = "Transaction Hash";
             } else {
                 print_hash_summary(ctx.req.tx.hash, ctx.req.tx.content.txDetails[0]);

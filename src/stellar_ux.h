@@ -24,6 +24,7 @@
 //                     Implemented by stellar_ux_common.c                    //
 // ------------------------------------------------------------------------- //
 
+unsigned int io_seproxyhal_respond(unsigned short sw, uint32_t tx);
 unsigned int io_seproxyhal_touch_tx_ok(const bagl_element_t *e);
 unsigned int io_seproxyhal_touch_tx_cancel(const bagl_element_t *e);
 unsigned int io_seproxyhal_touch_address_ok(const bagl_element_t *e);

@@ -412,17 +412,27 @@ const bagl_element_t *ui_approval_common_show_details(const bagl_element_t *e) {
     return NULL;
 }
 
+void ui_approval_show_screen() {
+    BEGIN_TRY {
+        TRY {
+            prepare_details();
+            ui_approval_blue_init();
+        } CATCH_OTHER(sw) {
+            io_seproxyhal_respond(sw, 0);
+        } FINALLY {
+        }
+    } END_TRY;
+}
+
 const bagl_element_t *ui_approval_prev(const bagl_element_t *e) {
     currentScreen--;
-    prepare_details();
-    ui_approval_blue_init();
+    ui_approval_show_screen();
     return NULL;
 }
 
 const bagl_element_t *ui_approval_next(const bagl_element_t *e) {
     currentScreen++;
-    prepare_details();
-    ui_approval_blue_init();
+    ui_approval_show_screen();
     return NULL;
 }
 

@@ -195,6 +195,7 @@ The following standard Status Words are returned for all APDUs - some specific S
 |   6982   | Security status not satisfied (Canceled by user) |
 |   6A80   | Invalid data                                     |
 |   6B00   | Incorrect parameter P1 or P2                     |
-|   6C2x   | Unsupported Transaction                          |
+|   6C20   | Transaction parsing error                        |
+|   6C25   | Transaction contains unsupported operation       |
 |   6Fxx   | Technical problem (Internal error, please report)|
 |   9000   | Normal ending of the command                     |
