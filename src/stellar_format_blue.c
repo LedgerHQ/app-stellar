@@ -279,11 +279,11 @@ void format_set_option_master_weight(tx_context_t *txCtx) {
     }
 }
 
-void format_set_option_clear_flags(tx_context_t *txCtx) {
+void format_set_option_flags(tx_context_t *txCtx) {
     if (txCtx->opDetails.op.setOptions.clearFlagsPresent) {
         strcpy(detailCaption, "Account Flags");
         print_flags(txCtx->opDetails.op.setOptions.clearFlags, detailValue, '-');
-        print_flags(txCtx->opDetails.op.setOptions.setFlags, detailValue, '-');
+        print_flags(txCtx->opDetails.op.setOptions.setFlags, detailValue, '+');
         formatter = &format_set_option_master_weight;
     } else {
         format_set_option_master_weight(txCtx);
@@ -294,9 +294,9 @@ void format_set_option_inflation_destination(tx_context_t *txCtx) {
     if (txCtx->opDetails.op.setOptions.inflationDestinationPresent) {
         strcpy(detailCaption, "Inflation");
         public_key_to_address(txCtx->opDetails.op.setOptions.inflationDestination, detailValue);
-        formatter = &format_set_option_master_weight;
+        formatter = &format_set_option_flags;
     } else {
-        format_set_option_master_weight(txCtx);
+        format_set_option_flags(txCtx);
     }
 }
 

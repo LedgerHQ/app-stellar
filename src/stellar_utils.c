@@ -249,6 +249,11 @@ void print_int(int64_t l, char *out) {
 }
 
 void print_uint(uint64_t l, char *out) {
+    if (l == 0) {
+        strcpy(out, "0");
+        return;
+    }
+
     char buffer[AMOUNT_MAX_SIZE];
     uint64_t dVal = l;
     int i, j;
@@ -284,7 +289,7 @@ void print_asset(char *code, char *issuer, char *out) {
 void print_flag(char *flag, char *out, char prefix) {
     uint8_t len = strlen(out);
     if (len) {
-        strcpy(out, ", ");
+        strcpy(out+len, ", ");
         len += 2;
     }
     if (prefix) {
@@ -296,13 +301,13 @@ void print_flag(char *flag, char *out, char prefix) {
 
 void print_flags(uint32_t flags, char *out, char prefix) {
     if (flags & 0x01) {
-        print_flag("Authorization required", out, prefix);
+        print_flag("Auth required", out, prefix);
     }
     if (flags & 0x02) {
-        print_flag("Authorization revocable", out, prefix);
+        print_flag("Auth revocable", out, prefix);
     }
     if (flags & 0x04) {
-        print_flag("Authorization immutable", out, prefix);
+        print_flag("Auth immutable", out, prefix);
     }
 }
 
