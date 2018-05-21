@@ -281,24 +281,28 @@ void print_asset(char *code, char *issuer, char *out) {
     strcpy(out+offset+1, issuer);
 }
 
-void print_flag(char *flag, char *out) {
+void print_flag(char *flag, char *out, char prefix) {
     uint8_t len = strlen(out);
     if (len) {
         strcpy(out, ", ");
         len += 2;
     }
-    strcpy(out, flag);
+    if (prefix) {
+        out[len] = prefix;
+        len += 1;
+    }
+    strcpy(out+len, flag);
 }
 
-void print_flags(uint32_t flags, char *out) {
+void print_flags(uint32_t flags, char *out, char prefix) {
     if (flags & 0x01) {
-        print_flag("Authorization required", out);
+        print_flag("Authorization required", out, prefix);
     }
     if (flags & 0x02) {
-        print_flag("Authorization revocable", out);
+        print_flag("Authorization revocable", out, prefix);
     }
     if (flags & 0x04) {
-        print_flag("Authorization immutable", out);
+        print_flag("Authorization immutable", out, prefix);
     }
 }
 

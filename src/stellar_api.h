@@ -63,7 +63,7 @@ void print_asset(char *assetCode, char *assetIssuer, char *out);
 void print_native_asset_code(uint8_t network, char *out);
 
 /** string representation of flags present */
-void print_flags(uint32_t flags, char *out);
+void print_flags(uint32_t flags, char *out, char prefix);
 
 /** integer to string for display of offerid, sequence number, threshold weights, etc */
 void print_int(int64_t l, char *out);

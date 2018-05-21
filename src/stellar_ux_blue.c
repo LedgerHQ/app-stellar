@@ -22,6 +22,7 @@
 #include "stellar_types.h"
 #include "stellar_api.h"
 #include "stellar_vars.h"
+#include "stellar_format.h"
 
 #include "glyphs.h"
 
@@ -34,29 +35,6 @@ volatile char displayString[33];
 unsigned int io_seproxyhal_touch_settings(const bagl_element_t *e);
 unsigned int io_seproxyhal_touch_exit(const bagl_element_t *e);
 
-static const char *opNames[16] =
-    {"Create Account", "Payment", "Path Payment", "New Offer", "Remove Offer", "Change Offer",
-     "Set Options", "Change Trust", "Remove Trust", "Allow Trust", "Revoke Trust",
-     "Merge Account", "Inflation", "Set Data", "Remove Data", "Bump Sequence"};
-
-static const char *const detailNamesTable[][5] = {
-    {"ACCOUNT ID", "START BALANCE", NULL, NULL, NULL},
-    {"AMOUNT", "DESTINATION", NULL, NULL, NULL},
-    {"SEND", "DESTINATION", "RECEIVE", "VIA", NULL},
-    {"TYPE", "BUY", "PRICE", "SELL", NULL},
-    {"OFFER ID", NULL, NULL, NULL, NULL},
-    {"OFFER ID", "BUY", "PRICE", "SELL", NULL},
-    {"INFL DEST", "FLAGS", "THRESHOLDS", "HOME DOMAIN", "SIGNER"},
-    {"ASSET", "LIMIT", NULL, NULL, NULL},
-    {"ASSET", NULL, NULL, NULL, NULL},
-    {"ASSET", "ACCOUNT ID", NULL, NULL, NULL},
-    {"ASSET", "ACCOUNT ID", NULL, NULL, NULL},
-    {"SOURCE", "DESTINATION", NULL, NULL, NULL},
-    {NULL, NULL, NULL, NULL, NULL},
-    {"NAME", "VALUE", NULL, NULL, NULL},
-    {"NAME", NULL, NULL, NULL, NULL},
-    {"BUMP TO", NULL, NULL, NULL, NULL}
-};
 
 // ------------------------------------------------------------------------- //
 //                               IDLE SCREEN                                 //
@@ -351,8 +329,8 @@ unsigned int ui_details_blue_button(unsigned int button_mask, unsigned int butto
 //                       TRANSACTION APPROVAL SCREEN                         //
 // ------------------------------------------------------------------------- //
 
-const char *detailNames[6];
-const char *detailValues[6];
+char detailNames[7][20];
+char detailValues[7][67];
 
 uint8_t currentScreen;
 uint16_t offsets[MAX_OPS];
@@ -362,40 +340,41 @@ void prepare_details() {
     os_memset(detailValues, 0, sizeof(detailValues));
     if (currentScreen > 0 && offsets[currentScreen] == 0) { // transaction details (memo/fee/etc)
         strcpy(titleCaption, "Transaction level details");
-        subtitleCaption[0] = '\0';
-        detailNames[0] = "MEMO";
-        detailNames[1] = "FEE";
-        detailNames[2] = "NETWORK";
-        detailNames[3] = "TX SOURCE";
-        detailValues[0] = ctx.req.tx.content.txDetails[0];
-        detailValues[1] = ctx.req.tx.content.txDetails[1];
-        detailValues[2] = ctx.req.tx.content.txDetails[2];
-        detailValues[3] = ctx.req.tx.content.txDetails[3];
-        if (ctx.req.tx.content.timeBounds) {
-            detailNames[4] = "TIME BOUNDS";
-            detailValues[4] = "ON";
+        strcpy(subtitleCaption, "");
+        formatter = &format_confirm_transaction_details;
+        uint8_t i = 0;
+        while (formatter && i < 7) {
+            MEMCLEAR(detailCaption);
+            MEMCLEAR(detailValue);
+            formatter(&ctx.req.tx);
+            if (detailCaption[0] != '\0' && detailValue[0] != '\0') {
+                strcpy(detailNames[i], detailCaption);
+                strcpy(detailValues[i], detailValue);
+            }
+            i++;
         }
     } else { // operation details
-        offsets[currentScreen+1] = parse_tx_xdr(ctx.req.tx.raw, &ctx.req.tx.content, offsets[currentScreen]);
+        parse_tx_xdr(ctx.req.tx.raw, &ctx.req.tx);
+        offsets[currentScreen+1] = ctx.req.tx.offset;
         strcpy(titleCaption, "Operation ");
-        if (ctx.req.tx.content.opCount > 1) {
-            print_uint(currentScreen+1, titleCaption+strlen(titleCaption));
+        if (ctx.req.tx.opCount > 1) {
+            print_uint(ctx.req.tx.opIdx, titleCaption+strlen(titleCaption));
             strcpy(titleCaption+strlen(titleCaption), " of ");
-            print_uint(ctx.req.tx.content.opCount, titleCaption+strlen(titleCaption));
+            print_uint(ctx.req.tx.opCount, titleCaption+strlen(titleCaption));
         }
-        strcpy(subtitleCaption, ((char *)PIC(opNames[ctx.req.tx.content.opType])));
-        uint8_t i, j;
-        for (i = 0, j = 0; i < 5; i++) {
-            if (ctx.req.tx.content.opDetails[i][0] != '\0') {
-                detailNames[j] = ((char *)PIC(detailNamesTable[ctx.req.tx.content.opType][i]));
-                detailValues[j] = ctx.req.tx.content.opDetails[i];
-                j++;
+        formatter = &format_confirm_operation;
+        uint8_t i = 0;
+        while (formatter && i < 7) {
+            MEMCLEAR(detailCaption);
+            MEMCLEAR(detailValue);
+            formatter(&ctx.req.tx);
+            if (detailCaption[0] != '\0' && detailValue[0] != '\0') {
+                strcpy(detailNames[i], detailCaption);
+                strcpy(detailValues[i], detailValue);
             }
+            i++;
         }
-        if (ctx.req.tx.content.opSource[0] != '\0') {
-            detailNames[j] = "OP SOURCE";
-            detailValues[j] = ctx.req.tx.content.opSource;
-        }
+        strcpy(subtitleCaption, opCaption);
     }
 }
 
@@ -576,7 +555,7 @@ const bagl_element_t *ui_approval_blue_prepro(const bagl_element_t *element) {
                 return currentScreen > 0;
             }
             if (element->component.userid == 0x02) {
-                return currentScreen < ctx.req.tx.content.opCount;
+                return currentScreen < ctx.req.tx.opCount;
             }
             return 1;
         }
@@ -587,10 +566,10 @@ const bagl_element_t *ui_approval_blue_prepro(const bagl_element_t *element) {
 
         // detail label
         case 0x70:
-            if (!detailNames[index]) {
+            if (detailNames[index][0] == '\0') {
                 return NULL;
             }
-            if (!detailValues[index]) {
+            if (detailValues[index][0] == '\0') {
                 return NULL;
             }
             os_memmove(&tmp_element, element, sizeof(bagl_element_t));
@@ -599,10 +578,10 @@ const bagl_element_t *ui_approval_blue_prepro(const bagl_element_t *element) {
 
         // detail value
         case 0x10:
-            if (!detailNames[index]) {
+            if (detailNames[index][0] == '\0') {
                 return NULL;
             }
-            if (!detailValues[index]) {
+            if (detailValues[index][0] == '\0') {
                 return NULL;
             }
             os_memmove(&tmp_element, element, sizeof(bagl_element_t));
@@ -616,7 +595,7 @@ const bagl_element_t *ui_approval_blue_prepro(const bagl_element_t *element) {
 
         // right arrow and left selection rectangle
         case 0x20:
-            if (!detailNames[index]) {
+            if (detailNames[index][0] == '\0') {
                 return NULL;
             }
             if (strlen(detailValues[index]) * BAGL_FONT_OPEN_SANS_REGULAR_10_13PX_AVG_WIDTH < 160) {
@@ -625,7 +604,7 @@ const bagl_element_t *ui_approval_blue_prepro(const bagl_element_t *element) {
             break;
         // horizontal delimiter
         case 0x30:
-            if (index >= 5 || !detailNames[index+1]) {
+            if (index >= 5 || detailNames[index+1][0] == '\0') {
                 return NULL;
             }
         }
@@ -645,10 +624,8 @@ void ui_approve_tx_hash_init(void) {
     currentScreen = 0;
     os_memset(detailNames, 0, sizeof(detailNames));
     os_memset(detailValues, 0, sizeof(detailValues));
-    detailNames[0] = "HASH";
-    char hash[65];
-    print_hash(ctx.req.tx.hash, hash);
-    detailValues[0] = hash;
+    strcpy(detailNames[0], "Hash");
+    print_binary(ctx.req.tx.hash, detailValues[0], 32);
     strcpy(titleCaption, "WARNING");
     strcpy(subtitleCaption, "No details available");
     ui_approval_blue_init();

@@ -20,7 +20,7 @@
 #endif
 #include "stellar_types.h"
 
-#ifdef TARGET_NANOS
+#ifdef TARGET_BLUE
 
 #include "stellar_format.h"
 #include "stellar_api.h"
@@ -34,9 +34,7 @@ format_function_t formatter;
 
 void format_sequence_number(tx_context_t *txCtx) {
     strcpy(detailCaption, "Sequence Number");
-    char sequenceNumber[22];
-    print_uint(txCtx->txDetails.sequenceNumber, sequenceNumber);
-    print_summary(sequenceNumber, detailValue, 5, 6);
+    print_uint(txCtx->txDetails.sequenceNumber, detailValue);
     formatter = NULL;
 }
 
@@ -46,21 +44,14 @@ void format_transaction_source(tx_context_t *txCtx) {
     formatter = &format_sequence_number;
 }
 
-void format_time_bounds_max_time(tx_context_t *txCtx) {
-    strcpy(detailCaption, "Time Bounds To");
-    print_uint(txCtx->txDetails.timeBounds.maxTime, detailValue);
-    formatter = &format_transaction_source;
-}
-
-void format_time_bounds_min_time(tx_context_t *txCtx) {
-    strcpy(detailCaption, "Time Bounds From");
-    print_uint(txCtx->txDetails.timeBounds.minTime, detailValue);
-    formatter = &format_time_bounds_max_time;
-}
-
 void format_time_bounds(tx_context_t *txCtx) {
     if (txCtx->txDetails.hasTimeBounds) {
-        format_time_bounds_min_time(txCtx);
+        strcpy(detailCaption, "Time Bounds");
+        strcpy(detailValue, "From ");
+        print_uint(txCtx->txDetails.timeBounds.minTime, detailValue+strlen(detailValue));
+        strcpy(detailValue+strlen(detailValue), " To ");
+        print_uint(txCtx->txDetails.timeBounds.maxTime, detailValue+strlen(detailValue));
+        formatter = &format_transaction_source;
     } else {
         format_transaction_source(txCtx);
     }
@@ -96,12 +87,12 @@ void format_memo(tx_context_t *txCtx) {
         }
         case MEMO_TYPE_HASH: {
             suffix = " Hash";
-            print_summary(txCtx->txDetails.memo.data, detailValue, 8, 6);
+            strcpy(detailValue, txCtx->txDetails.memo.data);
             break;
         }
         case MEMO_TYPE_RETURN: {
             suffix = " Return";
-            print_summary(txCtx->txDetails.memo.data, detailValue, 8, 6);
+            strcpy(detailValue, txCtx->txDetails.memo.data);
             break;
         }
         default: {
@@ -118,23 +109,16 @@ void format_confirm_transaction_details(tx_context_t *txCtx) {
 }
 
 void format_operation_source(tx_context_t *txCtx) {
-    if (txCtx->opIdx == txCtx->opCount) {
-        // last operation: show transaction details
-        formatter = &format_confirm_transaction_details;
-    } else {
-        // next operation
-        formatter = NULL;
-    }
     if (txCtx->opDetails.sourcePresent) {
         strcpy(detailCaption, "Operation Source");
         print_public_key(txCtx->opDetails.source, detailValue, 5, 6);
-    } else if (formatter) {
-        formatter(txCtx);
     }
+    formatter = NULL;
 }
 
 void format_bump_sequence(tx_context_t *txCtx) {
-    strcpy(detailCaption, "Bump Sequence");
+    strcpy(opCaption, "Bump Sequence");
+    strcpy(detailCaption, "Bump To");
     print_int(txCtx->opDetails.op.bumpSequence.bumpTo, detailValue);
     formatter = &format_operation_source;
 }
@@ -146,16 +130,16 @@ void format_inflation(tx_context_t *txCtx) {
 
 void format_account_merge_destination(tx_context_t *txCtx) {
     strcpy(detailCaption, "Destination");
-    print_public_key(txCtx->txDetails.source, detailValue, 12, 12);
+    public_key_to_address(txCtx->txDetails.source, detailValue);
     formatter = &format_operation_source;
 }
 
 void format_account_merge(tx_context_t *txCtx) {
-    strcpy(detailCaption, "Merge Account");
+    strcpy(detailCaption, "Account ID");
     if (txCtx->opDetails.sourcePresent) {
-        print_public_key(txCtx->opDetails.source, detailValue, 5, 6);
+        public_key_to_address(txCtx->opDetails.source, detailValue);
     } else {
-        print_public_key(txCtx->txDetails.source, detailValue, 5, 6);
+        public_key_to_address(txCtx->txDetails.source, detailValue);
     }
     formatter = &format_account_merge_destination;
 }
@@ -168,56 +152,31 @@ void format_manage_data_value(tx_context_t *txCtx) {
 
 void format_manage_data(tx_context_t *txCtx) {
     if (txCtx->opDetails.op.manageData.hasValue) {
-        strcpy(detailCaption, "Set Data");
+        strcpy(opCaption, "Set Data");
         formatter = &format_manage_data_value;
     } else {
-        strcpy(detailCaption, "Remove Data");
+        strcpy(opCaption, "Remove Data");
         formatter = &format_operation_source;
     }
-    print_summary(txCtx->opDetails.op.manageData.dataName, detailValue, 12, 12);
+    strcpy(detailCaption, "Data Key");
+    strcpy(detailValue, txCtx->opDetails.op.manageData.dataName);
 }
 
 void format_allow_trust_trustee(tx_context_t *txCtx) {
     strcpy(detailCaption, "Account ID");
-    print_public_key(txCtx->opDetails.op.allowTrust.trustee, detailValue, 12, 12);
+    public_key_to_address(txCtx->opDetails.op.allowTrust.trustee, detailValue);
     formatter = &format_operation_source;
 }
 
 void format_allow_trust(tx_context_t *txCtx) {
     if (txCtx->opDetails.op.allowTrust.authorize) {
-        strcpy(detailCaption, "Allow Trust");
+        strcpy(opCaption, "Allow Trust");
     } else {
-        strcpy(detailCaption, "Revoke Trust");
+        strcpy(opCaption, "Revoke Trust");
     }
+    strcpy(detailCaption, "Asset Code");
     strcpy(detailValue, txCtx->opDetails.op.allowTrust.assetCode);
     formatter = &format_allow_trust_trustee;
-}
-
-void format_set_option_signer_weight(tx_context_t *txCtx) {
-    if (txCtx->opDetails.op.setOptions.signer.weight) {
-        strcpy(detailCaption, "Weight");
-        print_uint(txCtx->opDetails.op.setOptions.signer.weight, detailValue);
-        formatter = &format_operation_source;
-    } else {
-        format_operation_source(txCtx);
-    }
-}
-
-void format_set_option_signer_detail(tx_context_t *txCtx) {
-    switch (txCtx->opDetails.op.setOptions.signer.type) {
-    case SIGNER_KEY_TYPE_ED25519: {
-        strcpy(detailCaption, "Signer Public Key");
-        print_public_key(txCtx->opDetails.op.setOptions.signer.data, detailValue, 12, 12);
-        break;
-    }
-    case SIGNER_KEY_TYPE_HASH_X:
-    case SIGNER_KEY_TYPE_PRE_AUTH_TX: {
-        strcpy(detailCaption, "Signer Hash");
-        print_binary_summary(txCtx->opDetails.op.setOptions.signer.data, detailValue, 32);
-        break;
-    }
-    }
-    formatter = &format_set_option_signer_weight;
 }
 
 void format_set_option_signer(tx_context_t *txCtx) {
@@ -227,21 +186,39 @@ void format_set_option_signer(tx_context_t *txCtx) {
         } else {
             strcpy(detailCaption, "Remove Signer");
         }
+        char *type;
+        char signer[30];
         switch (txCtx->opDetails.op.setOptions.signer.type) {
         case SIGNER_KEY_TYPE_ED25519: {
-            strcpy(detailValue, "Type Public Key");
+            type = "Public Key";
+            print_public_key(txCtx->opDetails.op.setOptions.signer.data, signer, 12, 12);
             break;
         }
         case SIGNER_KEY_TYPE_HASH_X: {
-            strcpy(detailValue, "Type Hash(x)");
+            type = "Hash(x)";
+            print_binary_summary(txCtx->opDetails.op.setOptions.signer.data, signer, 32);
             break;
         }
         case SIGNER_KEY_TYPE_PRE_AUTH_TX: {
-            strcpy(detailValue, "Type Pre-Auth");
+            type = "Pre-Auth";
+            print_binary_summary(txCtx->opDetails.op.setOptions.signer.data, signer, 32);
             break;
         }
+        default: {
+            type = "Unknown Type";
+            strcpy(signer, "Unknown signer");
         }
-        formatter = &format_set_option_signer_detail;
+        }
+        char weight[4];
+        print_uint(txCtx->opDetails.op.setOptions.signer.weight, weight);
+        strcpy(detailValue, type);
+        strcpy(detailValue+strlen(detailValue), ": ");
+        strcpy(detailValue+strlen(detailValue), signer);
+        if (txCtx->opDetails.op.setOptions.signer.weight) {
+            strcpy(detailValue+strlen(detailValue), "; weight = ");
+            strcpy(detailValue+strlen(detailValue), weight);
+        }
+        formatter = &format_operation_source;
     } else {
         format_operation_source(txCtx);
     }
@@ -257,33 +234,38 @@ void format_set_option_home_domain(tx_context_t *txCtx) {
     }
 }
 
-void format_set_option_high_threshold(tx_context_t *txCtx) {
-    if (txCtx->opDetails.op.setOptions.highThresholdPresent) {
-        strcpy(detailCaption, "High Threshold");
-        print_uint(txCtx->opDetails.op.setOptions.highThreshold, detailValue);
+void format_set_option_thresholds(tx_context_t *txCtx) {
+    bool thresholdsPresent = false;
+    if (txCtx->opDetails.op.setOptions.lowThresholdPresent) {
+        thresholdsPresent = true;
+        strcpy(detailValue, "low: ");
+        print_uint(txCtx->opDetails.op.setOptions.lowThreshold, detailValue+strlen(detailValue));
+    }
+    if (txCtx->opDetails.op.setOptions.mediumThresholdPresent) {
+        thresholdsPresent = true;
+        uint8_t len = strlen(detailValue);
+        if (len) {
+            strcpy(detailValue+len, "; ");
+            len += 2;
+        }
+        strcpy(detailValue+len, "medium: ");
+        print_uint(txCtx->opDetails.op.setOptions.mediumThreshold, detailValue+strlen(detailValue));
+    }
+    if (txCtx->opDetails.op.setOptions.mediumThresholdPresent) {
+        thresholdsPresent = true;
+        uint8_t len = strlen(detailValue);
+        if (len) {
+            strcpy(detailValue+len, "; ");
+            len += 2;
+        }
+        strcpy(detailValue+len, "high: ");
+        print_uint(txCtx->opDetails.op.setOptions.highThreshold, detailValue+strlen(detailValue));
+    }
+    if (thresholdsPresent) {
+        strcpy(detailCaption, "Thresholds");
         formatter = &format_set_option_home_domain;
     } else {
         format_set_option_home_domain(txCtx);
-    }
-}
-
-void format_set_option_medium_threshold(tx_context_t *txCtx) {
-    if (txCtx->opDetails.op.setOptions.mediumThresholdPresent) {
-        strcpy(detailCaption, "Medium Threshold");
-        print_uint(txCtx->opDetails.op.setOptions.mediumThreshold, detailValue);
-        formatter = &format_set_option_high_threshold;
-    } else {
-        format_set_option_high_threshold(txCtx);
-    }
-}
-
-void format_set_option_low_threshold(tx_context_t *txCtx) {
-    if (txCtx->opDetails.op.setOptions.lowThresholdPresent) {
-        strcpy(detailCaption, "Low Threshold");
-        print_uint(txCtx->opDetails.op.setOptions.lowThreshold, detailValue);
-        formatter = &format_set_option_medium_threshold;
-    } else {
-        format_set_option_medium_threshold(txCtx);
     }
 }
 
@@ -291,48 +273,40 @@ void format_set_option_master_weight(tx_context_t *txCtx) {
     if (txCtx->opDetails.op.setOptions.masterWeightPresent) {
         strcpy(detailCaption, "Master Weight");
         print_uint(txCtx->opDetails.op.setOptions.masterWeight, detailValue);
-        formatter = &format_set_option_low_threshold;
+        formatter = &format_set_option_thresholds;
     } else {
-        format_set_option_low_threshold(txCtx);
+        format_set_option_thresholds(txCtx);
     }
 }
 
-void format_set_option_set_flags(tx_context_t *txCtx) {
-    if (txCtx->opDetails.op.setOptions.setFlagsPresent) {
-        strcpy(detailCaption, "Set Flags");
-        print_flags(txCtx->opDetails.op.setOptions.setFlags, detailValue, 0);
+void format_set_option_clear_flags(tx_context_t *txCtx) {
+    if (txCtx->opDetails.op.setOptions.clearFlagsPresent) {
+        strcpy(detailCaption, "Account Flags");
+        print_flags(txCtx->opDetails.op.setOptions.clearFlags, detailValue, '-');
+        print_flags(txCtx->opDetails.op.setOptions.setFlags, detailValue, '-');
         formatter = &format_set_option_master_weight;
     } else {
         format_set_option_master_weight(txCtx);
     }
 }
 
-void format_set_option_clear_flags(tx_context_t *txCtx) {
-    if (txCtx->opDetails.op.setOptions.clearFlagsPresent) {
-        strcpy(detailCaption, "Clear Flags");
-        print_flags(txCtx->opDetails.op.setOptions.clearFlags, detailValue, 0);
-        formatter = &format_set_option_set_flags;
-    } else {
-        format_set_option_set_flags(txCtx);
-    }
-}
-
 void format_set_option_inflation_destination(tx_context_t *txCtx) {
     if (txCtx->opDetails.op.setOptions.inflationDestinationPresent) {
-        strcpy(detailCaption, "Inflation Vote");
-        print_public_key(txCtx->opDetails.op.setOptions.inflationDestination, detailValue, 5, 6);
-        formatter = &format_set_option_clear_flags;
+        strcpy(detailCaption, "Inflation");
+        public_key_to_address(txCtx->opDetails.op.setOptions.inflationDestination, detailValue);
+        formatter = &format_set_option_master_weight;
     } else {
-        format_set_option_clear_flags(txCtx);
+        format_set_option_master_weight(txCtx);
     }
 }
 
 void format_set_options(tx_context_t *txCtx) {
+    strcpy(opCaption, "Set Options");
     format_set_option_inflation_destination(txCtx);
 }
 
 void format_change_trust_limit(tx_context_t *txCtx) {
-    strcpy(detailCaption, "Trust Limit");
+    strcpy(detailCaption, "Limit");
     if (txCtx->opDetails.op.changeTrust.limit == 9223372036854775807) {
         strcpy(detailValue, "[maximum]");
     } else {
@@ -343,12 +317,13 @@ void format_change_trust_limit(tx_context_t *txCtx) {
 
 void format_change_trust(tx_context_t *txCtx) {
     if (txCtx->opDetails.op.changeTrust.limit) {
-        strcpy(detailCaption, "Change Trust");
+        strcpy(opCaption, "Change Trust");
         formatter = &format_change_trust_limit;
     } else {
-        strcpy(detailCaption, "Remove Trust");
+        strcpy(opCaption, "Remove Trust");
         formatter = &format_operation_source;
     }
+    strcpy(detailCaption, "Asset");
     print_asset_t(&txCtx->opDetails.op.changeTrust.asset, detailValue);
 }
 
@@ -374,19 +349,22 @@ void format_manage_offer_buy(tx_context_t *txCtx) {
 
 void format_manage_offer(tx_context_t *txCtx) {
     if (!txCtx->opDetails.op.manageOffer.amount) {
-        strcpy(detailCaption, "Remove Offer");
+        strcpy(opCaption, "Remove Offer");
+        strcpy(detailCaption, "Offer ID");
         print_uint(txCtx->opDetails.op.manageOffer.offerId, detailValue);
         formatter = &format_operation_source;
     } else {
         if (txCtx->opDetails.op.manageOffer.offerId) {
-            strcpy(detailCaption, "Change Offer");
+            strcpy(opCaption, "Change Offer");
+            strcpy(detailCaption, "Offer ID");
             print_uint(txCtx->opDetails.op.manageOffer.offerId, detailValue);
         } else {
-            strcpy(detailCaption, "Create Offer");
+            strcpy(opCaption, "Create Offer");
+            strcpy(detailCaption, "Offer Type");
             if (txCtx->opDetails.op.manageOffer.active) {
-                strcpy(detailValue, "Type Active");
+                strcpy(detailValue, "Active");
             } else {
-                strcpy(detailValue, "Type Passive");
+                strcpy(detailValue, "Passive");
             }
         }
         formatter = &format_manage_offer_buy;
@@ -420,11 +398,12 @@ void format_path_receive(tx_context_t *txCtx) {
 
 void format_path_destination(tx_context_t *txCtx) {
     strcpy(detailCaption, "Destination");
-    print_public_key(txCtx->opDetails.op.pathPayment.destination, detailValue, 12, 12);
+    public_key_to_address(txCtx->opDetails.op.pathPayment.destination, detailValue);
     formatter = &format_path_receive;
 }
 
 void format_path_payment(tx_context_t *txCtx) {
+    strcpy(opCaption, "Path Payment");
     strcpy(detailCaption, "Send Max");
     print_amount(txCtx->opDetails.op.pathPayment.sendMax, txCtx->opDetails.op.pathPayment.sourceAsset.code, detailValue);
     formatter = &format_path_destination;
@@ -439,19 +418,21 @@ void format_create_account_amount(tx_context_t *txCtx) {
 }
 
 void format_create_account(tx_context_t *txCtx) {
-    strcpy(detailCaption, "Create Account");
-    print_public_key(txCtx->opDetails.op.createAccount.destination, detailValue, 12, 12);
+    strcpy(opCaption, "Create Account");
+    strcpy(detailCaption, "Account ID");
+    public_key_to_address(txCtx->opDetails.op.createAccount.destination, detailValue);
     formatter = &format_create_account_amount;
 }
 
 void format_payment_destination(tx_context_t *txCtx) {
     strcpy(detailCaption, "Destination");
-    print_public_key(txCtx->opDetails.op.payment.destination, detailValue, 12, 12);
+    public_key_to_address(txCtx->opDetails.op.payment.destination, detailValue);
     formatter = &format_operation_source;
 }
 
 void format_payment(tx_context_t *txCtx) {
-    strcpy(detailCaption, "Send");
+    strcpy(opCaption, "Payment");
+    strcpy(detailCaption, "Amount");
     print_amount(txCtx->opDetails.op.payment.amount, txCtx->opDetails.op.payment.asset.code, detailValue);
     formatter = &format_payment_destination;
 }
@@ -472,15 +453,7 @@ const format_function_t formatters[12] = {
 };
 
 void format_confirm_operation(tx_context_t *txCtx) {
-    if (txCtx->opCount > 1) {
-        strcpy(opCaption, "Operation ");
-        print_uint(txCtx->opIdx, opCaption+strlen(opCaption));
-        strcpy(opCaption+strlen(opCaption), " of ");
-        print_uint(txCtx->opCount, opCaption+strlen(opCaption));
-        formatter = ((format_function_t)PIC(formatters[txCtx->opDetails.type]));
-    } else {
-        ((format_function_t)PIC(formatters[txCtx->opDetails.type]))(txCtx);
-    }
+    ((format_function_t)PIC(formatters[txCtx->opDetails.type]))(txCtx);
 }
 
 void format_confirm_transaction(tx_context_t *txCtx) {
