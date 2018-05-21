@@ -97,7 +97,11 @@ void handle_get_public_key(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t
     }
 
     if (p2 & P2_CONFIRM) {
+#ifdef TARGET_NANOS
         print_public_key(ctx.req.pk.publicKey, ctx.req.pk.address, 12, 12);
+#else
+        public_key_to_address(ctx.req.pk.publicKey, ctx.req.pk.address);
+#endif
         ui_show_address_init();
         *flags |= IO_ASYNCH_REPLY;
     } else {

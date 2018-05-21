@@ -110,7 +110,7 @@ uint8_t parse_memo(uint8_t *buffer, tx_details_t *txDetails) {
         }
         case MEMO_TYPE_HASH:
         case MEMO_TYPE_RETURN:
-            print_binary(buffer, txDetails->memo.data, 32); // TODO: test
+            print_binary(buffer, txDetails->memo.data, 32);
             return 4 + 32; // type + hash block
         default:
             THROW(0x6c20); // unknown memo type
@@ -320,6 +320,7 @@ uint16_t parse_active_offer(uint8_t *buffer, manage_offer_op_t *manageOffer) {
 
 uint16_t parse_passive_offer(uint8_t *buffer, manage_offer_op_t *manageOffer) {
     manageOffer->active = false;
+    manageOffer->offerId = 0;
     return parse_offer(buffer, manageOffer);
 }
 

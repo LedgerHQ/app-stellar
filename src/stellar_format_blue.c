@@ -130,11 +130,12 @@ void format_inflation(tx_context_t *txCtx) {
 
 void format_account_merge_destination(tx_context_t *txCtx) {
     strcpy(detailCaption, "Destination");
-    public_key_to_address(txCtx->txDetails.source, detailValue);
+    public_key_to_address(txCtx->opDetails.op.accountMerge.destination, detailValue);
     formatter = &format_operation_source;
 }
 
 void format_account_merge(tx_context_t *txCtx) {
+    strcpy(opCaption, "Merge Account");
     strcpy(detailCaption, "Account ID");
     if (txCtx->opDetails.sourcePresent) {
         public_key_to_address(txCtx->opDetails.source, detailValue);
@@ -292,7 +293,7 @@ void format_set_option_flags(tx_context_t *txCtx) {
 
 void format_set_option_inflation_destination(tx_context_t *txCtx) {
     if (txCtx->opDetails.op.setOptions.inflationDestinationPresent) {
-        strcpy(detailCaption, "Inflation");
+        strcpy(detailCaption, "Inflation Dest");
         public_key_to_address(txCtx->opDetails.op.setOptions.inflationDestination, detailValue);
         formatter = &format_set_option_flags;
     } else {

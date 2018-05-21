@@ -319,7 +319,7 @@ void format_set_option_clear_flags(tx_context_t *txCtx) {
 
 void format_set_option_inflation_destination(tx_context_t *txCtx) {
     if (txCtx->opDetails.op.setOptions.inflationDestinationPresent) {
-        strcpy(detailCaption, "Inflation Vote");
+        strcpy(detailCaption, "Inflation Dest");
         print_public_key(txCtx->opDetails.op.setOptions.inflationDestination, detailValue, 5, 6);
         formatter = &format_set_option_clear_flags;
     } else {
