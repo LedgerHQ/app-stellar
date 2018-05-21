@@ -83,24 +83,6 @@
 #define XDR_OPERATION_TYPE_MANAGE_DATA 10
 #define XDR_OPERATION_TYPE_BUMP_SEQUENCE 11
 
-#define OPERATION_TYPE_CREATE_ACCOUNT 0
-#define OPERATION_TYPE_PAYMENT 1
-#define OPERATION_TYPE_PATH_PAYMENT 2
-#define OPERATION_TYPE_CREATE_OFFER 3
-#define OPERATION_TYPE_REMOVE_OFFER 4
-#define OPERATION_TYPE_CHANGE_OFFER 5
-#define OPERATION_TYPE_SET_OPTIONS 6
-#define OPERATION_TYPE_CHANGE_TRUST 7
-#define OPERATION_TYPE_REMOVE_TRUST 8
-#define OPERATION_TYPE_ALLOW_TRUST 9
-#define OPERATION_TYPE_REVOKE_TRUST 10
-#define OPERATION_TYPE_ACCOUNT_MERGE 11
-#define OPERATION_TYPE_INFLATION 12
-#define OPERATION_TYPE_SET_DATA 13
-#define OPERATION_TYPE_REMOVE_DATA 14
-#define OPERATION_TYPE_BUMP_SEQUENCE 15
-#define OPERATION_TYPE_UNKNOWN 16
-
 #define SIGNER_KEY_TYPE_ED25519 0
 #define SIGNER_KEY_TYPE_PRE_AUTH_TX 1
 #define SIGNER_KEY_TYPE_HASH_X 2
@@ -112,12 +94,18 @@
 #define HOME_DOMAIN_MAX_SIZE 32
 
 // ------------------------------------------------------------------------- //
+//                             DISPLAY CONSTANTS                             //
+// ------------------------------------------------------------------------- //
+
+static const char* NETWORK_NAMES[3] = { "Public", "Test", "Unknown" };
+
+// ------------------------------------------------------------------------- //
 //                              UTILITIES                                    //
 // ------------------------------------------------------------------------- //
 
 #ifdef TEST
 #include <stdio.h>
-#define THROW(code) { printf("error: %d", code); return; }
+#define THROW(code) { printf("error: %d", code); }
 #define PRINTF(msg, arg) printf(msg, arg)
 #define PIC(code) code
 #define TARGET_NANOS 1
@@ -144,34 +132,144 @@
 //                           TYPE DEFINITIONS                                //
 // ------------------------------------------------------------------------- //
 
+typedef struct {
+    uint8_t type;
+    char code[13];
+    uint8_t *issuer;
+} asset_t;
 
 typedef struct {
+    uint32_t numerator;
+    uint32_t denominator;
+} price_t;
+
+typedef struct {
+    uint8_t *destination;
+    uint64_t amount;
+
+} create_account_op_t;
+
+typedef struct {
+    uint8_t *destination;
+    uint64_t amount;
+    asset_t asset;
+} payment_op_t;
+
+typedef struct {
+    uint8_t *destination;
+    asset_t sourceAsset;
+    uint64_t sendMax;
+    asset_t destAsset;
+    uint64_t destAmount;
+    uint8_t pathLen;
+    asset_t path[5];
+} path_payment_op_t;
+
+typedef struct {
+    asset_t buying;
+    asset_t selling;
+    uint64_t amount;
+    price_t price;
+    uint64_t offerId;
+    bool active;
+} manage_offer_op_t;
+
+typedef struct {
+    asset_t asset;
+    uint64_t limit;
+} change_trust_op_t;
+
+typedef struct {
+    char assetCode[13];
+    uint8_t *trustee;
+    bool authorize;
+} allow_trust_op_t;
+
+typedef struct {
+    uint8_t *destination;
+} account_merge_op_t;
+
+typedef struct {
+    int64_t bumpTo;
+} bump_sequence_op_t;
+
+typedef struct {
+    uint8_t type;
+    uint8_t *data;
+    uint32_t weight;
+} signer_t;
+
+typedef struct {
+    bool inflationDestinationPresent;
+    uint8_t *inflationDestination;
+    bool clearFlagsPresent;
+    uint32_t clearFlags;
+    bool setFlagsPresent;
+    uint32_t setFlags;
+    bool masterWeightPresent;
+    uint32_t masterWeight;
+    bool lowThresholdPresent;
+    uint32_t lowThreshold;
+    bool mediumThresholdPresent;
+    uint32_t mediumThreshold;
+    bool highThresholdPresent;
+    uint32_t highThreshold;
+    bool homeDomainPresent;
+    char homeDomain[HOME_DOMAIN_MAX_SIZE];
+    bool signerPresent;
+    signer_t signer;
+} set_options_op_t;
+
+typedef struct {
+    char dataName[64];
+    bool hasValue;
+    uint8_t dataSize;
+    uint8_t dataValue[64];
+} manage_data_op_t;
+
+typedef struct {
+    uint8_t type;
+    uint8_t sourcePresent;
+    uint8_t *source;
+    union {
+        create_account_op_t createAccount;
+        payment_op_t payment;
+        path_payment_op_t pathPayment;
+        manage_offer_op_t manageOffer;
+        change_trust_op_t changeTrust;
+        allow_trust_op_t allowTrust;
+        account_merge_op_t accountMerge;
+        set_options_op_t setOptions;
+        manage_data_op_t manageData;
+        bump_sequence_op_t bumpSequence;
+    } op;
+} operation_details_t;
+
+typedef struct {
+    uint8_t type;
+    char data[65];
+} memo_t;
+
+typedef struct {
+    uint64_t minTime;
+    uint64_t maxTime;
+} time_bounds_t;
+
+typedef struct {
+    memo_t memo;
+    uint64_t fee;
     uint8_t network;
-    uint8_t opType;
-    uint8_t opCount;
-    uint8_t opIdx;
-    bool timeBounds;
-#ifdef TARGET_NANOS
-    char opSource[15];
-    char txDetails[4][29];
-    char opDetails[5][50];
-#else
-    char opSource[57];
-    char txDetails[4][57];
-    char opDetails[5][57];
-#endif
-} tx_content_t;
+    bool hasTimeBounds;
+    time_bounds_t timeBounds;
+    uint8_t *source;
+    int64_t sequenceNumber;
+} tx_details_t;
 
 typedef struct {
     uint8_t publicKey[32];
-#ifdef TARGET_NANOS
-    char address[28];
-#else
     char address[57];
-#endif
     uint8_t signature[64];
     bool returnSignature;
-
 } pk_context_t;
 
 typedef struct {
@@ -180,8 +278,11 @@ typedef struct {
     uint8_t raw[MAX_RAW_TX];
     uint32_t rawLength;
     uint8_t hash[32];
-    tx_content_t content;
     uint16_t offset;
+    operation_details_t opDetails;
+    tx_details_t txDetails;
+    uint8_t opCount;
+    uint8_t opIdx;
 } tx_context_t;
 
 typedef struct {
@@ -191,10 +292,6 @@ typedef struct {
     } req;
     uint16_t u2fTimer;
     uint8_t hashSigning;
-#ifdef TARGET_NANOS
-    uint8_t uxStep;
-    uint8_t uxStepCount;
-#endif
 } stellar_context_t;
 
 typedef struct {

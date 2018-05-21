@@ -102,7 +102,6 @@ void handle_apdu(volatile unsigned int *flags, volatile unsigned int *tx) {
             case 0x6000:
                 // Wipe the transaction context and report the exception
                 sw = e;
-                os_memset(&ctx.req.tx.content, 0, sizeof(ctx.req.tx.content));
                 break;
             case 0x9000:
                 // All is well
@@ -126,8 +125,8 @@ void handle_apdu(volatile unsigned int *flags, volatile unsigned int *tx) {
 
 void stellar_main(void) {
     // hash sig support is not persistent
-    ctx.hashSigning = 0;
-    ctx.u2fTimer = 0;
+
+    os_memset(&ctx, 0, sizeof(ctx));
 
     volatile unsigned int rx = 0;
     volatile unsigned int tx = 0;
@@ -163,7 +162,6 @@ void stellar_main(void) {
                 case 0x6000:
                     // Wipe the transaction context and report the exception
                     sw = e;
-                    os_memset(&ctx.req.tx.content, 0, sizeof(ctx.req.tx.content));
                     break;
                 case 0x9000:
                     // All is well
@@ -240,12 +238,8 @@ unsigned char io_event(unsigned char channel) {
 #ifdef TARGET_NANOS
         UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer, {
             if (UX_ALLOWED) {
-                if (ctx.uxStepCount) {
-                    // prepare next screen
-                    ctx.uxStep = (ctx.uxStep + 1) % ctx.uxStepCount;
-                    // redisplay screen
-                    UX_REDISPLAY();
-                }
+                ui_approve_tx_next_screen(&ctx.req.tx);
+                UX_REDISPLAY();
             }
         });
 #endif
@@ -280,7 +274,6 @@ __attribute__((section(".boot"))) int main(void) {
     os_boot();
 
     for (;;) {
-        os_memset(&ctx.req.tx.content, 0, sizeof(ctx.req.tx.content));
 
         UX_INIT();
         BEGIN_TRY {

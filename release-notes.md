@@ -1,16 +1,14 @@
 # Release Notes
 
-## v3.0 Multi-operation support and U2F connection keep-alive
+## v3.0 Multi-operation details support and U2F connection keep-alive
 
 Support for showing details of multi-operation transactions has been added. Previously, multi-operation transactions could only be signed using the hash-signing method. Transaction envelopes of up to 1kb in size are supported. Most smart contract scenario's should not require larger transactions.
 
 A U2F connection keep-alive has been implemented to prevent connections from timing out after 30 seconds when using browser mode on Chrome.
 
-Transaction details now include operation source if present, transaction source and whether time bounds are set on the transaction.
+Transaction details now include operation source if present, transaction source, transaction time bounds, sequence number, memo type and hex-encoded managed data value. Detail display for set options has been improved: flags are now in human readable format, thresholds and master weight are represented separately, and add and remove signer is more descriptive too. Support for new Stellar operation 'Bump Sequence' was added.
 
-The native asset is no longer assumed to be XLM when showing amounts. Instead amounts in native assets are qualified as XLM only if the network id matches either Stellar public network or test network ids. Otherwise native amounts are qualified as 'native'.
-
-Support for new Stellar operation 'Bump Sequence'.
+The native asset is no longer assumed to be XLM when showing amounts. Instead, amounts in native assets are qualified as XLM only if the network id matches either Stellar public network or test network ids. Otherwise native amounts are qualified as 'native'.
 
 ## v2.1 Hash signing support
 

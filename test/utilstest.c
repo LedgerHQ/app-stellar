@@ -52,19 +52,11 @@ void test_print_summary(char *msg, char *expected, uint8_t numCharsL, uint8_t nu
     }
 }
 
-void test_print_hash(uint8_t *hash, char *expected) {
+void test_print_binary(uint8_t *binary, char *expected) {
     char hex[16];
-    print_hash_summary(hash, hex);
+    print_binary_summary(binary, hex, 32);
     if (strcmp(hex, expected) != 0) {
         printf("test_print_hash failed. Expected: %s; Actual: %s\n", expected, hex);
-    }
-}
-
-void test_print_bits(uint32_t in, char *expected) {
-    char s[13];
-    print_bits(in, s);
-    if (strcmp(s, expected) != 0) {
-        printf("test_print_bits failed. Expected: %s; Actual: %s\n", expected, s);
     }
 }
 
@@ -84,15 +76,13 @@ int main(int argc, char *argv[]) {
     test_print_summary("GADFVW3UXVKDOU626XUPYDJU2BFCGFJHQ6SREYOZ6IJV4XSHOALEQN2I", "GADFVW3UXVKD..4XSHOALEQN2I", 12, 12);
     test_print_summary("GADFVW3UXVKDOU626XUPYDJU2BFCGFJHQ6SREYOZ6IJV4XSHOALEQN2I", "GADFVW..LEQN2I", 6, 6);
 
-    uint8_t hash[32];
+    uint8_t binary[32];
     uint8_t i;
     for (i = 0; i < 32; i++) {
-        hash[i] = i;
+        binary[i] = i;
     }
-    test_print_hash(hash, "00010203..1C1D1E1F");
+    test_print_binary(binary, "0x00010203..1C1D1E1F");
 
-    uint32_t flags = (1 << 0) | (1 << 1);
-    test_print_bits(flags, "011");
     return 0;
 
 }

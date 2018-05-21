@@ -34,34 +34,36 @@ extern void USB_power_U2F(unsigned char enabled, unsigned char fido);
  * Only a single operation is parsed during each call.
  * Returns the offset to the next operation in the buffer or 0 if this was the last operation in the buffer.
  */
-uint16_t parse_tx_xdr(uint8_t *buffer, tx_content_t *content, uint16_t offset);
+void parse_tx_xdr(uint8_t *buffer, tx_context_t *txCtx);
 
 /** raw public key to base32 encoded (summarized) address */
 void print_public_key(uint8_t *in, char *out, uint8_t numCharsL, uint8_t numCharsR);
 
-/** print short public key summary or no summary at all depending on nanos or blue */
-void print_public_key_short(uint8_t *in, char *out);
-
-/** print long public key summary or no summary at all depending on nanos or blue */
-void print_public_key_long(uint8_t *in, char *out);
-
 /** output first numCharsL of input + last numCharsR of input separated by ".." */
 void print_summary(char *in, char *out, uint8_t numCharsL, uint8_t numCharsR);
 
-/** raw buffer of 32 byte hash to hexadecimal string representation */
-void print_hash(uint8_t *in, char *out);
+/** raw byte buffer to hexadecimal string representation.
+  * len is length of input, provided output must be twice that size */
+void print_binary(uint8_t *in, char *out, uint8_t len);
 
-/** raw buffer of 32 byte hash to summarized hexadecimal string representation */
-void print_hash_summary(uint8_t *in, char *out);
+/** raw byte buffer to summarized hexadecimal string representation
+  * len is length of input, provided output must be at least length 19 */
+void print_binary_summary(uint8_t *in, char *out, uint8_t len);
 
 /** raw amount integer to asset-qualified string representation */
 void print_amount(uint64_t amount, char *asset, char *out);
 
-/** represent integer as bits for display of account flag options */
-void print_bits(uint32_t in, char *out);
+/** concatenate assetCode and assetIssuer summary */
+void print_asset_t(asset_t *asset, char *out);
 
 /** concatenate assetCode and assetIssuer */
 void print_asset(char *assetCode, char *assetIssuer, char *out);
+
+/** "XLM" or "native" depending on the network id */
+void print_native_asset_code(uint8_t network, char *out);
+
+/** string representation of flags present */
+void print_flags(uint32_t flags, char *out);
 
 /** integer to string for display of offerid, sequence number, threshold weights, etc */
 void print_int(int64_t l, char *out);

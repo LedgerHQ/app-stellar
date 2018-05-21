@@ -131,28 +131,37 @@ void print_summary(char *in, char *out, uint8_t numCharsL, uint8_t numCharsR) {
     }
 }
 
-void print_hash(uint8_t *in, char *out) {
+void print_binary(uint8_t *in, char *out, uint8_t len) {
+    out[0] = '0';
+    out[1] = 'x';
     uint8_t i, j;
-    for (i = 0, j = 0; i < 32; i+=1, j+=2) {
+    for (i = 0, j = 2; i < len; i+=1, j+=2) {
         out[j] = hexChars[in[i] / 16];
         out[j+1] = hexChars[in[i] % 16];
     }
     out[j] = '\0';
 }
 
-void print_hash_summary(uint8_t *in, char *out) {
-    uint8_t i, j;
-    for (i = 0, j = 0; i < 4; i+=1, j+=2) {
-        out[j] = hexChars[in[i] / 16];
-        out[j+1] = hexChars[in[i] % 16];
+void print_binary_summary(uint8_t *in, char *out, uint8_t len) {
+    out[0] = '0';
+    out[1] = 'x';
+    if (2+len*2 > 18) {
+        uint8_t i, j;
+        for (i = 0, j = 2; i < 4; i+=1, j+=2) {
+            out[j] = hexChars[in[i] / 16];
+            out[j+1] = hexChars[in[i] % 16];
+        }
+        out[j++] = '.';
+        out[j++] = '.';
+        for (i = len - 4; i < len; i+=1, j+=2) {
+            out[j] = hexChars[in[i] / 16];
+            out[j+1] = hexChars[in[i] % 16];
+        }
+        out[j] = '\0';
+    } else {
+        print_binary(in, out, len);
+        return;
     }
-    out[j++] = '.';
-    out[j++] = '.';
-    for (i = 28; i < 32; i+=1, j+=2) {
-        out[j] = hexChars[in[i] / 16];
-        out[j+1] = hexChars[in[i] % 16];
-    }
-    out[j] = '\0';
 }
 
 void print_public_key(uint8_t *in, char *out, uint8_t numCharsL, uint8_t numCharsR) {
@@ -163,22 +172,6 @@ void print_public_key(uint8_t *in, char *out, uint8_t numCharsL, uint8_t numChar
     } else {
         public_key_to_address(in, out);
     }
-}
-
-void print_public_key_short(uint8_t *in, char *out) {
-#ifdef TARGET_NANOS
-    print_public_key(in, out, 6, 6);
-#else
-    print_public_key(in, out, 0, 0);
-#endif
-}
-
-void print_public_key_long(uint8_t *in, char *out) {
-#ifdef TARGET_NANOS
-    print_public_key(in, out, 12, 12);
-#else
-    print_public_key(in, out, 0, 0);
-#endif
 }
 
 void print_amount(uint64_t amount, char *asset, char *out) {
@@ -227,6 +220,11 @@ void print_amount(uint64_t amount, char *asset, char *out) {
 }
 
 void print_int(int64_t l, char *out) {
+    if (l == 0) {
+        strcpy(out, "0");
+        return;
+    }
+
     char buffer[AMOUNT_MAX_SIZE];
     int64_t dVal = l < 0 ? -l : l;
     int i;
@@ -270,11 +268,10 @@ void print_uint(uint64_t l, char *out) {
     out[j] = '\0';
 }
 
-void print_bits(uint32_t in, char *out) {
-    out[2] = (in & 0x01) ? '1' : '0';
-    out[1] = (in & 0x02) ? '1' : '0';
-    out[0] = (in & 0x04) ? '1' : '0';
-    out[3] = '\0';
+void print_asset_t(asset_t *asset, char *out) {
+    char issuer[12];
+    print_public_key(asset->issuer, issuer, 3, 4);
+    print_asset(asset->code, issuer, out);
 }
 
 void print_asset(char *code, char *issuer, char *out) {
@@ -284,6 +281,36 @@ void print_asset(char *code, char *issuer, char *out) {
     strcpy(out+offset+1, issuer);
 }
 
+void print_flag(char *flag, char *out) {
+    uint8_t len = strlen(out);
+    if (len) {
+        strcpy(out, ", ");
+        len += 2;
+    }
+    strcpy(out, flag);
+}
+
+void print_flags(uint32_t flags, char *out) {
+    if (flags & 0x01) {
+        print_flag("Authorization required", out);
+    }
+    if (flags & 0x02) {
+        print_flag("Authorization revocable", out);
+    }
+    if (flags & 0x04) {
+        print_flag("Authorization immutable", out);
+    }
+}
+
+void print_native_asset_code(uint8_t network, char *out) {
+    if (network == NETWORK_TYPE_UNKNOWN) {
+        strcpy(out, "native");
+    } else {
+        strcpy(out, "XLM");
+    }
+}
+
+#ifndef TEST
 void u2f_proxy_response(u2f_service_t *service, unsigned int tx) {
     os_memset(service->messageBuffer, 0, 5);
     os_memmove(service->messageBuffer + 5, G_io_apdu_buffer, tx);
@@ -291,3 +318,4 @@ void u2f_proxy_response(u2f_service_t *service, unsigned int tx) {
     service->messageBuffer[tx + 6] = 0x00;
     u2f_send_fragmented_response(service, U2F_CMD_MSG, service->messageBuffer, tx + 7, true);
 }
+#endif

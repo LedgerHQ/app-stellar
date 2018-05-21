@@ -17,6 +17,7 @@
 #include <stdio.h>
 
 #include "stellar_api.h"
+#include "stellar_format.h"
 #include "test_utils.h"
 
 int main(int argc, char *argv[]) {
@@ -28,17 +29,33 @@ int main(int argc, char *argv[]) {
 
     char *filename = argv[1];
     uint8_t buffer[4096];
-    tx_content_t txContent;
+    tx_context_t txCtx;
+
+    memset(&txCtx, 0, sizeof(txCtx));
 
     int read = read_file(filename, buffer, 4096);
     if (read) {
 //        printHexBlocks(buffer, read/2);
-        uint16_t offset = 0;
-        while ((offset = parse_tx_xdr(buffer, &txContent, offset))) {
-            printf("\n");
-            printf("offset: %d", offset);
-            printf("\n");
-        }
+        uint8_t count = 0;
+        do {
+            if (!formatter) {
+                parse_tx_xdr(buffer, &txCtx);
+                if (txCtx.opIdx == 1) {
+                    formatter = &format_confirm_transaction;
+                    count++;
+                    printf("\n");
+                } else {
+                    formatter = &format_confirm_operation;
+                }
+            }
+            MEMCLEAR(detailCaption);
+            MEMCLEAR(detailValue);
+            formatter(&txCtx);
+            if (detailCaption[0] != '\0') {
+                printf("%s - %s\n", detailCaption, detailValue);
+            }
+        } while (count <= 1);
+
     }
 
     return 0;

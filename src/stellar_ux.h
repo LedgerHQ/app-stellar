@@ -19,6 +19,7 @@
 #define STELLAR_UX_COMMON_H
 
 #include "os_io_seproxyhal.h"
+#include "stellar_types.h"
 
 // ------------------------------------------------------------------------- //
 //                     Implemented by stellar_ux_common.c                    //
@@ -38,5 +39,6 @@ void ui_show_address_init(void);
 void ui_approve_tx_init(void);
 void ui_approve_tx_hash_init(void);
 void ui_idle(void);
+void ui_approve_tx_next_screen(tx_context_t *txCtx);
 
 #endif

@@ -97,7 +97,7 @@ void handle_get_public_key(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t
     }
 
     if (p2 & P2_CONFIRM) {
-        print_public_key_long(ctx.req.pk.publicKey, ctx.req.pk.address);
+        print_public_key(ctx.req.pk.publicKey, ctx.req.pk.address, 12, 12);
         ui_show_address_init();
         *flags |= IO_ASYNCH_REPLY;
     } else {
@@ -137,8 +137,6 @@ void handle_sign_tx(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLe
     if (p2 == P2_MORE) {
         THROW(0x9000);
     }
-
-    os_memset(&ctx.req.tx.content, 0, sizeof(ctx.req.tx.content));
 
     // hash transaction
 #if CX_APILEVEL >= 8

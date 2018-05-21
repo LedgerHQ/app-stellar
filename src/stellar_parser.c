@@ -34,9 +34,7 @@ static const uint8_t NETWORK_ID_TEST_HASH[64] = {0xce, 0xe0, 0x30, 0x2d, 0x59, 0
                                                  0xbd, 0xca, 0x91, 0x5c, 0x82, 0x03, 0xdd, 0x44,
                                                  0xb3, 0x3f, 0xbb, 0x7e, 0xdc, 0x19, 0x05, 0x1e,
                                                  0xa3, 0x7a, 0xbe, 0xdf, 0x28, 0xec, 0xd4, 0x72};
-
-
-static const char * NETWORK_NAMES[3] = { "Public", "Test", "Unknown" };
+uint8_t network_id;
 
 uint32_t read_uint32_block(uint8_t *buffer) {
     return buffer[3] + (buffer[2] << 8) + (buffer[1] <<  16) + (buffer[0] << 24);
@@ -49,7 +47,7 @@ uint64_t read_uint64_block(uint8_t *buffer) {
     return i2 | (i1 << 32);
 }
 
-uint8_t numBytes(uint8_t size) {
+uint8_t num_bytes(uint8_t size) {
    uint8_t remainder = size % 4;
    if (remainder == 0) {
       return size;
@@ -66,26 +64,38 @@ void check_padding(uint8_t *buffer, uint8_t offset, uint8_t length) {
     }
 }
 
-uint8_t parse_time_bounds(uint8_t *buffer, tx_content_t *txContent) {
-    uint32_t timeBounds = read_uint32_block(buffer);
-    if (timeBounds != 0) {
-        txContent->timeBounds = true;
-        return 4 + 8 + 8;
+uint8_t parse_network(uint8_t *buffer, tx_details_t *txDetails) {
+    if (memcmp(buffer, NETWORK_ID_PUBLIC_HASH, 32) == 0) {
+        network_id = txDetails->network = NETWORK_TYPE_PUBLIC;
+    } else if (memcmp(buffer, NETWORK_ID_TEST_HASH, 32) == 0) {
+        network_id = txDetails->network = NETWORK_TYPE_TEST;
     } else {
-        txContent->timeBounds = false;
-        return 4;
+        network_id = txDetails->network = NETWORK_TYPE_UNKNOWN;
     }
+    return 32;
 }
 
-uint8_t parse_memo(uint8_t *buffer, tx_content_t *txContent) {
-    uint8_t memoType = (uint8_t) read_uint32_block(buffer);
+uint8_t parse_time_bounds(uint8_t *buffer, tx_details_t *txDetails) {
+    txDetails->hasTimeBounds = (read_uint32_block(buffer)) ? true : false;
+    uint8_t offset = 4;
+    if (txDetails->hasTimeBounds) {
+        txDetails->timeBounds.minTime = read_uint64_block(buffer+offset);
+        offset += 8;
+        txDetails->timeBounds.maxTime = read_uint64_block(buffer+offset);
+        return offset + 8;
+    }
+    return offset;
+}
+
+uint8_t parse_memo(uint8_t *buffer, tx_details_t *txDetails) {
+    txDetails->memo.type = (uint8_t) read_uint32_block(buffer);
     buffer += 4;
-    switch (memoType) {
+    switch (txDetails->memo.type) {
         case MEMO_TYPE_NONE:
-            memcpy(txContent->txDetails[0], "[none]", 7);
+            strcpy(txDetails->memo.data, "[none]");
             return 4;
         case MEMO_TYPE_ID:
-            print_uint(read_uint64_block(buffer), txContent->txDetails[0]);
+            print_uint(read_uint64_block(buffer), txDetails->memo.data);
             return 4 + 8; // type + value
         case MEMO_TYPE_TEXT: {
             uint8_t size = read_uint32_block(buffer);
@@ -93,122 +103,95 @@ uint8_t parse_memo(uint8_t *buffer, tx_content_t *txContent) {
                 THROW(0x6c20);
             }
             buffer += 4;
-            memcpy(txContent->txDetails[0], buffer, size);
-            txContent->txDetails[0][size] = '\0';
-            check_padding(buffer, size, numBytes(size)); // security check
-            return 4 + 4 + numBytes(size); // type + size + text
+            memcpy(txDetails->memo.data, buffer, size);
+            txDetails->memo.data[size] = '\0';
+            check_padding(buffer, size, num_bytes(size)); // security check
+            return 4 + 4 + num_bytes(size); // type + size + text
         }
         case MEMO_TYPE_HASH:
         case MEMO_TYPE_RETURN:
-            print_hash_summary(buffer, txContent->txDetails[0]);
+            print_binary(buffer, txDetails->memo.data, 32); // TODO: test
             return 4 + 32; // type + hash block
         default:
             THROW(0x6c20); // unknown memo type
+            return 0;
     }
 }
 
-uint8_t parse_asset(uint8_t *buffer, char *code, char *issuer, char *nativeCode) {
-    uint32_t assetType = read_uint32_block(buffer);
+uint8_t parse_asset(uint8_t *buffer, asset_t *asset) {
+    asset->type = read_uint32_block(buffer);
     buffer += 4;
-    switch (assetType) {
+    switch (asset->type) {
         case ASSET_TYPE_NATIVE: {
-            strcpy(code, nativeCode);
+            print_native_asset_code(network_id, asset->code);
             return 4; // type
         }
         case ASSET_TYPE_CREDIT_ALPHANUM4: {
-            memcpy(code, buffer, 4);
-            code[4] = '\0';
+            memcpy(asset->code, buffer, 4);
+            asset->code[4] = '\0';
             buffer += 4;
             uint32_t accountType = read_uint32_block(buffer);
             if (accountType != PUBLIC_KEY_TYPE_ED25519) {
                 THROW(0x6c20);
             }
             buffer += 4;
-            if (issuer) {
-                print_public_key(buffer, issuer, 3, 4);
-            }
+            asset->issuer = buffer;
             return 4 + 4 + 36; // type + code4 + accountId
         }
         case ASSET_TYPE_CREDIT_ALPHANUM12: {
-            memcpy(code, buffer, 12);
-            code[12] = '\0';
+            memcpy(asset->code, buffer, 12);
+            asset->code[12] = '\0';
             buffer += 12;
             uint32_t accountType = read_uint32_block(buffer);
             if (accountType != PUBLIC_KEY_TYPE_ED25519) {
                 THROW(0x6c20);
             }
             buffer += 4;
-            if (issuer) {
-                print_public_key(buffer, issuer, 3, 4);
-            }
+            asset->issuer = buffer;
             return 4 + 12 + 36; // type + code12 + accountId
         }
         default:
             THROW(0x6c20); // unknown asset type
+            return 0;
     }
 }
 
-char *get_native_asset_code(tx_content_t *txContent) {
-    if (txContent->network == NETWORK_TYPE_UNKNOWN) {
-        return "native";
-    }
-    return "XLM";
-}
-
-uint16_t parse_create_account(uint8_t *buffer, tx_content_t *txContent) {
-    txContent->opType = OPERATION_TYPE_CREATE_ACCOUNT;
-
+uint16_t parse_create_account(uint8_t *buffer, create_account_op_t *createAccount) {
     uint32_t accountType = read_uint32_block(buffer);
     if (accountType != PUBLIC_KEY_TYPE_ED25519) {
         THROW(0x6c20);
     }
     uint16_t offset = 4;
 
-    print_public_key_long(buffer + offset, txContent->opDetails[0]);
-    PRINTF("account id: %s\n", txContent->opDetails[0]);
+    createAccount->destination = buffer + offset;
     offset += 32;
 
-    uint64_t amount = read_uint64_block(buffer + offset);
-    print_amount(amount, get_native_asset_code(txContent), txContent->opDetails[1]);
-    PRINTF("starting balance: %s\n", txContent->opDetails[1]);
-    offset += 8;
+    createAccount->amount = read_uint64_block(buffer + offset);
 
-    return offset;
+    return offset + 8;
 }
 
-uint16_t parse_payment(uint8_t *buffer, tx_content_t *txContent) {
-    txContent->opType = OPERATION_TYPE_PAYMENT;
-
+uint16_t parse_payment(uint8_t *buffer, payment_op_t *payment) {
     uint32_t accountType = read_uint32_block(buffer);
     if (accountType != PUBLIC_KEY_TYPE_ED25519) {
         THROW(0x6c20);
     }
     uint16_t offset = 4;
 
-    print_public_key_long(buffer + offset, txContent->opDetails[1]);
-    PRINTF("destination: %s\n", txContent->opDetails[1]);
+    payment->destination = buffer + offset;
     offset += 32;
 
-    char assetCode[13];
-    offset += parse_asset(buffer + offset, assetCode, NULL, get_native_asset_code(txContent));
+    offset += parse_asset(buffer + offset, &payment->asset);
 
-    uint64_t amount = read_uint64_block(buffer + offset);
-    print_amount(amount, assetCode, txContent->opDetails[0]);
-    PRINTF("amount: %s\n", txContent->opDetails[0]);
-    offset += 8;
+    payment->amount = read_uint64_block(buffer + offset);
 
-    return offset;
+    return offset + 8;
 }
 
-uint16_t parse_path_payment(uint8_t *buffer, tx_content_t *txContent) {
-    txContent->opType = OPERATION_TYPE_PATH_PAYMENT;
+uint16_t parse_path_payment(uint8_t *buffer, path_payment_op_t *pathPayment) {
+    uint16_t offset = parse_asset(buffer, &pathPayment->sourceAsset);
 
-    char assetCode[13];
-    uint16_t offset = parse_asset(buffer, assetCode, NULL, get_native_asset_code(txContent));
-
-    uint64_t send = read_uint64_block(buffer + offset);
-    print_amount(send, assetCode, txContent->opDetails[0]);
-    PRINTF("send: %s\n", txContent->opDetails[0]);
+    pathPayment->sendMax = read_uint64_block(buffer + offset);
     offset += 8;
 
     uint32_t accountType = read_uint32_block(buffer + offset);
@@ -217,43 +200,32 @@ uint16_t parse_path_payment(uint8_t *buffer, tx_content_t *txContent) {
     }
     offset += 4;
 
-    print_public_key_long(buffer + offset, txContent->opDetails[1]);
-    PRINTF("destination: %s\n", txContent->opDetails[1]);
+    pathPayment->destination = buffer+offset;
     offset += 32;
 
-    offset += parse_asset(buffer + offset, assetCode, NULL, get_native_asset_code(txContent));
+    offset += parse_asset(buffer + offset, &pathPayment->destAsset);
 
-    uint64_t receive = read_uint64_block(buffer + offset);
-    print_amount(receive, assetCode, txContent->opDetails[2]);
-    PRINTF("receive: %s\n", txContent->opDetails[2]);
+    pathPayment->destAmount = read_uint64_block(buffer + offset);
     offset += 8;
 
-    uint32_t pathArrayLength = read_uint32_block(buffer + offset);
+    pathPayment->pathLen = read_uint32_block(buffer + offset);
     offset += 4;
     uint8_t i;
-    for (i = 0; i < pathArrayLength; i++) {
-        offset += parse_asset(buffer + offset, assetCode, NULL, get_native_asset_code(txContent));
-        uint8_t len = strlen(txContent->opDetails[3]);
-        if (i > 0) {
-            strcpy(txContent->opDetails[3]+len, ", ");
-            len += 2;
-        }
-        strcpy(txContent->opDetails[3]+len, assetCode);
+    for (i = 0; i < pathPayment->pathLen; i++) {
+        offset += parse_asset(buffer + offset, &pathPayment->path[i]);
     }
-    PRINTF("path: %s\n", txContent->opDetails[3]);
 
     return offset;
 }
 
-uint16_t parse_allow_trust(uint8_t *buffer, tx_content_t *txContent) {
-    uint32_t trustorAccountType = read_uint32_block(buffer);
-    if (trustorAccountType != PUBLIC_KEY_TYPE_ED25519) {
+uint16_t parse_allow_trust(uint8_t *buffer, allow_trust_op_t *allowTrust) {
+    uint32_t trusteeAccountType = read_uint32_block(buffer);
+    if (trusteeAccountType != PUBLIC_KEY_TYPE_ED25519) {
         THROW(0x6c20);
     }
     uint16_t offset = 4;
 
-    print_public_key_short(buffer + offset, txContent->opDetails[1]);
-    PRINTF("trustor: %s\n", txContent->opDetails[1]);
+    allowTrust->trustee = buffer + offset;
     offset += 32;
 
     uint32_t assetType = read_uint32_block(buffer + offset);
@@ -261,363 +233,256 @@ uint16_t parse_allow_trust(uint8_t *buffer, tx_content_t *txContent) {
 
     switch (assetType) {
         case ASSET_TYPE_CREDIT_ALPHANUM4: {
-            memcpy(txContent->opDetails[0], buffer + offset, 4);
-            txContent->opDetails[0][4] = '\0';
+            memcpy(allowTrust->assetCode, buffer + offset, 4);
+            allowTrust->assetCode[4] = '\0';
             offset += 4;
             break;
         }
         case ASSET_TYPE_CREDIT_ALPHANUM12: {
-            memcpy(txContent->opDetails[0], buffer + offset, 12);
-            txContent->opDetails[0][12] = '\0';
+            memcpy(allowTrust->assetCode, buffer + offset, 12);
+            allowTrust->assetCode[12] = '\0';
             offset += 12;
             break;
         }
-        default:
-            THROW(0x6c20); // unknown asset type
-    }
-    PRINTF("asset: %s\n", txContent->opDetails[0]);
-
-    if (read_uint32_block(buffer + offset)) {
-        txContent->opType = OPERATION_TYPE_ALLOW_TRUST;
-    } else {
-        txContent->opType = OPERATION_TYPE_REVOKE_TRUST;
+        default: THROW(0x6c20); // unknown asset type
     }
 
-    return offset;
+    allowTrust->authorize = (read_uint32_block(buffer + offset)) ? true : false;
+
+    return offset + 4;
 }
 
-uint16_t parse_account_merge(uint8_t *buffer, tx_content_t *txContent) {
-    txContent->opType = OPERATION_TYPE_ACCOUNT_MERGE;
-
-    if (txContent->opSource[0] != '\0') {
-        strcpy(txContent->opDetails[0], txContent->opSource);
-        txContent->opSource[0] = '\0'; // don't show separately
-    } else {
-        strcpy(txContent->opDetails[0], txContent->txDetails[3]);
-    }
-
+uint16_t parse_account_merge(uint8_t *buffer, account_merge_op_t *accountMerge) {
     uint32_t accountType = read_uint32_block(buffer);
     if (accountType != PUBLIC_KEY_TYPE_ED25519) {
         THROW(0x6c20);
     }
     uint16_t offset = 4;
 
-    print_public_key_long(buffer + offset, txContent->opDetails[1]);
-    PRINTF("destination: %s\n", txContent->opDetails[1]);
-    offset += 32;
+    accountMerge->destination = buffer + offset;
 
-    return offset;
+    return offset + 32;
 }
 
-uint16_t parse_manage_data(uint8_t *buffer, tx_content_t *txContent) {
-
+uint16_t parse_manage_data(uint8_t *buffer, manage_data_op_t *manageData) {
     uint32_t size = read_uint32_block(buffer);
+
     if (size > DATA_NAME_MAX_SIZE) {
         THROW(0x6c20);
     }
     uint16_t offset = 4;
 
-    char dataName[size];
-    memcpy(dataName, buffer + offset, size);
-    dataName[size] = '\0';
-    print_summary(dataName, txContent->opDetails[0], 12, 12);
-    PRINTF("data name: %s\n", txContent->opDetails[0]);
-    check_padding(buffer + offset, size, numBytes(size)); // security check
-    offset += numBytes(size);
+    memcpy(manageData->dataName, buffer + offset, size);
+    manageData->dataName[size] = '\0';
 
-    uint32_t hasValue = read_uint32_block(buffer + offset);
+    check_padding(buffer + offset, size, num_bytes(size)); // security check
+    offset += num_bytes(size);
+
+    manageData->hasValue = (read_uint32_block(buffer + offset)) ? true : false;
     offset += 4;
 
-    if (hasValue) {
-        size = read_uint32_block(buffer + offset);
-        if (size > DATA_VALUE_MAX_SIZE) {
+    if (manageData->hasValue) {
+        manageData->dataSize = read_uint32_block(buffer + offset);
+        if (manageData->dataSize > DATA_VALUE_MAX_SIZE) {
             THROW(0x6c20);
         }
         offset += 4;
-        strcpy(txContent->opDetails[1], "<binary data>");
-        txContent->opType = OPERATION_TYPE_SET_DATA;
-        check_padding(buffer + offset, size, numBytes(size)); // security check
-        offset += numBytes(size);
-    } else {
-        txContent->opType = OPERATION_TYPE_REMOVE_DATA;
+
+        memcpy(manageData->dataValue, buffer+offset, manageData->dataSize);
+        check_padding(buffer + offset, manageData->dataSize, num_bytes(size)); // security check
+        offset += num_bytes(manageData->dataSize);
     }
+
     return offset;
 }
 
-uint16_t parse_offer(uint8_t *buffer, tx_content_t *txContent, uint32_t opType) {
-    char selling[13];
-    uint16_t offset = parse_asset(buffer, selling, NULL, get_native_asset_code(txContent));
+uint16_t parse_offer(uint8_t *buffer, manage_offer_op_t *manageOffer) {
+    uint16_t offset = parse_asset(buffer, &manageOffer->selling);
+    offset += parse_asset(buffer + offset, &manageOffer->buying);
 
-    char buyingCode[13];
-    char buyingIssuer[10];
-    offset += parse_asset(buffer + offset, buyingCode, buyingIssuer, get_native_asset_code(txContent));
-    print_asset(buyingCode, buyingIssuer, txContent->opDetails[1]);
-    PRINTF("buying: %s\n", txContent->opDetails[1]);
-
-    uint64_t amount  = read_uint64_block(buffer + offset);
-    if (amount > 0) {
-        print_amount(amount, selling, txContent->opDetails[3]);
-    }
-    PRINTF("selling: %s\n", txContent->opDetails[3]);
+    manageOffer->amount  = read_uint64_block(buffer + offset);
     offset += 8;
 
-    uint32_t numerator = read_uint32_block(buffer + offset);
+    manageOffer->price.numerator = read_uint32_block(buffer + offset);
     offset += 4;
-
-    uint32_t denominator = read_uint32_block(buffer + offset);
+    manageOffer->price.denominator = read_uint32_block(buffer + offset);
     offset += 4;
-
-    uint64_t price = ((uint64_t)numerator * 10000000) / denominator;
-    print_amount(price, buyingCode, txContent->opDetails[2]);
-    PRINTF("price: %s\n", txContent->opDetails[2]);
-
-    if (opType == XDR_OPERATION_TYPE_MANAGE_OFFER) {
-        uint64_t offerId = read_uint64_block(buffer + offset);
-        offset += 8;
-        if (offerId == 0) {
-            txContent->opType = OPERATION_TYPE_CREATE_OFFER;
-            strcpy(txContent->opDetails[0], "non-passive");
-        } else {
-            print_uint(offerId, txContent->opDetails[0]);
-            if (amount == 0) {
-                txContent->opType = OPERATION_TYPE_REMOVE_OFFER;
-            } else {
-                txContent->opType = OPERATION_TYPE_CHANGE_OFFER;
-            }
-        }
-    } else {
-        txContent->opType = OPERATION_TYPE_CREATE_OFFER;
-        strcpy(txContent->opDetails[0], "passive");
-    }
 
     return offset;
 }
 
-uint16_t parse_change_trust(uint8_t *buffer, tx_content_t *txContent) {
-    char code[13];
-    char issuer[9];
-    uint16_t offset = parse_asset(buffer, code, issuer, get_native_asset_code(txContent));
-    print_asset(code, issuer, txContent->opDetails[0]);
-    PRINTF("asset: %s\n", txContent->opDetails[0]);
-
-    uint64_t limit = read_uint64_block(buffer + offset);
-    offset += 8;
-    if (limit == 0) {
-        txContent->opType = OPERATION_TYPE_REMOVE_TRUST;
-    } else {
-        if (limit == 9223372036854775807) {
-            strcpy(txContent->opDetails[1], "max");
-        } else {
-            print_amount(limit, NULL, txContent->opDetails[1]);
-        }
-        PRINTF("limit: %s\n", txContent->opDetails[1]);
-        txContent->opType = OPERATION_TYPE_CHANGE_TRUST;
-    }
-    return offset;
+uint16_t parse_active_offer(uint8_t *buffer, manage_offer_op_t *manageOffer) {
+    manageOffer->active = true;
+    uint16_t offset = parse_offer(buffer, manageOffer);
+    manageOffer->offerId = read_uint64_block(buffer + offset);
+    return offset + 8;
 }
 
-uint8_t parse_bits(uint8_t *buffer, char *out, char *prefix) {
-    uint32_t bitsPresent = read_uint32_block(buffer);
-    buffer += 4;
-    if (bitsPresent) {
-        uint32_t bits = read_uint32_block(buffer);
-        buffer += 4;
-        if (bits) {
-            uint8_t i = strlen(out);
-            if (i > 0) {
-                out[i++] = ';';
-                out[i++] = ' ';
-            }
-            strcpy(out+i, prefix);
-            i += strlen(prefix);
-            print_bits(bits, out+i);
-        }
-        return 8;
-    } else {
-        return 4;
-    }
+uint16_t parse_passive_offer(uint8_t *buffer, manage_offer_op_t *manageOffer) {
+    manageOffer->active = false;
+    return parse_offer(buffer, manageOffer);
 }
 
-uint8_t parse_int(uint8_t *buffer, char *out, char *prefix) {
-    uint32_t intPresent = read_uint32_block(buffer);
-    buffer += 4;
-    if (intPresent) {
-        uint32_t n = read_uint32_block(buffer);
-        buffer += 4;
-        uint8_t i = strlen(out);
-        if (i > 0) {
-            out[i++] = ';';
-            out[i++] = ' ';
-        }
-        strcpy(out+i, prefix);
-        i += strlen(prefix);
-        print_uint(n, out+i);
-        return 8;
-    } else {
-        return 4;
-    }
+uint16_t parse_change_trust(uint8_t *buffer, change_trust_op_t *changeTrust) {
+    uint16_t offset = parse_asset(buffer, &changeTrust->asset);
+    changeTrust->limit = read_uint64_block(buffer + offset);
+    return offset + 8;
 }
 
-uint16_t parse_set_options(uint8_t *buffer, tx_content_t *txContent) {
-    txContent->opType = OPERATION_TYPE_SET_OPTIONS;
+uint16_t parse_set_options(uint8_t *buffer, set_options_op_t *setOptions) {
 
-    uint32_t inflationDestinationPresent = read_uint32_block(buffer);
+    setOptions->inflationDestinationPresent = (read_uint32_block(buffer)) ? true : false;
     uint16_t offset = 4;
-    if (inflationDestinationPresent) {
+    if (setOptions->inflationDestinationPresent) {
         uint32_t accountType = read_uint32_block(buffer + offset);
         if (accountType != PUBLIC_KEY_TYPE_ED25519) {
             THROW(0x6c20);
         }
         offset += 4;
-        print_public_key_short(buffer + offset, txContent->opDetails[0]);
+        setOptions->inflationDestination = buffer + offset;
         offset += 32;
     }
-    PRINTF("inflation destination: %s\n", txContent->opDetails[0]);
 
-    offset += parse_bits(buffer + offset, txContent->opDetails[1], "clear: ");
-    offset += parse_bits(buffer + offset, txContent->opDetails[1], "set: ");
-    PRINTF("flags: %s\n", txContent->opDetails[1]);
-
-    offset += parse_int(buffer + offset, txContent->opDetails[2], "master weight: ");
-    offset += parse_int(buffer + offset, txContent->opDetails[2], "low: ");
-    offset += parse_int(buffer + offset, txContent->opDetails[2], "med: ");
-    offset += parse_int(buffer + offset, txContent->opDetails[2], "high: ");
-    PRINTF("thresholds: %s\n", txContent->opDetails[2]);
-
-    uint32_t homeDomainPresent = read_uint32_block(buffer + offset);
+    setOptions->clearFlagsPresent = (read_uint32_block(buffer + offset)) ? true : false;
     offset += 4;
-    if (homeDomainPresent) {
+    if (setOptions->clearFlagsPresent) {
+        setOptions->clearFlags = read_uint32_block(buffer + offset);
+        offset += 4;
+    }
+
+    setOptions->setFlagsPresent = (read_uint32_block(buffer + offset)) ? true : false;
+    offset += 4;
+    if (setOptions->setFlagsPresent) {
+        setOptions->setFlags = read_uint32_block(buffer + offset);
+        offset += 4;
+    }
+
+    setOptions->masterWeightPresent = (read_uint32_block(buffer + offset)) ? true : false;
+    offset += 4;
+    if (setOptions->masterWeightPresent) {
+        setOptions->masterWeight = read_uint32_block(buffer + offset);
+        offset += 4;
+    }
+
+    setOptions->lowThresholdPresent = (read_uint32_block(buffer + offset)) ? true : false;
+    offset += 4;
+    if (setOptions->lowThresholdPresent) {
+        setOptions->lowThreshold = read_uint32_block(buffer + offset);
+        offset += 4;
+    }
+
+    setOptions->mediumThresholdPresent = (read_uint32_block(buffer + offset)) ? true : false;
+    offset += 4;
+    if (setOptions->mediumThresholdPresent) {
+        setOptions->mediumThreshold = read_uint32_block(buffer + offset);
+        offset += 4;
+    }
+
+    setOptions->highThresholdPresent = (read_uint32_block(buffer + offset)) ? true : false;
+    offset += 4;
+    if (setOptions->highThresholdPresent) {
+        setOptions->highThreshold = read_uint32_block(buffer + offset);
+        offset += 4;
+    }
+
+    setOptions->homeDomainPresent = (read_uint32_block(buffer + offset)) ? true : false;
+    offset += 4;
+    if (setOptions->homeDomainPresent) {
         uint32_t size = read_uint32_block(buffer + offset);
         if (size > HOME_DOMAIN_MAX_SIZE) {
             THROW(0x6c20);
         }
         offset += 4;
-        memcpy(txContent->opDetails[3], buffer + offset, size);
-        txContent->opDetails[3][size] = '\0';
-        check_padding(buffer + offset, size, numBytes(size)); // security check
-        offset += numBytes(size);
+        memcpy(setOptions->homeDomain, buffer + offset, size);
+        setOptions->homeDomain[size] = '\0';
+        check_padding(buffer + offset, size, num_bytes(size)); // security check
+        offset += num_bytes(size);
     }
-    PRINTF("home domain: %s\n", txContent->opDetails[3]);
 
-    uint32_t signerPresent = read_uint32_block(buffer + offset);
+    setOptions->signerPresent = (read_uint32_block(buffer + offset)) ? true : false;
     offset += 4;
-    if (signerPresent) {
-        uint32_t signerType = read_uint32_block(buffer + offset);
+    if (setOptions->signerPresent) {
+        setOptions->signer.type = read_uint32_block(buffer + offset);
         offset += 4;
 
-        switch (signerType) {
-            case SIGNER_KEY_TYPE_ED25519: {
-                strcpy(txContent->opDetails[4], "pk: ");
-                print_public_key(buffer + offset, txContent->opDetails[4]+4, 12, 12);
-                break;
-            }
-            case SIGNER_KEY_TYPE_PRE_AUTH_TX: {
-                strcpy(txContent->opDetails[4], "pre-auth: ");
-                print_hash_summary(buffer + offset, txContent->opDetails[4]+10);
-                break;
-            }
-            case SIGNER_KEY_TYPE_HASH_X: {
-                strcpy(txContent->opDetails[4], "hash(x): ");
-                print_hash_summary(buffer + offset, txContent->opDetails[4]+strlen(txContent->opDetails[4]));
-                break;
-            }
-            default: THROW(0x6c20);
-        }
+        setOptions->signer.data = buffer+offset;
         offset += 32;
 
-        uint32_t weight = read_uint32_block(buffer + offset);
-        strcpy(txContent->opDetails[4]+strlen(txContent->opDetails[4]), "; weight: ");
-        print_uint(weight, txContent->opDetails[4]+strlen(txContent->opDetails[4]));
-        PRINTF("signer: %s\n", txContent->opDetails[4]);
+        setOptions->signer.weight = read_uint32_block(buffer + offset);
         offset += 4;
     }
     return offset;
 }
 
-uint16_t parse_bump_sequence(uint8_t *buffer, tx_content_t *txContent) {
-    txContent->opType = OPERATION_TYPE_BUMP_SEQUENCE;
-
-    int64_t bumpTo = (int64_t) read_uint64_block(buffer);
-    print_int(bumpTo, txContent->opDetails[0]);
-
+uint16_t parse_bump_sequence(uint8_t *buffer, bump_sequence_op_t *bumpSequence) {
+    bumpSequence->bumpTo = (int64_t) read_uint64_block(buffer);
     return 8;
 }
 
-uint16_t parse_op_xdr(uint8_t *buffer, tx_content_t *txContent) {
-    MEMCLEAR(txContent->opDetails);
-    MEMCLEAR(txContent->opSource);
+uint16_t parse_op_xdr(uint8_t *buffer, operation_details_t *opDetails) {
 
-    txContent->opIdx += 1;
-
-    uint32_t hasAccountId = read_uint32_block(buffer);
+    opDetails->sourcePresent = (read_uint32_block(buffer)) ? true : false;
     uint16_t offset = 4;
-    if (hasAccountId) {
+    if (opDetails->sourcePresent) {
         uint32_t accountType = read_uint32_block(buffer + offset);
         if (accountType != PUBLIC_KEY_TYPE_ED25519) {
             THROW(0x6c20);
         }
         offset += 4;
-        print_public_key_short(buffer+offset, txContent->opSource);
-        PRINTF("operation source: %s\n", txContent->opSource);
+        opDetails->source = buffer+offset;
         offset += 32;
     }
-    uint32_t opType = read_uint32_block(buffer+offset);
+
+    opDetails->type = read_uint32_block(buffer+offset);
     offset += 4;
-    switch (opType) {
+    switch (opDetails->type) {
         case XDR_OPERATION_TYPE_CREATE_ACCOUNT: {
-            return parse_create_account(buffer + offset, txContent) + offset;
+            return parse_create_account(buffer + offset, &opDetails->op.createAccount) + offset;
         }
         case XDR_OPERATION_TYPE_PAYMENT: {
-            return parse_payment(buffer + offset, txContent) + offset;
+            return parse_payment(buffer + offset, &opDetails->op.payment) + offset;
         }
         case XDR_OPERATION_TYPE_PATH_PAYMENT: {
-            return parse_path_payment(buffer + offset, txContent) + offset;
+            return parse_path_payment(buffer + offset, &opDetails->op.pathPayment) + offset;
         }
-        case XDR_OPERATION_TYPE_CREATE_PASSIVE_OFFER:
+        case XDR_OPERATION_TYPE_CREATE_PASSIVE_OFFER: {
+            return parse_passive_offer(buffer + offset, &opDetails->op.manageOffer) + offset;
+        }
         case XDR_OPERATION_TYPE_MANAGE_OFFER: {
-            return parse_offer(buffer + offset, txContent, opType) + offset;
+            return parse_active_offer(buffer + offset, &opDetails->op.manageOffer) + offset;
         }
         case XDR_OPERATION_TYPE_SET_OPTIONS: {
-            return parse_set_options(buffer + offset, txContent) + offset;
+            return parse_set_options(buffer + offset, &opDetails->op.setOptions) + offset;
         }
         case XDR_OPERATION_TYPE_CHANGE_TRUST: {
-            return parse_change_trust(buffer + offset, txContent) + offset;
+            return parse_change_trust(buffer + offset, &opDetails->op.changeTrust) + offset;
         }
         case XDR_OPERATION_TYPE_ALLOW_TRUST: {
-            return parse_allow_trust(buffer + offset, txContent) + offset;
+            return parse_allow_trust(buffer + offset, &opDetails->op.allowTrust) + offset;
         }
         case XDR_OPERATION_TYPE_ACCOUNT_MERGE: {
-            return parse_account_merge(buffer + offset, txContent) + offset;
+            return parse_account_merge(buffer + offset, &opDetails->op.accountMerge) + offset;
         }
         case XDR_OPERATION_TYPE_INFLATION: {
-            txContent->opType = OPERATION_TYPE_INFLATION;
-            strcpy(txContent->opDetails[0], "Run now");
             break;
         }
         case XDR_OPERATION_TYPE_MANAGE_DATA: {
-            return parse_manage_data(buffer + offset, txContent) + offset;
+            return parse_manage_data(buffer + offset, &opDetails->op.manageData) + offset;
         }
         case XDR_OPERATION_TYPE_BUMP_SEQUENCE: {
-            return parse_bump_sequence(buffer + offset, txContent) + offset;
+            return parse_bump_sequence(buffer + offset, &opDetails->op.bumpSequence) + offset;
         }
         default: THROW(0x6c24);
     }
     return offset;
 }
 
-uint16_t parse_tx_xdr(uint8_t *buffer, tx_content_t *txContent, uint16_t offset) {
+void parse_tx_xdr(uint8_t *buffer, tx_context_t *txCtx) {
+    uint16_t offset = txCtx->offset;
     if (offset == 0) {
-        MEMCLEAR(txContent->txDetails);
+        MEMCLEAR(&txCtx->txDetails);
 
-        if (memcmp(buffer, NETWORK_ID_PUBLIC_HASH, 32) == 0) {
-            txContent->network = NETWORK_TYPE_PUBLIC;
-        } else if (memcmp(buffer, NETWORK_ID_TEST_HASH, 32) == 0) {
-            txContent->network = NETWORK_TYPE_TEST;
-        } else {
-            txContent->network = NETWORK_TYPE_UNKNOWN;
-        }
-        strcpy(txContent->txDetails[2], ((char *)PIC(NETWORK_NAMES[txContent->network])));
-        offset += 32;
+        offset += parse_network(buffer, &txCtx->txDetails);
 
         offset += 4; // skip envelopeType
 
@@ -627,35 +492,33 @@ uint16_t parse_tx_xdr(uint8_t *buffer, tx_content_t *txContent, uint16_t offset)
         }
         offset += 4;
 
-        print_public_key_short(buffer + offset, txContent->txDetails[3]);
-        PRINTF("transaction source: %s\n", txContent->txDetails[3]);
+        txCtx->txDetails.source = buffer + offset;
         offset += 32;
 
-        uint32_t fee = read_uint32_block(buffer + offset);
-        print_amount(fee, get_native_asset_code(txContent), txContent->txDetails[1]);
-        PRINTF("fee: %s\n", txContent->txDetails[1]);
+        txCtx->txDetails.fee = read_uint32_block(buffer + offset);
         offset += 4;
 
-        offset += 8; // skip seqNum
-        offset += parse_time_bounds(buffer + offset, txContent);
-        offset += parse_memo(buffer + offset, txContent);
-        PRINTF("memo: %s\n", txContent->txDetails[0]);
+        txCtx->txDetails.sequenceNumber = (int64_t) read_uint64_block(buffer + offset);
+        offset += 8;
 
-        txContent->opCount = read_uint32_block(buffer + offset);
-        PRINTF("op count: %d\n\n", txContent->opCount);
+        offset += parse_time_bounds(buffer + offset, &txCtx->txDetails);
+        offset += parse_memo(buffer + offset, &txCtx->txDetails);
 
-        if (txContent->opCount > MAX_OPS) {
+        txCtx->opCount = read_uint32_block(buffer + offset);
+        if (txCtx->opCount > MAX_OPS) {
             THROW(0x6c20);
         }
-
         offset += 4;
 
-        txContent->opIdx = 0;
+        txCtx->opIdx = 0;
     }
 //    printHexBlocks(buffer+offset, 20);
-    offset = parse_op_xdr(buffer + offset, txContent) + offset;
-    if (txContent->opCount == txContent->opIdx) {
-        return 0; // start from beginning next time
+
+    offset = parse_op_xdr(buffer + offset, &txCtx->opDetails) + offset;
+
+    txCtx->opIdx += 1;
+    if (txCtx->opCount == txCtx->opIdx) {
+        offset = 0; // start from beginning next time
     }
-    return offset;
+    txCtx->offset = offset;
 }

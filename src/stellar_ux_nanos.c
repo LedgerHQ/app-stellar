@@ -22,35 +22,11 @@
 #include "stellar_types.h"
 #include "stellar_api.h"
 #include "stellar_vars.h"
+#include "stellar_format.h"
 
 #include "glyphs.h"
 
-static const char * opCaptions[][6] = {
-    {"Create Account", "Starting Balance", NULL, NULL, NULL},
-    {"Send", "Destination", NULL, NULL, NULL},
-    {"Send", "Destination", "Receive", "Via", NULL},
-    {"Create Offer", "Buy", "Price", "Sell", NULL, NULL},
-    {"Remove Offer", NULL, NULL, NULL, NULL},
-    {"Change Offer", "Buy", "Price", "Sell", NULL},
-    {"Inflation Destination", "Flags", "Thresholds", "Home Domain", "Signer"},
-    {"Change Trust", "Limit", NULL, NULL, NULL},
-    {"Remove Trust", NULL, NULL, NULL, NULL},
-    {"Allow Trust", "Account ID", NULL, NULL, NULL},
-    {"Revoke Trust", "Account ID", NULL, NULL, NULL},
-    {"Merge Account", "Destination", NULL, NULL, NULL},
-    {"Inflation", NULL, NULL, NULL, NULL},
-    {"Set Data", "Value", NULL, NULL, NULL},
-    {"Remove Data", NULL, NULL, NULL, NULL},
-    {"Bump Sequence", NULL, NULL, NULL, NULL},
-    {"WARNING", "Hash", NULL, NULL, NULL}
-};
-
-
-static const char * txCaptions[4] = {"Memo", "Fee", "Network", "Tx Source"};
-
 bagl_element_t tmp_element;
-
-char opCaption[20];
 
 // ------------------------------------------------------------------------- //
 //                                  MENUS                                    //
@@ -168,8 +144,6 @@ unsigned int ui_address_nanos_button(unsigned int button_mask, unsigned int butt
 }
 
 void ui_show_address_init(void) {
-    ctx.uxStep = 0;
-    ctx.uxStepCount = 2;
     UX_DISPLAY(ui_address_nanos, ui_address_prepro);
 }
 
@@ -177,109 +151,68 @@ void ui_show_address_init(void) {
 //                             APPROVE TRANSACTION                           //
 // ------------------------------------------------------------------------- //
 
-const char *detailCaptions[12];
-const char *detailValues[12];
-
-/**
- * Parse the next operation from the raw transaction xdr and populate the details to display.
- * On the last operation in the transaction we also show the transaction level details (memo/fee/etc)
- */
-void prepare_details() {
+format_function_t next_formatter(tx_context_t *txCtx) {
     BEGIN_TRY {
         TRY {
-            ctx.req.tx.offset = parse_tx_xdr(ctx.req.tx.raw, &ctx.req.tx.content, ctx.req.tx.offset);
+            parse_tx_xdr(txCtx->raw, txCtx);
         } CATCH_OTHER(sw) {
             io_seproxyhal_respond(sw, 0);
-            return;
+            return NULL;
         } FINALLY {
         }
     } END_TRY;
-    MEMCLEAR(detailCaptions);
-    MEMCLEAR(detailValues);
-    uint8_t i, j;
-    for (i = 0, j = 0; i < 5; i++) {
-        char *caption = ((char *)PIC(opCaptions[ctx.req.tx.content.opType][i]));
-        char *value = ctx.req.tx.content.opDetails[i];
-        if (caption != NULL && value[0] != '\0') {
-            detailCaptions[j] = caption;
-            detailValues[j] = value;
-            j++;
-        }
+    if (txCtx->opIdx == 1) {
+        return &format_confirm_transaction;
+    } else {
+        return &format_confirm_operation;
     }
-    if (ctx.req.tx.content.opSource[0] != '\0') {
-        detailCaptions[j] = "Op Source";
-        detailValues[j] = ctx.req.tx.content.opSource;
-        j++;
-    }
-    if (ctx.req.tx.content.opIdx == ctx.req.tx.content.opCount) { // last operation: also show tx details
-        for (i = 0; i < 4; i++) {
-            detailCaptions[j] = txCaptions[i];
-            detailValues[j] = ctx.req.tx.content.txDetails[i];
-            j++;
-        }
-        if (ctx.req.tx.content.timeBounds) {
-            detailCaptions[j] = "Time Bounds";
-            detailValues[j] = "On";
-            j++;
-        }
-    }
-    ctx.uxStepCount = j + 2;
 }
 
-/** prepare next sign transaction approval screen */
-const bagl_element_t *ui_tx_approval_prepro(const bagl_element_t *element) {
+void ui_approve_tx_next_screen(tx_context_t *txCtx) {
+    if (!formatter) {
+        formatter = next_formatter(txCtx);
+        if (!formatter) {
+            return;
+        }
+    }
+
+    MEMCLEAR(detailCaption);
+    MEMCLEAR(detailValue);
+    MEMCLEAR(opCaption);
+    formatter(txCtx);
+
+    if (!formatter) {
+        formatter = next_formatter(txCtx);
+    }
+}
+
+const bagl_element_t *ui_approve_tx_prepro(const bagl_element_t *element) {
     switch (element->component.userid) {
     case 0x00: // Controls: always visible
         return element;
     case 0x01:
     case 0x11: // "Confirm transaction"
-        if (ctx.uxStep == 0) {
-            if (element->component.userid == 0x01) {
-                BEGIN_TRY {
-                    TRY {
-                        prepare_details();
-                    } CATCH_OTHER(sw) {
-                        io_seproxyhal_respond(sw, 0);
-                        return NULL;
-                    } FINALLY {
-                    }
-                } END_TRY;
-            }
-            // only show before the first operation, else skip this step
-            if (ctx.req.tx.content.opIdx == 1) {
-                UX_CALLBACK_SET_INTERVAL(1750);
-                return element;
-            } else {
-                ctx.uxStep++;
-            }
+        if (detailCaption[0] == '\0' && opCaption[0] == '\0') {
+            UX_CALLBACK_SET_INTERVAL(1750);
+            return element;
         }
         return NULL;
     case 0x02: // "Operation i of n"
-        if (ctx.uxStep == 1) {
-            // only show if multiple operations, else skip this step
-            if (ctx.req.tx.content.opCount > 1) {
-                os_memmove(&tmp_element, element, sizeof(bagl_element_t));
-                strcpy(opCaption, "Operation ");
-                print_uint(ctx.req.tx.content.opIdx, opCaption+strlen(opCaption));
-                strcpy(opCaption+strlen(opCaption), " of ");
-                print_uint(ctx.req.tx.content.opCount, opCaption+strlen(opCaption));
-                tmp_element.text = opCaption;
-                UX_CALLBACK_SET_INTERVAL(MAX(1750, 1000 + bagl_label_roundtrip_duration_ms(&tmp_element, 7)));
-                return &tmp_element;
-            } else {
-               ctx.uxStep++;
-            }
+        if (opCaption[0] != '\0') {
+            os_memmove(&tmp_element, element, sizeof(bagl_element_t));
+            tmp_element.text = opCaption;
+            UX_CALLBACK_SET_INTERVAL(MAX(1750, 1000 + bagl_label_roundtrip_duration_ms(&tmp_element, 7)));
+            return &tmp_element;
         }
         return NULL;
     case 0x03: // Details caption
     case 0x13: // Details value
-        if (ctx.uxStep > 1) {
-            uint8_t detailIdx = ctx.uxStep - 2;
+        if (detailCaption[0] != '\0') {
             os_memmove(&tmp_element, element, sizeof(bagl_element_t));
             if (element->component.userid == 0x03) {
-                tmp_element.text = detailCaptions[detailIdx];
+                tmp_element.text = detailCaption;
             } else {
-                tmp_element.text = detailValues[detailIdx];
+                tmp_element.text = detailValue;
             }
             UX_CALLBACK_SET_INTERVAL(MAX(1750, 1000 + bagl_label_roundtrip_duration_ms(&tmp_element, 7)));
             return &tmp_element;
@@ -289,43 +222,31 @@ const bagl_element_t *ui_tx_approval_prepro(const bagl_element_t *element) {
 }
 
 /** prepare next sign hash approval screen */
-const bagl_element_t *ui_tx_approval_hash_prepro(const bagl_element_t *element) {
+const bagl_element_t *ui_tx_approve_hash_prepro(const bagl_element_t *element) {
     switch (element->component.userid) {
     case 0x00: // Controls: always visible
         return element;
     case 0x01:
-    case 0x11: // "Confirm transaction" on the first step
-        if (ctx.uxStep == 0) {
-            UX_CALLBACK_SET_INTERVAL(1800);
+    case 0x11: // "Confirm transaction"
+        if (detailCaption[0] == '\0') {
+            UX_CALLBACK_SET_INTERVAL(1750);
             return element;
         }
         break;
+    case 0x02:
+        return NULL;
     case 0x03: // Details caption
     case 0x13: // Details value
-    {
-        if (ctx.uxStep == 1) {
+        if (detailCaption[0] != '\0') {
             os_memmove(&tmp_element, element, sizeof(bagl_element_t));
             if (element->component.userid == 0x03) {
-                tmp_element.text = "WARNING";
+                tmp_element.text = detailCaption;
             } else {
-                tmp_element.text = "No details";
+                tmp_element.text = detailValue;
             }
-            UX_CALLBACK_SET_INTERVAL(MAX(1500, 1000 + bagl_label_roundtrip_duration_ms(&tmp_element, 7)));
+            UX_CALLBACK_SET_INTERVAL(MAX(1750, 1000 + bagl_label_roundtrip_duration_ms(&tmp_element, 7)));
             return &tmp_element;
         }
-        if (ctx.uxStep == 2) {
-            os_memmove(&tmp_element, element, sizeof(bagl_element_t));
-            if (element->component.userid == 0x03) {
-                tmp_element.text = "Transaction Hash";
-            } else {
-                print_hash_summary(ctx.req.tx.hash, ctx.req.tx.content.txDetails[0]);
-                tmp_element.text = ctx.req.tx.content.txDetails[0];
-            }
-            UX_CALLBACK_SET_INTERVAL(MAX(1500, 1000 + bagl_label_roundtrip_duration_ms(&tmp_element, 7)));
-            return &tmp_element;
-        }
-        break;
-    }
     }
     return NULL;
 }
@@ -371,16 +292,16 @@ unsigned int ui_approve_tx_nanos_button(unsigned int button_mask, unsigned int b
 }
 
 void ui_approve_tx_init(void) {
-    ctx.uxStep = 0;
-    ctx.uxStepCount = 1; // initial value to get going, updated when operation is parsed
     ctx.req.tx.offset = 0;
-    UX_DISPLAY(ui_approve_tx_nanos, ui_tx_approval_prepro);
+    formatter = NULL;
+    ui_approve_tx_next_screen(&ctx.req.tx);
+    UX_DISPLAY(ui_approve_tx_nanos, ui_approve_tx_prepro);
 }
 
 void ui_approve_tx_hash_init(void) {
-    ctx.uxStep = 0;
-    ctx.uxStepCount = 3;
-    UX_DISPLAY(ui_approve_tx_nanos, ui_tx_approval_hash_prepro);
+    formatter = format_confirm_hash;
+    ui_approve_tx_next_screen(NULL);
+    UX_DISPLAY(ui_approve_tx_nanos, ui_tx_approve_hash_prepro);
 }
 
 #endif
