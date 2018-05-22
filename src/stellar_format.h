@@ -19,7 +19,7 @@
 
 typedef void (*format_function_t)(tx_context_t *txCtx);
 
-extern format_function_t formatter;
+extern volatile format_function_t formatter;
 extern char opCaption[20];
 extern char detailCaption[20];
 extern char detailValue[67];

@@ -108,7 +108,8 @@ static const char* NETWORK_NAMES[3] = { "Public", "Test", "Unknown" };
 #define THROW(code) { printf("error: %d", code); }
 #define PRINTF(msg, arg) printf(msg, arg)
 #define PIC(code) code
-#define TARGET_NANOS 1
+//#define TARGET_NANOS 1
+#define TARGET_BLUE 1
 #define MEMCLEAR(dest) { memset(dest, 0, sizeof(dest)); }
 #else
 #define MEMCLEAR(dest) { os_memset(dest, 0, sizeof(dest)); }

@@ -28,12 +28,12 @@
 
 bagl_element_t tmp_element;
 
-volatile char titleCaption[26];
-volatile char subtitleCaption[21];
-volatile char displayString[33];
+char titleCaption[26];
+char subtitleCaption[21];
+char displayString[33];
 
-unsigned int io_seproxyhal_touch_settings(const bagl_element_t *e);
-unsigned int io_seproxyhal_touch_exit(const bagl_element_t *e);
+const bagl_element_t *io_seproxyhal_touch_settings(const bagl_element_t *e);
+const bagl_element_t *io_seproxyhal_touch_exit(const bagl_element_t *e);
 
 
 // ------------------------------------------------------------------------- //
@@ -118,9 +118,9 @@ const bagl_element_t *ui_settings_out_over(const bagl_element_t *e) {
     return NULL;
 }
 
-unsigned int ui_settings_back_callback(const bagl_element_t *e) {
+const bagl_element_t *ui_settings_back_callback(const bagl_element_t *e) {
     ui_idle();
-    return 0;
+    return NULL;
 }
 
 const bagl_element_t ui_settings_blue[] = {
@@ -170,8 +170,6 @@ const bagl_element_t *ui_settings_blue_prepro(const bagl_element_t *e) {
     if ((e->component.type & (~BAGL_FLAG_TOUCHABLE)) == BAGL_NONE) {
         return NULL;
     }
-    // swap icon buffer to be displayed depending on if corresponding setting is
-    // enabled or not.
     if (e->component.userid) {
         os_memmove(&tmp_element, e, sizeof(bagl_element_t));
         switch (e->component.userid) {
@@ -194,7 +192,7 @@ const bagl_element_t *ui_settings_blue_prepro(const bagl_element_t *e) {
         }
         return &tmp_element;
     }
-    return 1;
+    return e;
 }
 
 unsigned int ui_settings_blue_button(unsigned int button_mask, unsigned int button_mask_counter) {
@@ -233,21 +231,14 @@ const bagl_element_t ui_address_blue[] = {
      "CONFIRM", 0, 0x3ab7a2, COLOR_BG_1, io_seproxyhal_touch_address_ok, NULL, NULL},
 };
 
-unsigned int ui_address_blue_prepro(const bagl_element_t *element) {
+const bagl_element_t *ui_address_blue_prepro(const bagl_element_t *element) {
     if (element->component.userid > 0) {
-        unsigned int length = strlen(ctx.req.pk.address);
-        if (length >= (element->component.userid & 0xF) * MAX_CHAR_PER_LINE) {
-            os_memset(displayString, 0, MAX_CHAR_PER_LINE + 1);
-            os_memmove(
-                displayString,
-                ctx.req.pk.address + (element->component.userid & 0xF) * MAX_CHAR_PER_LINE,
-                MIN(length - (element->component.userid & 0xF) * MAX_CHAR_PER_LINE, MAX_CHAR_PER_LINE));
-            return 1;
-        }
-        // nothing to draw for this line
-        return 0;
+        uint16_t line = element->component.userid & 0xF;
+        uint16_t offset = line * MAX_CHAR_PER_LINE;
+        os_memset(displayString, 0, MAX_CHAR_PER_LINE+1);
+        os_memmove(displayString, ctx.req.pk.address + offset, MIN(57 - offset, MAX_CHAR_PER_LINE));
     }
-    return 1;
+    return element;
 }
 unsigned int ui_address_blue_button(unsigned int button_mask, unsigned int button_mask_counter) {
     return 0;
@@ -304,21 +295,21 @@ const bagl_element_t ui_details_blue[] = {
      "Review the whole value before continuing.", 10, 0, COLOR_BG_1, NULL, NULL, NULL}
 };
 
-unsigned int ui_details_blue_prepro(const bagl_element_t *element) {
+const bagl_element_t *ui_details_blue_prepro(const bagl_element_t *element) {
     if (element->component.userid == 1) {
-        strcpy(displayString, (const char *)PIC(detailsTitle));
+        strcpy(displayString, detailsTitle);
     } else if (element->component.userid > 0) {
-        unsigned int length = strlen(detailsContent);
-        unsigned int offset = (element->component.userid & 0xF) * MAX_CHAR_PER_LINE;
-        if (length >= offset) {
+        uint16_t len = strlen(detailsContent);
+        uint16_t offset = (element->component.userid & 0xF) * MAX_CHAR_PER_LINE;
+        if (len >= offset) {
             os_memset(displayString, 0, MAX_CHAR_PER_LINE + 1);
-            os_memmove(displayString, detailsContent + offset, MIN(length - offset, MAX_CHAR_PER_LINE));
-            return 1;
+            os_memmove(displayString, detailsContent + offset, MIN(len - offset, MAX_CHAR_PER_LINE));
+            return element;
         }
         // nothing to draw for this line
-        return 0;
+        return NULL;
     }
-    return 1;
+    return element;
 }
 
 unsigned int ui_details_blue_button(unsigned int button_mask, unsigned int button_mask_counter) {
@@ -329,14 +320,14 @@ unsigned int ui_details_blue_button(unsigned int button_mask, unsigned int butto
 //                       TRANSACTION APPROVAL SCREEN                         //
 // ------------------------------------------------------------------------- //
 
-char detailNames[7][20];
+char detailCaptions[7][20];
 char detailValues[7][67];
 
 uint8_t currentScreen;
 uint16_t offsets[MAX_OPS];
 
 void prepare_details() {
-    os_memset(detailNames, 0, sizeof(detailNames));
+    os_memset(detailCaptions, 0, sizeof(detailCaptions));
     os_memset(detailValues, 0, sizeof(detailValues));
     if (currentScreen > 0 && offsets[currentScreen] == 0) { // transaction details (memo/fee/etc)
         strcpy(titleCaption, "Transaction level details");
@@ -348,7 +339,7 @@ void prepare_details() {
             MEMCLEAR(detailValue);
             formatter(&ctx.req.tx);
             if (detailCaption[0] != '\0' && detailValue[0] != '\0') {
-                strcpy(detailNames[i], detailCaption);
+                strcpy(detailCaptions[i], detailCaption);
                 strcpy(detailValues[i], detailValue);
             }
             i++;
@@ -369,7 +360,7 @@ void prepare_details() {
             MEMCLEAR(detailValue);
             formatter(&ctx.req.tx);
             if (detailCaption[0] != '\0' && detailValue[0] != '\0') {
-                strcpy(detailNames[i], detailCaption);
+                strcpy(detailCaptions[i], detailCaption);
                 strcpy(detailValues[i], detailValue);
             }
             i++;
@@ -383,7 +374,7 @@ const bagl_element_t *ui_approval_common_show_details(const bagl_element_t *e) {
     char *detailVal = detailValues[detailIdx];
     if (detailVal != NULL && strlen(detailVal) * BAGL_FONT_OPEN_SANS_REGULAR_10_13PX_AVG_WIDTH >= 160) {
         // display details screen
-        detailsTitle = detailNames[detailIdx];
+        detailsTitle = detailCaptions[detailIdx];
         detailsContent = detailVal;
         ui_details_back_callback = ui_approval_blue_init;
         UX_DISPLAY(ui_details_blue, ui_details_blue_prepro);
@@ -545,43 +536,39 @@ const bagl_element_t ui_approval_blue[] = {
 const bagl_element_t *ui_approval_blue_prepro(const bagl_element_t *element) {
     // none elements are skipped
     if ((element->component.type & (~BAGL_FLAG_TOUCHABLE)) == BAGL_NONE) {
-        return 0;
+        return element;
     } else {
         uint8_t type = element->component.userid & 0xF0;
         uint8_t index = element->component.userid & 0xF;
         switch (type) {
         case 0x00: {
             if (element->component.userid == 0x01) {
-                return currentScreen > 0;
+                bool hasPreviousScreen = currentScreen > 0;
+                return hasPreviousScreen ? element : NULL;
             }
             if (element->component.userid == 0x02) {
-                return currentScreen < ctx.req.tx.opCount;
+                bool hasNextScreen = currentScreen < ctx.req.tx.opCount;
+                return hasNextScreen ? element : NULL;
             }
-            return 1;
+            return element;
         }
         case 0x40:
-        case 0x60:
         case 0x50:
-            return 1;
+        case 0x60:
+            return element;
 
         // detail label
         case 0x70:
-            if (detailNames[index][0] == '\0') {
-                return NULL;
-            }
-            if (detailValues[index][0] == '\0') {
+            if (detailCaptions[index][0] == '\0' || detailValues[index][0] == '\0') {
                 return NULL;
             }
             os_memmove(&tmp_element, element, sizeof(bagl_element_t));
-            tmp_element.text = detailNames[index];
+            tmp_element.text = detailCaptions[index];
             return &tmp_element;
 
         // detail value
         case 0x10:
-            if (detailNames[index][0] == '\0') {
-                return NULL;
-            }
-            if (detailValues[index][0] == '\0') {
+            if (detailCaptions[index][0] == '\0' || detailValues[index][0] == '\0') {
                 return NULL;
             }
             os_memmove(&tmp_element, element, sizeof(bagl_element_t));
@@ -595,7 +582,7 @@ const bagl_element_t *ui_approval_blue_prepro(const bagl_element_t *element) {
 
         // right arrow and left selection rectangle
         case 0x20:
-            if (detailNames[index][0] == '\0') {
+            if (detailCaptions[index][0] == '\0') {
                 return NULL;
             }
             if (strlen(detailValues[index]) * BAGL_FONT_OPEN_SANS_REGULAR_10_13PX_AVG_WIDTH < 160) {
@@ -604,7 +591,7 @@ const bagl_element_t *ui_approval_blue_prepro(const bagl_element_t *element) {
             break;
         // horizontal delimiter
         case 0x30:
-            if (index >= 5 || detailNames[index+1][0] == '\0') {
+            if (index >= 5 || detailCaptions[index+1][0] == '\0') {
                 return NULL;
             }
         }
@@ -622,9 +609,9 @@ void ui_approval_blue_init(void) {
 
 void ui_approve_tx_hash_init(void) {
     currentScreen = 0;
-    os_memset(detailNames, 0, sizeof(detailNames));
+    os_memset(detailCaptions, 0, sizeof(detailCaptions));
     os_memset(detailValues, 0, sizeof(detailValues));
-    strcpy(detailNames[0], "Hash");
+    strcpy(detailCaptions[0], "Hash");
     print_binary(ctx.req.tx.hash, detailValues[0], 32);
     strcpy(titleCaption, "WARNING");
     strcpy(subtitleCaption, "No details available");
@@ -638,15 +625,14 @@ void ui_approve_tx_init(void) {
     ui_approval_blue_init();
 }
 
-unsigned int io_seproxyhal_touch_settings(const bagl_element_t *e) {
+const bagl_element_t *io_seproxyhal_touch_settings(const bagl_element_t *e) {
     UX_DISPLAY(ui_settings_blue, ui_settings_blue_prepro);
-    return 0; // do not redraw button, screen has switched
+    return NULL;
 }
 
-unsigned int io_seproxyhal_touch_exit(const bagl_element_t *e) {
-    // Go back to the dashboard
+const bagl_element_t *io_seproxyhal_touch_exit(const bagl_element_t *e) {
     os_sched_exit(0);
-    return 0; // do not redraw the widget
+    return NULL;
 }
 
 #endif

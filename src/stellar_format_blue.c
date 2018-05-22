@@ -30,7 +30,7 @@ char opCaption[20];
 char detailCaption[20];
 char detailValue[67];
 
-format_function_t formatter;
+volatile format_function_t formatter;
 
 void format_sequence_number(tx_context_t *txCtx) {
     strcpy(detailCaption, "Sequence Number");
@@ -252,7 +252,7 @@ void format_set_option_thresholds(tx_context_t *txCtx) {
         strcpy(detailValue+len, "medium: ");
         print_uint(txCtx->opDetails.op.setOptions.mediumThreshold, detailValue+strlen(detailValue));
     }
-    if (txCtx->opDetails.op.setOptions.mediumThresholdPresent) {
+    if (txCtx->opDetails.op.setOptions.highThresholdPresent) {
         thresholdsPresent = true;
         uint8_t len = strlen(detailValue);
         if (len) {
@@ -281,7 +281,7 @@ void format_set_option_master_weight(tx_context_t *txCtx) {
 }
 
 void format_set_option_flags(tx_context_t *txCtx) {
-    if (txCtx->opDetails.op.setOptions.clearFlagsPresent) {
+    if (txCtx->opDetails.op.setOptions.clearFlagsPresent || txCtx->opDetails.op.setOptions.setFlagsPresent) {
         strcpy(detailCaption, "Account Flags");
         print_flags(txCtx->opDetails.op.setOptions.clearFlags, detailValue, '-');
         print_flags(txCtx->opDetails.op.setOptions.setFlags, detailValue, '+');
