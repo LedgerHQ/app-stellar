@@ -25,6 +25,7 @@
 #include "stellar_format.h"
 #include "stellar_api.h"
 #include "string.h"
+#include "stellar_ux.h"
 
 char opCaption[20];
 char detailCaption[20];
@@ -118,18 +119,19 @@ void format_confirm_transaction_details(tx_context_t *txCtx) {
 }
 
 void format_operation_source(tx_context_t *txCtx) {
-    if (txCtx->opIdx == txCtx->opCount) {
-        // last operation: show transaction details
-        formatter = &format_confirm_transaction_details;
-    } else {
-        // next operation
-        formatter = NULL;
-    }
     if (txCtx->opDetails.sourcePresent) {
         strcpy(detailCaption, "Operation Source");
         print_public_key(txCtx->opDetails.source, detailValue, 5, 6);
-    } else if (formatter) {
-        formatter(txCtx);
+        formatter = &format_confirm_transaction_details;
+    } else {
+        if (txCtx->opIdx == txCtx->opCount) {
+            // last operation: show transaction details
+            format_confirm_transaction_details(txCtx);
+        } else {
+            // more operations: show next operation
+            formatter = NULL;
+            ui_approve_tx_next_screen(txCtx);
+        }
     }
 }
 

@@ -171,18 +171,12 @@ format_function_t next_formatter(tx_context_t *txCtx) {
 void ui_approve_tx_next_screen(tx_context_t *txCtx) {
     if (!formatter) {
         formatter = next_formatter(txCtx);
-        if (!formatter) {
-            return;
-        }
     }
-
-    MEMCLEAR(detailCaption);
-    MEMCLEAR(detailValue);
-    MEMCLEAR(opCaption);
-    formatter(txCtx);
-
-    if (!formatter) {
-        formatter = next_formatter(txCtx);
+    if (formatter) {
+        MEMCLEAR(detailCaption);
+        MEMCLEAR(detailValue);
+        MEMCLEAR(opCaption);
+        formatter(txCtx);
     }
 }
 
