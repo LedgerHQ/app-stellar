@@ -37,13 +37,13 @@ void format_sequence_number(tx_context_t *txCtx) {
     strcpy(detailCaption, "Sequence Number");
     char sequenceNumber[22];
     print_uint(txCtx->txDetails.sequenceNumber, sequenceNumber);
-    print_summary(sequenceNumber, detailValue, 5, 6);
+    print_summary(sequenceNumber, detailValue, 6, 6);
     formatter = NULL;
 }
 
 void format_transaction_source(tx_context_t *txCtx) {
     strcpy(detailCaption, "Transaction Source");
-    print_public_key(txCtx->txDetails.source, detailValue, 5, 6);
+    print_public_key(txCtx->txDetails.source, detailValue, 6, 6);
     formatter = &format_sequence_number;
 }
 
@@ -121,7 +121,7 @@ void format_confirm_transaction_details(tx_context_t *txCtx) {
 void format_operation_source(tx_context_t *txCtx) {
     if (txCtx->opDetails.sourcePresent) {
         strcpy(detailCaption, "Operation Source");
-        print_public_key(txCtx->opDetails.source, detailValue, 5, 6);
+        print_public_key(txCtx->opDetails.source, detailValue, 6, 6);
         formatter = &format_confirm_transaction_details;
     } else {
         if (txCtx->opIdx == txCtx->opCount) {
@@ -155,9 +155,9 @@ void format_account_merge_destination(tx_context_t *txCtx) {
 void format_account_merge(tx_context_t *txCtx) {
     strcpy(detailCaption, "Merge Account");
     if (txCtx->opDetails.sourcePresent) {
-        print_public_key(txCtx->opDetails.source, detailValue, 5, 6);
+        print_public_key(txCtx->opDetails.source, detailValue, 6, 6);
     } else {
-        print_public_key(txCtx->txDetails.source, detailValue, 5, 6);
+        print_public_key(txCtx->txDetails.source, detailValue, 6, 6);
     }
     formatter = &format_account_merge_destination;
 }
@@ -322,7 +322,7 @@ void format_set_option_clear_flags(tx_context_t *txCtx) {
 void format_set_option_inflation_destination(tx_context_t *txCtx) {
     if (txCtx->opDetails.op.setOptions.inflationDestinationPresent) {
         strcpy(detailCaption, "Inflation Dest");
-        print_public_key(txCtx->opDetails.op.setOptions.inflationDestination, detailValue, 5, 6);
+        print_public_key(txCtx->opDetails.op.setOptions.inflationDestination, detailValue, 6, 6);
         formatter = &format_set_option_clear_flags;
     } else {
         format_set_option_clear_flags(txCtx);

@@ -187,7 +187,7 @@ const bagl_element_t *ui_approve_tx_prepro(const bagl_element_t *element) {
     case 0x01:
     case 0x11: // "Confirm transaction"
         if (detailCaption[0] == '\0' && opCaption[0] == '\0') {
-            UX_CALLBACK_SET_INTERVAL(1750);
+            UX_CALLBACK_SET_INTERVAL(2000);
             return element;
         }
         return NULL;
@@ -195,7 +195,7 @@ const bagl_element_t *ui_approve_tx_prepro(const bagl_element_t *element) {
         if (opCaption[0] != '\0') {
             os_memmove(&tmp_element, element, sizeof(bagl_element_t));
             tmp_element.text = opCaption;
-            UX_CALLBACK_SET_INTERVAL(MAX(1750, 1000 + bagl_label_roundtrip_duration_ms(&tmp_element, 7)));
+            UX_CALLBACK_SET_INTERVAL(MAX(2000, 1000 + bagl_label_roundtrip_duration_ms(&tmp_element, 7)));
             return &tmp_element;
         }
         return NULL;
@@ -208,7 +208,7 @@ const bagl_element_t *ui_approve_tx_prepro(const bagl_element_t *element) {
             } else {
                 tmp_element.text = detailValue;
             }
-            UX_CALLBACK_SET_INTERVAL(MAX(1750, 1000 + bagl_label_roundtrip_duration_ms(&tmp_element, 7)));
+            UX_CALLBACK_SET_INTERVAL(MAX(2000, 1000 + bagl_label_roundtrip_duration_ms(&tmp_element, 7)));
             return &tmp_element;
         }
     }
@@ -223,7 +223,7 @@ const bagl_element_t *ui_tx_approve_hash_prepro(const bagl_element_t *element) {
     case 0x01:
     case 0x11: // "Confirm transaction"
         if (detailCaption[0] == '\0') {
-            UX_CALLBACK_SET_INTERVAL(1750);
+            UX_CALLBACK_SET_INTERVAL(2000);
             return element;
         }
         break;
@@ -238,7 +238,7 @@ const bagl_element_t *ui_tx_approve_hash_prepro(const bagl_element_t *element) {
             } else {
                 tmp_element.text = detailValue;
             }
-            UX_CALLBACK_SET_INTERVAL(MAX(1750, 1000 + bagl_label_roundtrip_duration_ms(&tmp_element, 7)));
+            UX_CALLBACK_SET_INTERVAL(MAX(2000, 1000 + bagl_label_roundtrip_duration_ms(&tmp_element, 7)));
             return &tmp_element;
         }
     }
