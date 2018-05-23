@@ -6,9 +6,11 @@ Support for showing details of multi-operation transactions has been added. Prev
 
 A U2F connection keep-alive has been implemented to prevent connections from timing out after 30 seconds when using browser mode on Chrome.
 
-Transaction details now include operation source if present, transaction source, transaction time bounds, sequence number, memo type and hex-encoded managed data value. Detail display for set options has been improved: flags are now in human readable format, thresholds and master weight are represented separately, and add and remove signer is more descriptive too. Support for new Stellar operation 'Bump Sequence' was added.
+Transaction details now include operation source (if present), transaction source, transaction time bounds (if present), sequence number, memo type and hex-encoded managed data value. Detail display for set options has been improved: flags are now in human readable format, thresholds and master weight are represented separately, and add and remove signer is more descriptive too. Support for new Stellar operation 'Bump Sequence' was added.
 
 The native asset is no longer assumed to be XLM when showing amounts. Instead, amounts in native assets are qualified as XLM only if the network id matches either Stellar public network or test network ids. Otherwise native amounts are qualified as 'native'.
+
+This release also uses the new SDK built-in U2F support which means that the user no longer needs to set the browser mode when switching between host application that use different transport protocols.
 
 ## v2.1 Hash signing support
 
