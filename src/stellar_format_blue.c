@@ -40,7 +40,7 @@ void format_sequence_number(tx_context_t *txCtx) {
 
 void format_transaction_source(tx_context_t *txCtx) {
     strcpy(detailCaption, "Transaction Source");
-    print_public_key(txCtx->txDetails.source, detailValue, 5, 6);
+    public_key_to_address(txCtx->txDetails.source, detailValue);
     formatter = &format_sequence_number;
 }
 
@@ -111,7 +111,7 @@ void format_confirm_transaction_details(tx_context_t *txCtx) {
 void format_operation_source(tx_context_t *txCtx) {
     if (txCtx->opDetails.sourcePresent) {
         strcpy(detailCaption, "Operation Source");
-        print_public_key(txCtx->opDetails.source, detailValue, 5, 6);
+        public_key_to_address(txCtx->opDetails.source, detailValue);
     }
     formatter = NULL;
 }
