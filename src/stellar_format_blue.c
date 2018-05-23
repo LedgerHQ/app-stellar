@@ -280,8 +280,12 @@ void format_set_option_master_weight(tx_context_t *txCtx) {
 void format_set_option_flags(tx_context_t *txCtx) {
     if (txCtx->opDetails.op.setOptions.clearFlagsPresent || txCtx->opDetails.op.setOptions.setFlagsPresent) {
         strcpy(detailCaption, "Account Flags");
-        print_flags(txCtx->opDetails.op.setOptions.clearFlags, detailValue, '-');
-        print_flags(txCtx->opDetails.op.setOptions.setFlags, detailValue, '+');
+        if (txCtx->opDetails.op.setOptions.clearFlagsPresent) {
+            print_flags(txCtx->opDetails.op.setOptions.clearFlags, detailValue, '-');
+        }
+        if (txCtx->opDetails.op.setOptions.setFlagsPresent) {
+            print_flags(txCtx->opDetails.op.setOptions.setFlags, detailValue, '+');
+        }
         formatter = &format_set_option_master_weight;
     } else {
         format_set_option_master_weight(txCtx);
