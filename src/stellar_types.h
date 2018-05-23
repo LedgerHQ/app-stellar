@@ -110,9 +110,9 @@ static const char* NETWORK_NAMES[3] = { "Public", "Test", "Unknown" };
 #define PIC(code) code
 //#define TARGET_NANOS 1
 #define TARGET_BLUE 1
-#define MEMCLEAR(dest) { memset(dest, 0, sizeof(dest)); }
+#define MEMCLEAR(dest) { memset(&dest, 0, sizeof(dest)); }
 #else
-#define MEMCLEAR(dest) { os_memset(dest, 0, sizeof(dest)); }
+#define MEMCLEAR(dest) { os_memset(&dest, 0, sizeof(dest)); }
 #include "bolos_target.h"
 #endif // TEST
 

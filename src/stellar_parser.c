@@ -481,7 +481,7 @@ uint16_t parse_op_xdr(uint8_t *buffer, operation_details_t *opDetails) {
 void parse_tx_xdr(uint8_t *buffer, tx_context_t *txCtx) {
     uint16_t offset = txCtx->offset;
     if (offset == 0) {
-        MEMCLEAR(&txCtx->txDetails);
+        MEMCLEAR(txCtx->txDetails);
 
         offset += parse_network(buffer, &txCtx->txDetails);
 
