@@ -88,20 +88,6 @@ void ui_idle(void) {
 //                             SETTINGS SCREEN                               //
 // ------------------------------------------------------------------------- //
 
-const bagl_element_t *ui_settings_blue_toggle_browser(const bagl_element_t *e) {
-    // toggle setting and request redraw of settings elements
-    uint8_t setting = N_stellar_pstate->fidoTransport ? 0 : 1;
-    nvm_write(&N_stellar_pstate->fidoTransport, (void *)&setting, sizeof(uint8_t));
-    USB_power_U2F(0, 0);
-    USB_power_U2F(1, N_stellar_pstate->fidoTransport);
-
-    // only refresh settings mutable drawn elements
-    UX_REDISPLAY_IDX(8);
-
-    // won't redisplay the bagl_none
-    return 0;
-}
-
 const bagl_element_t *ui_settings_blue_toggle_hash_signing(const bagl_element_t *e) {
     // toggle setting and request redraw of settings elements
     ctx.hashSigning = (ctx.hashSigning == 0x00) ? 0x01 : 0x00;
@@ -153,16 +139,6 @@ const bagl_element_t ui_settings_blue[] = {
     {{BAGL_ICON, 0x01, 258, 98, 32, 18, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, 0, 0},
      NULL, 0, 0, 0, NULL, NULL, NULL},
 
-    {{BAGL_LABELINE, 0x00, 30, 173, 160, 30, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_10_13PX, 0},
-     "Browser support", 0, 0, 0, NULL, NULL, NULL},
-    {{BAGL_LABELINE, 0x00, 30, 194, 260, 30, 0, 0, BAGL_FILL, 0x999999, COLOR_BG_1, BAGL_FONT_OPEN_SANS_REGULAR_8_11PX, 0},
-     "Enable integrated browser support", 0, 0, 0, NULL, NULL, NULL},
-    {{BAGL_NONE | BAGL_FLAG_TOUCHABLE, 0x00, 0, 146, 320, 68, 0, 0, BAGL_FILL, 0xFFFFFF, 0x000000, 0, 0},
-     NULL, 0, 0xEEEEEE, 0x000000, ui_settings_blue_toggle_browser, ui_settings_out_over, ui_settings_out_over},
-
-    {{BAGL_ICON, 0x02, 258, 166, 32, 18, 0, 0, BAGL_FILL, 0x000000, COLOR_BG_1, 0, 0},
-     NULL, 0, 0, 0, NULL, NULL, NULL},
-
 };
 
 const bagl_element_t *ui_settings_blue_prepro(const bagl_element_t *e) {
@@ -172,23 +148,11 @@ const bagl_element_t *ui_settings_blue_prepro(const bagl_element_t *e) {
     }
     if (e->component.userid) {
         os_memmove(&tmp_element, e, sizeof(bagl_element_t));
-        switch (e->component.userid) {
-        case 0x01:
-            // swap icon content
-            if (ctx.hashSigning) {
-                tmp_element.text = &C_icon_toggle_set;
-            } else {
-                tmp_element.text = &C_icon_toggle_reset;
-            }
-            break;
-        case 0x02:
-            // swap icon content
-            if (N_stellar_pstate->fidoTransport) {
-                tmp_element.text = &C_icon_toggle_set;
-            } else {
-                tmp_element.text = &C_icon_toggle_reset;
-            }
-            break;
+        // swap icon content
+        if (ctx.hashSigning) {
+            tmp_element.text = &C_icon_toggle_set;
+        } else {
+            tmp_element.text = &C_icon_toggle_reset;
         }
         return &tmp_element;
     }
@@ -329,7 +293,9 @@ uint16_t offsets[MAX_OPS];
 void prepare_details() {
     os_memset(detailCaptions, 0, sizeof(detailCaptions));
     os_memset(detailValues, 0, sizeof(detailValues));
-    if (currentScreen > 0 && offsets[currentScreen] == 0) { // transaction details (memo/fee/etc)
+
+    bool showTransactionDetails = currentScreen > 0 && offsets[currentScreen] == 0;
+    if (showTransactionDetails) { // all operations have been shown: show transaction level details
         strcpy(titleCaption, "Transaction level details");
         strcpy(subtitleCaption, "");
         formatter = &format_confirm_transaction_details;
@@ -344,7 +310,8 @@ void prepare_details() {
             }
             i++;
         }
-    } else { // operation details
+    } else { // show operation details
+        ctx.req.tx.offset = offsets[currentScreen];
         parse_tx_xdr(ctx.req.tx.raw, &ctx.req.tx);
         offsets[currentScreen+1] = ctx.req.tx.offset;
         strcpy(titleCaption, "Operation ");
@@ -369,7 +336,7 @@ void prepare_details() {
     }
 }
 
-const bagl_element_t *ui_approval_common_show_details(const bagl_element_t *e) {
+const bagl_element_t *ui_approval_show_details(const bagl_element_t *e) {
     uint8_t detailIdx = e->component.userid & 0xF;
     char *detailVal = detailValues[detailIdx];
     if (detailVal != NULL && strlen(detailVal) * BAGL_FONT_OPEN_SANS_REGULAR_10_13PX_AVG_WIDTH >= 160) {
@@ -449,7 +416,7 @@ const bagl_element_t ui_approval_blue[] = {
     {{BAGL_LABELINE, 0x20, 284, 179, 6, 16, 0, 0, BAGL_FILL, 0x999999, COLOR_BG_1, BAGL_FONT_SYMBOLS_0 | BAGL_FONT_ALIGNMENT_RIGHT, 0},
      BAGL_FONT_SYMBOLS_0_MINIRIGHT, 0, 0, 0, NULL, NULL, NULL},
     {{BAGL_NONE | BAGL_FLAG_TOUCHABLE, 0x80, 0, 158, 320, 34, 0, 9, BAGL_FILL, 0xFFFFFF, 0x000000, 0, 0},
-     NULL, 0, 0xEEEEEE, 0x000000, ui_approval_common_show_details, ui_menu_item_out_over, ui_menu_item_out_over},
+     NULL, 0, 0xEEEEEE, 0x000000, ui_approval_show_details, ui_menu_item_out_over, ui_menu_item_out_over},
     {{BAGL_RECTANGLE, 0x20, 0, 158, 5, 34, 0, 0, BAGL_FILL, COLOR_BG_1, COLOR_BG_1, 0, 0},
      NULL, 0, 0x41CCB4, 0, NULL, NULL, NULL},
 
@@ -463,7 +430,7 @@ const bagl_element_t ui_approval_blue[] = {
     {{BAGL_LABELINE, 0x21, 284, 214, 6, 16, 0, 0, BAGL_FILL, 0x999999, COLOR_BG_1, BAGL_FONT_SYMBOLS_0 | BAGL_FONT_ALIGNMENT_RIGHT, 0},
      BAGL_FONT_SYMBOLS_0_MINIRIGHT, 0, 0, 0, NULL, NULL, NULL},
     {{BAGL_NONE | BAGL_FLAG_TOUCHABLE, 0x81, 0, 193, 320, 34, 0, 9, BAGL_FILL, 0xFFFFFF, 0x000000, 0, 0},
-     NULL, 0, 0xEEEEEE, 0x000000, ui_approval_common_show_details, ui_menu_item_out_over, ui_menu_item_out_over},
+     NULL, 0, 0xEEEEEE, 0x000000, ui_approval_show_details, ui_menu_item_out_over, ui_menu_item_out_over},
     {{BAGL_RECTANGLE, 0x21, 0, 193, 5, 34, 0, 0, BAGL_FILL, COLOR_BG_1, COLOR_BG_1, 0, 0},
      NULL, 0, 0x41CCB4, 0, NULL, NULL, NULL},
 
@@ -477,7 +444,7 @@ const bagl_element_t ui_approval_blue[] = {
     {{BAGL_LABELINE, 0x22, 284, 249, 6, 16, 0, 0, BAGL_FILL, 0x999999, COLOR_BG_1, BAGL_FONT_SYMBOLS_0 | BAGL_FONT_ALIGNMENT_RIGHT, 0},
      BAGL_FONT_SYMBOLS_0_MINIRIGHT, 0, 0, 0, NULL, NULL, NULL},
     {{BAGL_NONE | BAGL_FLAG_TOUCHABLE, 0x82, 0, 228, 320, 34, 0, 9, BAGL_FILL, 0xFFFFFF, 0x000000, 0, 0},
-     NULL, 0, 0xEEEEEE, 0x000000, ui_approval_common_show_details, ui_menu_item_out_over, ui_menu_item_out_over},
+     NULL, 0, 0xEEEEEE, 0x000000, ui_approval_show_details, ui_menu_item_out_over, ui_menu_item_out_over},
     {{BAGL_RECTANGLE, 0x22, 0, 228, 5, 34, 0, 0, BAGL_FILL, COLOR_BG_1, COLOR_BG_1, 0, 0},
      NULL, 0, 0x41CCB4, 0, NULL, NULL, NULL},
 
@@ -491,7 +458,7 @@ const bagl_element_t ui_approval_blue[] = {
     {{BAGL_LABELINE, 0x23, 284, 284, 6, 16, 0, 0, BAGL_FILL, 0x999999, COLOR_BG_1, BAGL_FONT_SYMBOLS_0 | BAGL_FONT_ALIGNMENT_RIGHT, 0},
      BAGL_FONT_SYMBOLS_0_MINIRIGHT, 0, 0, 0, NULL, NULL, NULL},
     {{BAGL_NONE | BAGL_FLAG_TOUCHABLE, 0x83, 0, 263, 320, 34, 0, 9, BAGL_FILL, 0xFFFFFF, 0x000000, 0, 0},
-     NULL, 0, 0xEEEEEE, 0x000000, ui_approval_common_show_details, ui_menu_item_out_over, ui_menu_item_out_over},
+     NULL, 0, 0xEEEEEE, 0x000000, ui_approval_show_details, ui_menu_item_out_over, ui_menu_item_out_over},
     {{BAGL_RECTANGLE, 0x23, 0, 263, 5, 34, 0, 0, BAGL_FILL, COLOR_BG_1, COLOR_BG_1, 0, 0},
      NULL, 0, 0x41CCB4, 0, NULL, NULL, NULL},
 
@@ -505,7 +472,7 @@ const bagl_element_t ui_approval_blue[] = {
     {{BAGL_LABELINE, 0x24, 284, 319, 6, 16, 0, 0, BAGL_FILL, 0x999999, COLOR_BG_1, BAGL_FONT_SYMBOLS_0 | BAGL_FONT_ALIGNMENT_RIGHT, 0},
      BAGL_FONT_SYMBOLS_0_MINIRIGHT, 0, 0, 0, NULL, NULL, NULL},
     {{BAGL_NONE | BAGL_FLAG_TOUCHABLE, 0x84, 0, 298, 320, 34, 0, 9, BAGL_FILL, 0xFFFFFF, 0x000000, 0, 0},
-     NULL, 0, 0xEEEEEE, 0x000000, ui_approval_common_show_details, ui_menu_item_out_over, ui_menu_item_out_over},
+     NULL, 0, 0xEEEEEE, 0x000000, ui_approval_show_details, ui_menu_item_out_over, ui_menu_item_out_over},
     {{BAGL_RECTANGLE, 0x24, 0, 298, 5, 34, 0, 0, BAGL_FILL, COLOR_BG_1, COLOR_BG_1, 0, 0},
      NULL, 0, 0x41CCB4, 0, NULL, NULL, NULL},
 
@@ -519,7 +486,7 @@ const bagl_element_t ui_approval_blue[] = {
     {{BAGL_LABELINE, 0x25, 284, 354, 6, 16, 0, 0, BAGL_FILL, 0x999999, COLOR_BG_1, BAGL_FONT_SYMBOLS_0 | BAGL_FONT_ALIGNMENT_RIGHT, 0},
      BAGL_FONT_SYMBOLS_0_MINIRIGHT, 0, 0, 0, NULL, NULL, NULL},
     {{BAGL_NONE | BAGL_FLAG_TOUCHABLE, 0x85, 0, 333, 320, 34, 0, 9, BAGL_FILL, 0xFFFFFF, 0x000000, 0, 0},
-     NULL, 0, 0xEEEEEE, 0x000000, ui_approval_common_show_details, ui_menu_item_out_over, ui_menu_item_out_over},
+     NULL, 0, 0xEEEEEE, 0x000000, ui_approval_show_details, ui_menu_item_out_over, ui_menu_item_out_over},
     {{BAGL_RECTANGLE, 0x25, 0, 333, 5, 34, 0, 0, BAGL_FILL, COLOR_BG_1, COLOR_BG_1, 0, 0},
      NULL, 0, 0x41CCB4, 0, NULL, NULL, NULL},
 
@@ -538,15 +505,20 @@ const bagl_element_t *ui_approval_blue_prepro(const bagl_element_t *element) {
     if ((element->component.type & (~BAGL_FLAG_TOUCHABLE)) == BAGL_NONE) {
         return element;
     } else {
+
         uint8_t type = element->component.userid & 0xF0;
         uint8_t index = element->component.userid & 0xF;
+        bool hasDetails = detailCaptions[index][0] != '\0' && detailValues[index][0] != '\0';
+        bool hasNextDetails = detailCaptions[index+1][0] != '\0' && detailValues[index+1][0] != '\0';
+        bool isDetailOverflow = strlen(detailValues[index]) * BAGL_FONT_OPEN_SANS_REGULAR_10_13PX_AVG_WIDTH >= 160;
+
         switch (type) {
         case 0x00: {
-            if (element->component.userid == 0x01) {
+            if (element->component.userid == 0x01) { // previous screen symbol
                 bool hasPreviousScreen = currentScreen > 0;
                 return hasPreviousScreen ? element : NULL;
             }
-            if (element->component.userid == 0x02) {
+            if (element->component.userid == 0x02) { // next screen symbol
                 bool hasNextScreen = currentScreen < ctx.req.tx.opCount;
                 return hasNextScreen ? element : NULL;
             }
@@ -559,7 +531,7 @@ const bagl_element_t *ui_approval_blue_prepro(const bagl_element_t *element) {
 
         // detail label
         case 0x70:
-            if (detailCaptions[index][0] == '\0' || detailValues[index][0] == '\0') {
+            if (!hasDetails) {
                 return NULL;
             }
             os_memmove(&tmp_element, element, sizeof(bagl_element_t));
@@ -568,30 +540,27 @@ const bagl_element_t *ui_approval_blue_prepro(const bagl_element_t *element) {
 
         // detail value
         case 0x10:
-            if (detailCaptions[index][0] == '\0' || detailValues[index][0] == '\0') {
+            if (!hasDetails) {
                 return NULL;
             }
             os_memmove(&tmp_element, element, sizeof(bagl_element_t));
             tmp_element.text = detailValues[index];
 
             // x -= 18 when overflow is detected
-            if (strlen(detailValues[index]) * BAGL_FONT_OPEN_SANS_REGULAR_10_13PX_AVG_WIDTH >= 160) {
+            if (isDetailOverflow) {
                 tmp_element.component.x -= 18;
             }
             return &tmp_element;
 
         // right arrow and left selection rectangle
         case 0x20:
-            if (detailCaptions[index][0] == '\0') {
-                return NULL;
-            }
-            if (strlen(detailValues[index]) * BAGL_FONT_OPEN_SANS_REGULAR_10_13PX_AVG_WIDTH < 160) {
+            if (!isDetailOverflow) {
                 return NULL;
             }
             break;
         // horizontal delimiter
         case 0x30:
-            if (index >= 5 || detailCaptions[index+1][0] == '\0') {
+            if (index >= 5 || !hasNextDetails) {
                 return NULL;
             }
         }
@@ -620,7 +589,7 @@ void ui_approve_tx_hash_init(void) {
 
 void ui_approve_tx_init(void) {
     currentScreen = 0;
-    offsets[0] = 0;
+    offsets[currentScreen] = 0;
     prepare_details();
     ui_approval_blue_init();
 }

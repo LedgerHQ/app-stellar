@@ -17,18 +17,15 @@
 #include "stellar_ux.h"
 
 #include "os_io_seproxyhal.h"
-#include "u2f_service.h"
 #include "stellar_api.h"
 
 unsigned int io_seproxyhal_respond(unsigned short sw, uint32_t tx) {
     G_io_apdu_buffer[tx++] = sw >> 8;
     G_io_apdu_buffer[tx++] = sw;
-    if (fidoActivated) {
-        u2f_proxy_response((u2f_service_t *)&u2fService, tx);
-    } else {
-        // Send back the response, do not restart the event loop
-        io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
-    }
+
+    // Send back the response, do not restart the event loop
+    io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
+
     // Display back the original UX
     ui_idle();
     return 0; // do not redraw the widgets

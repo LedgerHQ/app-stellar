@@ -37,36 +37,16 @@ const ux_menu_entry_t menu_settings[];
 const ux_menu_entry_t menu_settings_browser[];
 const ux_menu_entry_t menu_settings_hash_signing[];
 
-// change the setting
-void menu_settings_browser_change(unsigned int enabled) {
-    nvm_write(&N_stellar_pstate->fidoTransport, (void *)&enabled, sizeof(uint8_t));
-    USB_power_U2F(0, 0);
-    USB_power_U2F(1, N_stellar_pstate->fidoTransport);
-    // go back to the menu entry
-    UX_MENU_DISPLAY(1, menu_settings, NULL);
-}
 
 void menu_settings_hash_signing_change(unsigned int enabled) {
     ctx.hashSigning = enabled;
     UX_MENU_DISPLAY(1, menu_settings, NULL);
 }
 
-// show the currently activated entry
-void menu_settings_browser_init(unsigned int ignored) {
-    UNUSED(ignored);
-    UX_MENU_DISPLAY(N_stellar_pstate->fidoTransport ? 1 : 0, menu_settings_browser, NULL);
-}
-
 void menu_settings_hash_siging_init(unsigned int ignored) {
     UNUSED(ignored);
     UX_MENU_DISPLAY(ctx.hashSigning, menu_settings_hash_signing, NULL);
 }
-
-const ux_menu_entry_t menu_settings_browser[] = {
-    {NULL, menu_settings_browser_change, 0, NULL, "No", NULL, 0, 0},
-    {NULL, menu_settings_browser_change, 1, NULL, "Yes", NULL, 0, 0},
-    UX_MENU_END
-    };
 
 const ux_menu_entry_t menu_settings_hash_signing[] = {
     {NULL, menu_settings_hash_signing_change, 0, NULL, "No", NULL, 0, 0},
@@ -75,7 +55,6 @@ const ux_menu_entry_t menu_settings_hash_signing[] = {
     };
 
 const ux_menu_entry_t menu_settings[] = {
-    {NULL, menu_settings_browser_init, 0, NULL, "Browser support", NULL, 0, 0},
     {NULL, menu_settings_hash_siging_init, 0, NULL, "Hash signing", NULL, 0, 0},
     {menu_main, NULL, 1, &C_icon_back, "Back", NULL, 61, 40},
     UX_MENU_END

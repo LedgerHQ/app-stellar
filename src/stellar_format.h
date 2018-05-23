@@ -24,9 +24,9 @@ extern char opCaption[20];
 extern char detailCaption[20];
 extern char detailValue[67];
 
-void format_confirm_transaction_details(tx_context_t *txCtx);
 void format_confirm_transaction(tx_context_t *txCtx);
 void format_confirm_operation(tx_context_t *txCtx);
+void format_confirm_transaction_details(tx_context_t *txCtx);
 void format_confirm_hash(tx_context_t *txCtx);
 
 #endif

@@ -318,13 +318,3 @@ void print_native_asset_code(uint8_t network, char *out) {
         strcpy(out, "XLM");
     }
 }
-
-#ifndef TEST
-void u2f_proxy_response(u2f_service_t *service, unsigned int tx) {
-    os_memset(service->messageBuffer, 0, 5);
-    os_memmove(service->messageBuffer + 5, G_io_apdu_buffer, tx);
-    service->messageBuffer[tx + 5] = 0x90;
-    service->messageBuffer[tx + 6] = 0x00;
-    u2f_send_fragmented_response(service, U2F_CMD_MSG, service->messageBuffer, tx + 7, true);
-}
-#endif

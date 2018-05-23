@@ -27,12 +27,6 @@
 #include "stellar_vars.h"
 #include "stellar_ux.h"
 
-#include "u2f_service.h"
-#include "u2f_transport.h"
-
-
-volatile unsigned char u2fMessageBuffer[U2F_MAX_MESSAGE_SIZE];
-
 unsigned short io_exchange_al(unsigned char channel, unsigned short tx_len) {
     switch (channel & ~(IO_FLAGS)) {
     case CHANNEL_KEYBOARD:
@@ -70,7 +64,7 @@ void handle_apdu(volatile unsigned int *flags, volatile unsigned int *tx) {
             uint8_t *dataBuffer = G_io_apdu_buffer + OFFSET_CDATA;
 
             // reset keep-alive for u2f just short of 30sec
-            ctx.u2fTimer = 28000;
+            ctx.u2fTimer = U2F_REQUEST_TIMEOUT;
 
             switch (ins) {
             case INS_GET_PUBLIC_KEY:
@@ -121,6 +115,15 @@ void handle_apdu(volatile unsigned int *flags, volatile unsigned int *tx) {
         }
     }
     END_TRY;
+}
+
+void stellar_nv_state_init() {
+    if (N_stellar_pstate->initialized != 0x01) {
+        stellar_nv_state_t nv_state;
+        nv_state.fidoTransport = 0x01;
+        nv_state.initialized = 0x01;
+        nvm_write(N_stellar_pstate, (void *)&nv_state, sizeof(stellar_nv_state_t));
+    }
 }
 
 void stellar_main(void) {
@@ -192,11 +195,11 @@ void io_seproxyhal_display(const bagl_element_t *element) {
     io_seproxyhal_display_default((bagl_element_t *)element);
 }
 
-void sendKeepAlive() {
+void u2f_send_keep_alive() {
     ctx.u2fTimer = 0;
     G_io_apdu_buffer[0] = 0x6e;
     G_io_apdu_buffer[1] = 0x02;
-    u2f_proxy_response((u2f_service_t *)&u2fService, 2);
+    io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
 }
 
 unsigned char io_event(unsigned char channel) {
@@ -228,14 +231,14 @@ unsigned char io_event(unsigned char channel) {
 
     case SEPROXYHAL_TAG_TICKER_EVENT:
 
-        if (fidoActivated && ctx.u2fTimer > 0) {
+#ifdef TARGET_NANOS
+        if (G_io_apdu_media == IO_APDU_MEDIA_U2F && ctx.u2fTimer > 0) {
             ctx.u2fTimer -= 100;
             if (ctx.u2fTimer <= 0) {
-                sendKeepAlive();
+                u2f_send_keep_alive();
             }
         }
 
-#ifdef TARGET_NANOS
         UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer, {
             if (UX_ALLOWED) {
                 ui_approve_tx_next_screen(&ctx.req.tx);
@@ -274,33 +277,27 @@ __attribute__((section(".boot"))) int main(void) {
     os_boot();
 
     for (;;) {
-
         UX_INIT();
         BEGIN_TRY {
             TRY {
                 io_seproxyhal_init();
 
-                if (N_stellar_pstate->initialized != 0x01) {
-                    stellar_nv_state_t nv_state;
-                    nv_state.fidoTransport = 0x01;
-                    nv_state.initialized = 0x01;
-                    nvm_write(N_stellar_pstate, (void *)&nv_state, sizeof(stellar_nv_state_t));
-                }
+                stellar_nv_state_init();
 
-                os_memset((unsigned char *)&u2fService, 0, sizeof(u2fService));
-                u2fService.inputBuffer = G_io_apdu_buffer;
-                u2fService.outputBuffer = G_io_apdu_buffer;
-                u2fService.messageBuffer = (uint8_t *)u2fMessageBuffer;
-                u2fService.messageBufferSize = U2F_MAX_MESSAGE_SIZE;
-                u2f_initialize_service((u2f_service_t *)&u2fService);
+                // deactivate usb before activating
+                USB_power(false);
+                USB_power(true);
 
-                USB_power_U2F(1, N_stellar_pstate->fidoTransport);
-
-                ui_idle();
+#ifdef HAVE_BLE
+                BLE_power(false, NULL);
+                BLE_power(true, "Ledger Wallet");
+#endif // HAVE_BLE
 
 #if defined(TARGET_BLUE)
                 UX_SET_STATUS_BAR_COLOR(0xFFFFFF, COLOR_APP);
 #endif
+
+                ui_idle();
 
                 stellar_main();
             }

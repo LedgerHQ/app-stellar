@@ -21,18 +21,13 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include "u2f_service.h"
-#include "u2f_transport.h"
-
-extern bool fidoActivated;
-
-extern void USB_power_U2F(unsigned char enabled, unsigned char fido);
 
 /**
  * Parsing of the raw transaction XDR.
- * Starts parsing the buffer at the given offset to populate the content struct.
+ * Starts parsing the buffer at txCtx.offset to populate the content struct.
  * Only a single operation is parsed during each call.
- * Returns the offset to the next operation in the buffer or 0 if this was the last operation in the buffer.
+ * Subsequent calls resume parsing where the last call left off
+ * or from the beginning when the end was reached.
  */
 void parse_tx_xdr(uint8_t *buffer, tx_context_t *txCtx);
 
@@ -84,7 +79,7 @@ void handle_sign_tx(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLe
 /** handles sign transaction hash request (displays only transaction hash) */
 void handle_sign_tx_hash(uint8_t *dataBuffer, uint16_t dataLength, volatile unsigned int *flags);
 
-/** u2f keep alive sink */
+/** u2f keep alive */
 void handle_keep_alive(volatile unsigned int *flags);
 
 /** puts the signature in the result buffer */
@@ -92,7 +87,5 @@ uint32_t set_result_sign_tx(void);
 
 /** puts the public key in the result buffer */
 uint32_t set_result_get_public_key();
-
-void u2f_proxy_response(u2f_service_t *service, unsigned int tx);
 
 #endif
