@@ -145,7 +145,7 @@ void format_inflation(tx_context_t *txCtx) {
 
 void format_account_merge_destination(tx_context_t *txCtx) {
     strcpy(detailCaption, "Destination");
-    print_public_key(txCtx->txDetails.source, detailValue, 12, 12);
+    print_public_key(txCtx->opDetails.op.accountMerge.destination, detailValue, 12, 12);
     formatter = &format_operation_source;
 }
 
