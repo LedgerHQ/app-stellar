@@ -19,6 +19,7 @@
 #include "stellar_api.h"
 #include "stellar_format.h"
 #include "test_utils.h"
+#include <string.h>
 
 int main(int argc, char *argv[]) {
 
