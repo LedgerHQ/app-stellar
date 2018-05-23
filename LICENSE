@@ -207,10 +207,10 @@ and license terms. Your use of the code for the these sub-components is subject
 to the terms and conditions of the following licenses.
 
 ------------------------------------------------------------------------------------------------------------------------
-src/base32.h
-src/base32.c
 
-The above code was adapted from:
+src/stellar_utils.c
+
+The base32 encoding algorithm was adapted from:
 https://stash.forgerock.org/projects/OPENAM/repos/forgerock-authenticator-ios/browse/ForgeRock-Authenticator/base32.h
 https://stash.forgerock.org/projects/OPENAM/repos/forgerock-authenticator-ios/browse/ForgeRock-Authenticator/base32.c
 
