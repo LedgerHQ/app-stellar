@@ -163,7 +163,7 @@ uint16_t parse_create_account(uint8_t *buffer, create_account_op_t *createAccoun
     }
     uint16_t offset = 4;
 
-    createAccount->destination = buffer + offset;
+    createAccount->accountId = buffer + offset;
     offset += 32;
 
     createAccount->amount = read_uint64_block(buffer + offset);

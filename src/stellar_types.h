@@ -145,7 +145,7 @@ typedef struct {
 } price_t;
 
 typedef struct {
-    uint8_t *destination;
+    uint8_t *accountId;
     uint64_t amount;
 
 } create_account_op_t;

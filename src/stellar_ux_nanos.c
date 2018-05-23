@@ -130,48 +130,21 @@ void ui_show_address_init(void) {
 //                             APPROVE TRANSACTION                           //
 // ------------------------------------------------------------------------- //
 
-format_function_t next_formatter(tx_context_t *txCtx) {
-    BEGIN_TRY {
-        TRY {
-            parse_tx_xdr(txCtx->raw, txCtx);
-        } CATCH_OTHER(sw) {
-            io_seproxyhal_respond(sw, 0);
-            return NULL;
-        } FINALLY {
-        }
-    } END_TRY;
-    if (txCtx->opIdx == 1) {
-        return &format_confirm_transaction;
-    } else {
-        return &format_confirm_operation;
-    }
-}
-
-void ui_approve_tx_next_screen(tx_context_t *txCtx) {
-    if (!formatter) {
-        formatter = next_formatter(txCtx);
-    }
-    if (formatter) {
-        MEMCLEAR(detailCaption);
-        MEMCLEAR(detailValue);
-        MEMCLEAR(opCaption);
-        formatter(txCtx);
-    }
-}
-
 const bagl_element_t *ui_approve_tx_prepro(const bagl_element_t *element) {
+    bool hasDetails = detailCaption[0] != '\0';
+    bool hasOperation = opCaption[0] != '\0';
     switch (element->component.userid) {
     case 0x00: // Controls: always visible
         return element;
     case 0x01:
     case 0x11: // "Confirm transaction"
-        if (detailCaption[0] == '\0' && opCaption[0] == '\0') {
+        if (!hasDetails && !hasOperation) {
             UX_CALLBACK_SET_INTERVAL(2000);
             return element;
         }
         return NULL;
     case 0x02: // "Operation i of n"
-        if (opCaption[0] != '\0') {
+        if (hasOperation) {
             os_memmove(&tmp_element, element, sizeof(bagl_element_t));
             tmp_element.text = opCaption;
             UX_CALLBACK_SET_INTERVAL(MAX(2000, 1000 + bagl_label_roundtrip_duration_ms(&tmp_element, 7)));
@@ -180,7 +153,7 @@ const bagl_element_t *ui_approve_tx_prepro(const bagl_element_t *element) {
         return NULL;
     case 0x03: // Details caption
     case 0x13: // Details value
-        if (detailCaption[0] != '\0') {
+        if (hasDetails) {
             os_memmove(&tmp_element, element, sizeof(bagl_element_t));
             if (element->component.userid == 0x03) {
                 tmp_element.text = detailCaption;
@@ -196,21 +169,20 @@ const bagl_element_t *ui_approve_tx_prepro(const bagl_element_t *element) {
 
 /** prepare next sign hash approval screen */
 const bagl_element_t *ui_tx_approve_hash_prepro(const bagl_element_t *element) {
+    bool hasDetails = detailCaption[0] != '\0';
     switch (element->component.userid) {
     case 0x00: // Controls: always visible
         return element;
     case 0x01:
     case 0x11: // "Confirm transaction"
-        if (detailCaption[0] == '\0') {
+        if (!hasDetails) {
             UX_CALLBACK_SET_INTERVAL(2000);
             return element;
         }
         break;
-    case 0x02:
-        return NULL;
     case 0x03: // Details caption
     case 0x13: // Details value
-        if (detailCaption[0] != '\0') {
+        if (hasDetails) {
             os_memmove(&tmp_element, element, sizeof(bagl_element_t));
             if (element->component.userid == 0x03) {
                 tmp_element.text = detailCaption;
@@ -264,11 +236,42 @@ unsigned int ui_approve_tx_nanos_button(unsigned int button_mask, unsigned int b
     return 0;
 }
 
+format_function_t next_formatter(tx_context_t *txCtx) {
+    BEGIN_TRY {
+        TRY {
+            parse_tx_xdr(txCtx->raw, txCtx);
+        } CATCH_OTHER(sw) {
+            io_seproxyhal_respond(sw, 0);
+            return NULL;
+        } FINALLY {
+        }
+    } END_TRY;
+    if (txCtx->opIdx == 1) {
+        return &format_confirm_transaction;
+    } else {
+        return &format_confirm_operation;
+    }
+}
+
+void ui_approve_tx_next_screen(tx_context_t *txCtx) {
+    if (!formatter) {
+        formatter = next_formatter(txCtx);
+    }
+    if (formatter) {
+        MEMCLEAR(detailCaption);
+        MEMCLEAR(detailValue);
+        MEMCLEAR(opCaption);
+        formatter(txCtx);
+    }
+}
+
 void ui_approve_tx_init(void) {
     ctx.req.tx.offset = 0;
     formatter = NULL;
     ui_approve_tx_next_screen(&ctx.req.tx);
-    UX_DISPLAY(ui_approve_tx_nanos, ui_approve_tx_prepro);
+    if (formatter) {
+        UX_DISPLAY(ui_approve_tx_nanos, ui_approve_tx_prepro);
+    }
 }
 
 void ui_approve_tx_hash_init(void) {

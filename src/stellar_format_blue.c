@@ -72,35 +72,32 @@ void format_fee(tx_context_t *txCtx) {
 }
 
 void format_memo(tx_context_t *txCtx) {
-    strcpy(detailCaption, "Memo");
-    char *suffix;
     switch (txCtx->txDetails.memo.type) {
         case MEMO_TYPE_ID: {
-            suffix = " Id";
+            strcpy(detailCaption, "Memo Id");
             strcpy(detailValue, txCtx->txDetails.memo.data);
             break;
         }
         case MEMO_TYPE_TEXT: {
-            suffix = " Text";
+            strcpy(detailCaption, "Memo Text");
             strcpy(detailValue, txCtx->txDetails.memo.data);
             break;
         }
         case MEMO_TYPE_HASH: {
-            suffix = " Hash";
+            strcpy(detailCaption, "Memo Hash");
             strcpy(detailValue, txCtx->txDetails.memo.data);
             break;
         }
         case MEMO_TYPE_RETURN: {
-            suffix = " Return";
+            strcpy(detailCaption, "Memo Return");
             strcpy(detailValue, txCtx->txDetails.memo.data);
             break;
         }
         default: {
-            suffix = "";
+            strcpy(detailCaption, "Memo");
             strcpy(detailValue, "[none]");
         }
     }
-    strcpy(detailCaption+4, suffix);
     formatter = &format_fee;
 }
 
@@ -410,21 +407,6 @@ void format_path_payment(tx_context_t *txCtx) {
     formatter = &format_path_destination;
 }
 
-void format_create_account_amount(tx_context_t *txCtx) {
-    strcpy(detailCaption, "Starting Balance");
-    char nativeAssetCode[7];
-    print_native_asset_code(txCtx->txDetails.network, nativeAssetCode);
-    print_amount(txCtx->opDetails.op.createAccount.amount, nativeAssetCode, detailValue);
-    formatter = &format_operation_source;
-}
-
-void format_create_account(tx_context_t *txCtx) {
-    strcpy(opCaption, "Create Account");
-    strcpy(detailCaption, "Account ID");
-    public_key_to_address(txCtx->opDetails.op.createAccount.destination, detailValue);
-    formatter = &format_create_account_amount;
-}
-
 void format_payment_destination(tx_context_t *txCtx) {
     strcpy(detailCaption, "Destination");
     public_key_to_address(txCtx->opDetails.op.payment.destination, detailValue);
@@ -436,6 +418,21 @@ void format_payment(tx_context_t *txCtx) {
     strcpy(detailCaption, "Amount");
     print_amount(txCtx->opDetails.op.payment.amount, txCtx->opDetails.op.payment.asset.code, detailValue);
     formatter = &format_payment_destination;
+}
+
+void format_create_account_amount(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Starting Balance");
+    char nativeAssetCode[7];
+    print_native_asset_code(txCtx->txDetails.network, nativeAssetCode);
+    print_amount(txCtx->opDetails.op.createAccount.amount, nativeAssetCode, detailValue);
+    formatter = &format_operation_source;
+}
+
+void format_create_account(tx_context_t *txCtx) {
+    strcpy(opCaption, "Create Account");
+    strcpy(detailCaption, "Account ID");
+    public_key_to_address(txCtx->opDetails.op.createAccount.accountId, detailValue);
+    formatter = &format_create_account_amount;
 }
 
 const format_function_t formatters[12] = {

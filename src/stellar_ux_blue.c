@@ -30,10 +30,17 @@ bagl_element_t tmp_element;
 
 char titleCaption[26];
 char subtitleCaption[21];
+char detailCaptions[7][20];
+char detailValues[7][67];
 char displayString[33];
+
+uint8_t currentScreen;
+uint16_t offsets[MAX_OPS];
+
 
 const bagl_element_t *io_seproxyhal_touch_settings(const bagl_element_t *e);
 const bagl_element_t *io_seproxyhal_touch_exit(const bagl_element_t *e);
+void prepare_details();
 
 
 // ------------------------------------------------------------------------- //
@@ -284,57 +291,6 @@ unsigned int ui_details_blue_button(unsigned int button_mask, unsigned int butto
 //                       TRANSACTION APPROVAL SCREEN                         //
 // ------------------------------------------------------------------------- //
 
-char detailCaptions[7][20];
-char detailValues[7][67];
-
-uint8_t currentScreen;
-uint16_t offsets[MAX_OPS];
-
-void prepare_details() {
-    os_memset(detailCaptions, 0, sizeof(detailCaptions));
-    os_memset(detailValues, 0, sizeof(detailValues));
-
-    bool showTransactionDetails = currentScreen > 0 && offsets[currentScreen] == 0;
-    if (showTransactionDetails) { // all operations have been shown: show transaction level details
-        strcpy(titleCaption, "Transaction level details");
-        strcpy(subtitleCaption, "");
-        formatter = &format_confirm_transaction_details;
-        uint8_t i = 0;
-        while (formatter && i < 7) {
-            MEMCLEAR(detailCaption);
-            MEMCLEAR(detailValue);
-            formatter(&ctx.req.tx);
-            if (detailCaption[0] != '\0' && detailValue[0] != '\0') {
-                strcpy(detailCaptions[i], detailCaption);
-                strcpy(detailValues[i], detailValue);
-            }
-            i++;
-        }
-    } else { // show operation details
-        ctx.req.tx.offset = offsets[currentScreen];
-        parse_tx_xdr(ctx.req.tx.raw, &ctx.req.tx);
-        offsets[currentScreen+1] = ctx.req.tx.offset;
-        strcpy(titleCaption, "Operation ");
-        if (ctx.req.tx.opCount > 1) {
-            print_uint(ctx.req.tx.opIdx, titleCaption+strlen(titleCaption));
-            strcpy(titleCaption+strlen(titleCaption), " of ");
-            print_uint(ctx.req.tx.opCount, titleCaption+strlen(titleCaption));
-        }
-        formatter = &format_confirm_operation;
-        uint8_t i = 0;
-        while (formatter && i < 7) {
-            MEMCLEAR(detailCaption);
-            MEMCLEAR(detailValue);
-            formatter(&ctx.req.tx);
-            if (detailCaption[0] != '\0' && detailValue[0] != '\0') {
-                strcpy(detailCaptions[i], detailCaption);
-                strcpy(detailValues[i], detailValue);
-            }
-            i++;
-        }
-        strcpy(subtitleCaption, opCaption);
-    }
-}
 
 const bagl_element_t *ui_approval_show_details(const bagl_element_t *e) {
     uint8_t detailIdx = e->component.userid & 0xF;
@@ -350,6 +306,7 @@ const bagl_element_t *ui_approval_show_details(const bagl_element_t *e) {
 }
 
 void ui_approval_show_screen() {
+    // try / catch here because of async context
     BEGIN_TRY {
         TRY {
             prepare_details();
@@ -572,28 +529,6 @@ unsigned int ui_approval_blue_button(unsigned int button_mask, unsigned int butt
     return 0;
 }
 
-void ui_approval_blue_init(void) {
-    UX_DISPLAY(ui_approval_blue, ui_approval_blue_prepro);
-}
-
-void ui_approve_tx_hash_init(void) {
-    currentScreen = 0;
-    os_memset(detailCaptions, 0, sizeof(detailCaptions));
-    os_memset(detailValues, 0, sizeof(detailValues));
-    strcpy(detailCaptions[0], "Hash");
-    print_binary(ctx.req.tx.hash, detailValues[0], 32);
-    strcpy(titleCaption, "WARNING");
-    strcpy(subtitleCaption, "No details available");
-    ui_approval_blue_init();
-}
-
-void ui_approve_tx_init(void) {
-    currentScreen = 0;
-    offsets[currentScreen] = 0;
-    prepare_details();
-    ui_approval_blue_init();
-}
-
 const bagl_element_t *io_seproxyhal_touch_settings(const bagl_element_t *e) {
     UX_DISPLAY(ui_settings_blue, ui_settings_blue_prepro);
     return NULL;
@@ -602,6 +537,78 @@ const bagl_element_t *io_seproxyhal_touch_settings(const bagl_element_t *e) {
 const bagl_element_t *io_seproxyhal_touch_exit(const bagl_element_t *e) {
     os_sched_exit(0);
     return NULL;
+}
+
+void prepare_details() {
+    os_memset(detailCaptions, 0, sizeof(detailCaptions));
+    os_memset(detailValues, 0, sizeof(detailValues));
+
+    bool showTransactionDetails = currentScreen > 0 && offsets[currentScreen] == 0;
+    if (showTransactionDetails) { // all operations have been shown: show transaction level details
+        strcpy(titleCaption, "Transaction level details");
+        strcpy(subtitleCaption, "");
+        formatter = &format_confirm_transaction_details;
+        uint8_t i = 0;
+        while (formatter && i < 7) {
+            MEMCLEAR(detailCaption);
+            MEMCLEAR(detailValue);
+            formatter(&ctx.req.tx);
+            if (detailCaption[0] != '\0' && detailValue[0] != '\0') {
+                strcpy(detailCaptions[i], detailCaption);
+                strcpy(detailValues[i], detailValue);
+            }
+            i++;
+        }
+    } else { // show operation details
+        ctx.req.tx.offset = offsets[currentScreen];
+        parse_tx_xdr(ctx.req.tx.raw, &ctx.req.tx);
+        offsets[currentScreen+1] = ctx.req.tx.offset;
+        strcpy(titleCaption, "Operation ");
+        if (ctx.req.tx.opCount > 1) {
+            print_uint(ctx.req.tx.opIdx, titleCaption+strlen(titleCaption));
+            strcpy(titleCaption+strlen(titleCaption), " of ");
+            print_uint(ctx.req.tx.opCount, titleCaption+strlen(titleCaption));
+        }
+        formatter = &format_confirm_operation;
+        uint8_t i = 0;
+        while (formatter && i < 7) {
+            MEMCLEAR(detailCaption);
+            MEMCLEAR(detailValue);
+            formatter(&ctx.req.tx);
+            if (detailCaption[0] != '\0' && detailValue[0] != '\0') {
+                strcpy(detailCaptions[i], detailCaption);
+                strcpy(detailValues[i], detailValue);
+            }
+            i++;
+        }
+        strcpy(subtitleCaption, opCaption);
+    }
+}
+
+void ui_approval_blue_init(void) {
+    UX_DISPLAY(ui_approval_blue, ui_approval_blue_prepro);
+}
+
+void ui_approve_tx_init(void) {
+    currentScreen = 0;
+    offsets[currentScreen] = 0;
+
+    prepare_details();
+
+    ui_approval_blue_init();
+}
+
+void ui_approve_tx_hash_init(void) {
+    currentScreen = 0;
+    MEMCLEAR(detailCaptions);
+    MEMCLEAR(detailValues);
+
+    strcpy(detailCaptions[0], "Hash");
+    print_binary(ctx.req.tx.hash, detailValues[0], 32);
+    strcpy(titleCaption, "WARNING");
+    strcpy(subtitleCaption, "No details available");
+
+    ui_approval_blue_init();
 }
 
 #endif
