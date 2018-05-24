@@ -120,7 +120,6 @@ void handle_apdu(volatile unsigned int *flags, volatile unsigned int *tx) {
 void stellar_nv_state_init() {
     if (N_stellar_pstate->initialized != 0x01) {
         stellar_nv_state_t nv_state;
-        nv_state.fidoTransport = 0x01;
         nv_state.initialized = 0x01;
         nvm_write(N_stellar_pstate, (void *)&nv_state, sizeof(stellar_nv_state_t));
     }
@@ -241,7 +240,9 @@ unsigned char io_event(unsigned char channel) {
 
         UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer, {
             if (UX_ALLOWED) {
-                ui_approve_tx_next_screen(&ctx.req.tx);
+                if (ctx.reqType == CONFIRM_TRANSACTION) {
+                    ui_approve_tx_next_screen(&ctx.req.tx);
+                }
                 UX_REDISPLAY();
             }
         });

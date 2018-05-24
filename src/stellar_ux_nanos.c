@@ -104,7 +104,7 @@ const bagl_element_t ui_address_nanos[] = {
      "Confirm Address", 0, 0, 0, NULL, NULL, NULL},
     {{BAGL_LABELINE, 0x02, 16, 26, 96, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-     ctx.req.pk.address, 0, 0, 0, NULL, NULL, NULL}
+     detailValue, 0, 0, 0, NULL, NULL, NULL}
 
 };
 
@@ -123,6 +123,7 @@ unsigned int ui_address_nanos_button(unsigned int button_mask, unsigned int butt
 }
 
 void ui_show_address_init(void) {
+    print_public_key(ctx.req.pk.publicKey, detailValue, 12, 12);
     UX_DISPLAY(ui_address_nanos, ui_address_prepro);
 }
 

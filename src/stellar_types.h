@@ -230,7 +230,7 @@ typedef struct {
 
 typedef struct {
     uint8_t type;
-    uint8_t sourcePresent;
+    bool sourcePresent;
     uint8_t *source;
     union {
         create_account_op_t createAccount;
@@ -268,7 +268,6 @@ typedef struct {
 
 typedef struct {
     uint8_t publicKey[32];
-    char address[57];
     uint8_t signature[64];
     bool returnSignature;
 } pk_context_t;
@@ -286,17 +285,22 @@ typedef struct {
     uint8_t opIdx;
 } tx_context_t;
 
+enum request_type_t {
+    CONFIRM_ADDRESS,
+    CONFIRM_TRANSACTION
+};
+
 typedef struct {
     union {
         pk_context_t pk;
         tx_context_t tx;
     } req;
+    enum request_type_t reqType;
     uint16_t u2fTimer;
     uint8_t hashSigning;
 } stellar_context_t;
 
 typedef struct {
-    uint8_t fidoTransport;
     uint8_t initialized;
 } stellar_nv_state_t;
 

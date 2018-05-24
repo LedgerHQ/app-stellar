@@ -37,6 +37,26 @@ uint8_t read_bip32(uint8_t *dataBuffer, uint32_t *bip32) {
     return bip32Len;
 }
 
+void derive_private_key(cx_ecfp_private_key_t *privateKey, uint32_t *bip32, uint8_t bip32Len) {
+    uint8_t privateKeyData[32];
+    os_perso_derive_node_bip32(CX_CURVE_Ed25519, bip32, bip32Len, privateKeyData, NULL);
+    cx_ecfp_init_private_key(CX_CURVE_Ed25519, privateKeyData, 32, privateKey);
+    MEMCLEAR(privateKeyData);
+}
+
+void init_public_key(cx_ecfp_private_key_t *privateKey, cx_ecfp_public_key_t *publicKey, uint8_t *buffer) {
+    cx_ecfp_generate_pair(CX_CURVE_Ed25519, publicKey, privateKey, 1);
+
+    // copy public key little endian to big endian
+    uint8_t i;
+    for (i = 0; i < 32; i++) {
+        buffer[i] = publicKey->W[64 - i];
+    }
+    if ((publicKey->W[32] & 1) != 0) {
+        buffer[31] |= 0x80;
+    }
+}
+
 void handle_get_app_configuration(volatile unsigned int *tx) {
     G_io_apdu_buffer[0] = ctx.hashSigning;
     G_io_apdu_buffer[1] = LEDGER_MAJOR_VERSION;
@@ -71,13 +91,11 @@ void handle_get_public_key(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t
         os_memmove(msg, dataBuffer, msgLength);
     }
 
-    uint8_t privateKeyData[32];
     cx_ecfp_private_key_t privateKey;
-    os_perso_derive_node_bip32(CX_CURVE_Ed25519, bip32, bip32Len, privateKeyData, NULL);
-    cx_ecfp_init_private_key(CX_CURVE_Ed25519, privateKeyData, 32, &privateKey);
-    os_memset(privateKeyData, 0, sizeof(privateKeyData));
     cx_ecfp_public_key_t publicKey;
-    cx_ecfp_generate_pair(CX_CURVE_Ed25519, &publicKey, &privateKey, 1);
+    derive_private_key(&privateKey, bip32, bip32Len);
+    init_public_key(&privateKey, &publicKey, ctx.req.pk.publicKey);
+
     if (ctx.req.pk.returnSignature) {
 #if CX_APILEVEL >= 8
         cx_eddsa_sign(&privateKey, CX_LAST, CX_SHA512, msg, msgLength, NULL, 0, ctx.req.pk.signature, 64, NULL);
@@ -85,23 +103,10 @@ void handle_get_public_key(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t
         cx_eddsa_sign(&privateKey, NULL, CX_LAST, CX_SHA512, msg, msgLength, ctx.req.pk.signature);
 #endif
     }
-    os_memset(&privateKey, 0, sizeof(privateKey));
-
-    // copy public key little endian to big endian
-    uint8_t i;
-    for (i = 0; i < 32; i++) {
-        ctx.req.pk.publicKey[i] = publicKey.W[64 - i];
-    }
-    if ((publicKey.W[32] & 1) != 0) {
-        ctx.req.pk.publicKey[31] |= 0x80;
-    }
+    MEMCLEAR(privateKey);
 
     if (p2 & P2_CONFIRM) {
-#ifdef TARGET_NANOS
-        print_public_key(ctx.req.pk.publicKey, ctx.req.pk.address, 12, 12);
-#else
-        public_key_to_address(ctx.req.pk.publicKey, ctx.req.pk.address);
-#endif
+        ctx.reqType = CONFIRM_ADDRESS;
         ui_show_address_init();
         *flags |= IO_ASYNCH_REPLY;
     } else {
@@ -120,6 +125,8 @@ void handle_sign_tx(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLe
     }
 
     if (p1 == P1_FIRST) {
+        MEMCLEAR(ctx.req.tx);
+        ctx.reqType = CONFIRM_TRANSACTION;
         // read the bip32 path
         ctx.req.tx.bip32Len = read_bip32(dataBuffer, ctx.req.tx.bip32);
         dataBuffer += 1 + ctx.req.tx.bip32Len * 4;
@@ -160,14 +167,16 @@ void handle_sign_tx_hash(uint8_t *dataBuffer, uint16_t dataLength, volatile unsi
         THROW(0x6c66);
     }
 
-    os_memset(&ctx.req.tx, 0, sizeof(ctx.req.tx));
+    MEMCLEAR(ctx.req.tx);
+    ctx.reqType = CONFIRM_TRANSACTION;
 
-    // read the bip32 path
     ctx.req.tx.bip32Len = read_bip32(dataBuffer, ctx.req.tx.bip32);
     dataBuffer += 1 + ctx.req.tx.bip32Len * 4;
     dataLength -= 1 + ctx.req.tx.bip32Len * 4;
 
-    // read the tx hash
+    if (dataLength != 32) {
+        THROW(0x6a80);
+    }
     os_memmove(ctx.req.tx.hash, dataBuffer, dataLength);
 
     ui_approve_tx_hash_init();
@@ -180,12 +189,8 @@ void handle_keep_alive(volatile unsigned int *flags) {
 }
 
 uint32_t set_result_sign_tx(void) {
-    // initialize private key
-    uint8_t privateKeyData[32];
     cx_ecfp_private_key_t privateKey;
-    os_perso_derive_node_bip32(CX_CURVE_Ed25519, ctx.req.tx.bip32, ctx.req.tx.bip32Len, privateKeyData, NULL);
-    cx_ecfp_init_private_key(CX_CURVE_Ed25519, privateKeyData, 32, &privateKey);
-    os_memset(privateKeyData, 0, sizeof(privateKeyData));
+    derive_private_key(&privateKey, ctx.req.tx.bip32, ctx.req.tx.bip32Len);
 
     // sign hash
 #if CX_APILEVEL >= 8
@@ -194,7 +199,7 @@ uint32_t set_result_sign_tx(void) {
     uint32_t tx = cx_eddsa_sign(&privateKey, NULL, CX_LAST, CX_SHA512, ctx.req.tx.hash, 32, G_io_apdu_buffer);
 #endif
 
-    os_memset(&privateKey, 0, sizeof(privateKey));
+    MEMCLEAR(privateKey);
 
     return tx;
 }

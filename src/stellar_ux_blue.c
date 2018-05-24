@@ -207,7 +207,7 @@ const bagl_element_t *ui_address_blue_prepro(const bagl_element_t *element) {
         uint16_t line = element->component.userid & 0xF;
         uint16_t offset = line * MAX_CHAR_PER_LINE;
         os_memset(displayString, 0, MAX_CHAR_PER_LINE+1);
-        os_memmove(displayString, ctx.req.pk.address + offset, MIN(57 - offset, MAX_CHAR_PER_LINE));
+        os_memmove(displayString, detailValue + offset, MIN(57 - offset, MAX_CHAR_PER_LINE));
     }
     return element;
 }
@@ -216,6 +216,7 @@ unsigned int ui_address_blue_button(unsigned int button_mask, unsigned int butto
 }
 
 void ui_show_address_init(void) {
+    public_key_to_address(ctx.req.pk.publicKey, detailValue);
     UX_DISPLAY(ui_address_blue, ui_address_blue_prepro);
 }
 
