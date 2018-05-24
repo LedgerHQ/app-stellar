@@ -17,9 +17,16 @@
 #ifndef _STELLAR_FORMAT_H_
 #define _STELLAR_FORMAT_H_
 
+/*
+ * the formatter prints the details and defines the order of the details
+ * by setting the next formatter to be called
+ */
 typedef void (*format_function_t)(tx_context_t *txCtx);
 
+/* the current formatter */
 extern volatile format_function_t formatter;
+
+/* the current details printed by the current formatter */
 extern char opCaption[20];
 extern char detailCaption[20];
 extern char detailValue[67];

@@ -85,7 +85,7 @@ void ui_idle(void) {
 /** prepare show address screen */
 const bagl_element_t *ui_address_prepro(const bagl_element_t *element) {
     if (element->component.userid == 0x02) {
-        UX_CALLBACK_SET_INTERVAL(MAX(1500, 1000 + bagl_label_roundtrip_duration_ms(element, 7)));
+        UX_CALLBACK_SET_INTERVAL(1500 + bagl_label_roundtrip_duration_ms(element, 7));
     }
     return element;
 }
@@ -132,13 +132,18 @@ void ui_show_address_init(void) {
 // ------------------------------------------------------------------------- //
 
 const bagl_element_t *ui_approve_tx_prepro(const bagl_element_t *element) {
+    /*
+     * the current formatter decides what to show this round:
+     * if it prints detailCaption/detailValue then 0x03/0x13 is shown
+     * if it prints opCaption then 0x02 is shown
+     * if it prints neither 0x01/0x11 is shown
+     */
     bool hasDetails = detailCaption[0] != '\0';
     bool hasOperation = opCaption[0] != '\0';
     switch (element->component.userid) {
     case 0x00: // Controls: always visible
         return element;
-    case 0x01:
-    case 0x11: // "Confirm transaction"
+    case 0x01: // "Confirm transaction"
         if (!hasDetails && !hasOperation) {
             UX_CALLBACK_SET_INTERVAL(2000);
             return element;
@@ -153,7 +158,7 @@ const bagl_element_t *ui_approve_tx_prepro(const bagl_element_t *element) {
         }
         return NULL;
     case 0x03: // Details caption
-    case 0x13: // Details value
+    case 0x04: // Details value
         if (hasDetails) {
             os_memmove(&tmp_element, element, sizeof(bagl_element_t));
             if (element->component.userid == 0x03) {
@@ -174,15 +179,15 @@ const bagl_element_t *ui_tx_approve_hash_prepro(const bagl_element_t *element) {
     switch (element->component.userid) {
     case 0x00: // Controls: always visible
         return element;
-    case 0x01:
-    case 0x11: // "Confirm transaction"
+    case 0x01: // "Confirm transaction"
         if (!hasDetails) {
             UX_CALLBACK_SET_INTERVAL(2000);
             return element;
         }
         break;
+    case 0x02: return NULL;
     case 0x03: // Details caption
-    case 0x13: // Details value
+    case 0x04: // Details value
         if (hasDetails) {
             os_memmove(&tmp_element, element, sizeof(bagl_element_t));
             if (element->component.userid == 0x03) {
@@ -209,7 +214,7 @@ const bagl_element_t ui_approve_tx_nanos[] = {
 
     {{BAGL_LABELINE, 0x01, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000, BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
      "Confirm", 0, 0, 0, NULL, NULL, NULL},
-    {{BAGL_LABELINE, 0x11, 0, 26, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000, BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+    {{BAGL_LABELINE, 0x01, 0, 26, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000, BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
      "transaction", 0, 0, 0, NULL, NULL, NULL},
 
     {{BAGL_LABELINE, 0x02, 0, 19, 128, 32, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000, BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
@@ -218,7 +223,7 @@ const bagl_element_t ui_approve_tx_nanos[] = {
     // Details caption & value
     {{BAGL_LABELINE, 0x03, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000, BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
      NULL, 0, 0, 0, NULL, NULL, NULL},
-    {{BAGL_LABELINE, 0x13, 16, 26, 96, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000, BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
+    {{BAGL_LABELINE, 0x04, 16, 26, 96, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000, BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
      NULL, 0, 0, 0, NULL, NULL, NULL}
 
 };
@@ -276,8 +281,10 @@ void ui_approve_tx_init(void) {
 }
 
 void ui_approve_tx_hash_init(void) {
-    formatter = format_confirm_hash;
-    ui_approve_tx_next_screen(NULL);
+    MEMCLEAR(detailCaption);
+    MEMCLEAR(detailValue);
+    MEMCLEAR(opCaption);
+    format_confirm_hash(NULL);
     UX_DISPLAY(ui_approve_tx_nanos, ui_tx_approve_hash_prepro);
 }
 

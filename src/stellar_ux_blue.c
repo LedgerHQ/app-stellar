@@ -541,8 +541,8 @@ const bagl_element_t *io_seproxyhal_touch_exit(const bagl_element_t *e) {
 }
 
 void prepare_details() {
-    os_memset(detailCaptions, 0, sizeof(detailCaptions));
-    os_memset(detailValues, 0, sizeof(detailValues));
+    MEMCLEAR(detailCaptions);
+    MEMCLEAR(detailValues);
 
     bool showTransactionDetails = currentScreen > 0 && offsets[currentScreen] == 0;
     if (showTransactionDetails) { // all operations have been shown: show transaction level details
@@ -554,7 +554,8 @@ void prepare_details() {
             MEMCLEAR(detailCaption);
             MEMCLEAR(detailValue);
             formatter(&ctx.req.tx);
-            if (detailCaption[0] != '\0' && detailValue[0] != '\0') {
+            bool hasDetails = detailCaption[0] != '\0' && detailValue[0] != '\0';
+            if (hasDetails) {
                 strcpy(detailCaptions[i], detailCaption);
                 strcpy(detailValues[i], detailValue);
             }
@@ -576,7 +577,8 @@ void prepare_details() {
             MEMCLEAR(detailCaption);
             MEMCLEAR(detailValue);
             formatter(&ctx.req.tx);
-            if (detailCaption[0] != '\0' && detailValue[0] != '\0') {
+            bool hasDetails = detailCaption[0] != '\0' && detailValue[0] != '\0';
+            if (hasDetails) {
                 strcpy(detailCaptions[i], detailCaption);
                 strcpy(detailValues[i], detailValue);
             }
