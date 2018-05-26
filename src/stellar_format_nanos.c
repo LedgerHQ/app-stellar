@@ -161,19 +161,22 @@ void format_account_merge(tx_context_t *txCtx) {
 
 void format_manage_data_value(tx_context_t *txCtx) {
     strcpy(detailCaption, "Data Value");
-    print_binary_summary(txCtx->opDetails.op.manageData.dataValue, detailValue, txCtx->opDetails.op.manageData.dataSize);
+    print_binary_summary(txCtx->opDetails.op.manageData.dataValue, detailValue, txCtx->opDetails.op.manageData.dataValueSize);
     formatter = &format_operation_source;
 }
 
 void format_manage_data(tx_context_t *txCtx) {
-    if (txCtx->opDetails.op.manageData.hasValue) {
+    if (txCtx->opDetails.op.manageData.dataValueSize) {
         strcpy(detailCaption, "Set Data");
         formatter = &format_manage_data_value;
     } else {
         strcpy(detailCaption, "Remove Data");
         formatter = &format_operation_source;
     }
-    print_summary(txCtx->opDetails.op.manageData.dataName, detailValue, 12, 12);
+    char tmp[65];
+    memcpy(tmp, txCtx->opDetails.op.manageData.dataName, txCtx->opDetails.op.manageData.dataNameSize);
+    tmp[txCtx->opDetails.op.manageData.dataNameSize] = '\0';
+    print_summary(tmp, detailValue, 12, 12);
 }
 
 void format_allow_trust_trustee(tx_context_t *txCtx) {
@@ -247,9 +250,10 @@ void format_set_option_signer(tx_context_t *txCtx) {
 }
 
 void format_set_option_home_domain(tx_context_t *txCtx) {
-    if (txCtx->opDetails.op.setOptions.homeDomainPresent) {
+    if (txCtx->opDetails.op.setOptions.homeDomainSize) {
         strcpy(detailCaption, "Home Domain");
-        strcpy(detailValue, txCtx->opDetails.op.setOptions.homeDomain);
+        memcpy(detailValue, txCtx->opDetails.op.setOptions.homeDomain, txCtx->opDetails.op.setOptions.homeDomainSize);
+        detailValue[txCtx->opDetails.op.setOptions.homeDomainSize] = '\0';
         formatter = &format_set_option_signer;
     } else {
         format_set_option_signer(txCtx);

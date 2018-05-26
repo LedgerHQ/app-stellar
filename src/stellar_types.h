@@ -215,17 +215,17 @@ typedef struct {
     uint32_t mediumThreshold;
     bool highThresholdPresent;
     uint32_t highThreshold;
-    bool homeDomainPresent;
-    char homeDomain[HOME_DOMAIN_MAX_SIZE];
+    uint32_t homeDomainSize;
+    uint8_t *homeDomain;
     bool signerPresent;
     signer_t signer;
 } set_options_op_t;
 
 typedef struct {
-    char dataName[64];
-    bool hasValue;
-    uint8_t dataSize;
-    uint8_t dataValue[64];
+    uint8_t dataNameSize;
+    uint8_t *dataName;
+    uint8_t dataValueSize;
+    uint8_t *dataValue;
 } manage_data_op_t;
 
 typedef struct {

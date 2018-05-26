@@ -265,32 +265,33 @@ uint16_t parse_account_merge(uint8_t *buffer, account_merge_op_t *accountMerge) 
 }
 
 uint16_t parse_manage_data(uint8_t *buffer, manage_data_op_t *manageData) {
-    uint32_t size = read_uint32_block(buffer);
+    manageData->dataNameSize = read_uint32_block(buffer);
 
-    if (size > DATA_NAME_MAX_SIZE) {
+    if (manageData->dataNameSize > DATA_NAME_MAX_SIZE) {
         THROW(0x6c20);
     }
     uint16_t offset = 4;
 
-    memcpy(manageData->dataName, buffer + offset, size);
-    manageData->dataName[size] = '\0';
+    manageData->dataName = buffer + offset;
 
-    check_padding(buffer + offset, size, num_bytes(size)); // security check
-    offset += num_bytes(size);
+    check_padding(buffer + offset, manageData->dataNameSize, num_bytes(manageData->dataNameSize)); // security check
+    offset += num_bytes(manageData->dataNameSize);
 
-    manageData->hasValue = (read_uint32_block(buffer + offset)) ? true : false;
+    bool hasValue = (read_uint32_block(buffer + offset)) ? true : false;
     offset += 4;
 
-    if (manageData->hasValue) {
-        manageData->dataSize = read_uint32_block(buffer + offset);
-        if (manageData->dataSize > DATA_VALUE_MAX_SIZE) {
+    if (hasValue) {
+        manageData->dataValueSize = read_uint32_block(buffer + offset);
+        if (manageData->dataValueSize > DATA_VALUE_MAX_SIZE) {
             THROW(0x6c20);
         }
         offset += 4;
 
-        memcpy(manageData->dataValue, buffer+offset, manageData->dataSize);
-        check_padding(buffer + offset, manageData->dataSize, num_bytes(size)); // security check
-        offset += num_bytes(manageData->dataSize);
+        manageData->dataValue = buffer+offset;
+        check_padding(buffer + offset, manageData->dataValueSize, num_bytes(manageData->dataValueSize)); // security check
+        offset += num_bytes(manageData->dataValueSize);
+    } else {
+        manageData->dataValueSize = 0;
     }
 
     return offset;
@@ -388,18 +389,19 @@ uint16_t parse_set_options(uint8_t *buffer, set_options_op_t *setOptions) {
         offset += 4;
     }
 
-    setOptions->homeDomainPresent = (read_uint32_block(buffer + offset)) ? true : false;
+    bool homeDomainPresent = (read_uint32_block(buffer + offset)) ? true : false;
     offset += 4;
-    if (setOptions->homeDomainPresent) {
-        uint32_t size = read_uint32_block(buffer + offset);
-        if (size > HOME_DOMAIN_MAX_SIZE) {
+    if (homeDomainPresent) {
+        setOptions->homeDomainSize = read_uint32_block(buffer + offset);
+        if (setOptions->homeDomainSize > HOME_DOMAIN_MAX_SIZE) {
             THROW(0x6c20);
         }
         offset += 4;
-        memcpy(setOptions->homeDomain, buffer + offset, size);
-        setOptions->homeDomain[size] = '\0';
-        check_padding(buffer + offset, size, num_bytes(size)); // security check
-        offset += num_bytes(size);
+        setOptions->homeDomain = buffer + offset;
+        check_padding(buffer + offset, setOptions->homeDomainSize, num_bytes(setOptions->homeDomainSize)); // security check
+        offset += num_bytes(setOptions->homeDomainSize);
+    } else {
+        setOptions->homeDomainSize = 0;
     }
 
     setOptions->signerPresent = (read_uint32_block(buffer + offset)) ? true : false;
