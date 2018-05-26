@@ -348,6 +348,7 @@ uint16_t parse_set_options(uint8_t *buffer, set_options_op_t *setOptions) {
     offset += 4;
     if (setOptions->clearFlagsPresent) {
         setOptions->clearFlags = read_uint32_block(buffer + offset);
+        setOptions->clearFlagsPresent &= setOptions->clearFlags;
         offset += 4;
     }
 
@@ -355,6 +356,7 @@ uint16_t parse_set_options(uint8_t *buffer, set_options_op_t *setOptions) {
     offset += 4;
     if (setOptions->setFlagsPresent) {
         setOptions->setFlags = read_uint32_block(buffer + offset);
+        setOptions->setFlagsPresent &= setOptions->setFlags;
         offset += 4;
     }
 
