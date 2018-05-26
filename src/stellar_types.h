@@ -46,7 +46,7 @@
 #define OFFSET_LC 4
 #define OFFSET_CDATA 5
 
-#define MAX_RAW_TX 1024
+#define MAX_RAW_TX 1536
 #define MAX_OPS 20
 #define MAX_BIP32_LEN 10
 #define AMOUNT_MAX_SIZE 22
