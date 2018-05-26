@@ -350,6 +350,8 @@ uint16_t parse_set_options(uint8_t *buffer, set_options_op_t *setOptions) {
     if (clearFlagsPresent) {
         setOptions->clearFlags = read_uint32_block(buffer + offset);
         offset += 4;
+    } else {
+        setOptions->clearFlags = 0;
     }
 
     bool setFlagsPresent = (read_uint32_block(buffer + offset)) ? true : false;
@@ -357,6 +359,8 @@ uint16_t parse_set_options(uint8_t *buffer, set_options_op_t *setOptions) {
     if (setFlagsPresent) {
         setOptions->setFlags = read_uint32_block(buffer + offset);
         offset += 4;
+    } else {
+        setOptions->setFlags = 0;
     }
 
     setOptions->masterWeightPresent = (read_uint32_block(buffer + offset)) ? true : false;
