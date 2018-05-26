@@ -301,7 +301,7 @@ void format_set_option_master_weight(tx_context_t *txCtx) {
 }
 
 void format_set_option_set_flags(tx_context_t *txCtx) {
-    if (txCtx->opDetails.op.setOptions.setFlagsPresent) {
+    if (txCtx->opDetails.op.setOptions.setFlags) {
         strcpy(detailCaption, "Set Flags");
         print_flags(txCtx->opDetails.op.setOptions.setFlags, detailValue, 0);
         formatter = &format_set_option_master_weight;
@@ -311,7 +311,7 @@ void format_set_option_set_flags(tx_context_t *txCtx) {
 }
 
 void format_set_option_clear_flags(tx_context_t *txCtx) {
-    if (txCtx->opDetails.op.setOptions.clearFlagsPresent) {
+    if (txCtx->opDetails.op.setOptions.clearFlags) {
         strcpy(detailCaption, "Clear Flags");
         print_flags(txCtx->opDetails.op.setOptions.clearFlags, detailValue, 0);
         formatter = &format_set_option_set_flags;

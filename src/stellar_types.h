@@ -203,9 +203,7 @@ typedef struct {
 typedef struct {
     bool inflationDestinationPresent;
     uint8_t *inflationDestination;
-    bool clearFlagsPresent;
     uint32_t clearFlags;
-    bool setFlagsPresent;
     uint32_t setFlags;
     bool masterWeightPresent;
     uint32_t masterWeight;

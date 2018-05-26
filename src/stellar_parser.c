@@ -345,19 +345,17 @@ uint16_t parse_set_options(uint8_t *buffer, set_options_op_t *setOptions) {
         offset += 32;
     }
 
-    setOptions->clearFlagsPresent = (read_uint32_block(buffer + offset)) ? true : false;
+    bool clearFlagsPresent = (read_uint32_block(buffer + offset)) ? true : false;
     offset += 4;
-    if (setOptions->clearFlagsPresent) {
+    if (clearFlagsPresent) {
         setOptions->clearFlags = read_uint32_block(buffer + offset);
-        setOptions->clearFlagsPresent &= setOptions->clearFlags;
         offset += 4;
     }
 
-    setOptions->setFlagsPresent = (read_uint32_block(buffer + offset)) ? true : false;
+    bool setFlagsPresent = (read_uint32_block(buffer + offset)) ? true : false;
     offset += 4;
-    if (setOptions->setFlagsPresent) {
+    if (setFlagsPresent) {
         setOptions->setFlags = read_uint32_block(buffer + offset);
-        setOptions->setFlagsPresent &= setOptions->setFlags;
         offset += 4;
     }
 
