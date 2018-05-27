@@ -103,9 +103,9 @@ int base32_encode(const uint8_t *data, int length, char *result, int bufSize) {
     }
 }
 
-void public_key_to_address(uint8_t *in, char *out) {
+void encode_key(uint8_t *in, char *out, uint8_t versionByte) {
     uint8_t buffer[35];
-    buffer[0] = 6 << 3; // version bit 'G'
+    buffer[0] = versionByte;
     int i;
     for (i = 0; i < 32; i++) {
         buffer[i+1] = in[i];
@@ -115,6 +115,18 @@ void public_key_to_address(uint8_t *in, char *out) {
     buffer[34] = crc >> 8;
     base32_encode(buffer, 35, out, 56);
     out[56] = '\0';
+}
+
+void encode_public_key(uint8_t *in, char *out) {
+    encode_key(in, out, 6 << 3);
+}
+
+void encode_pre_auth_key(uint8_t *in, char *out) {
+    encode_key(in, out, 19 << 3);
+}
+
+void encode_hash_x_key(uint8_t *in, char *out) {
+    encode_key(in, out, 23 << 3);
 }
 
 void print_summary(char *in, char *out, uint8_t numCharsL, uint8_t numCharsR) {
@@ -167,10 +179,10 @@ void print_binary_summary(uint8_t *in, char *out, uint8_t len) {
 void print_public_key(uint8_t *in, char *out, uint8_t numCharsL, uint8_t numCharsR) {
     if (numCharsL > 0) {
         char buffer[57];
-        public_key_to_address(in, buffer);
+        encode_public_key(in, buffer);
         print_summary(buffer, out, numCharsL, numCharsR);
     } else {
-        public_key_to_address(in, out);
+        encode_public_key(in, out);
     }
 }
 

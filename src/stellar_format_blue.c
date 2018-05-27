@@ -40,7 +40,7 @@ void format_sequence_number(tx_context_t *txCtx) {
 
 void format_transaction_source(tx_context_t *txCtx) {
     strcpy(detailCaption, "Transaction Source");
-    public_key_to_address(txCtx->txDetails.source, detailValue);
+    encode_public_key(txCtx->txDetails.source, detailValue);
     formatter = &format_sequence_number;
 }
 
@@ -108,7 +108,7 @@ void format_confirm_transaction_details(tx_context_t *txCtx) {
 void format_operation_source(tx_context_t *txCtx) {
     if (txCtx->opDetails.sourcePresent) {
         strcpy(detailCaption, "Operation Source");
-        public_key_to_address(txCtx->opDetails.source, detailValue);
+        encode_public_key(txCtx->opDetails.source, detailValue);
     }
     formatter = NULL;
 }
@@ -127,7 +127,7 @@ void format_inflation(tx_context_t *txCtx) {
 
 void format_account_merge_destination(tx_context_t *txCtx) {
     strcpy(detailCaption, "Destination");
-    public_key_to_address(txCtx->opDetails.op.accountMerge.destination, detailValue);
+    encode_public_key(txCtx->opDetails.op.accountMerge.destination, detailValue);
     formatter = &format_operation_source;
 }
 
@@ -135,9 +135,9 @@ void format_account_merge(tx_context_t *txCtx) {
     strcpy(opCaption, "Merge Account");
     strcpy(detailCaption, "Account ID");
     if (txCtx->opDetails.sourcePresent) {
-        public_key_to_address(txCtx->opDetails.source, detailValue);
+        encode_public_key(txCtx->opDetails.source, detailValue);
     } else {
-        public_key_to_address(txCtx->txDetails.source, detailValue);
+        encode_public_key(txCtx->txDetails.source, detailValue);
     }
     formatter = &format_account_merge_destination;
 }
@@ -163,7 +163,7 @@ void format_manage_data(tx_context_t *txCtx) {
 
 void format_allow_trust_trustee(tx_context_t *txCtx) {
     strcpy(detailCaption, "Account ID");
-    public_key_to_address(txCtx->opDetails.op.allowTrust.trustee, detailValue);
+    encode_public_key(txCtx->opDetails.op.allowTrust.trustee, detailValue);
     formatter = &format_operation_source;
 }
 
@@ -195,12 +195,16 @@ void format_set_option_signer(tx_context_t *txCtx) {
         }
         case SIGNER_KEY_TYPE_HASH_X: {
             type = "Hash(x)";
-            print_binary_summary(txCtx->opDetails.op.setOptions.signer.data, signer, 32);
+            char tmp[57];
+            encode_hash_x_key(txCtx->opDetails.op.setOptions.signer.data, tmp);
+            print_summary(tmp, signer, 12, 12);
             break;
         }
         case SIGNER_KEY_TYPE_PRE_AUTH_TX: {
             type = "Pre-Auth";
-            print_binary_summary(txCtx->opDetails.op.setOptions.signer.data, signer, 32);
+            char tmp[57];
+            encode_pre_auth_key(txCtx->opDetails.op.setOptions.signer.data, tmp);
+            print_summary(tmp, signer, 12, 12);
             break;
         }
         default: {
@@ -297,7 +301,7 @@ void format_set_option_flags(tx_context_t *txCtx) {
 void format_set_option_inflation_destination(tx_context_t *txCtx) {
     if (txCtx->opDetails.op.setOptions.inflationDestinationPresent) {
         strcpy(detailCaption, "Inflation Dest");
-        public_key_to_address(txCtx->opDetails.op.setOptions.inflationDestination, detailValue);
+        encode_public_key(txCtx->opDetails.op.setOptions.inflationDestination, detailValue);
         formatter = &format_set_option_flags;
     } else {
         format_set_option_flags(txCtx);
@@ -402,7 +406,7 @@ void format_path_receive(tx_context_t *txCtx) {
 
 void format_path_destination(tx_context_t *txCtx) {
     strcpy(detailCaption, "Destination");
-    public_key_to_address(txCtx->opDetails.op.pathPayment.destination, detailValue);
+    encode_public_key(txCtx->opDetails.op.pathPayment.destination, detailValue);
     formatter = &format_path_receive;
 }
 
@@ -415,7 +419,7 @@ void format_path_payment(tx_context_t *txCtx) {
 
 void format_payment_destination(tx_context_t *txCtx) {
     strcpy(detailCaption, "Destination");
-    public_key_to_address(txCtx->opDetails.op.payment.destination, detailValue);
+    encode_public_key(txCtx->opDetails.op.payment.destination, detailValue);
     formatter = &format_operation_source;
 }
 
@@ -437,7 +441,7 @@ void format_create_account_amount(tx_context_t *txCtx) {
 void format_create_account(tx_context_t *txCtx) {
     strcpy(opCaption, "Create Account");
     strcpy(detailCaption, "Account ID");
-    public_key_to_address(txCtx->opDetails.op.createAccount.accountId, detailValue);
+    encode_public_key(txCtx->opDetails.op.createAccount.accountId, detailValue);
     formatter = &format_create_account_amount;
 }
 

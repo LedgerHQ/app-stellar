@@ -32,7 +32,13 @@
 void parse_tx_xdr(uint8_t *buffer, tx_context_t *txCtx);
 
 /** raw public key to base32 encoded address */
-void public_key_to_address(uint8_t *in, char *out);
+void encode_public_key(uint8_t *in, char *out);
+
+/** raw public key to base32 encoded address */
+void encode_pre_auth_key(uint8_t *in, char *out);
+
+/** raw public key to base32 encoded address */
+void encode_hash_x_key(uint8_t *in, char *out);
 
 /** raw public key to base32 encoded (summarized) address */
 void print_public_key(uint8_t *in, char *out, uint8_t numCharsL, uint8_t numCharsR);

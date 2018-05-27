@@ -206,17 +206,25 @@ void format_set_option_signer_weight(tx_context_t *txCtx) {
 }
 
 void format_set_option_signer_detail(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Signer Key");
     switch (txCtx->opDetails.op.setOptions.signer.type) {
     case SIGNER_KEY_TYPE_ED25519: {
-        strcpy(detailCaption, "Signer Public Key");
         print_public_key(txCtx->opDetails.op.setOptions.signer.data, detailValue, 12, 12);
         break;
     }
-    case SIGNER_KEY_TYPE_HASH_X:
-    case SIGNER_KEY_TYPE_PRE_AUTH_TX: {
-        strcpy(detailCaption, "Signer Hash");
-        print_binary_summary(txCtx->opDetails.op.setOptions.signer.data, detailValue, 32);
+    case SIGNER_KEY_TYPE_HASH_X: {
+        char tmp[57];
+        encode_hash_x_key(txCtx->opDetails.op.setOptions.signer.data, tmp);
+        print_summary(tmp, detailValue, 12, 12);
         break;
+    }
+
+    case SIGNER_KEY_TYPE_PRE_AUTH_TX: {
+        char tmp[57];
+        encode_pre_auth_key(txCtx->opDetails.op.setOptions.signer.data, tmp);
+        print_summary(tmp, detailValue, 12, 12);
+        break;
+
     }
     }
     formatter = &format_set_option_signer_weight;

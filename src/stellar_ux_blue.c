@@ -216,7 +216,7 @@ unsigned int ui_address_blue_button(unsigned int button_mask, unsigned int butto
 }
 
 void ui_show_address_init(void) {
-    public_key_to_address(ctx.req.pk.publicKey, detailValue);
+    encode_public_key(ctx.req.pk.publicKey, detailValue);
     UX_DISPLAY(ui_address_blue, ui_address_blue_prepro);
 }
 
