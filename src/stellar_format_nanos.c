@@ -29,7 +29,7 @@
 
 char opCaption[20];
 char detailCaption[20];
-char detailValue[67];
+char detailValue[89];
 
 volatile format_function_t formatter;
 
@@ -161,7 +161,9 @@ void format_account_merge(tx_context_t *txCtx) {
 
 void format_manage_data_value(tx_context_t *txCtx) {
     strcpy(detailCaption, "Data Value");
-    print_binary_summary(txCtx->opDetails.op.manageData.dataValue, detailValue, txCtx->opDetails.op.manageData.dataValueSize);
+    char tmp[89];
+    base64_encode(txCtx->opDetails.op.manageData.dataValue, txCtx->opDetails.op.manageData.dataValueSize, tmp);
+    print_summary(tmp, detailValue, 12, 12);
     formatter = &format_operation_source;
 }
 

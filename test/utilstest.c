@@ -60,6 +60,14 @@ void test_print_binary(uint8_t *binary, char *expected) {
     }
 }
 
+void test_base64_encode(uint8_t *data, uint8_t len, char *expected) {
+    char base64[20];
+    base64_encode(data, len, base64);
+    if (strcmp(base64, expected)) {
+        printf("test_base64_encode failed. Expected: %s; Actual: %s\n", expected, base64);
+    }
+}
+
 int main(int argc, char *argv[]) {
 
     test_print_amount(1, "0.0000001 XLM");
@@ -82,6 +90,8 @@ int main(int argc, char *argv[]) {
         binary[i] = i;
     }
     test_print_binary(binary, "0x00010203..1C1D1E1F");
+
+    test_base64_encode((uint8_t*)"starlight", 9, "c3RhcmxpZ2h0");
 
     return 0;
 

@@ -14,6 +14,7 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  ********************************************************************************/
+#include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
@@ -25,7 +26,11 @@
 #include "os.h"
 #endif
 
-static const char hexChars[] = "0123456789ABCDEF";
+static const char hexAlphabet[] = "0123456789ABCDEF";
+static const char base32Alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+static const char base64Alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+static int base64ModTable[] = {0, 2, 1};
+
 
 unsigned short crc16(char *ptr, int count) {
    int  crc;
@@ -76,7 +81,7 @@ int base32_encode(const uint8_t *data, int length, char *result, int bufSize) {
 
             int index = 0x1F & (buffer >> (bitsLeft - 5));
             bitsLeft -= 5;
-            result[count++] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"[index];
+            result[count++] = base32Alphabet[index];
 
             // Track the characters which make up a single quantum of 8 characters
             quantum--;
@@ -101,6 +106,33 @@ int base32_encode(const uint8_t *data, int length, char *result, int bufSize) {
     } else {
         return -1;
     }
+}
+
+
+void base64_encode(const uint8_t *data, size_t inLen, char *out) {
+
+    size_t outLen = 4 * ((inLen + 2) / 3);
+
+    for (int i = 0, j = 0; i < inLen;) {
+
+        uint32_t octet_a = i < inLen ? data[i++] : 0;
+        uint32_t octet_b = i < inLen ? data[i++] : 0;
+        uint32_t octet_c = i < inLen ? data[i++] : 0;
+
+        uint32_t triple = (octet_a << 0x10) + (octet_b << 0x08) + octet_c;
+
+        out[j++] = base64Alphabet[(triple >> 3 * 6) & 0x3F];
+        out[j++] = base64Alphabet[(triple >> 2 * 6) & 0x3F];
+        out[j++] = base64Alphabet[(triple >> 1 * 6) & 0x3F];
+        out[j++] = base64Alphabet[(triple >> 0 * 6) & 0x3F];
+    }
+
+    int i;
+    for (i = 0; i < base64ModTable[inLen % 3]; i++) {
+        out[outLen - 1 - i] = '=';
+    }
+
+    out[outLen] = '\0';
 }
 
 void encode_key(uint8_t *in, char *out, uint8_t versionByte) {
@@ -148,8 +180,8 @@ void print_binary(uint8_t *in, char *out, uint8_t len) {
     out[1] = 'x';
     uint8_t i, j;
     for (i = 0, j = 2; i < len; i+=1, j+=2) {
-        out[j] = hexChars[in[i] / 16];
-        out[j+1] = hexChars[in[i] % 16];
+        out[j] = hexAlphabet[in[i] / 16];
+        out[j+1] = hexAlphabet[in[i] % 16];
     }
     out[j] = '\0';
 }
@@ -160,14 +192,14 @@ void print_binary_summary(uint8_t *in, char *out, uint8_t len) {
     if (2+len*2 > 18) {
         uint8_t i, j;
         for (i = 0, j = 2; i < 4; i+=1, j+=2) {
-            out[j] = hexChars[in[i] / 16];
-            out[j+1] = hexChars[in[i] % 16];
+            out[j] = hexAlphabet[in[i] / 16];
+            out[j+1] = hexAlphabet[in[i] % 16];
         }
         out[j++] = '.';
         out[j++] = '.';
         for (i = len - 4; i < len; i+=1, j+=2) {
-            out[j] = hexChars[in[i] / 16];
-            out[j+1] = hexChars[in[i] % 16];
+            out[j] = hexAlphabet[in[i] / 16];
+            out[j+1] = hexAlphabet[in[i] % 16];
         }
         out[j] = '\0';
     } else {

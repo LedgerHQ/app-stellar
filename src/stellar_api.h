@@ -109,4 +109,7 @@ void print_int(int64_t l, char *out);
 /** integer to string for display of offerid, sequence number, threshold weights, etc */
 void print_uint(uint64_t l, char *out);
 
+/** base64 encoding function used to display managed data values */
+void base64_encode(const uint8_t *data, size_t inLen, char *out);
+
 #endif
