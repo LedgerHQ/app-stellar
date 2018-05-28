@@ -26,7 +26,7 @@ typedef void (*format_function_t)(tx_context_t *txCtx);
 /* the current formatter */
 extern volatile format_function_t formatter;
 
-/* the current details printed by the current formatter */
+/* the current details printed by the formatter */
 extern char opCaption[20];
 extern char detailCaption[20];
 extern char detailValue[67];
@@ -34,6 +34,7 @@ extern char detailValue[67];
 void format_confirm_transaction(tx_context_t *txCtx);
 void format_confirm_operation(tx_context_t *txCtx);
 void format_confirm_transaction_details(tx_context_t *txCtx);
+
 void format_confirm_hash(tx_context_t *txCtx);
 
 #endif

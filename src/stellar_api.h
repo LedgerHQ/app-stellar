@@ -22,6 +22,36 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+// ------------------------------------------------------------------------- //
+//                             Request handlers                              //
+// ------------------------------------------------------------------------- //
+
+/** handles app configuration request */
+void handle_get_app_configuration(volatile unsigned int *tx);
+
+/** handles get public key request */
+void handle_get_public_key(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLength, volatile unsigned int *flags, volatile unsigned int *tx);
+
+/** handles sign transaction request (displays transaction details) */
+void handle_sign_tx(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLength, volatile unsigned int *flags);
+
+/** handles sign transaction hash request (displays only transaction hash) */
+void handle_sign_tx_hash(uint8_t *dataBuffer, uint16_t dataLength, volatile unsigned int *flags);
+
+/** u2f keep alive */
+void handle_keep_alive(volatile unsigned int *flags);
+
+/** puts the signature in the result buffer */
+uint32_t set_result_sign_tx(void);
+
+/** puts the public key in the result buffer */
+uint32_t set_result_get_public_key();
+
+
+// ------------------------------------------------------------------------- //
+//                           TRANSACTION PARSING                             //
+// ------------------------------------------------------------------------- //
+
 /**
  * Parsing of the raw transaction XDR.
  * Starts parsing the buffer at txCtx.offset to populate the content struct.
@@ -31,13 +61,17 @@
  */
 void parse_tx_xdr(uint8_t *buffer, tx_context_t *txCtx);
 
-/** raw public key to base32 encoded address */
+// ------------------------------------------------------------------------- //
+//                                UTILITIES                                  //
+// ------------------------------------------------------------------------- //
+
+/**  base32 encode public key */
 void encode_public_key(uint8_t *in, char *out);
 
-/** raw public key to base32 encoded address */
+/** base32 encode pre-auth transaction hash */
 void encode_pre_auth_key(uint8_t *in, char *out);
 
-/** raw public key to base32 encoded address */
+/** base32 encode sha256 hash */
 void encode_hash_x_key(uint8_t *in, char *out);
 
 /** raw public key to base32 encoded (summarized) address */
@@ -69,29 +103,10 @@ void print_native_asset_code(uint8_t network, char *out);
 /** string representation of flags present */
 void print_flags(uint32_t flags, char *out, char prefix);
 
-/** integer to string for display of offerid, sequence number, threshold weights, etc */
+/** integer to string for display of sequence number */
 void print_int(int64_t l, char *out);
+
+/** integer to string for display of offerid, sequence number, threshold weights, etc */
 void print_uint(uint64_t l, char *out);
-
-/** handles app configuration request */
-void handle_get_app_configuration(volatile unsigned int *tx);
-
-/** handles get public key request */
-void handle_get_public_key(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLength, volatile unsigned int *flags, volatile unsigned int *tx);
-
-/** handles sign transaction request (displays transaction details) */
-void handle_sign_tx(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLength, volatile unsigned int *flags);
-
-/** handles sign transaction hash request (displays only transaction hash) */
-void handle_sign_tx_hash(uint8_t *dataBuffer, uint16_t dataLength, volatile unsigned int *flags);
-
-/** u2f keep alive */
-void handle_keep_alive(volatile unsigned int *flags);
-
-/** puts the signature in the result buffer */
-uint32_t set_result_sign_tx(void);
-
-/** puts the public key in the result buffer */
-uint32_t set_result_get_public_key();
 
 #endif

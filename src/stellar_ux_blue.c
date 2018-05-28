@@ -558,13 +558,16 @@ void prepare_details() {
             if (hasDetails) {
                 strcpy(detailCaptions[i], detailCaption);
                 strcpy(detailValues[i], detailValue);
+                i++;
             }
-            i++;
         }
     } else { // show operation details
+
+        // parse next operation
         ctx.req.tx.offset = offsets[currentScreen];
         parse_tx_xdr(ctx.req.tx.raw, &ctx.req.tx);
         offsets[currentScreen+1] = ctx.req.tx.offset;
+
         strcpy(titleCaption, "Operation ");
         if (ctx.req.tx.opCount > 1) {
             print_uint(ctx.req.tx.opIdx, titleCaption+strlen(titleCaption));
@@ -581,8 +584,8 @@ void prepare_details() {
             if (hasDetails) {
                 strcpy(detailCaptions[i], detailCaption);
                 strcpy(detailValues[i], detailValue);
+                i++;
             }
-            i++;
         }
         strcpy(subtitleCaption, opCaption);
     }

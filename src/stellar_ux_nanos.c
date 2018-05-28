@@ -102,6 +102,8 @@ const bagl_element_t ui_address_nanos[] = {
     {{BAGL_LABELINE, 0x01, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
      "Confirm Address", 0, 0, 0, NULL, NULL, NULL},
+
+     // Address value
     {{BAGL_LABELINE, 0x02, 16, 26, 96, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
      detailValue, 0, 0, 0, NULL, NULL, NULL}
@@ -212,17 +214,20 @@ const bagl_element_t ui_approve_tx_nanos[] = {
     {{BAGL_ICON, 0x00, 117, 13, 8, 6, 0, 0, 0, 0xFFFFFF, 0x000000, 0, BAGL_GLYPH_ICON_CHECK},
      NULL, 0, 0, 0, NULL, NULL, NULL},
 
+    // "Confirm transaction"
     {{BAGL_LABELINE, 0x01, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000, BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
      "Confirm", 0, 0, 0, NULL, NULL, NULL},
     {{BAGL_LABELINE, 0x01, 0, 26, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000, BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
      "transaction", 0, 0, 0, NULL, NULL, NULL},
 
+    // Operation caption (e.g. "Operation i of n")
     {{BAGL_LABELINE, 0x02, 0, 19, 128, 32, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000, BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
      NULL, 0, 0, 0, NULL, NULL, NULL},
 
-    // Details caption & value
+    // Details caption
     {{BAGL_LABELINE, 0x03, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000, BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
      NULL, 0, 0, 0, NULL, NULL, NULL},
+    // Details value
     {{BAGL_LABELINE, 0x04, 16, 26, 96, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000, BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
      NULL, 0, 0, 0, NULL, NULL, NULL}
 
