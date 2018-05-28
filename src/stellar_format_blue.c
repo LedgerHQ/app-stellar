@@ -315,7 +315,7 @@ void format_set_options(tx_context_t *txCtx) {
 
 void format_change_trust_limit(tx_context_t *txCtx) {
     strcpy(detailCaption, "Limit");
-    if (txCtx->opDetails.op.changeTrust.limit == 9223372036854775807) {
+    if (txCtx->opDetails.op.changeTrust.limit == INT64_MAX) {
         strcpy(detailValue, "[maximum]");
     } else {
         print_amount(txCtx->opDetails.op.changeTrust.limit, NULL, detailValue);
