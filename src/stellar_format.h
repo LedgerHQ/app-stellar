@@ -17,6 +17,8 @@
 #ifndef _STELLAR_FORMAT_H_
 #define _STELLAR_FORMAT_H_
 
+#include "stellar_types.h"
+
 /*
  * the formatter prints the details and defines the order of the details
  * by setting the next formatter to be called
@@ -27,9 +29,9 @@ typedef void (*format_function_t)(tx_context_t *txCtx);
 extern volatile format_function_t formatter;
 
 /* the current details printed by the formatter */
-extern char opCaption[20];
-extern char detailCaption[20];
-extern char detailValue[89];
+extern char opCaption[OPERATION_CAPTION_MAX_SIZE];
+extern char detailCaption[DETAIL_CAPTION_MAX_SIZE];
+extern char detailValue[DETAIL_VALUE_MAX_SIZE];
 
 void format_confirm_transaction(tx_context_t *txCtx);
 void format_confirm_operation(tx_context_t *txCtx);

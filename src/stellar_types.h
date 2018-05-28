@@ -46,10 +46,15 @@
 #define OFFSET_LC 4
 #define OFFSET_CDATA 5
 
+/* Max transaction size is 1.5Kb */
 #define MAX_RAW_TX 1540
+/* For sure not more than 35 operations will fit in that */
 #define MAX_OPS 35
+/* Although SEP-0005 only allows 3 bip32 path elements we support more */
 #define MAX_BIP32_LEN 10
-#define AMOUNT_MAX_SIZE 22
+
+/* max amount is max int64 scaled down: "922337203685.4775807" */
+#define AMOUNT_MAX_SIZE 21
 
 
 // ------------------------------------------------------------------------- //
@@ -96,6 +101,23 @@
 // ------------------------------------------------------------------------- //
 //                             DISPLAY CONSTANTS                             //
 // ------------------------------------------------------------------------- //
+
+/*
+ * Longest string will be "Operation ii of nn"
+ */
+#define OPERATION_CAPTION_MAX_SIZE 20
+
+/*
+ * Captions don't scroll so there is no use in having more capacity than can fit on screen at once.
+ */
+#define DETAIL_CAPTION_MAX_SIZE 20
+
+/*
+ * DETAIL_VALUE_MAX_SIZE value of 89 is due to the maximum length of managed data value which can be 64 bytes long.
+ * Managed data values are displayed as base64 encoded strings, which are 4*((len+2)/3) characters long.
+ * (An additional slot is required for the end-of-string character of course)
+ */
+#define DETAIL_VALUE_MAX_SIZE 89
 
 static const char* NETWORK_NAMES[3] = { "Public", "Test", "Unknown" };
 
