@@ -34,7 +34,6 @@ bagl_element_t tmp_element;
 
 const ux_menu_entry_t menu_main[];
 const ux_menu_entry_t menu_settings[];
-const ux_menu_entry_t menu_settings_browser[];
 const ux_menu_entry_t menu_settings_hash_signing[];
 
 

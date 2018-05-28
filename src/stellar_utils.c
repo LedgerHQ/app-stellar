@@ -109,7 +109,7 @@ int base32_encode(const uint8_t *data, int length, char *result, int bufSize) {
 }
 
 
-void base64_encode(const uint8_t *data, size_t inLen, char *out) {
+void base64_encode(const uint8_t *data, int inLen, char *out) {
 
     size_t outLen = 4 * ((inLen + 2) / 3);
 
