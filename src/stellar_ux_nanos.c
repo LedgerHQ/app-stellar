@@ -135,9 +135,9 @@ void ui_show_address_init(void) {
 const bagl_element_t *ui_approve_tx_prepro(const bagl_element_t *element) {
     /*
      * the current formatter decides what to show this round:
-     * if it prints detailCaption/detailValue then 0x03/0x13 is shown
+     * if it prints detailCaption/detailValue then 0x03/0x04 is shown
      * if it prints opCaption then 0x02 is shown
-     * if it prints neither 0x01/0x11 is shown
+     * if it prints neither 0x01 is shown
      */
     bool hasDetails = detailCaption[0] != '\0';
     bool hasOperation = opCaption[0] != '\0';
