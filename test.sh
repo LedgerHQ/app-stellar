@@ -35,6 +35,7 @@ gcc test/parsertest.c src/stellar_utils.c src/stellar_parser.c src/stellar_forma
 ./obj/parsertest test/txInflation.hex
 
 ./obj/parsertest test/txMultiOp.hex
+./obj/parsertest test/txBumpSequence.hex
 
 
 gcc test/utilstest.c src/stellar_utils.c test/test_utils.c -o obj/utilstest -I src/ -I test/ -D TEST
