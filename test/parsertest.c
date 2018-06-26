@@ -16,8 +16,10 @@
  ********************************************************************************/
 #include <stdio.h>
 
-#include "xdr_parser.h"
+#include "stellar_api.h"
+#include "stellar_format.h"
 #include "test_utils.h"
+#include <string.h>
 
 int main(int argc, char *argv[]) {
 
@@ -28,12 +30,43 @@ int main(int argc, char *argv[]) {
 
     char *filename = argv[1];
     uint8_t buffer[4096];
-    txContent_t txContent;
+    tx_context_t txCtx;
 
+    memset(&txCtx, 0, sizeof(txCtx));
+
+    printf("==== %s ====", filename);
     int read = read_file(filename, buffer, 4096);
     if (read) {
 //        printHexBlocks(buffer, read/2);
-        parseTxXdr(buffer, &txContent);
+        uint8_t count = 0;
+        do {
+            if (!formatter) {
+                if (txCtx.opIdx > 0 && txCtx.opIdx == txCtx.opCount) {
+                    txCtx.opIdx = 0;
+                    formatter = &format_confirm_transaction_details;
+                } else {
+                    parse_tx_xdr(buffer, &txCtx);
+                    if (txCtx.opIdx == 1) {
+                        formatter = &format_confirm_transaction;
+                        count++;
+                        printf("\n");
+                    } else {
+                        formatter = &format_confirm_operation;
+                    }
+                }
+            }
+            MEMCLEAR(opCaption);
+            MEMCLEAR(detailCaption);
+            MEMCLEAR(detailValue);
+            formatter(&txCtx);
+            if (opCaption[0] != '\0') {
+                printf("Operation: %s\n", opCaption);
+            }
+            if (detailCaption[0] != '\0') {
+                printf("%s - %s\n", detailCaption, detailValue);
+            }
+        } while (count <= 1);
+
     }
 
     return 0;

@@ -1,8 +1,6 @@
 /*******************************************************************************
  *   Ledger Stellar App
- *   (c) 2017 Ledger
- *
- *  adapted from https://stash.forgerock.org/projects/OPENAM/repos/forgerock-authenticator-ios/browse/ForgeRock-Authenticator/base32.h
+ *   (c) 2017-2018 Ledger
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -17,13 +15,17 @@
  *  limitations under the License.
  ********************************************************************************/
 
-#ifndef _BASE32_H_
-#define _BASE32_H_
+#ifndef STELLAR_VARS_H
+#define STELLAR_VARS_H
 
-#include <stddef.h>
-#include <stdint.h>
+#include "os.h"
+#include "cx.h"
+#include "os_io_seproxyhal.h"
+#include "stellar_types.h"
 
-
-int base32_encode(const uint8_t *data, int length, char *result, int bufSize);
+extern stellar_context_t ctx;
+extern ux_state_t ux;
+extern stellar_nv_state_t N_state_pic;
+#define N_stellar_pstate  ((WIDE  stellar_nv_state_t *)PIC(&N_state_pic))
 
 #endif

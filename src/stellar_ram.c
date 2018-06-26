@@ -1,6 +1,6 @@
 /*******************************************************************************
  *   Ledger Stellar App
- *   (c) 2017 Ledger
+ *   (c) 2017-2018 Ledger
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -15,22 +15,16 @@
  *  limitations under the License.
  ********************************************************************************/
 
-#include "crc16.h"
+#include "os.h"
+#include "cx.h"
+#include "stellar_types.h"
+#include "stellar_api.h"
+#include "stellar_vars.h"
 
-unsigned short crc16(char *ptr, int count) {
-   int  crc;
-   char i;
-   crc = 0;
-   while (--count >= 0) {
-      crc = crc ^ (int) *ptr++ << 8;
-      i = 8;
-      do
-      {
-         if (crc & 0x8000)
-            crc = crc << 1 ^ 0x1021;
-         else
-            crc = crc << 1;
-      } while(--i);
-   }
-   return (crc);
-}
+#include "os_io_seproxyhal.h"
+
+
+stellar_context_t ctx;
+ux_state_t ux;
+unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
+

@@ -1,6 +1,6 @@
 /*******************************************************************************
  *   Ledger Stellar App
- *   (c) 2017 Ledger
+ *   (c) 2017-2018 Ledger
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -15,4 +15,10 @@
  *  limitations under the License.
  ********************************************************************************/
 
-unsigned short crc16(char *ptr, int count);
+#include "os.h"
+#include "cx.h"
+#include "stellar_types.h"
+#include "stellar_api.h"
+#include "stellar_vars.h"
+
+stellar_nv_state_t N_state_pic;

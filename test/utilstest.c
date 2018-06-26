@@ -16,7 +16,7 @@
  ********************************************************************************/
 #include <stdio.h>
 #include <string.h>
-#include "stlr_utils.h"
+#include "stellar_api.h"
 
 void test_print_amount(uint64_t amount, char *expected) {
     char *asset = "XLM";
@@ -28,43 +28,43 @@ void test_print_amount(uint64_t amount, char *expected) {
     }
 }
 
-void test_print_long(uint64_t id, char* expected) {
+void test_print_uint(uint64_t i, char* expected) {
     char printed[24];
-    print_long(id, printed);
+    print_uint(i, printed);
     if (strcmp(printed, expected) != 0) {
-        printf("test_print_long_memo failed. Expected: %s; Actual: %s\n", expected, printed);
+        printf("test_print_uint failed. Expected: %s; Actual: %s\n", expected, printed);
     }
 }
 
-void test_print_summary(char *msg, char *expected) {
+void test_print_int(int64_t i, char* expected) {
+    char printed[24];
+    print_int(i, printed);
+    if (strcmp(printed, expected) != 0) {
+        printf("test_print_int failed. Expected: %s; Actual: %s\n", expected, printed);
+    }
+}
+
+void test_print_summary(char *msg, char *expected, uint8_t numCharsL, uint8_t numCharsR) {
     char summery[27];
-    print_summary(msg, summery);
+    print_summary(msg, summery, numCharsL, numCharsR);
     if (strcmp(summery, expected) != 0) {
         printf("test_print_summary failed. Expected: %s; Actual: %s\n", expected, summery);
     }
 }
 
-void test_print_hash(uint8_t *hash, char *expected) {
+void test_print_binary(uint8_t *binary, char *expected) {
     char hex[16];
-    print_hash_summary(hash, hex);
+    print_binary_summary(binary, hex, 32);
     if (strcmp(hex, expected) != 0) {
         printf("test_print_hash failed. Expected: %s; Actual: %s\n", expected, hex);
     }
 }
 
-void test_print_caption(uint8_t operationType, uint8_t captionType, char *expected) {
-    char s[15];
-    print_caption(operationType, captionType, s);
-    if (strcmp(s, expected) != 0) {
-        printf("test_print_caption failed. Expected: %s; Actual: %s\n", expected, s);
-    }
-}
-
-void test_print_bits(uint32_t in, char *expected) {
-    char s[13];
-    print_bits(in, s);
-    if (strcmp(s, expected) != 0) {
-        printf("test_print_bits failed. Expected: %s; Actual: %s\n", expected, s);
+void test_base64_encode(uint8_t *data, uint8_t len, char *expected) {
+    char base64[20];
+    base64_encode(data, len, base64);
+    if (strcmp(base64, expected)) {
+        printf("test_base64_encode failed. Expected: %s; Actual: %s\n", expected, base64);
     }
 }
 
@@ -76,22 +76,23 @@ int main(int argc, char *argv[]) {
     test_print_amount(100000001, "10.0000001 XLM");
     test_print_amount(100000001000000, "10000000.1 XLM");
 
-    test_print_long(1, "1");
-    test_print_long(12, "12");
-    test_print_long(100, "100");
+    test_print_uint(1230, "1230");
 
-    test_print_summary("GADFVW3UXVKDOU626XUPYDJU2BFCGFJHQ6SREYOZ6IJV4XSHOALEQN2I", "GADFVW3UXVKD...4XSHOALEQN2I");
+    test_print_int(1230, "1230");
+    test_print_int(-1230, "-1230");
 
-    uint8_t hash[32];
+    test_print_summary("GADFVW3UXVKDOU626XUPYDJU2BFCGFJHQ6SREYOZ6IJV4XSHOALEQN2I", "GADFVW3UXVKD..4XSHOALEQN2I", 12, 12);
+    test_print_summary("GADFVW3UXVKDOU626XUPYDJU2BFCGFJHQ6SREYOZ6IJV4XSHOALEQN2I", "GADFVW..LEQN2I", 6, 6);
+
+    uint8_t binary[32];
     uint8_t i;
     for (i = 0; i < 32; i++) {
-        hash[i] = i;
+        binary[i] = i;
     }
-    test_print_hash(hash, "000102...1D1E1F");
-    test_print_caption(0, 0, "Create Account");
+    test_print_binary(binary, "0x00010203..1C1D1E1F");
 
-    uint32_t flags = (1 << 0) | (1 << 1);
-    test_print_bits(flags, "011");
+    test_base64_encode((uint8_t*)"starlight", 9, "c3RhcmxpZ2h0");
+
     return 0;
 
 }
