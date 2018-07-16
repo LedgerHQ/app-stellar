@@ -25,6 +25,7 @@ gcc test/parsertest.c src/stellar_utils.c src/stellar_parser.c src/stellar_forma
 ./obj/parsertest test/txRevokeTrust.hex
 
 ./obj/parsertest test/txCreateOffer.hex
+./obj/parsertest test/txCreateOffer2.hex
 ./obj/parsertest test/txChangeOffer.hex
 ./obj/parsertest test/txRemoveOffer.hex
 ./obj/parsertest test/txPassiveOffer.hex

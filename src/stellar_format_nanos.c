@@ -381,7 +381,11 @@ void format_manage_offer_price(tx_context_t *txCtx) {
 
 void format_manage_offer_buy(tx_context_t *txCtx) {
     strcpy(detailCaption, "Buy");
-    print_asset_t(&txCtx->opDetails.op.manageOffer.buying, detailValue);
+    if (txCtx->opDetails.op.manageOffer.buying.type == ASSET_TYPE_NATIVE) {
+        print_native_asset_code(txCtx->txDetails.network, detailValue);
+    } else {
+        print_asset_t(&txCtx->opDetails.op.manageOffer.buying, detailValue);
+    }
     formatter = &format_manage_offer_price;
 }
 
