@@ -37,6 +37,7 @@ unsigned int io_seproxyhal_touch_address_cancel(const bagl_element_t *e);
 
 void ui_show_address_init(void);
 void ui_approve_tx_init(void);
+void display_next_screen(void);
 void ui_approve_tx_next_screen(tx_context_t *txCtx);
 void ui_approve_tx_hash_init(void);
 void ui_idle(void);

@@ -63,6 +63,8 @@ void handle_apdu(volatile unsigned int *flags, volatile unsigned int *tx) {
             uint8_t dataLength = G_io_apdu_buffer[OFFSET_LC];
             uint8_t *dataBuffer = G_io_apdu_buffer + OFFSET_CDATA;
 
+            PRINTF("New APDU:\n%.*H\n", dataLength+4, G_io_apdu_buffer);
+
             // reset keep-alive for u2f just short of 30sec
             ctx.u2fTimer = U2F_REQUEST_TIMEOUT;
 
@@ -118,10 +120,9 @@ void handle_apdu(volatile unsigned int *flags, volatile unsigned int *tx) {
 }
 
 void stellar_nv_state_init() {
-    if (N_stellar_pstate->initialized != 0x01) {
-        stellar_nv_state_t nv_state;
-        nv_state.initialized = 0x01;
-        nvm_write(N_stellar_pstate, (void *)&nv_state, sizeof(stellar_nv_state_t));
+    if (N_stellar_pstate.initialized != 0x01) {
+        uint8_t initialized = 0x01;
+        nvm_write((void *)&N_stellar_pstate, &initialized, 1);
     }
 }
 
@@ -230,21 +231,23 @@ unsigned char io_event(unsigned char channel) {
 
     case SEPROXYHAL_TAG_TICKER_EVENT:
 
-#ifdef TARGET_NANOS
-        if (G_io_apdu_media == IO_APDU_MEDIA_U2F && ctx.u2fTimer > 0) {
+#ifndef TARGET_BLUE // S & X only
+        /*if (G_io_apdu_media == IO_APDU_MEDIA_U2F && ctx.u2fTimer > 0) {
             ctx.u2fTimer -= 100;
             if (ctx.u2fTimer <= 0) {
                 u2f_send_keep_alive();
             }
-        }
+        }*/
 
         UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer, {
+#ifndef TARGET_NANOX // S only
             if (UX_ALLOWED) {
                 if (ctx.reqType == CONFIRM_TRANSACTION) {
                     ui_approve_tx_next_screen(&ctx.req.tx);
                 }
                 UX_REDISPLAY();
             }
+#endif
         });
 #endif
         break;
@@ -289,6 +292,8 @@ __attribute__((section(".boot"))) int main(void) {
                 USB_power(false);
                 USB_power(true);
 
+                ui_idle();
+
 #ifdef HAVE_BLE
                 BLE_power(false, NULL);
                 BLE_power(true, "Ledger Wallet");
@@ -297,8 +302,6 @@ __attribute__((section(".boot"))) int main(void) {
 #if defined(TARGET_BLUE)
                 UX_SET_STATUS_BAR_COLOR(0xFFFFFF, COLOR_APP);
 #endif
-
-                ui_idle();
 
                 stellar_main();
             }

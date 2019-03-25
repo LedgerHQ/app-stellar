@@ -21,4 +21,4 @@
 #include "stellar_api.h"
 #include "stellar_vars.h"
 
-stellar_nv_state_t N_state_pic;
+stellar_nv_state_t const N_state_pic;
