@@ -43,9 +43,9 @@ UX_FLOW_DEF_VALID(
 UX_FLOW_DEF_VALID(
   settings_hash_signing_go_back_step,
   pb,
-  ux_menulist_init(settings_submenu_getter, settings_submenu_selector),
+  ux_menulist_init(0, settings_submenu_getter, settings_submenu_selector),
   {
-    &C_icon_back,
+    &C_icon_back_x,
     "Back",
   });
 
@@ -101,7 +101,7 @@ UX_FLOW_DEF_NOCB(
 UX_FLOW_DEF_VALID(
   idle_settings_step,
   pb,
-  ux_menulist_init(settings_submenu_getter, settings_submenu_selector),
+  ux_menulist_init(0, settings_submenu_getter, settings_submenu_selector),
   //ui_settings(),
   {
     &C_icon_coggle,
@@ -120,7 +120,7 @@ UX_FLOW_DEF_VALID(
   pb,
   os_sched_exit(-1),
   {
-    &C_icon_dashboard,
+    &C_icon_dashboard_x,
     "Quit",
   });
 
@@ -137,9 +137,6 @@ void ui_idle(void) {
     }
      ux_flow_init(0, idle_flow, NULL);
 }
-
-
-
 
 
 bagl_element_t tmp_element;

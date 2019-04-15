@@ -23,13 +23,8 @@ unsigned int io_seproxyhal_respond(unsigned short sw, uint32_t tx) {
     G_io_apdu_buffer[tx++] = sw >> 8;
     G_io_apdu_buffer[tx++] = sw;
 
-    PRINTF("ICI\n");
-
     // Send back the response, do not restart the event loop
     io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
-
-        PRINTF("AUSSI\n");
-
 
     // Display back the original UX
     ui_idle();

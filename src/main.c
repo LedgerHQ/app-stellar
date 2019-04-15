@@ -93,6 +93,9 @@ void handle_apdu(volatile unsigned int *flags, volatile unsigned int *tx) {
                 break;
             }
         }
+        CATCH(EXCEPTION_IO_RESET) {
+            THROW(EXCEPTION_IO_RESET);
+    }
         CATCH_OTHER(e) {
             switch (e & 0xF000) {
             case 0x6000:
@@ -159,6 +162,9 @@ void stellar_main(void) {
                 }
 
                 handle_apdu(&flags, &tx);
+            }
+            CATCH(EXCEPTION_IO_RESET) {
+                THROW(EXCEPTION_IO_RESET);
             }
             CATCH_OTHER(e) {
                 switch (e & 0xF000) {
@@ -232,12 +238,12 @@ unsigned char io_event(unsigned char channel) {
     case SEPROXYHAL_TAG_TICKER_EVENT:
 
 #ifndef TARGET_BLUE // S & X only
-        /*if (G_io_apdu_media == IO_APDU_MEDIA_U2F && ctx.u2fTimer > 0) {
+        if (G_io_apdu_media == IO_APDU_MEDIA_U2F && ctx.u2fTimer > 0) {
             ctx.u2fTimer -= 100;
             if (ctx.u2fTimer <= 0) {
                 u2f_send_keep_alive();
             }
-        }*/
+        }
 
         UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer, {
 #ifndef TARGET_NANOX // S only
@@ -289,14 +295,14 @@ __attribute__((section(".boot"))) int main(void) {
                 stellar_nv_state_init();
 
                 // deactivate usb before activating
-                USB_power(false);
-                USB_power(true);
+                USB_power(0);
+                USB_power(1);
 
                 ui_idle();
 
 #ifdef HAVE_BLE
-                BLE_power(false, NULL);
-                BLE_power(true, "Ledger Wallet");
+                BLE_power(0, NULL);
+                BLE_power(1, "Nano X");
 #endif // HAVE_BLE
 
 #if defined(TARGET_BLUE)

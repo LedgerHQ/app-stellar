@@ -30,12 +30,12 @@ APPVERSION=$(APPVERSION_M).$(APPVERSION_N).$(APPVERSION_P)
 
 #prepare hsm generation
 ifeq ($(TARGET_NAME),TARGET_BLUE)
-ICONNAME=blue_app_stellar.gif
+	ICONNAME=blue_app_stellar.gif
 else
 	ifeq ($(TARGET_NAME),TARGET_NANOX)
-ICONNAME=nanox_app_stellar.gif
+		ICONNAME=nanox_app_stellar.gif
 	else
-ICONNAME=nanos_app_stellar.gif
+		ICONNAME=nanos_app_stellar.gif
 	endif
 endif
 
@@ -48,11 +48,8 @@ all: default
 # Platform #
 ############
 
-DEFINES   += OS_IO_SEPROXYHAL IO_SEPROXYHAL_BUFFER_SIZE_B=128
+DEFINES   += OS_IO_SEPROXYHAL
 DEFINES   += HAVE_BAGL HAVE_SPRINTF
-#DEFINES   += HAVE_PRINTF PRINTF=screen_printf
-DEFINES   += PRINTF\(...\)=
-#DEFINES   += HAVE_PRINTF PRINTF=mcu_usb_printf
 DEFINES   += HAVE_IO_USB HAVE_L4_USBLIB IO_USB_MAX_ENDPOINTS=6 IO_HID_EP_LENGTH=64 HAVE_USB_APDU
 DEFINES   +=  LEDGER_MAJOR_VERSION=$(APPVERSION_M) LEDGER_MINOR_VERSION=$(APPVERSION_N) LEDGER_PATCH_VERSION=$(APPVERSION_P)
 
@@ -66,15 +63,35 @@ DEFINES   += UNUSED\(x\)=\(void\)x
 DEFINES   += APPVERSION=\"$(APPVERSION)\"
 
 ifeq ($(TARGET_NAME),TARGET_NANOX)
-DEFINES       += HAVE_BLE BLE_COMMAND_TIMEOUT_MS=2000
-DEFINES       += HAVE_BLE_APDU # basic ledger apdu transport over BLE
+	DEFINES       += IO_SEPROXYHAL_BUFFER_SIZE_B=300
+	DEFINES       += HAVE_BLE BLE_COMMAND_TIMEOUT_MS=2000
+	DEFINES       += HAVE_BLE_APDU # basic ledger apdu transport over BLE
 
-DEFINES       += HAVE_GLO096 HAVE_UX_LEGACY
-DEFINES       += HAVE_BAGL BAGL_WIDTH=128 BAGL_HEIGHT=64
-DEFINES       += HAVE_BAGL_ELLIPSIS # long label truncation feature
-DEFINES       += HAVE_BAGL_FONT_OPEN_SANS_REGULAR_11PX
-DEFINES       += HAVE_BAGL_FONT_OPEN_SANS_EXTRABOLD_11PX
-DEFINES       += HAVE_BAGL_FONT_OPEN_SANS_LIGHT_16PX
+	DEFINES       += HAVE_GLO096 HAVE_UX_LEGACY
+	DEFINES       += HAVE_BAGL BAGL_WIDTH=128 BAGL_HEIGHT=64
+	DEFINES       += HAVE_BAGL_ELLIPSIS # long label truncation feature
+	DEFINES       += HAVE_BAGL_FONT_OPEN_SANS_REGULAR_11PX
+	DEFINES       += HAVE_BAGL_FONT_OPEN_SANS_EXTRABOLD_11PX
+	DEFINES       += HAVE_BAGL_FONT_OPEN_SANS_LIGHT_16PX
+	DEFINES		  += HAVE_UX_FLOW
+else
+	DEFINES       += IO_SEPROXYHAL_BUFFER_SIZE_B=128
+endif
+
+ifneq ($(NOCONSENT),)
+	DEFINES   += NO_CONSENT
+endif
+
+# Enabling debug PRINTF
+DEBUG = 0
+ifdef DEBUG
+	ifeq ($(TARGET_NAME),TARGET_NANOX)
+		DEFINES   += HAVE_PRINTF PRINTF=mcu_usb_printf
+	else
+		DEFINES   += HAVE_PRINTF PRINTF=screen_printf
+	endif
+else
+	DEFINES   += PRINTF\(...\)=
 endif
 
 ##############
@@ -115,8 +132,8 @@ SDK_SOURCE_PATH  += lib_stusb_impl
 SDK_SOURCE_PATH  += lib_u2f
 
 ifeq ($(TARGET_NAME),TARGET_NANOX)
-SDK_SOURCE_PATH  += lib_blewbxx lib_blewbxx_impl
-SDK_SOURCE_PATH  += lib_ux
+	SDK_SOURCE_PATH  += lib_blewbxx lib_blewbxx_impl
+	SDK_SOURCE_PATH  += lib_ux
 endif
 
 load: all
