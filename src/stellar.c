@@ -39,11 +39,13 @@ uint8_t read_bip32(uint8_t *dataBuffer, uint32_t *bip32) {
 
 void derive_private_key(cx_ecfp_private_key_t *privateKey, uint32_t *bip32, uint8_t bip32Len) {
     uint8_t privateKeyData[32];
+    io_seproxyhal_io_heartbeat();
 #ifdef TARGET_BLUE
     os_perso_derive_node_bip32(CX_CURVE_Ed25519, bip32, bip32Len, privateKeyData, NULL);
 #else
     os_perso_derive_node_bip32_seed_key(HDW_ED25519_SLIP10, CX_CURVE_Ed25519, bip32, bip32Len, privateKeyData, NULL, (unsigned char*) "ed25519 seed", 12);
 #endif
+    io_seproxyhal_io_heartbeat();
     cx_ecfp_init_private_key(CX_CURVE_Ed25519, privateKeyData, 32, privateKey);
     MEMCLEAR(privateKeyData);
 }
@@ -108,7 +110,9 @@ void handle_get_public_key(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t
 
     if (ctx.req.pk.returnSignature) {
 #if CX_APILEVEL >= 8
+        io_seproxyhal_io_heartbeat();
         cx_eddsa_sign(&privateKey, CX_LAST, CX_SHA512, msg, msgLength, NULL, 0, ctx.req.pk.signature, 64, NULL);
+        io_seproxyhal_io_heartbeat();
 #else
         cx_eddsa_sign(&privateKey, NULL, CX_LAST, CX_SHA512, msg, msgLength, ctx.req.pk.signature);
 #endif
@@ -204,7 +208,9 @@ uint32_t set_result_sign_tx(void) {
 
     // sign hash
 #if CX_APILEVEL >= 8
+    io_seproxyhal_io_heartbeat();
     uint32_t tx = cx_eddsa_sign(&privateKey, CX_LAST, CX_SHA512, ctx.req.tx.hash, 32, NULL, 0, G_io_apdu_buffer, 64, NULL);
+    io_seproxyhal_io_heartbeat();
 #else
     uint32_t tx = cx_eddsa_sign(&privateKey, NULL, CX_LAST, CX_SHA512, ctx.req.tx.hash, 32, G_io_apdu_buffer);
 #endif
