@@ -16,7 +16,7 @@
  ********************************************************************************/
 #include "bolos_target.h"
 
-#ifdef TARGET_NANOS
+#if defined(TARGET_NANOS) && !defined(HAVE_UX_FLOW)
 
 #include "stellar_ux.h"
 #include "stellar_types.h"
