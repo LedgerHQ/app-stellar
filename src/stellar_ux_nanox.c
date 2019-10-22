@@ -1,6 +1,6 @@
 #include "bolos_target.h"
 
-#ifdef TARGET_NANOX
+#ifdef HAVE_UX_FLOW
 
 #include "stellar_ux.h"
 #include "stellar_types.h"

@@ -246,7 +246,7 @@ unsigned char io_event(unsigned char channel) {
         }
 #endif
         UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer, {
-#ifdef TARGET_NANOS // S only
+#if defined(TARGET_NANOS) && !defined(HAVE_UX_FLOW) // S legacy only
             if (UX_ALLOWED) {
                 if (ctx.reqType == CONFIRM_TRANSACTION) {
                     ui_approve_tx_next_screen(&ctx.req.tx);
