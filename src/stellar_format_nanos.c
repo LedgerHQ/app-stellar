@@ -491,7 +491,7 @@ void format_create_account(tx_context_t *txCtx) {
     formatter = &format_create_account_amount;
 }
 
-const format_function_t formatters[12] = {
+const format_function_t formatters[13] = {
     &format_create_account,
     &format_payment,
     &format_path_payment,
