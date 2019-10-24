@@ -319,7 +319,18 @@ uint16_t parse_active_offer(uint8_t *buffer, manage_offer_op_t *manageOffer) {
     return offset + 8;
 }
 
+uint16_t parse_active_sell_offer(uint8_t *buffer, manage_offer_op_t *manageOffer) {
+    manageOffer->buy = false;
+    return parse_active_offer(buffer, manageOffer);
+}
+
+uint16_t parse_active_buy_offer(uint8_t *buffer, manage_offer_op_t *manageOffer) {
+    manageOffer->buy = true;
+    return parse_active_offer(buffer, manageOffer);
+}
+
 uint16_t parse_passive_offer(uint8_t *buffer, manage_offer_op_t *manageOffer) {
+    manageOffer->buy = false;
     manageOffer->active = false;
     manageOffer->offerId = 0;
     return parse_offer(buffer, manageOffer);
@@ -455,8 +466,8 @@ uint16_t parse_op_xdr(uint8_t *buffer, operation_details_t *opDetails) {
         case XDR_OPERATION_TYPE_CREATE_PASSIVE_OFFER: {
             return parse_passive_offer(buffer + offset, &opDetails->op.manageOffer) + offset;
         }
-        case XDR_OPERATION_TYPE_MANAGE_OFFER: {
-            return parse_active_offer(buffer + offset, &opDetails->op.manageOffer) + offset;
+        case XDR_OPERATION_TYPE_MANAGE_SELL_OFFER: {
+            return parse_active_sell_offer(buffer + offset, &opDetails->op.manageOffer) + offset;
         }
         case XDR_OPERATION_TYPE_SET_OPTIONS: {
             return parse_set_options(buffer + offset, &opDetails->op.setOptions) + offset;
@@ -478,6 +489,9 @@ uint16_t parse_op_xdr(uint8_t *buffer, operation_details_t *opDetails) {
         }
         case XDR_OPERATION_TYPE_BUMP_SEQUENCE: {
             return parse_bump_sequence(buffer + offset, &opDetails->op.bumpSequence) + offset;
+        }
+        case XDR_OPERATION_TYPE_MANAGE_BUY_OFFER: {
+            return parse_active_buy_offer(buffer + offset, &opDetails->op.manageOffer) + offset;
         }
         default: THROW(0x6c24);
     }
