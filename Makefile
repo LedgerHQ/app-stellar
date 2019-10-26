@@ -50,7 +50,7 @@ all: default
 
 DEFINES   += OS_IO_SEPROXYHAL
 DEFINES   += HAVE_BAGL HAVE_SPRINTF
-DEFINES   += HAVE_IO_USB HAVE_L4_USBLIB IO_USB_MAX_ENDPOINTS=6 IO_HID_EP_LENGTH=64 HAVE_USB_APDU
+DEFINES   += HAVE_IO_USB HAVE_L4_USBLIB IO_USB_MAX_ENDPOINTS=4 IO_HID_EP_LENGTH=64 HAVE_USB_APDU
 DEFINES   +=  LEDGER_MAJOR_VERSION=$(APPVERSION_M) LEDGER_MINOR_VERSION=$(APPVERSION_N) LEDGER_PATCH_VERSION=$(APPVERSION_P)
 
 # U2F
@@ -138,14 +138,14 @@ endif
 
 # If the SDK supports Flow for Nano S, build for it
 
-ifeq ($(TARGET_NAME),TARGET_NANOS)
-
-	ifneq "$(wildcard $(BOLOS_SDK)/lib_ux)" ""
-		SDK_SOURCE_PATH  += lib_ux
-		DEFINES		       += HAVE_UX_FLOW		
-	endif
-
-endif
+#ifeq ($(TARGET_NAME),TARGET_NANOS)
+#
+#	ifneq "$(wildcard $(BOLOS_SDK)/lib_ux)" ""
+#		SDK_SOURCE_PATH  += lib_ux
+#		DEFINES		       += HAVE_UX_FLOW		
+#	endif
+#
+#endif
 
 load: all
 	python -m ledgerblue.loadApp $(APP_LOAD_PARAMS)
