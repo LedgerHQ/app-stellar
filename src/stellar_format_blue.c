@@ -30,7 +30,7 @@ char opCaption[20];
 char detailCaption[20];
 char detailValue[89];
 
-volatile format_function_t formatter;
+format_function_t formatter;
 
 void format_sequence_number(tx_context_t *txCtx) {
     strcpy(detailCaption, "Sequence Number");
@@ -450,22 +450,22 @@ void format_create_account(tx_context_t *txCtx) {
 }
 
 const format_function_t formatters[12] = {
-    &format_create_account,
-    &format_payment,
-    &format_path_payment,
-    &format_manage_offer,
-    &format_manage_offer,
-    &format_set_options,
-    &format_change_trust,
-    &format_allow_trust,
-    &format_account_merge,
-    &format_inflation,
-    &format_manage_data,
-    &format_bump_sequence
+    format_create_account,
+    format_payment,
+    format_path_payment,
+    format_manage_offer,
+    format_manage_offer,
+    format_set_options,
+    format_change_trust,
+    format_allow_trust,
+    format_account_merge,
+    format_inflation,
+    format_manage_data,
+    format_bump_sequence
 };
 
 void format_confirm_operation(tx_context_t *txCtx) {
-    ((format_function_t)PIC(formatters[txCtx->opDetails.type]))(txCtx);
+    ((const format_function_t)PIC(formatters[txCtx->opDetails.type]))(txCtx);
 }
 
 void format_confirm_transaction(tx_context_t *txCtx) {

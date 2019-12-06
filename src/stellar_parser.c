@@ -36,15 +36,15 @@ static const uint8_t NETWORK_ID_TEST_HASH[64] = {0xce, 0xe0, 0x30, 0x2d, 0x59, 0
                                                  0xa3, 0x7a, 0xbe, 0xdf, 0x28, 0xec, 0xd4, 0x72};
 uint8_t network_id;
 
-uint32_t read_uint32_block(uint8_t *buffer) {
-    return buffer[3] + (buffer[2] << 8) + (buffer[1] <<  16) + (buffer[0] << 24);
+uint32_t read_uint32_block(const uint8_t *buffer) {
+    return buffer[3] + (buffer[2] << 8u) + (buffer[1] <<  16u) + (buffer[0] << 24u);
 }
 
-uint64_t read_uint64_block(uint8_t *buffer) {
-    uint64_t i1 = buffer[3] + (buffer[2] << 8) + (buffer[1] <<  16) + (buffer[0] << 24);
+uint64_t read_uint64_block(const uint8_t *buffer) {
+    uint64_t i1 = buffer[3] + (buffer[2] << 8u) + (buffer[1] <<  16u) + (buffer[0] << 24u);
     buffer += 4;
-    uint32_t i2 = buffer[3] + (buffer[2] << 8) + (buffer[1] <<  16) + (buffer[0] << 24);
-    return i2 | (i1 << 32);
+    uint32_t i2 = buffer[3] + (buffer[2] << 8u) + (buffer[1] <<  16u) + (buffer[0] << 24u);
+    return i2 | (i1 << 32u);
 }
 
 uint8_t num_bytes(uint8_t size) {
@@ -55,7 +55,7 @@ uint8_t num_bytes(uint8_t size) {
    return size + 4 - remainder;
 }
 
-void check_padding(uint8_t *buffer, uint8_t offset, uint8_t length) {
+void check_padding(const uint8_t *buffer, uint8_t offset, uint8_t length) {
     uint8_t i;
     for (i = 0; i < length - offset; i++) {
         if (buffer[offset + i] != 0x00) {
@@ -64,7 +64,7 @@ void check_padding(uint8_t *buffer, uint8_t offset, uint8_t length) {
     }
 }
 
-uint8_t parse_network(uint8_t *buffer, tx_details_t *txDetails) {
+uint8_t parse_network(const uint8_t *buffer, tx_details_t *txDetails) {
     if (memcmp(buffer, NETWORK_ID_PUBLIC_HASH, 32) == 0) {
         network_id = txDetails->network = NETWORK_TYPE_PUBLIC;
     } else if (memcmp(buffer, NETWORK_ID_TEST_HASH, 32) == 0) {
@@ -75,7 +75,7 @@ uint8_t parse_network(uint8_t *buffer, tx_details_t *txDetails) {
     return 32;
 }
 
-uint8_t parse_time_bounds(uint8_t *buffer, tx_details_t *txDetails) {
+uint8_t parse_time_bounds(const uint8_t *buffer, tx_details_t *txDetails) {
     txDetails->hasTimeBounds = (read_uint32_block(buffer)) ? true : false;
     uint8_t offset = 4;
     if (txDetails->hasTimeBounds) {
@@ -87,7 +87,7 @@ uint8_t parse_time_bounds(uint8_t *buffer, tx_details_t *txDetails) {
     return offset;
 }
 
-uint8_t parse_memo(uint8_t *buffer, tx_details_t *txDetails) {
+uint8_t parse_memo(const uint8_t *buffer, tx_details_t *txDetails) {
     txDetails->memo.type = (uint8_t) read_uint32_block(buffer);
     buffer += 4;
     switch (txDetails->memo.type) {
@@ -118,7 +118,7 @@ uint8_t parse_memo(uint8_t *buffer, tx_details_t *txDetails) {
     }
 }
 
-uint8_t parse_asset(uint8_t *buffer, asset_t *asset) {
+uint8_t parse_asset(const uint8_t *buffer, asset_t *asset) {
     asset->type = read_uint32_block(buffer);
     buffer += 4;
     switch (asset->type) {
@@ -156,7 +156,7 @@ uint8_t parse_asset(uint8_t *buffer, asset_t *asset) {
     }
 }
 
-uint16_t parse_create_account(uint8_t *buffer, create_account_op_t *createAccount) {
+uint16_t parse_create_account(const uint8_t *buffer, create_account_op_t *createAccount) {
     uint32_t accountType = read_uint32_block(buffer);
     if (accountType != PUBLIC_KEY_TYPE_ED25519) {
         THROW(0x6c20);
@@ -171,7 +171,7 @@ uint16_t parse_create_account(uint8_t *buffer, create_account_op_t *createAccoun
     return offset + 8;
 }
 
-uint16_t parse_payment(uint8_t *buffer, payment_op_t *payment) {
+uint16_t parse_payment(const uint8_t *buffer, payment_op_t *payment) {
     uint32_t accountType = read_uint32_block(buffer);
     if (accountType != PUBLIC_KEY_TYPE_ED25519) {
         THROW(0x6c20);
@@ -188,7 +188,7 @@ uint16_t parse_payment(uint8_t *buffer, payment_op_t *payment) {
     return offset + 8;
 }
 
-uint16_t parse_path_payment(uint8_t *buffer, path_payment_op_t *pathPayment) {
+uint16_t parse_path_payment(const uint8_t *buffer, path_payment_op_t *pathPayment) {
     uint16_t offset = parse_asset(buffer, &pathPayment->sourceAsset);
 
     pathPayment->sendMax = read_uint64_block(buffer + offset);
@@ -218,7 +218,7 @@ uint16_t parse_path_payment(uint8_t *buffer, path_payment_op_t *pathPayment) {
     return offset;
 }
 
-uint16_t parse_allow_trust(uint8_t *buffer, allow_trust_op_t *allowTrust) {
+uint16_t parse_allow_trust(const uint8_t *buffer, allow_trust_op_t *allowTrust) {
     uint32_t trusteeAccountType = read_uint32_block(buffer);
     if (trusteeAccountType != PUBLIC_KEY_TYPE_ED25519) {
         THROW(0x6c20);
@@ -252,7 +252,7 @@ uint16_t parse_allow_trust(uint8_t *buffer, allow_trust_op_t *allowTrust) {
     return offset + 4;
 }
 
-uint16_t parse_account_merge(uint8_t *buffer, account_merge_op_t *accountMerge) {
+uint16_t parse_account_merge(const uint8_t *buffer, account_merge_op_t *accountMerge) {
     uint32_t accountType = read_uint32_block(buffer);
     if (accountType != PUBLIC_KEY_TYPE_ED25519) {
         THROW(0x6c20);
@@ -264,7 +264,7 @@ uint16_t parse_account_merge(uint8_t *buffer, account_merge_op_t *accountMerge) 
     return offset + 32;
 }
 
-uint16_t parse_manage_data(uint8_t *buffer, manage_data_op_t *manageData) {
+uint16_t parse_manage_data(const uint8_t *buffer, manage_data_op_t *manageData) {
     manageData->dataNameSize = read_uint32_block(buffer);
 
     if (manageData->dataNameSize > DATA_NAME_MAX_SIZE) {
@@ -297,7 +297,7 @@ uint16_t parse_manage_data(uint8_t *buffer, manage_data_op_t *manageData) {
     return offset;
 }
 
-uint16_t parse_offer(uint8_t *buffer, manage_offer_op_t *manageOffer) {
+uint16_t parse_offer(const uint8_t *buffer, manage_offer_op_t *manageOffer) {
     uint16_t offset = parse_asset(buffer, &manageOffer->selling);
     offset += parse_asset(buffer + offset, &manageOffer->buying);
 
@@ -312,26 +312,26 @@ uint16_t parse_offer(uint8_t *buffer, manage_offer_op_t *manageOffer) {
     return offset;
 }
 
-uint16_t parse_active_offer(uint8_t *buffer, manage_offer_op_t *manageOffer) {
+uint16_t parse_active_offer(const uint8_t *buffer, manage_offer_op_t *manageOffer) {
     manageOffer->active = true;
     uint16_t offset = parse_offer(buffer, manageOffer);
     manageOffer->offerId = read_uint64_block(buffer + offset);
     return offset + 8;
 }
 
-uint16_t parse_passive_offer(uint8_t *buffer, manage_offer_op_t *manageOffer) {
+uint16_t parse_passive_offer(const uint8_t *buffer, manage_offer_op_t *manageOffer) {
     manageOffer->active = false;
     manageOffer->offerId = 0;
     return parse_offer(buffer, manageOffer);
 }
 
-uint16_t parse_change_trust(uint8_t *buffer, change_trust_op_t *changeTrust) {
+uint16_t parse_change_trust(const uint8_t *buffer, change_trust_op_t *changeTrust) {
     uint16_t offset = parse_asset(buffer, &changeTrust->asset);
     changeTrust->limit = read_uint64_block(buffer + offset);
     return offset + 8;
 }
 
-uint16_t parse_set_options(uint8_t *buffer, set_options_op_t *setOptions) {
+uint16_t parse_set_options(const uint8_t *buffer, set_options_op_t *setOptions) {
 
     setOptions->inflationDestinationPresent = (read_uint32_block(buffer)) ? true : false;
     uint16_t offset = 4;
@@ -421,12 +421,12 @@ uint16_t parse_set_options(uint8_t *buffer, set_options_op_t *setOptions) {
     return offset;
 }
 
-uint16_t parse_bump_sequence(uint8_t *buffer, bump_sequence_op_t *bumpSequence) {
+uint16_t parse_bump_sequence(const uint8_t *buffer, bump_sequence_op_t *bumpSequence) {
     bumpSequence->bumpTo = (int64_t) read_uint64_block(buffer);
     return 8;
 }
 
-uint16_t parse_op_xdr(uint8_t *buffer, operation_details_t *opDetails) {
+uint16_t parse_op_xdr(const uint8_t *buffer, operation_details_t *opDetails) {
 
     opDetails->sourcePresent = (read_uint32_block(buffer)) ? true : false;
     uint16_t offset = 4;
@@ -484,7 +484,7 @@ uint16_t parse_op_xdr(uint8_t *buffer, operation_details_t *opDetails) {
     return offset;
 }
 
-void parse_tx_xdr(uint8_t *buffer, tx_context_t *txCtx) {
+void parse_tx_xdr(const uint8_t *buffer, tx_context_t *txCtx) {
     uint16_t offset = txCtx->offset;
     if (offset == 0) {
         MEMCLEAR(txCtx->txDetails);

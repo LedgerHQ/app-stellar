@@ -59,30 +59,30 @@ uint32_t set_result_get_public_key();
  * Subsequent calls resume parsing where the last call left off
  * or from the beginning when the end was reached.
  */
-void parse_tx_xdr(uint8_t *buffer, tx_context_t *txCtx);
+void parse_tx_xdr(const uint8_t *buffer, tx_context_t *txCtx);
 
 // ------------------------------------------------------------------------- //
 //                                UTILITIES                                  //
 // ------------------------------------------------------------------------- //
 
 /**  base32 encode public key */
-void encode_public_key(uint8_t *in, char *out);
+void encode_public_key(const uint8_t *in, char *out);
 
 /** base32 encode pre-auth transaction hash */
-void encode_pre_auth_key(uint8_t *in, char *out);
+void encode_pre_auth_key(const uint8_t *in, char *out);
 
 /** base32 encode sha256 hash */
-void encode_hash_x_key(uint8_t *in, char *out);
+void encode_hash_x_key(const uint8_t *in, char *out);
 
 /** raw public key to base32 encoded (summarized) address */
-void print_public_key(uint8_t *in, char *out, uint8_t numCharsL, uint8_t numCharsR);
+void print_public_key(const uint8_t *in, char *out, uint8_t numCharsL, uint8_t numCharsR);
 
 /** output first numCharsL of input + last numCharsR of input separated by ".." */
 void print_summary(char *in, char *out, uint8_t numCharsL, uint8_t numCharsR);
 
 /** raw byte buffer to hexadecimal string representation.
   * len is length of input, provided output must be twice that size */
-void print_binary(uint8_t *in, char *out, uint8_t len);
+void print_binary(const uint8_t *in, char *out, uint8_t len);
 
 /** raw byte buffer to summarized hexadecimal string representation
   * len is length of input, provided output must be at least length 19 */

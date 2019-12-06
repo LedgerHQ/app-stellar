@@ -135,7 +135,7 @@ void base64_encode(const uint8_t *data, int inLen, char *out) {
     out[outLen] = '\0';
 }
 
-void encode_key(uint8_t *in, char *out, uint8_t versionByte) {
+void encode_key(const uint8_t *in, char *out, uint8_t versionByte) {
     uint8_t buffer[35];
     buffer[0] = versionByte;
     int i;
@@ -149,15 +149,15 @@ void encode_key(uint8_t *in, char *out, uint8_t versionByte) {
     out[56] = '\0';
 }
 
-void encode_public_key(uint8_t *in, char *out) {
+void encode_public_key(const uint8_t *in, char *out) {
     encode_key(in, out, 6 << 3);
 }
 
-void encode_pre_auth_key(uint8_t *in, char *out) {
+void encode_pre_auth_key(const uint8_t *in, char *out) {
     encode_key(in, out, 19 << 3);
 }
 
-void encode_hash_x_key(uint8_t *in, char *out) {
+void encode_hash_x_key(const uint8_t *in, char *out) {
     encode_key(in, out, 23 << 3);
 }
 
@@ -175,7 +175,7 @@ void print_summary(char *in, char *out, uint8_t numCharsL, uint8_t numCharsR) {
     }
 }
 
-void print_binary(uint8_t *in, char *out, uint8_t len) {
+void print_binary(const uint8_t *in, char *out, uint8_t len) {
     out[0] = '0';
     out[1] = 'x';
     uint8_t i, j;
@@ -208,7 +208,7 @@ void print_binary_summary(uint8_t *in, char *out, uint8_t len) {
     }
 }
 
-void print_public_key(uint8_t *in, char *out, uint8_t numCharsL, uint8_t numCharsR) {
+void print_public_key(const uint8_t *in, char *out, uint8_t numCharsL, uint8_t numCharsR) {
     if (numCharsL > 0) {
         char buffer[57];
         encode_public_key(in, buffer);
@@ -344,13 +344,13 @@ void print_flag(char *flag, char *out, char prefix) {
 }
 
 void print_flags(uint32_t flags, char *out, char prefix) {
-    if (flags & 0x01) {
+    if (flags & 0x01u) {
         print_flag("Auth required", out, prefix);
     }
-    if (flags & 0x02) {
+    if (flags & 0x02u) {
         print_flag("Auth revocable", out, prefix);
     }
-    if (flags & 0x04) {
+    if (flags & 0x04u) {
         print_flag("Auth immutable", out, prefix);
     }
 }

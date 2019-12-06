@@ -26,7 +26,7 @@
 typedef void (*format_function_t)(tx_context_t *txCtx);
 
 /* the current formatter */
-extern volatile format_function_t formatter;
+extern format_function_t formatter;
 
 /* the current details printed by the formatter */
 extern char opCaption[OPERATION_CAPTION_MAX_SIZE];
