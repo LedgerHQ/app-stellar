@@ -6,10 +6,12 @@ set(CMAKE_C_STANDARD 11)
 include_directories(../src)
 add_compile_definitions(TEST)
 
-add_executable(test_utils
-        utilstest.c
+add_executable(test_printers
+        test_printers.c
         test_utils.c
         ../src/stellar_utils.c)
+
+target_link_libraries(test_printers PUBLIC cmocka)
 
 add_executable(test_parser
         test_parser.c
@@ -17,4 +19,5 @@ add_executable(test_parser
         ../src/stellar_format_blue.c
         ../src/stellar_parser.c
         ../src/stellar_utils.c)
+
 target_link_libraries(test_parser PUBLIC cmocka)

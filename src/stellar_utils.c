@@ -186,7 +186,7 @@ void print_binary(const uint8_t *in, char *out, uint8_t len) {
     out[j] = '\0';
 }
 
-void print_binary_summary(uint8_t *in, char *out, uint8_t len) {
+void print_binary_summary(const uint8_t *in, char *out, uint8_t len) {
     out[0] = '0';
     out[1] = 'x';
     if (2+len*2 > 18) {
@@ -218,7 +218,7 @@ void print_public_key(const uint8_t *in, char *out, uint8_t numCharsL, uint8_t n
     }
 }
 
-void print_amount(uint64_t amount, char *asset, char *out) {
+void print_amount(uint64_t amount, const char *asset, char *out) {
     char buffer[AMOUNT_MAX_SIZE];
     uint64_t dVal = amount;
     int i, j;

@@ -86,10 +86,10 @@ void print_binary(const uint8_t *in, char *out, uint8_t len);
 
 /** raw byte buffer to summarized hexadecimal string representation
   * len is length of input, provided output must be at least length 19 */
-void print_binary_summary(uint8_t *in, char *out, uint8_t len);
+void print_binary_summary(const uint8_t *in, char *out, uint8_t len);
 
 /** raw amount integer to asset-qualified string representation */
-void print_amount(uint64_t amount, char *asset, char *out);
+void print_amount(uint64_t amount, const char *asset, char *out);
 
 /** concatenate assetCode and assetIssuer summary */
 void print_asset_t(asset_t *asset, char *out);
