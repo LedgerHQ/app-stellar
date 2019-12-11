@@ -23,6 +23,12 @@
 #include "stellar_vars.h"
 #include "stellar_ux.h"
 
+static void app_set_state(enum app_state_t state) {
+  ctx.state = state;
+}
+
+static enum app_state_t app_get_state() { return ctx.state; }
+
 static int read_bip32(const uint8_t *dataBuffer, size_t size, uint32_t *bip32) {
     size_t bip32Len = dataBuffer[0];
     dataBuffer += 1;
@@ -67,6 +73,8 @@ void init_public_key(cx_ecfp_private_key_t *privateKey, cx_ecfp_public_key_t *pu
 }
 
 void handle_get_app_configuration(volatile unsigned int *tx) {
+    app_set_state(STATE_NONE);
+
     G_io_apdu_buffer[0] = ctx.hashSigning;
     G_io_apdu_buffer[1] = LEDGER_MAJOR_VERSION;
     G_io_apdu_buffer[2] = LEDGER_MINOR_VERSION;
@@ -76,6 +84,7 @@ void handle_get_app_configuration(volatile unsigned int *tx) {
 }
 
 void handle_get_public_key(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLength, volatile unsigned int *flags, volatile unsigned int *tx) {
+    app_set_state(STATE_NONE);
 
     if ((p1 != P1_SIGNATURE) && (p1 != P1_NO_SIGNATURE)) {
         THROW(0x6B00);
@@ -142,6 +151,8 @@ void handle_sign_tx(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLe
     }
 
     if (p1 == P1_FIRST) {
+        app_set_state(STATE_PARSE_TX);
+
         MEMCLEAR(ctx.req.tx);
         ctx.reqType = CONFIRM_TRANSACTION;
         // read the bip32 path
@@ -153,6 +164,10 @@ void handle_sign_tx(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLe
         ctx.req.tx.rawLength = dataLength;
         os_memmove(ctx.req.tx.raw, dataBuffer, dataLength);
     } else {
+        if (app_get_state() != STATE_PARSE_TX) {
+            THROW(0x6700);
+        }
+
         // read more raw tx data
         uint32_t offset = ctx.req.tx.rawLength;
         ctx.req.tx.rawLength += dataLength;
@@ -176,9 +191,11 @@ void handle_sign_tx(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLe
     ui_approve_tx_init();
 
     *flags |= IO_ASYNCH_REPLY;
+    app_set_state(STATE_NONE);
 }
 
 void handle_sign_tx_hash(uint8_t *dataBuffer, uint16_t dataLength, volatile unsigned int *flags) {
+    app_set_state(STATE_NONE);
 
     if (!ctx.hashSigning) {
         THROW(0x6c66);

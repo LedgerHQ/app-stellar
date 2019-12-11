@@ -312,7 +312,13 @@ enum request_type_t {
     CONFIRM_TRANSACTION
 };
 
+enum app_state_t {
+  STATE_NONE,
+  STATE_PARSE_TX,
+};
+
 typedef struct {
+    enum app_state_t state;
     union {
         pk_context_t pk;
         tx_context_t tx;
