@@ -45,7 +45,9 @@ int main(int argc, char *argv[]) {
                     txCtx.opIdx = 0;
                     formatter = &format_confirm_transaction_details;
                 } else {
-                    parse_tx_xdr(buffer, &txCtx);
+                    if (!parse_tx_xdr(buffer, read, &txCtx)) {
+                        break;
+                    }
                     if (txCtx.opIdx == 1) {
                         formatter = &format_confirm_transaction;
                         count++;

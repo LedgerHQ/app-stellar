@@ -59,7 +59,7 @@ uint32_t set_result_get_public_key();
  * Subsequent calls resume parsing where the last call left off
  * or from the beginning when the end was reached.
  */
-void parse_tx_xdr(const uint8_t *buffer, tx_context_t *txCtx);
+bool parse_tx_xdr(const uint8_t *data, size_t size, tx_context_t *txCtx);
 
 // ------------------------------------------------------------------------- //
 //                                UTILITIES                                  //

@@ -48,7 +48,7 @@ int read_file(char *filename, uint8_t *buffer, int maxlen) {
        for (i = 0; i < maxlen; i++) {
            sscanf(hex + 2*i, "%2hhx", &buffer[i]);
        }
-       return read;
+       return read / 2;
     } else {
         printf("No such file\n");
         return 0;
