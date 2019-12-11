@@ -23,15 +23,18 @@
 #include "stellar_vars.h"
 #include "stellar_ux.h"
 
-uint8_t read_bip32(uint8_t *dataBuffer, uint32_t *bip32) {
-    uint8_t bip32Len = dataBuffer[0];
+static int read_bip32(const uint8_t *dataBuffer, size_t size, uint32_t *bip32) {
+    size_t bip32Len = dataBuffer[0];
     dataBuffer += 1;
     if (bip32Len < 0x01 || bip32Len > MAX_BIP32_LEN) {
         THROW(0x6a80);
     }
-    uint8_t i;
-    for (i = 0; i < bip32Len; i++) {
-        bip32[i] = (dataBuffer[0] << 24) | (dataBuffer[1] << 16) | (dataBuffer[2] << 8) | (dataBuffer[3]);
+    if (1 + 4 * bip32Len > size) {
+      THROW(0x6a80);
+    }
+
+    for (unsigned int i = 0; i < bip32Len; i++) {
+        bip32[i] = (dataBuffer[0] << 24u) | (dataBuffer[1] << 16u) | (dataBuffer[2] << 8u) | (dataBuffer[3]);
         dataBuffer += 4;
     }
     return bip32Len;
@@ -83,7 +86,7 @@ void handle_get_public_key(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t
     ctx.req.pk.returnSignature = (p1 == P1_SIGNATURE);
 
     uint32_t bip32[MAX_BIP32_LEN];
-    uint8_t bip32Len = read_bip32(dataBuffer, bip32);
+    int bip32Len = read_bip32(dataBuffer, dataLength, bip32);
     dataBuffer += 1 + bip32Len * 4;
     dataLength -= 1 + bip32Len * 4;
 
@@ -142,7 +145,7 @@ void handle_sign_tx(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLe
         MEMCLEAR(ctx.req.tx);
         ctx.reqType = CONFIRM_TRANSACTION;
         // read the bip32 path
-        ctx.req.tx.bip32Len = read_bip32(dataBuffer, ctx.req.tx.bip32);
+        ctx.req.tx.bip32Len = read_bip32(dataBuffer, dataLength, ctx.req.tx.bip32);
         dataBuffer += 1 + ctx.req.tx.bip32Len * 4;
         dataLength -= 1 + ctx.req.tx.bip32Len * 4;
 
@@ -184,7 +187,7 @@ void handle_sign_tx_hash(uint8_t *dataBuffer, uint16_t dataLength, volatile unsi
     MEMCLEAR(ctx.req.tx);
     ctx.reqType = CONFIRM_TRANSACTION;
 
-    ctx.req.tx.bip32Len = read_bip32(dataBuffer, ctx.req.tx.bip32);
+    ctx.req.tx.bip32Len = read_bip32(dataBuffer, dataLength, ctx.req.tx.bip32);
     dataBuffer += 1 + ctx.req.tx.bip32Len * 4;
     dataLength -= 1 + ctx.req.tx.bip32Len * 4;
 
