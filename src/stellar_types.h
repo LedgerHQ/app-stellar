@@ -39,6 +39,8 @@
 #define P2_LAST 0x00
 #define P2_MORE 0x80
 
+#define MIN_APDU_SIZE 5
+
 #define OFFSET_CLA 0
 #define OFFSET_INS 1
 #define OFFSET_P1 2
