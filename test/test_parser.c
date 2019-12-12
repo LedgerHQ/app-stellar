@@ -1244,5 +1244,5 @@ int main() {
       cmocka_unit_test(test_tx_bump_sequence),
 
   };
-  cmocka_run_group_tests(tests, NULL, NULL);
+  return cmocka_run_group_tests(tests, NULL, NULL);
 }

@@ -14,15 +14,34 @@ Alternatively, you can set up the Vagrant Virtualbox Ledger environment maintain
 
 The command to compile and load the app onto the device is:
 
-```$ make load```
+```shell script
+make load
+```
 
 To remove the app from the device do:
 
-```$ make delete```
+```shell script
+make delete
+```
 
 ## Testing
 
-The `./test` directory contains files for testing the xdr transaction parser and the screen formatter. To build and execute the tests run `./test.sh`.
+The `./test` directory contains files for testing the xdr transaction parser and the screen formatter.
+
+They require the [cmocka](https://cmocka.org/) unit testing framework and [CMake](https://cmake.org/) to be installed:
+
+```shell script
+sudo apt install libcmocka-dev cmake
+```
+
+To build and execute the tests, run the following commands:
+
+```shell script
+mkdir test/build
+cd test/build
+cmake ..
+make && make test
+```
 
 ### XDR parsing
 

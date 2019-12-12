@@ -96,5 +96,5 @@ int main() {
       cmocka_unit_test(test_print_int),    cmocka_unit_test(test_print_summary),
       cmocka_unit_test(test_print_binary), cmocka_unit_test(test_base64_encode),
   };
-  cmocka_run_group_tests(tests, NULL, NULL);
+  return cmocka_run_group_tests(tests, NULL, NULL);
 }

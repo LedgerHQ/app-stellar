@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
 project(test_parser C)
 
+include(CTest)
+
 set(CMAKE_C_STANDARD 11)
 
 include_directories(../src)
@@ -21,3 +23,6 @@ add_executable(test_parser
         ../src/stellar_utils.c)
 
 target_link_libraries(test_parser PUBLIC cmocka)
+
+add_test(test_printers test_printers)
+add_test(test_parser test_parser)
