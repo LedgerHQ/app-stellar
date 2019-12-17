@@ -275,11 +275,11 @@ void print_int(int64_t l, char *out) {
 
     memset(buffer, 0, AMOUNT_MAX_SIZE);
     for (i = 0; dVal > 0; i++) {
-        buffer[i] = (dVal % 10) + '0';
-        dVal /= 10;
         if (i >= AMOUNT_MAX_SIZE) {
             THROW(0x6700);
         }
+        buffer[i] = (dVal % 10) + '0';
+        dVal /= 10;
     }
     int j = 0;
     if (l < 0) {
@@ -304,11 +304,11 @@ void print_uint(uint64_t l, char *out) {
 
     memset(buffer, 0, AMOUNT_MAX_SIZE);
     for (i = 0; dVal > 0; i++) {
-        buffer[i] = (dVal % 10) + '0';
-        dVal /= 10;
         if (i >= AMOUNT_MAX_SIZE) {
             THROW(0x6700);
         }
+        buffer[i] = (dVal % 10) + '0';
+        dVal /= 10;
     }
     // reverse order
     for (i -= 1, j = 0; i >= 0 && j < AMOUNT_MAX_SIZE-1; i--, j++) {
