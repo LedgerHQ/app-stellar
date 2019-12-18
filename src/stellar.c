@@ -23,15 +23,24 @@
 #include "stellar_vars.h"
 #include "stellar_ux.h"
 
-uint8_t read_bip32(uint8_t *dataBuffer, uint32_t *bip32) {
-    uint8_t bip32Len = dataBuffer[0];
+static void app_set_state(enum app_state_t state) {
+  ctx.state = state;
+}
+
+static enum app_state_t app_get_state() { return ctx.state; }
+
+static int read_bip32(const uint8_t *dataBuffer, size_t size, uint32_t *bip32) {
+    size_t bip32Len = dataBuffer[0];
     dataBuffer += 1;
     if (bip32Len < 0x01 || bip32Len > MAX_BIP32_LEN) {
         THROW(0x6a80);
     }
-    uint8_t i;
-    for (i = 0; i < bip32Len; i++) {
-        bip32[i] = (dataBuffer[0] << 24) | (dataBuffer[1] << 16) | (dataBuffer[2] << 8) | (dataBuffer[3]);
+    if (1 + 4 * bip32Len > size) {
+      THROW(0x6a80);
+    }
+
+    for (unsigned int i = 0; i < bip32Len; i++) {
+        bip32[i] = (dataBuffer[0] << 24u) | (dataBuffer[1] << 16u) | (dataBuffer[2] << 8u) | (dataBuffer[3]);
         dataBuffer += 4;
     }
     return bip32Len;
@@ -64,6 +73,8 @@ void init_public_key(cx_ecfp_private_key_t *privateKey, cx_ecfp_public_key_t *pu
 }
 
 void handle_get_app_configuration(volatile unsigned int *tx) {
+    app_set_state(STATE_NONE);
+
     G_io_apdu_buffer[0] = ctx.hashSigning;
     G_io_apdu_buffer[1] = LEDGER_MAJOR_VERSION;
     G_io_apdu_buffer[2] = LEDGER_MINOR_VERSION;
@@ -73,6 +84,7 @@ void handle_get_app_configuration(volatile unsigned int *tx) {
 }
 
 void handle_get_public_key(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLength, volatile unsigned int *flags, volatile unsigned int *tx) {
+    app_set_state(STATE_NONE);
 
     if ((p1 != P1_SIGNATURE) && (p1 != P1_NO_SIGNATURE)) {
         THROW(0x6B00);
@@ -83,7 +95,7 @@ void handle_get_public_key(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t
     ctx.req.pk.returnSignature = (p1 == P1_SIGNATURE);
 
     uint32_t bip32[MAX_BIP32_LEN];
-    uint8_t bip32Len = read_bip32(dataBuffer, bip32);
+    int bip32Len = read_bip32(dataBuffer, dataLength, bip32);
     dataBuffer += 1 + bip32Len * 4;
     dataLength -= 1 + bip32Len * 4;
 
@@ -139,10 +151,12 @@ void handle_sign_tx(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLe
     }
 
     if (p1 == P1_FIRST) {
+        app_set_state(STATE_PARSE_TX);
+
         MEMCLEAR(ctx.req.tx);
         ctx.reqType = CONFIRM_TRANSACTION;
         // read the bip32 path
-        ctx.req.tx.bip32Len = read_bip32(dataBuffer, ctx.req.tx.bip32);
+        ctx.req.tx.bip32Len = read_bip32(dataBuffer, dataLength, ctx.req.tx.bip32);
         dataBuffer += 1 + ctx.req.tx.bip32Len * 4;
         dataLength -= 1 + ctx.req.tx.bip32Len * 4;
 
@@ -150,6 +164,10 @@ void handle_sign_tx(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLe
         ctx.req.tx.rawLength = dataLength;
         os_memmove(ctx.req.tx.raw, dataBuffer, dataLength);
     } else {
+        if (app_get_state() != STATE_PARSE_TX) {
+            THROW(0x6700);
+        }
+
         // read more raw tx data
         uint32_t offset = ctx.req.tx.rawLength;
         ctx.req.tx.rawLength += dataLength;
@@ -173,9 +191,11 @@ void handle_sign_tx(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLe
     ui_approve_tx_init();
 
     *flags |= IO_ASYNCH_REPLY;
+    app_set_state(STATE_NONE);
 }
 
 void handle_sign_tx_hash(uint8_t *dataBuffer, uint16_t dataLength, volatile unsigned int *flags) {
+    app_set_state(STATE_NONE);
 
     if (!ctx.hashSigning) {
         THROW(0x6c66);
@@ -184,7 +204,7 @@ void handle_sign_tx_hash(uint8_t *dataBuffer, uint16_t dataLength, volatile unsi
     MEMCLEAR(ctx.req.tx);
     ctx.reqType = CONFIRM_TRANSACTION;
 
-    ctx.req.tx.bip32Len = read_bip32(dataBuffer, ctx.req.tx.bip32);
+    ctx.req.tx.bip32Len = read_bip32(dataBuffer, dataLength, ctx.req.tx.bip32);
     dataBuffer += 1 + ctx.req.tx.bip32Len * 4;
     dataLength -= 1 + ctx.req.tx.bip32Len * 4;
 

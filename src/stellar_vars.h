@@ -20,7 +20,7 @@
 
 #include "os.h"
 #include "cx.h"
-#include "os_io_seproxyhal.h"
+#include "ux.h"
 #include "stellar_types.h"
 
 extern stellar_context_t ctx;

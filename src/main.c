@@ -48,20 +48,24 @@ unsigned short io_exchange_al(unsigned char channel, unsigned short tx_len) {
     return 0;
 }
 
-void handle_apdu(volatile unsigned int *flags, volatile unsigned int *tx) {
+static void handle_apdu(uint8_t *buffer, size_t size, volatile unsigned int *flags, volatile unsigned int *tx) {
     unsigned short sw = 0;
 
     BEGIN_TRY {
         TRY {
-            if (G_io_apdu_buffer[OFFSET_CLA] != CLA) {
+            if (buffer[OFFSET_CLA] != CLA || size < MIN_APDU_SIZE) {
                 THROW(0x6e00);
             }
 
-            uint8_t ins = G_io_apdu_buffer[OFFSET_INS];
-            uint8_t p1 = G_io_apdu_buffer[OFFSET_P1];
-            uint8_t p2 = G_io_apdu_buffer[OFFSET_P2];
-            uint8_t dataLength = G_io_apdu_buffer[OFFSET_LC];
-            uint8_t *dataBuffer = G_io_apdu_buffer + OFFSET_CDATA;
+            uint8_t ins = buffer[OFFSET_INS];
+            uint8_t p1 = buffer[OFFSET_P1];
+            uint8_t p2 = buffer[OFFSET_P2];
+            uint8_t dataLength = buffer[OFFSET_LC];
+            uint8_t *dataBuffer = buffer + OFFSET_CDATA;
+
+            if (dataLength + MIN_APDU_SIZE != size) {
+                THROW(0x6e00);
+            }
 
             PRINTF("New APDU:\n%.*H\n", dataLength+4, G_io_apdu_buffer);
 
@@ -122,14 +126,14 @@ void handle_apdu(volatile unsigned int *flags, volatile unsigned int *tx) {
     END_TRY;
 }
 
-void stellar_nv_state_init() {
+static void stellar_nv_state_init() {
     if (N_stellar_pstate.initialized != 0x01) {
         uint8_t initialized = 0x01;
         nvm_write((void *)&N_stellar_pstate, &initialized, 1);
     }
 }
 
-void stellar_main(void) {
+static void stellar_main(void) {
     // hash sig support is not persistent
 
     os_memset(&ctx, 0, sizeof(ctx));
@@ -161,7 +165,7 @@ void stellar_main(void) {
                     THROW(0x6982);
                 }
 
-                handle_apdu(&flags, &tx);
+                handle_apdu(G_io_apdu_buffer, rx, &flags, &tx);
             }
             CATCH(EXCEPTION_IO_RESET) {
                 THROW(EXCEPTION_IO_RESET);

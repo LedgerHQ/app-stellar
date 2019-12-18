@@ -39,6 +39,8 @@
 #define P2_LAST 0x00
 #define P2_MORE 0x80
 
+#define MIN_APDU_SIZE 5
+
 #define OFFSET_CLA 0
 #define OFFSET_INS 1
 #define OFFSET_P1 2
@@ -127,14 +129,14 @@ static const char* NETWORK_NAMES[3] = { "Public", "Test", "Unknown" };
 
 #ifdef TEST
 #include <stdio.h>
-#define THROW(code) { printf("error: %d", code); }
+#define THROW(code) do { printf("error: %d", code); } while (0)
 #define PRINTF(msg, arg) printf(msg, arg)
 #define PIC(code) code
 //#define TARGET_NANOS 1
 #define TARGET_BLUE 1
-#define MEMCLEAR(dest) { memset(&dest, 0, sizeof(dest)); }
+#define MEMCLEAR(dest) memset(&dest, 0, sizeof(dest));
 #else
-#define MEMCLEAR(dest) { os_memset(&dest, 0, sizeof(dest)); }
+#define MEMCLEAR(dest) do { os_memset(&dest, 0, sizeof(dest)); } while (0)
 #include "bolos_target.h"
 #endif // TEST
 
@@ -158,7 +160,7 @@ static const char* NETWORK_NAMES[3] = { "Public", "Test", "Unknown" };
 typedef struct {
     uint8_t type;
     char code[13];
-    uint8_t *issuer;
+    const uint8_t *issuer;
 } asset_t;
 
 typedef struct {
@@ -167,19 +169,19 @@ typedef struct {
 } price_t;
 
 typedef struct {
-    uint8_t *accountId;
+    const uint8_t *accountId;
     uint64_t amount;
 
 } create_account_op_t;
 
 typedef struct {
-    uint8_t *destination;
+    const uint8_t *destination;
     uint64_t amount;
     asset_t asset;
 } payment_op_t;
 
 typedef struct {
-    uint8_t *destination;
+    const uint8_t *destination;
     asset_t sourceAsset;
     uint64_t sendMax;
     asset_t destAsset;
@@ -204,12 +206,12 @@ typedef struct {
 
 typedef struct {
     char assetCode[13];
-    uint8_t *trustee;
+    const uint8_t *trustee;
     bool authorize;
 } allow_trust_op_t;
 
 typedef struct {
-    uint8_t *destination;
+    const uint8_t *destination;
 } account_merge_op_t;
 
 typedef struct {
@@ -218,13 +220,13 @@ typedef struct {
 
 typedef struct {
     uint8_t type;
-    uint8_t *data;
+    const uint8_t *data;
     uint32_t weight;
 } signer_t;
 
 typedef struct {
     bool inflationDestinationPresent;
-    uint8_t *inflationDestination;
+    const uint8_t *inflationDestination;
     uint32_t clearFlags;
     uint32_t setFlags;
     bool masterWeightPresent;
@@ -236,22 +238,22 @@ typedef struct {
     bool highThresholdPresent;
     uint32_t highThreshold;
     uint32_t homeDomainSize;
-    uint8_t *homeDomain;
+    const uint8_t *homeDomain;
     bool signerPresent;
     signer_t signer;
 } set_options_op_t;
 
 typedef struct {
     uint8_t dataNameSize;
-    uint8_t *dataName;
+    const uint8_t *dataName;
     uint8_t dataValueSize;
-    uint8_t *dataValue;
+    const uint8_t *dataValue;
 } manage_data_op_t;
 
 typedef struct {
     uint8_t type;
     bool sourcePresent;
-    uint8_t *source;
+    const uint8_t *source;
     union {
         create_account_op_t createAccount;
         payment_op_t payment;
@@ -282,7 +284,7 @@ typedef struct {
     uint8_t network;
     bool hasTimeBounds;
     time_bounds_t timeBounds;
-    uint8_t *source;
+    const uint8_t *source;
     int64_t sequenceNumber;
 } tx_details_t;
 
@@ -310,7 +312,13 @@ enum request_type_t {
     CONFIRM_TRANSACTION
 };
 
+enum app_state_t {
+  STATE_NONE,
+  STATE_PARSE_TX,
+};
+
 typedef struct {
+    enum app_state_t state;
     union {
         pk_context_t pk;
         tx_context_t tx;
