@@ -31,7 +31,7 @@ char opCaption[20];
 char detailCaption[20];
 char detailValue[89];
 
-volatile format_function_t formatter;
+format_function_t formatter;
 
 void format_sequence_number(tx_context_t *txCtx) {
     strcpy(detailCaption, "Sequence Number");
