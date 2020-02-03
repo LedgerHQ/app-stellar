@@ -104,7 +104,10 @@ void handle_get_public_key(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t
     if (ctx.req.pk.returnSignature) {
         uint8_t i;
         msgLength = dataLength;
-        if (msgLength > 32) {
+        /* Enforce msg length to be strictly lower than the size of a SHA-256
+         * digest. This ensures the message is not the resulting hash of a
+         * transaction, to prevent blind signatures on transactions. */
+        if (msgLength >= 32) {
             THROW(0x6a80);
         }
         for (i=0; i<msgLength; i++) {

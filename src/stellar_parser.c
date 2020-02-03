@@ -410,6 +410,18 @@ static bool parse_active_offer(buffer_t *buffer,
   return buffer_read64(buffer, &manageOffer->offerId);
 }
 
+static bool parse_active_sell_offer(buffer_t *buffer,
+                                 manage_offer_op_t *manageOffer) {
+  manageOffer->buy = false;
+  return parse_active_offer(buffer, manageOffer);
+}
+
+static bool parse_active_buy_offer(buffer_t *buffer,
+                                manage_offer_op_t *manageOffer) {
+  manageOffer->buy = true;
+  return parse_active_offer(buffer, manageOffer);
+}
+
 static bool parse_passive_offer(buffer_t *buffer,
                                 manage_offer_op_t *manageOffer) {
   manageOffer->active = false;
@@ -558,8 +570,8 @@ static bool parse_op_xdr(buffer_t *buffer, operation_details_t *opDetails) {
   case XDR_OPERATION_TYPE_CREATE_PASSIVE_OFFER: {
     return parse_passive_offer(buffer, &opDetails->op.manageOffer);
   }
-  case XDR_OPERATION_TYPE_MANAGE_OFFER: {
-    return parse_active_offer(buffer, &opDetails->op.manageOffer);
+  case XDR_OPERATION_TYPE_MANAGE_SELL_OFFER: {
+    return parse_active_sell_offer(buffer, &opDetails->op.manageOffer);
   }
   case XDR_OPERATION_TYPE_SET_OPTIONS: {
     return parse_set_options(buffer, &opDetails->op.setOptions);
@@ -581,6 +593,9 @@ static bool parse_op_xdr(buffer_t *buffer, operation_details_t *opDetails) {
   }
   case XDR_OPERATION_TYPE_BUMP_SEQUENCE: {
     return parse_bump_sequence(buffer, &opDetails->op.bumpSequence);
+  }
+  case XDR_OPERATION_TYPE_MANAGE_BUY_OFFER: {
+    return parse_active_buy_offer(buffer, &opDetails->op.manageOffer);
   }
   default:
     return false; // Unknown operation
