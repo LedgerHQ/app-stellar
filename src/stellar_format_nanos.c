@@ -366,8 +366,13 @@ void format_change_trust(tx_context_t *txCtx) {
 }
 
 void format_manage_offer_sell(tx_context_t *txCtx) {
-    strcpy(detailCaption, "Sell");
-    print_amount(txCtx->opDetails.op.manageOffer.amount, txCtx->opDetails.op.manageOffer.selling.code, detailValue);
+    if (txCtx->opDetails.op.manageOffer.buy) {
+        strcpy(detailCaption, "Buy");
+        print_amount(txCtx->opDetails.op.manageOffer.amount, txCtx->opDetails.op.manageOffer.buying.code, detailValue);
+    } else {
+        strcpy(detailCaption, "Sell");
+        print_amount(txCtx->opDetails.op.manageOffer.amount, txCtx->opDetails.op.manageOffer.selling.code, detailValue);
+    }
     formatter = &format_operation_source;
 }
 
@@ -375,16 +380,29 @@ void format_manage_offer_price(tx_context_t *txCtx) {
     strcpy(detailCaption, "Price");
     uint64_t price = ((uint64_t)txCtx->opDetails.op.manageOffer.price.numerator * 10000000) /
         txCtx->opDetails.op.manageOffer.price.denominator;
-    print_amount(price, txCtx->opDetails.op.manageOffer.buying.code, detailValue);
+    if (txCtx->opDetails.op.manageOffer.buy) {
+        print_amount(price, txCtx->opDetails.op.manageOffer.selling.code, detailValue);
+    } else {
+        print_amount(price, txCtx->opDetails.op.manageOffer.buying.code, detailValue);
+    }
     formatter = &format_manage_offer_sell;
 }
 
 void format_manage_offer_buy(tx_context_t *txCtx) {
-    strcpy(detailCaption, "Buy");
-    if (txCtx->opDetails.op.manageOffer.buying.type == ASSET_TYPE_NATIVE) {
-        print_native_asset_code(txCtx->txDetails.network, detailValue);
+    if (txCtx->opDetails.op.manageOffer.buy) {
+        strcpy(detailCaption, "Sell");
+        if (txCtx->opDetails.op.manageOffer.selling.type == ASSET_TYPE_NATIVE) {
+            print_native_asset_code(txCtx->txDetails.network, detailValue);
+        } else {
+            print_asset_t(&txCtx->opDetails.op.manageOffer.selling, detailValue);
+        }
     } else {
-        print_asset_t(&txCtx->opDetails.op.manageOffer.buying, detailValue);
+        strcpy(detailCaption, "Buy");
+        if (txCtx->opDetails.op.manageOffer.buying.type == ASSET_TYPE_NATIVE) {
+            print_native_asset_code(txCtx->txDetails.network, detailValue);
+        } else {
+            print_asset_t(&txCtx->opDetails.op.manageOffer.buying, detailValue);
+        }
     }
     formatter = &format_manage_offer_price;
 }
@@ -473,7 +491,7 @@ void format_create_account(tx_context_t *txCtx) {
     formatter = &format_create_account_amount;
 }
 
-const format_function_t formatters[12] = {
+const format_function_t formatters[13] = {
     &format_create_account,
     &format_payment,
     &format_path_payment,
@@ -485,7 +503,8 @@ const format_function_t formatters[12] = {
     &format_account_merge,
     &format_inflation,
     &format_manage_data,
-    &format_bump_sequence
+    &format_bump_sequence,
+    &format_manage_offer
 };
 
 void format_confirm_operation(tx_context_t *txCtx) {
