@@ -256,17 +256,6 @@ UX_DEF(ux_confirm_tx_finalize_flow,
 
 
 format_function_t next_formatter(tx_context_t *txCtx) {
-    BEGIN_TRY {
-        TRY {
-            if (!parse_tx_xdr(txCtx->raw, txCtx->rawLength, txCtx)) {
-              THROW(0x6800);
-            }
-        } CATCH_OTHER(sw) {
-            io_seproxyhal_respond(sw, 0);
-            return NULL;
-        } FINALLY {
-        }
-    } END_TRY;
     if (txCtx->opIdx == 1) {
         return &format_confirm_transaction;
     } else {
