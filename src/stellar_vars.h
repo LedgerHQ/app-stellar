@@ -20,7 +20,13 @@
 
 #include "os.h"
 #include "cx.h"
+
+#ifdef TARGET_BLUE
+#include "os_io_seproxyhal.h"
+#else
 #include "ux.h"
+#endif
+
 #include "stellar_types.h"
 
 extern stellar_context_t ctx;
@@ -29,3 +35,5 @@ extern stellar_nv_state_t const N_state_pic;
 #define N_stellar_pstate  (*(volatile  stellar_nv_state_t *)PIC(&N_state_pic))
 
 #endif
+
+
