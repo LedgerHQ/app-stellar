@@ -295,7 +295,12 @@ __attribute__((section(".boot"))) int main(void) {
             TRY {
                 io_seproxyhal_init();
 
-                stellar_nv_state_init();
+#ifdef TARGET_NANOX                            
+		// grab the current plane mode setting
+		G_io_app.plane_mode = os_setting_get(OS_SETTING_PLANEMODE, NULL, 0);
+#endif // TARGET_NANOX
+
+		stellar_nv_state_init();
 
                 // deactivate usb before activating
                 USB_power(0);
