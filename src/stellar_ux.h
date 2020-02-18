@@ -19,7 +19,12 @@
 #define STELLAR_UX_COMMON_H
 
 #include "stellar_types.h"
+
+#ifdef TARGET_BLUE
+#include "os_io_seproxyhal.h"
+#else
 #include "ux.h"
+#endif
 
 // ------------------------------------------------------------------------- //
 //                     Implemented by stellar_ux_common.c                    //
