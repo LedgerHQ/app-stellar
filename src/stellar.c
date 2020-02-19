@@ -195,6 +195,9 @@ void handle_sign_tx(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLe
     cx_hash_sha256(ctx.req.tx.raw, ctx.req.tx.rawLength, ctx.req.tx.hash);
 #endif
 
+    if (!parse_tx_xdr(ctx.req.tx.raw, ctx.req.tx.rawLength, &ctx.req.tx)) {
+        THROW(0x6800);
+    }
     ui_approve_tx_init();
 
     *flags |= IO_ASYNCH_REPLY;

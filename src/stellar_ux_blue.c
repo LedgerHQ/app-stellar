@@ -565,9 +565,6 @@ void prepare_details() {
 
         // parse next operation
         ctx.req.tx.offset = offsets[currentScreen];
-        if (!parse_tx_xdr(ctx.req.tx.raw, ctx.req.tx.rawLength, &ctx.req.tx)) {
-            THROW(0x6800);
-        }
         offsets[currentScreen+1] = ctx.req.tx.offset;
 
         strcpy(titleCaption, "Operation ");
