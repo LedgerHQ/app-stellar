@@ -183,6 +183,11 @@ static void stellar_main(void) {
                 default:
                     // Internal error
                     sw = 0x6800 | (e & 0x7FF);
+                    /* Ensure further io_exchange() calls aren't done with an
+                     * unexpected flag, since it can trigger infinite loops if
+                     * this flag trigger again an exception. */
+                    flags = 0;
+                    ui_idle();
                     break;
                 }
                 // Unexpected exception => report
