@@ -41,12 +41,6 @@ void handle_sign_tx_hash(uint8_t *dataBuffer, uint16_t dataLength, volatile unsi
 /** u2f keep alive */
 void handle_keep_alive(volatile unsigned int *flags);
 
-/** puts the signature in the result buffer */
-uint32_t set_result_sign_tx(void);
-
-/** puts the public key in the result buffer */
-uint32_t set_result_get_public_key();
-
 
 // ------------------------------------------------------------------------- //
 //                           TRANSACTION PARSING                             //

@@ -87,6 +87,16 @@ void handle_get_app_configuration(volatile unsigned int *tx) {
     THROW(0x9000);
 }
 
+static uint32_t set_result_get_public_key(void) {
+    os_memmove(G_io_apdu_buffer, ctx.req.pk.publicKey, 32);
+    uint32_t tx = 32;
+    if (ctx.req.pk.returnSignature) {
+        os_memmove(G_io_apdu_buffer + tx, ctx.req.pk.signature, 64);
+        tx += 64;
+    }
+    return tx;
+}
+
 void handle_get_public_key(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLength, volatile unsigned int *flags, volatile unsigned int *tx) {
     app_set_state(STATE_NONE);
 
@@ -138,12 +148,14 @@ void handle_get_public_key(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t
     }
     MEMCLEAR(privateKey);
 
+    uint32_t pk_tx = set_result_get_public_key();
     if (p2 & P2_CONFIRM) {
         ctx.reqType = CONFIRM_ADDRESS;
+        ctx.req.pk.tx = pk_tx;
         ui_show_address_init();
         *flags |= IO_ASYNCH_REPLY;
     } else {
-        *tx = set_result_get_public_key();
+        *tx = pk_tx;
         THROW(0x9000);
     }
 }
@@ -198,6 +210,21 @@ void handle_sign_tx(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLe
     if (!parse_tx_xdr(ctx.req.tx.raw, ctx.req.tx.rawLength, &ctx.req.tx)) {
         THROW(0x6800);
     }
+
+    cx_ecfp_private_key_t privateKey;
+    derive_private_key(&privateKey, ctx.req.tx.bip32, ctx.req.tx.bip32Len);
+
+    // sign hash
+#if CX_APILEVEL >= 8
+    io_seproxyhal_io_heartbeat();
+    ctx.req.tx.tx = cx_eddsa_sign(&privateKey, CX_LAST, CX_SHA512, ctx.req.tx.hash, 32, NULL, 0, G_io_apdu_buffer, 64, NULL);
+    io_seproxyhal_io_heartbeat();
+#else
+    ctx.req.tx.tx = cx_eddsa_sign(&privateKey, NULL, CX_LAST, CX_SHA512, ctx.req.tx.hash, 32, G_io_apdu_buffer);
+#endif
+
+    MEMCLEAR(privateKey);
+
     ui_approve_tx_init();
 
     *flags |= IO_ASYNCH_REPLY;
@@ -231,32 +258,3 @@ void handle_sign_tx_hash(uint8_t *dataBuffer, uint16_t dataLength, volatile unsi
 void handle_keep_alive(volatile unsigned int *flags) {
     *flags |= IO_ASYNCH_REPLY;
 }
-
-uint32_t set_result_sign_tx(void) {
-    cx_ecfp_private_key_t privateKey;
-    derive_private_key(&privateKey, ctx.req.tx.bip32, ctx.req.tx.bip32Len);
-
-    // sign hash
-#if CX_APILEVEL >= 8
-    io_seproxyhal_io_heartbeat();
-    uint32_t tx = cx_eddsa_sign(&privateKey, CX_LAST, CX_SHA512, ctx.req.tx.hash, 32, NULL, 0, G_io_apdu_buffer, 64, NULL);
-    io_seproxyhal_io_heartbeat();
-#else
-    uint32_t tx = cx_eddsa_sign(&privateKey, NULL, CX_LAST, CX_SHA512, ctx.req.tx.hash, 32, G_io_apdu_buffer);
-#endif
-
-    MEMCLEAR(privateKey);
-
-    return tx;
-}
-
-uint32_t set_result_get_public_key() {
-    os_memmove(G_io_apdu_buffer, ctx.req.pk.publicKey, 32);
-    uint32_t tx = 32;
-    if (ctx.req.pk.returnSignature) {
-        os_memmove(G_io_apdu_buffer + tx, ctx.req.pk.signature, 64);
-        tx += 64;
-    }
-    return tx;
-}
-
