@@ -294,6 +294,7 @@ typedef struct {
     uint8_t publicKey[32];
     uint8_t signature[64];
     bool returnSignature;
+    uint32_t tx;
 } pk_context_t;
 
 typedef struct {
@@ -307,6 +308,7 @@ typedef struct {
     tx_details_t txDetails;
     uint8_t opCount;
     uint8_t opIdx;
+    uint32_t tx;
 } tx_context_t;
 
 enum request_type_t {
