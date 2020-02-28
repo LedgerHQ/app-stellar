@@ -27,12 +27,6 @@ unsigned int io_seproxyhal_respond(unsigned short sw, uint32_t tx) {
     // Send back the response, do not restart the event loop
     io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
 
-    /* temporary workaround for the 'freeze' bug: EXCEPTION_IO_RESET is catched
-     * by main(), which resets seproxhal and the UI */
-    if (1) {
-        THROW(EXCEPTION_IO_RESET);
-    }
-
     // Display back the original UX
     ui_idle();
     return 0; // do not redraw the widgets
