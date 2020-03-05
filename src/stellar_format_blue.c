@@ -108,9 +108,17 @@ void format_confirm_transaction_details(tx_context_t *txCtx) {
 void format_operation_source(tx_context_t *txCtx) {
     if (txCtx->opDetails.sourcePresent) {
         strcpy(detailCaption, "Op Source");
-        encode_public_key(txCtx->opDetails.source, detailValue);
+        print_public_key(txCtx->opDetails.source, detailValue, 6, 6);
+        formatter = &format_confirm_transaction_details;
+    } else {
+        if (txCtx->opIdx == txCtx->opCount) {
+            // last operation: show transaction details
+            format_confirm_transaction_details(txCtx);
+        } else {
+            // more operations: show next operation
+            formatter = NULL;
+        }
     }
-    formatter = NULL;
 }
 
 void format_bump_sequence(tx_context_t *txCtx) {
