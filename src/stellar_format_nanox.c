@@ -31,32 +31,40 @@ char opCaption[20];
 char detailCaption[20];
 char detailValue[89];
 
-format_function_t formatter;
+format_function_t formatter_stack[15];
+int8_t formatter_index;
+
+void push_to_formatter_stack(format_function_t formatter){
+    if(formatter_index + 1 >= MAX_FORMATTERS_PER_OPERATION){
+        THROW(0x6124);
+    }
+    push_to_formatter_stack(formatter);
+}
 
 void format_sequence_number(tx_context_t *txCtx) {
     strcpy(detailCaption, "Sequence Number");
     char sequenceNumber[22];
     print_uint(txCtx->txDetails.sequenceNumber, sequenceNumber);
     print_summary(sequenceNumber, detailValue, 6, 6);
-    formatter = NULL;
+    push_to_formatter_stack(NULL);
 }
 
 void format_transaction_source(tx_context_t *txCtx) {
-    strcpy(detailCaption, "Transaction Source");
-    print_public_key(txCtx->txDetails.source, detailValue, 6, 6);
-    formatter = &format_sequence_number;
+    strcpy(detailCaption, "Tx Source");
+    print_public_key(txCtx->txDetails.source, detailValue, 0, 0);
+    push_to_formatter_stack(&format_sequence_number);
 }
 
 void format_time_bounds_max_time(tx_context_t *txCtx) {
     strcpy(detailCaption, "Time Bounds To");
     print_uint(txCtx->txDetails.timeBounds.maxTime, detailValue);
-    formatter = &format_transaction_source;
+    push_to_formatter_stack(&format_transaction_source);
 }
 
 void format_time_bounds_min_time(tx_context_t *txCtx) {
     strcpy(detailCaption, "Time Bounds From");
     print_uint(txCtx->txDetails.timeBounds.minTime, detailValue);
-    formatter = &format_time_bounds_max_time;
+    push_to_formatter_stack(&format_time_bounds_max_time);
 }
 
 void format_time_bounds(tx_context_t *txCtx) {
@@ -70,7 +78,7 @@ void format_time_bounds(tx_context_t *txCtx) {
 void format_network(tx_context_t *txCtx) {
     strcpy(detailCaption, "Network");
     strcpy(detailValue, ((char *)PIC(NETWORK_NAMES[txCtx->txDetails.network])));
-    formatter = &format_time_bounds;
+    push_to_formatter_stack(&format_time_bounds);
 }
 
 void format_fee(tx_context_t *txCtx) {
@@ -78,7 +86,7 @@ void format_fee(tx_context_t *txCtx) {
     char nativeAssetCode[7];
     print_native_asset_code(txCtx->txDetails.network, nativeAssetCode);
     print_amount(txCtx->txDetails.fee, nativeAssetCode, detailValue);
-    formatter = &format_network;
+    push_to_formatter_stack(&format_network);
 }
 
 void format_memo(tx_context_t *txCtx) {
@@ -108,7 +116,7 @@ void format_memo(tx_context_t *txCtx) {
             strcpy(detailValue, "[none]");
         }
     }
-    formatter = &format_fee;
+    push_to_formatter_stack(&format_fee);
 }
 
 void format_confirm_transaction_details(tx_context_t *txCtx) {
@@ -117,17 +125,17 @@ void format_confirm_transaction_details(tx_context_t *txCtx) {
 
 void format_operation_source(tx_context_t *txCtx) {
     if (txCtx->opDetails.sourcePresent) {
-        strcpy(detailCaption, "Operation Source");
-        print_public_key(txCtx->opDetails.source, detailValue, 6, 6);
-        formatter = &format_confirm_transaction_details;
+        strcpy(detailCaption, "Op Source");
+        print_public_key(txCtx->opDetails.source, detailValue, 0, 0);
+        push_to_formatter_stack(&format_confirm_transaction_details);
     } else {
         if (txCtx->opIdx == txCtx->opCount) {
             // last operation: show transaction details
             format_confirm_transaction_details(txCtx);
         } else {
             // more operations: show next operation
-            formatter = NULL;
-            ui_approve_tx_next_screen(txCtx);
+            formatter_stack[formatter_index] = NULL;
+            set_state_data(true);
         }
     }
 }
@@ -135,28 +143,28 @@ void format_operation_source(tx_context_t *txCtx) {
 void format_bump_sequence(tx_context_t *txCtx) {
     strcpy(detailCaption, "Bump Sequence");
     print_int(txCtx->opDetails.op.bumpSequence.bumpTo, detailValue);
-    formatter = &format_operation_source;
+    push_to_formatter_stack(&format_operation_source);
 }
 
 void format_inflation(tx_context_t *txCtx) {
     strcpy(opCaption, "Run Inflation");
-    formatter = &format_operation_source;
+    push_to_formatter_stack(&format_operation_source);
 }
 
 void format_account_merge_destination(tx_context_t *txCtx) {
     strcpy(detailCaption, "Destination");
-    print_public_key(txCtx->opDetails.op.accountMerge.destination, detailValue, 12, 12);
-    formatter = &format_operation_source;
+    print_public_key(txCtx->opDetails.op.accountMerge.destination, detailValue, 0, 0);
+    push_to_formatter_stack(&format_operation_source);
 }
 
 void format_account_merge(tx_context_t *txCtx) {
     strcpy(detailCaption, "Merge Account");
     if (txCtx->opDetails.sourcePresent) {
-        print_public_key(txCtx->opDetails.source, detailValue, 6, 6);
+        print_public_key(txCtx->opDetails.source, detailValue, 0, 0);
     } else {
-        print_public_key(txCtx->txDetails.source, detailValue, 6, 6);
+        print_public_key(txCtx->txDetails.source, detailValue, 0, 0);
     }
-    formatter = &format_account_merge_destination;
+    push_to_formatter_stack(&format_account_merge_destination);
 }
 
 void format_manage_data_value(tx_context_t *txCtx) {
@@ -164,16 +172,16 @@ void format_manage_data_value(tx_context_t *txCtx) {
     char tmp[89];
     base64_encode(txCtx->opDetails.op.manageData.dataValue, txCtx->opDetails.op.manageData.dataValueSize, tmp);
     print_summary(tmp, detailValue, 12, 12);
-    formatter = &format_operation_source;
+    push_to_formatter_stack(&format_operation_source);
 }
 
 void format_manage_data(tx_context_t *txCtx) {
     if (txCtx->opDetails.op.manageData.dataValueSize) {
         strcpy(detailCaption, "Set Data");
-        formatter = &format_manage_data_value;
+        push_to_formatter_stack(&format_manage_data_value);
     } else {
         strcpy(detailCaption, "Remove Data");
-        formatter = &format_operation_source;
+        push_to_formatter_stack(&format_operation_source);
     }
     char tmp[65];
     memcpy(tmp, txCtx->opDetails.op.manageData.dataName, txCtx->opDetails.op.manageData.dataNameSize);
@@ -183,8 +191,8 @@ void format_manage_data(tx_context_t *txCtx) {
 
 void format_allow_trust_trustee(tx_context_t *txCtx) {
     strcpy(detailCaption, "Account ID");
-    print_public_key(txCtx->opDetails.op.allowTrust.trustee, detailValue, 12, 12);
-    formatter = &format_operation_source;
+    print_public_key(txCtx->opDetails.op.allowTrust.trustee, detailValue, 0, 0);
+    push_to_formatter_stack(&format_operation_source);
 }
 
 void format_allow_trust(tx_context_t *txCtx) {
@@ -194,14 +202,14 @@ void format_allow_trust(tx_context_t *txCtx) {
         strcpy(detailCaption, "Revoke Trust");
     }
     strcpy(detailValue, txCtx->opDetails.op.allowTrust.assetCode);
-    formatter = &format_allow_trust_trustee;
+    push_to_formatter_stack(&format_allow_trust_trustee);
 }
 
 void format_set_option_signer_weight(tx_context_t *txCtx) {
     if (txCtx->opDetails.op.setOptions.signer.weight) {
         strcpy(detailCaption, "Weight");
         print_uint(txCtx->opDetails.op.setOptions.signer.weight, detailValue);
-        formatter = &format_operation_source;
+        push_to_formatter_stack(&format_operation_source);
     } else {
         format_operation_source(txCtx);
     }
@@ -211,7 +219,7 @@ void format_set_option_signer_detail(tx_context_t *txCtx) {
     strcpy(detailCaption, "Signer Key");
     switch (txCtx->opDetails.op.setOptions.signer.type) {
     case SIGNER_KEY_TYPE_ED25519: {
-        print_public_key(txCtx->opDetails.op.setOptions.signer.data, detailValue, 12, 12);
+        print_public_key(txCtx->opDetails.op.setOptions.signer.data, detailValue, 0, 0);
         break;
     }
     case SIGNER_KEY_TYPE_HASH_X: {
@@ -229,7 +237,7 @@ void format_set_option_signer_detail(tx_context_t *txCtx) {
 
     }
     }
-    formatter = &format_set_option_signer_weight;
+    push_to_formatter_stack(&format_set_option_signer_weight);
 }
 
 void format_set_option_signer(tx_context_t *txCtx) {
@@ -253,7 +261,7 @@ void format_set_option_signer(tx_context_t *txCtx) {
             break;
         }
         }
-        formatter = &format_set_option_signer_detail;
+        push_to_formatter_stack(&format_set_option_signer_detail);
     } else {
         format_operation_source(txCtx);
     }
@@ -264,7 +272,7 @@ void format_set_option_home_domain(tx_context_t *txCtx) {
         strcpy(detailCaption, "Home Domain");
         memcpy(detailValue, txCtx->opDetails.op.setOptions.homeDomain, txCtx->opDetails.op.setOptions.homeDomainSize);
         detailValue[txCtx->opDetails.op.setOptions.homeDomainSize] = '\0';
-        formatter = &format_set_option_signer;
+        push_to_formatter_stack(&format_set_option_signer);
     } else {
         format_set_option_signer(txCtx);
     }
@@ -274,7 +282,7 @@ void format_set_option_high_threshold(tx_context_t *txCtx) {
     if (txCtx->opDetails.op.setOptions.highThresholdPresent) {
         strcpy(detailCaption, "High Threshold");
         print_uint(txCtx->opDetails.op.setOptions.highThreshold, detailValue);
-        formatter = &format_set_option_home_domain;
+        push_to_formatter_stack(&format_set_option_home_domain);
     } else {
         format_set_option_home_domain(txCtx);
     }
@@ -284,7 +292,7 @@ void format_set_option_medium_threshold(tx_context_t *txCtx) {
     if (txCtx->opDetails.op.setOptions.mediumThresholdPresent) {
         strcpy(detailCaption, "Medium Threshold");
         print_uint(txCtx->opDetails.op.setOptions.mediumThreshold, detailValue);
-        formatter = &format_set_option_high_threshold;
+        push_to_formatter_stack(&format_set_option_high_threshold);
     } else {
         format_set_option_high_threshold(txCtx);
     }
@@ -294,7 +302,7 @@ void format_set_option_low_threshold(tx_context_t *txCtx) {
     if (txCtx->opDetails.op.setOptions.lowThresholdPresent) {
         strcpy(detailCaption, "Low Threshold");
         print_uint(txCtx->opDetails.op.setOptions.lowThreshold, detailValue);
-        formatter = &format_set_option_medium_threshold;
+        push_to_formatter_stack(&format_set_option_medium_threshold);
     } else {
         format_set_option_medium_threshold(txCtx);
     }
@@ -304,7 +312,7 @@ void format_set_option_master_weight(tx_context_t *txCtx) {
     if (txCtx->opDetails.op.setOptions.masterWeightPresent) {
         strcpy(detailCaption, "Master Weight");
         print_uint(txCtx->opDetails.op.setOptions.masterWeight, detailValue);
-        formatter = &format_set_option_low_threshold;
+        push_to_formatter_stack(&format_set_option_low_threshold);
     } else {
         format_set_option_low_threshold(txCtx);
     }
@@ -314,7 +322,7 @@ void format_set_option_set_flags(tx_context_t *txCtx) {
     if (txCtx->opDetails.op.setOptions.setFlags) {
         strcpy(detailCaption, "Set Flags");
         print_flags(txCtx->opDetails.op.setOptions.setFlags, detailValue, 0);
-        formatter = &format_set_option_master_weight;
+        push_to_formatter_stack(&format_set_option_master_weight);
     } else {
         format_set_option_master_weight(txCtx);
     }
@@ -324,7 +332,7 @@ void format_set_option_clear_flags(tx_context_t *txCtx) {
     if (txCtx->opDetails.op.setOptions.clearFlags) {
         strcpy(detailCaption, "Clear Flags");
         print_flags(txCtx->opDetails.op.setOptions.clearFlags, detailValue, 0);
-        formatter = &format_set_option_set_flags;
+        push_to_formatter_stack(&format_set_option_set_flags);
     } else {
         format_set_option_set_flags(txCtx);
     }
@@ -333,8 +341,8 @@ void format_set_option_clear_flags(tx_context_t *txCtx) {
 void format_set_option_inflation_destination(tx_context_t *txCtx) {
     if (txCtx->opDetails.op.setOptions.inflationDestinationPresent) {
         strcpy(detailCaption, "Inflation Dest");
-        print_public_key(txCtx->opDetails.op.setOptions.inflationDestination, detailValue, 6, 6);
-        formatter = &format_set_option_clear_flags;
+        print_public_key(txCtx->opDetails.op.setOptions.inflationDestination, detailValue, 0, 0);
+        push_to_formatter_stack(&format_set_option_clear_flags);
     } else {
         format_set_option_clear_flags(txCtx);
     }
@@ -351,16 +359,16 @@ void format_change_trust_limit(tx_context_t *txCtx) {
     } else {
         print_amount(txCtx->opDetails.op.changeTrust.limit, NULL, detailValue);
     }
-    formatter = &format_operation_source;
+    push_to_formatter_stack(&format_operation_source);
 }
 
 void format_change_trust(tx_context_t *txCtx) {
     if (txCtx->opDetails.op.changeTrust.limit) {
         strcpy(detailCaption, "Change Trust");
-        formatter = &format_change_trust_limit;
+        push_to_formatter_stack(&format_change_trust_limit);
     } else {
         strcpy(detailCaption, "Remove Trust");
-        formatter = &format_operation_source;
+        push_to_formatter_stack(&format_operation_source);
     }
     print_asset_t(&txCtx->opDetails.op.changeTrust.asset, detailValue);
 }
@@ -368,7 +376,7 @@ void format_change_trust(tx_context_t *txCtx) {
 void format_manage_offer_sell(tx_context_t *txCtx) {
     strcpy(detailCaption, "Sell");
     print_amount(txCtx->opDetails.op.manageOffer.amount, txCtx->opDetails.op.manageOffer.selling.code, detailValue);
-    formatter = &format_operation_source;
+    push_to_formatter_stack(&format_operation_source);
 }
 
 void format_manage_offer_price(tx_context_t *txCtx) {
@@ -376,7 +384,7 @@ void format_manage_offer_price(tx_context_t *txCtx) {
     uint64_t price = ((uint64_t)txCtx->opDetails.op.manageOffer.price.numerator * 10000000) /
         txCtx->opDetails.op.manageOffer.price.denominator;
     print_amount(price, txCtx->opDetails.op.manageOffer.buying.code, detailValue);
-    formatter = &format_manage_offer_sell;
+    push_to_formatter_stack(&format_manage_offer_sell);
 }
 
 void format_manage_offer_buy(tx_context_t *txCtx) {
@@ -386,14 +394,14 @@ void format_manage_offer_buy(tx_context_t *txCtx) {
     } else {
         print_asset_t(&txCtx->opDetails.op.manageOffer.buying, detailValue);
     }
-    formatter = &format_manage_offer_price;
+    push_to_formatter_stack(&format_manage_offer_price);
 }
 
 void format_manage_offer(tx_context_t *txCtx) {
     if (!txCtx->opDetails.op.manageOffer.amount) {
         strcpy(detailCaption, "Remove Offer");
         print_uint(txCtx->opDetails.op.manageOffer.offerId, detailValue);
-        formatter = &format_operation_source;
+        push_to_formatter_stack(&format_operation_source);
     } else {
         if (txCtx->opDetails.op.manageOffer.offerId) {
             strcpy(detailCaption, "Change Offer");
@@ -406,7 +414,7 @@ void format_manage_offer(tx_context_t *txCtx) {
                 strcpy(detailValue, "Type Passive");
             }
         }
-        formatter = &format_manage_offer_buy;
+        push_to_formatter_stack(&format_manage_offer_buy);
     }
 }
 
@@ -423,7 +431,7 @@ void format_path_via(tx_context_t *txCtx) {
             }
             strcpy(detailValue+len, asset.code);
         }
-        formatter = &format_operation_source;
+        push_to_formatter_stack(&format_operation_source);
     } else {
         format_operation_source(txCtx);
     }
@@ -432,31 +440,31 @@ void format_path_via(tx_context_t *txCtx) {
 void format_path_receive(tx_context_t *txCtx) {
     strcpy(detailCaption, "Receive");
     print_amount(txCtx->opDetails.op.pathPayment.destAmount, txCtx->opDetails.op.pathPayment.destAsset.code, detailValue);
-    formatter = &format_path_via;
+    push_to_formatter_stack(&format_path_via);
 }
 
 void format_path_destination(tx_context_t *txCtx) {
     strcpy(detailCaption, "Destination");
-    print_public_key(txCtx->opDetails.op.pathPayment.destination, detailValue, 12, 12);
-    formatter = &format_path_receive;
+    print_public_key(txCtx->opDetails.op.pathPayment.destination, detailValue, 0, 0);
+    push_to_formatter_stack(&format_path_receive);
 }
 
 void format_path_payment(tx_context_t *txCtx) {
     strcpy(detailCaption, "Send Max");
     print_amount(txCtx->opDetails.op.pathPayment.sendMax, txCtx->opDetails.op.pathPayment.sourceAsset.code, detailValue);
-    formatter = &format_path_destination;
+    push_to_formatter_stack(&format_path_destination);
 }
 
 void format_payment_destination(tx_context_t *txCtx) {
     strcpy(detailCaption, "Destination");
-    print_public_key(txCtx->opDetails.op.payment.destination, detailValue, 12, 12);
-    formatter = &format_operation_source;
+    print_public_key(txCtx->opDetails.op.payment.destination, detailValue, 0, 0);
+    push_to_formatter_stack(&format_operation_source);
 }
 
 void format_payment(tx_context_t *txCtx) {
     strcpy(detailCaption, "Send");
     print_amount(txCtx->opDetails.op.payment.amount, txCtx->opDetails.op.payment.asset.code, detailValue);
-    formatter = &format_payment_destination;
+    push_to_formatter_stack(&format_payment_destination);
 }
 
 void format_create_account_amount(tx_context_t *txCtx) {
@@ -464,13 +472,13 @@ void format_create_account_amount(tx_context_t *txCtx) {
     char nativeAssetCode[7];
     print_native_asset_code(txCtx->txDetails.network, nativeAssetCode);
     print_amount(txCtx->opDetails.op.createAccount.amount, nativeAssetCode, detailValue);
-    formatter = &format_operation_source;
+    push_to_formatter_stack(&format_operation_source);
 }
 
 void format_create_account(tx_context_t *txCtx) {
     strcpy(detailCaption, "Create Account");
-    print_public_key(txCtx->opDetails.op.createAccount.accountId, detailValue, 12, 12);
-    formatter = &format_create_account_amount;
+    print_public_key(txCtx->opDetails.op.createAccount.accountId, detailValue, 0, 0);
+    push_to_formatter_stack(&format_create_account_amount);
 }
 
 const format_function_t formatters[12] = {
@@ -494,30 +502,26 @@ void format_confirm_operation(tx_context_t *txCtx) {
         print_uint(txCtx->opIdx, opCaption+strlen(opCaption));
         strcpy(opCaption+strlen(opCaption), " of ");
         print_uint(txCtx->opCount, opCaption+strlen(opCaption));
-        formatter = ((format_function_t)PIC(formatters[txCtx->opDetails.type]));
+        push_to_formatter_stack(((format_function_t)PIC(formatters[txCtx->opDetails.type])));
     } else {
         ((format_function_t)PIC(formatters[txCtx->opDetails.type]))(txCtx);
     }
 }
 
 void format_confirm_transaction(tx_context_t *txCtx) {
-    formatter = &format_confirm_operation;
+    push_to_formatter_stack(&format_confirm_operation);
 }
 
 void format_confirm_hash_detail(tx_context_t *txCtx) {
     strcpy(detailCaption, "Hash");
     print_binary_summary(txCtx->hash, detailValue, 32);
-    formatter = &format_confirm_hash;
+    push_to_formatter_stack(NULL);
 }
 
 void format_confirm_hash_warning(tx_context_t *txCtx) {
     strcpy(detailCaption, "WARNING");
     strcpy(detailValue, "No details available");
-    formatter = &format_confirm_hash_detail;
-}
-
-void format_confirm_hash(tx_context_t *txCtx) {
-    formatter = &format_confirm_hash_warning;
+    push_to_formatter_stack(&format_confirm_hash_detail);
 }
 
 #endif

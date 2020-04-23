@@ -25,8 +25,13 @@
  */
 typedef void (*format_function_t)(tx_context_t *txCtx);
 
+/* 15 formatters in a row ought to be enough for everybody*/
+#define MAX_FORMATTERS_PER_OPERATION 15
+
 /* the current formatter */
 extern format_function_t formatter;
+extern format_function_t formatter_stack[MAX_FORMATTERS_PER_OPERATION];
+extern int8_t formatter_index;
 
 /* the current details printed by the formatter */
 extern char opCaption[OPERATION_CAPTION_MAX_SIZE];
@@ -37,6 +42,5 @@ void format_confirm_transaction(tx_context_t *txCtx);
 void format_confirm_operation(tx_context_t *txCtx);
 void format_confirm_transaction_details(tx_context_t *txCtx);
 
-void format_confirm_hash(tx_context_t *txCtx);
-
+void format_confirm_hash_warning(tx_context_t *txCtx);
 #endif

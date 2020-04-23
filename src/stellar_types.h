@@ -319,6 +319,8 @@ enum request_type_t {
 enum app_state_t {
   STATE_NONE,
   STATE_PARSE_TX,
+  STATE_APPROVE_TX,
+  STATE_APPROVE_TX_HASH
 };
 
 typedef struct {
