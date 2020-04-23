@@ -24,8 +24,8 @@ APPNAME = Stellar
 APP_LOAD_PARAMS=--appFlags 0x240 --path "44'/148'" --curve ed25519 $(COMMON_LOAD_PARAMS)
 
 APPVERSION_M=3
-APPVERSION_N=1
-APPVERSION_P=1
+APPVERSION_N=2
+APPVERSION_P=0
 APPVERSION=$(APPVERSION_M).$(APPVERSION_N).$(APPVERSION_P)
 
 #prepare hsm generation
@@ -118,7 +118,7 @@ endif
 CC       := $(CLANGPATH)clang 
 
 #CFLAGS   += -O0
-CFLAGS   += -O3 -Os -I/usr/include
+CFLAGS   += -O3 -Os
 
 AS     := $(GCCPATH)arm-none-eabi-gcc
 
