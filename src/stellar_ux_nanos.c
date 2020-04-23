@@ -38,13 +38,13 @@ const ux_menu_entry_t menu_settings_hash_signing[];
 
 
 void menu_settings_hash_signing_change(unsigned int enabled) {
-    ctx.hashSigning = enabled;
+    nvm_write((void*)&N_stellar_pstate.hashSigning, &enabled, 1);
     UX_MENU_DISPLAY(1, menu_settings, NULL);
 }
 
 void menu_settings_hash_siging_init(unsigned int ignored) {
     UNUSED(ignored);
-    UX_MENU_DISPLAY(ctx.hashSigning, menu_settings_hash_signing, NULL);
+    UX_MENU_DISPLAY(N_stellar_pstate.hashSigning, menu_settings_hash_signing, NULL);
 }
 
 const ux_menu_entry_t menu_settings_hash_signing[] = {

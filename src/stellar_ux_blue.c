@@ -97,8 +97,8 @@ void ui_idle(void) {
 
 const bagl_element_t *ui_settings_blue_toggle_hash_signing(const bagl_element_t *e) {
     // toggle setting and request redraw of settings elements
-    ctx.hashSigning = (ctx.hashSigning == 0x00) ? 0x01 : 0x00;
-
+    uint8_t hashSigning = (N_stellar_pstate.hashSigning == 0x00) ? 0x01 : 0x00;
+    nvm_write((void*)&N_stellar_pstate.hashSigning, &hashSigning, 1);
     // only refresh settings mutable drawn elements
     UX_REDISPLAY_IDX(8);
 
@@ -156,7 +156,7 @@ const bagl_element_t *ui_settings_blue_prepro(const bagl_element_t *e) {
     if (e->component.userid) {
         os_memmove(&tmp_element, e, sizeof(bagl_element_t));
         // swap icon content
-        if (ctx.hashSigning) {
+        if (N_stellar_pstate.hashSigning) {
             tmp_element.text = &C_icon_toggle_set;
         } else {
             tmp_element.text = &C_icon_toggle_reset;

@@ -329,11 +329,11 @@ typedef struct {
     } req;
     enum request_type_t reqType;
     uint16_t u2fTimer;
-    uint8_t hashSigning;
 } stellar_context_t;
 
 typedef struct {
     uint8_t initialized;
+    uint8_t hashSigning;
 } stellar_nv_state_t;
 
 #endif

@@ -60,7 +60,7 @@ void settings_hash_signing(void) {
 }
 
 void settings_hash_signing_change(unsigned int enabled) {
-    ctx.hashSigning = enabled;
+    nvm_write((void*)&N_stellar_pstate.hashSigning, &enabled, 1);
     ui_idle();
 }
 

@@ -129,7 +129,9 @@ static void handle_apdu(uint8_t *buffer, size_t size, volatile unsigned int *fla
 static void stellar_nv_state_init() {
     if (N_stellar_pstate.initialized != 0x01) {
         uint8_t initialized = 0x01;
-        nvm_write((void *)&N_stellar_pstate, &initialized, 1);
+        nvm_write((void*)&N_stellar_pstate.initialized, &initialized, 1);
+        uint8_t hashSigning = 0x00;
+        nvm_write((void*)&N_stellar_pstate.hashSigning, &hashSigning, 1);
     }
 }
 

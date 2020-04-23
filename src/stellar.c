@@ -79,7 +79,7 @@ void init_public_key(cx_ecfp_private_key_t *privateKey, cx_ecfp_public_key_t *pu
 void handle_get_app_configuration(volatile unsigned int *tx) {
     app_set_state(STATE_NONE);
 
-    G_io_apdu_buffer[0] = ctx.hashSigning;
+    G_io_apdu_buffer[0] = N_stellar_pstate.hashSigning;
     G_io_apdu_buffer[1] = LEDGER_MAJOR_VERSION;
     G_io_apdu_buffer[2] = LEDGER_MINOR_VERSION;
     G_io_apdu_buffer[3] = LEDGER_PATCH_VERSION;
@@ -228,13 +228,13 @@ void handle_sign_tx(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLe
     ui_approve_tx_init();
 
     *flags |= IO_ASYNCH_REPLY;
-    app_set_state(STATE_NONE);
+    app_set_state(STATE_APPROVE_TX);
 }
 
 void handle_sign_tx_hash(uint8_t *dataBuffer, uint16_t dataLength, volatile unsigned int *flags) {
     app_set_state(STATE_NONE);
 
-    if (!ctx.hashSigning) {
+    if (!N_stellar_pstate.hashSigning) {
         THROW(0x6c66);
     }
 
@@ -253,6 +253,7 @@ void handle_sign_tx_hash(uint8_t *dataBuffer, uint16_t dataLength, volatile unsi
     ui_approve_tx_hash_init();
 
     *flags |= IO_ASYNCH_REPLY;
+    app_set_state(STATE_APPROVE_TX_HASH);
 }
 
 void handle_keep_alive(volatile unsigned int *flags) {
