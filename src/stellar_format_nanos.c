@@ -52,7 +52,7 @@ void format_sequence_number(tx_context_t *txCtx) {
 void format_transaction_source(tx_context_t *txCtx) {
     strcpy(detailCaption, "Tx Source");
     print_public_key(txCtx->txDetails.source, detailValue, 0, 0);
-    push_to_formatter_stack(&format_sequence_number);
+    push_to_formatter_stack(NULL);
 }
 
 void format_time_bounds_max_time(tx_context_t *txCtx) {

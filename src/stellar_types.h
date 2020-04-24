@@ -48,8 +48,8 @@
 #define OFFSET_LC 4
 #define OFFSET_CDATA 5
 
-/* Max transaction size is 1.5Kb */
-#define MAX_RAW_TX 1540
+/* Max transaction size is 1.4Kb */
+#define MAX_RAW_TX 1350
 /* For sure not more than 35 operations will fit in that */
 #define MAX_OPS 35
 /* Although SEP-0005 only allows 3 bip32 path elements we support more */

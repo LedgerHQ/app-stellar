@@ -147,6 +147,14 @@ bagl_element_t tmp_element;
 // ------------------------------------------------------------------------- //
 
 //////////////////////////////////////////////////////////////////////////////////////
+UX_STEP_NOCB(
+    ux_display_public_flow_0_step, 
+    pnn, 
+    {
+      &C_icon_eye,
+      "Confirm",
+      "Address",
+    });
 UX_FLOW_DEF_NOCB(
     ux_display_public_flow_1_step, 
     bnnn_paging, 
@@ -172,6 +180,7 @@ UX_FLOW_DEF_VALID(
     });
 
 UX_DEF(ux_display_public_flow,
+  &ux_display_public_flow_0_step,
   &ux_display_public_flow_1_step,
   &ux_display_public_flow_2_step,
   &ux_display_public_flow_3_step
