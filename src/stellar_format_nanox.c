@@ -31,14 +31,14 @@ char opCaption[20];
 char detailCaption[20];
 char detailValue[89];
 
-format_function_t formatter_stack[15];
+format_function_t formatter_stack[MAX_FORMATTERS_PER_OPERATION];
 int8_t formatter_index;
 
 void push_to_formatter_stack(format_function_t formatter){
     if(formatter_index + 1 >= MAX_FORMATTERS_PER_OPERATION){
         THROW(0x6124);
     }
-    push_to_formatter_stack(formatter);
+    formatter_stack[formatter_index+1] = formatter;
 }
 
 void format_sequence_number(tx_context_t *txCtx) {

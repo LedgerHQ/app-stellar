@@ -500,6 +500,8 @@ void format_confirm_transaction(tx_context_t *txCtx) {
     formatter = &format_confirm_operation;
 }
 
+void format_confirm_hash(tx_context_t *txCtx) ;
+
 void format_confirm_hash_detail(tx_context_t *txCtx) {
     strcpy(detailCaption, "Hash");
     print_binary_summary(txCtx->hash, detailValue, 32);
