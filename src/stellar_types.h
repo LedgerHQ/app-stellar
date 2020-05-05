@@ -48,8 +48,8 @@
 #define OFFSET_LC 4
 #define OFFSET_CDATA 5
 
-/* Max transaction size is 1.5Kb */
-#define MAX_RAW_TX 1540
+/* Max transaction size is 1.4Kb */
+#define MAX_RAW_TX 1350
 /* For sure not more than 35 operations will fit in that */
 #define MAX_OPS 35
 /* Although SEP-0005 only allows 3 bip32 path elements we support more */
@@ -319,6 +319,8 @@ enum request_type_t {
 enum app_state_t {
   STATE_NONE,
   STATE_PARSE_TX,
+  STATE_APPROVE_TX,
+  STATE_APPROVE_TX_HASH
 };
 
 typedef struct {
@@ -329,11 +331,11 @@ typedef struct {
     } req;
     enum request_type_t reqType;
     uint16_t u2fTimer;
-    uint8_t hashSigning;
 } stellar_context_t;
 
 typedef struct {
     uint8_t initialized;
+    uint8_t hashSigning;
 } stellar_nv_state_t;
 
 #endif

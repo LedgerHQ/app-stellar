@@ -60,7 +60,7 @@ void settings_hash_signing(void) {
 }
 
 void settings_hash_signing_change(unsigned int enabled) {
-    ctx.hashSigning = enabled;
+    nvm_write((void*)&N_stellar_pstate.hashSigning, &enabled, 1);
     ui_idle();
 }
 
@@ -147,6 +147,14 @@ bagl_element_t tmp_element;
 // ------------------------------------------------------------------------- //
 
 //////////////////////////////////////////////////////////////////////////////////////
+UX_STEP_NOCB(
+    ux_display_public_flow_0_step, 
+    pnn, 
+    {
+      &C_icon_eye,
+      "Confirm",
+      "Address",
+    });
 UX_FLOW_DEF_NOCB(
     ux_display_public_flow_1_step, 
     bnnn_paging, 
@@ -172,6 +180,7 @@ UX_FLOW_DEF_VALID(
     });
 
 UX_DEF(ux_display_public_flow,
+  &ux_display_public_flow_0_step,
   &ux_display_public_flow_1_step,
   &ux_display_public_flow_2_step,
   &ux_display_public_flow_3_step
@@ -181,7 +190,7 @@ void ui_show_address_init(void) {
     if(G_ux.stack_count == 0) {
         ux_stack_push();
     }
-    print_public_key(ctx.req.pk.publicKey, detailValue, 12, 12);
+    print_public_key(ctx.req.pk.publicKey, detailValue, 0, 0);
     ux_flow_init(0, ux_display_public_flow, NULL);
 }
 
@@ -189,31 +198,37 @@ void ui_show_address_init(void) {
 //                             APPROVE TRANSACTION                           //
 // ------------------------------------------------------------------------- //
 
+void display_next_state(bool is_upper_border);
 
-UX_FLOW_DEF_VALID(
+UX_STEP_NOCB(
     ux_confirm_tx_init_flow_step, 
     pnn, 
-    display_next_screen(),
     {
       &C_icon_eye,
       "Review",
       "Transaction",
     });
 
-UX_FLOW_DEF_VALID(
-    ux_confirm_tx_operation_caption_flow_step, 
-    bnnn_paging, 
-    display_next_screen(),
+UX_STEP_INIT(
+    ux_init_upper_border,
+    NULL,
+    NULL,
     {
-      .text = opCaption,
+        display_next_state(true);
     });
-UX_FLOW_DEF_VALID(
-    ux_confirm_tx_details_flow_step, 
-    bnnn_paging, 
-    display_next_screen(),
+UX_STEP_NOCB(
+    ux_variable_display, 
+    bnnn_paging,
     {
       .title = detailCaption,
       .text = detailValue,
+    });
+UX_STEP_INIT(
+    ux_init_lower_border,
+    NULL,
+    NULL,
+    {
+        display_next_state(false);
     });
 
 UX_FLOW_DEF_VALID(
@@ -235,114 +250,178 @@ UX_FLOW_DEF_VALID(
       "Cancel",
     });
 
+UX_FLOW(ux_confirm_flow,
+  &ux_confirm_tx_init_flow_step,
 
+  &ux_init_upper_border,
+  &ux_variable_display,
+  &ux_init_lower_border,
 
-UX_DEF(ux_confirm_tx_init_flow,
-  &ux_confirm_tx_init_flow_step
-);
-
-UX_DEF(ux_confirm_tx_operation_caption_flow,
-  &ux_confirm_tx_operation_caption_flow_step
-);
-
-UX_DEF(ux_confirm_tx_details_flow,
-  &ux_confirm_tx_details_flow_step
-);
-
-UX_DEF(ux_confirm_tx_finalize_flow,
   &ux_confirm_tx_finalize_step,
   &ux_reject_tx_flow_step
 );
 
+volatile uint8_t current_data_index;
 
-format_function_t next_formatter(tx_context_t *txCtx) {
-    if (txCtx->opIdx == 1) {
-        return &format_confirm_transaction;
-    } else {
-        return &format_confirm_operation;
+format_function_t get_formatter(tx_context_t *txCtx, bool forward) {
+
+    switch(ctx.state){
+        case STATE_APPROVE_TX:
+        { // classic tx
+            if(!forward){
+                if(current_data_index == 0){ // if we're already at the beginning of the buffer, return NULL
+                    return NULL;
+                }
+                // rewind to tx beginning if we're requesting a previous operation
+                txCtx->offset = 0;
+                txCtx->opIdx = 0;
+            }
+
+            while(current_data_index > txCtx->opIdx){
+                if (!parse_tx_xdr(txCtx->raw, txCtx->rawLength, txCtx)) {
+                    return NULL;
+                }
+            }    
+            return &format_confirm_operation;
+        }
+        case STATE_APPROVE_TX_HASH:
+        {
+            if(!forward){
+                return NULL;
+            }
+            return &format_confirm_hash_warning;
+        }
+        default:
+            THROW(0x6123);
     }
 }
 
+
 void ui_approve_tx_next_screen(tx_context_t *txCtx) {
-    if (!formatter) {
-        formatter = next_formatter(txCtx);
+    if (!formatter_stack[formatter_index]) {
+        MEMCLEAR(formatter_stack);
+        formatter_index = 0;
+        current_data_index ++;
+        formatter_stack[0] = get_formatter(txCtx, true);
     }
-    if (formatter) {
+}
+
+void ui_approve_tx_prev_screen(tx_context_t *txCtx) {
+    if (formatter_index == -1) {
+        MEMCLEAR(formatter_stack);
+        formatter_index = 0;
+        current_data_index --;
+        formatter_stack[0] = get_formatter(txCtx, false);
+    }
+}
+
+void set_state_data(bool forward){
+    if(forward){
+        ui_approve_tx_next_screen(&ctx.req.tx);
+    }
+    else{
+        ui_approve_tx_prev_screen(&ctx.req.tx);
+    }
+    
+    // Apply last formatter to fill the screen's buffer
+    if (formatter_stack[formatter_index]) {
         MEMCLEAR(detailCaption);
         MEMCLEAR(detailValue);
         MEMCLEAR(opCaption);
-        formatter(txCtx);
+        formatter_stack[formatter_index](&ctx.req.tx);
+
+        if(opCaption[0] != '\0'){
+            strncpy(detailCaption, opCaption, sizeof(detailCaption));
+            detailValue[0] = ' ';
+            PRINTF("caption: %s %u\n", detailCaption);
+        }
+        else if(detailCaption[0] != '\0' && detailValue[0] != '\0'){
+            PRINTF("caption: %s\n", detailCaption);
+            PRINTF("details: %s\n", detailValue);
+        }
     }
 }
 
-void display_next_screen(){
+uint8_t num_data;
+volatile uint8_t current_state;
 
-    if(!ctx.hashSigning){ // classic tx
-        ui_approve_tx_next_screen(&ctx.req.tx);
-        if (formatter) {
-            if(G_ux.stack_count == 0) {
-                ux_stack_push();
-            }
-            bool hasDetails = detailCaption[0] != '\0';
-            bool hasOperation = opCaption[0] != '\0';
+#define INSIDE_BORDERS 0
+#define OUT_OF_BORDERS 1
 
-            PRINTF("detailCaption:%.*H\n", 20, detailCaption);
-            PRINTF("opCaption:%.*H\n", 20, opCaption);
+void display_next_state(bool is_upper_border){
 
-            if(!hasDetails && !hasOperation){
-                ux_flow_init(0, ux_confirm_tx_init_flow, NULL);
-            }
-            else if(hasOperation){
-                ux_flow_init(0, ux_confirm_tx_operation_caption_flow, NULL);
-            }
-            else if(hasDetails){
-                ux_flow_init(0, ux_confirm_tx_details_flow, NULL);
-            }
-            else{
-                THROW(0x6111);
-            }
-            
+    if(is_upper_border){ // -> from first screen
+        if(current_state == OUT_OF_BORDERS){
+            current_state = INSIDE_BORDERS;
+            set_state_data(true);
+            ux_flow_next();
         }
-        else{
-            ux_flow_init(0, ux_confirm_tx_finalize_flow, NULL);
+        else{ 
+            formatter_index -= 1;
+            if(current_data_index>0){ // <- from middle, more screens available
+                set_state_data(false);
+                if(formatter_stack[formatter_index] != NULL){
+                    ux_flow_next();
+                }
+                else{
+                    current_state = OUT_OF_BORDERS;
+                    current_data_index = 0;
+                    ux_flow_prev();
+                }
+            }
+            else{ // <- from middle, no more screens available
+                current_state = OUT_OF_BORDERS;
+                current_data_index = 0;
+                ux_flow_prev();
+            }
         }
     }
-    else { // tx hash
-        format_confirm_hash(NULL);
-        if (formatter) {
-            if(G_ux.stack_count == 0) {
-                ux_stack_push();
-            }
-            bool hasDetails = detailCaption[0] != '\0';
-
-            if(!hasDetails){
-                ux_flow_init(0, ux_confirm_tx_init_flow, NULL);
-            }
-            else{
-                ux_flow_init(0, ux_confirm_tx_details_flow, NULL);
-            }
+    else // walking over the second border
+    {
+        if(current_state == OUT_OF_BORDERS){ // <- from last screen
+            current_state = INSIDE_BORDERS;
+            set_state_data(false);
+            ux_flow_prev();
         }
-        else{
-            ux_flow_init(0, ux_confirm_tx_finalize_flow, NULL);
+        else{ 
+            formatter_index += 1;
+            if((num_data != 0 && current_data_index<num_data-1) || formatter_stack[formatter_index] != NULL){ // -> from middle, more screens available
+                set_state_data(true);
+
+                /*dirty hack to have coherent behavior on bnnn_paging when there are multiple screens*/
+                G_ux.flow_stack[G_ux.stack_count-1].prev_index = G_ux.flow_stack[G_ux.stack_count-1].index-2;
+                G_ux.flow_stack[G_ux.stack_count-1].index--;
+                ux_flow_relayout();
+                /*end of dirty hack*/
+            }
+            else{ // -> from middle, no more screens available
+                current_state = OUT_OF_BORDERS;
+                ux_flow_next();
+            }
         }
     }
     
 }
+
 
 void ui_approve_tx_init(void) {
     ctx.req.tx.offset = 0;
-    formatter = NULL;
-    
-    display_next_screen();
+    formatter_index = 0;
+    MEMCLEAR(formatter_stack);
+    num_data = ctx.req.tx.opCount;
+    current_data_index = 0;
+    current_state = OUT_OF_BORDERS;
+    ux_flow_init(0, ux_confirm_flow, NULL);
 }
 
 
 void ui_approve_tx_hash_init(void) {
-    MEMCLEAR(detailCaption);
-    MEMCLEAR(detailValue);
-    MEMCLEAR(opCaption);
-
-    display_next_screen();
+    formatter_index = 0;
+    MEMCLEAR(formatter_stack);
+    num_data = ctx.req.tx.opCount;
+    current_data_index = 0;
+    current_state = OUT_OF_BORDERS;
+    ux_flow_init(0, ux_confirm_flow, NULL);
 }
 
 
