@@ -18,19 +18,17 @@
 #ifndef STELLAR_VARS_H
 #define STELLAR_VARS_H
 
+#ifndef TEST
 #include "os.h"
 #include "cx.h"
-
-#ifdef TARGET_BLUE
-#include "os_io_seproxyhal.h"
-#else
 #include "ux.h"
+
+extern ux_state_t ux;
 #endif
 
 #include "stellar_types.h"
 
 extern stellar_context_t ctx;
-extern ux_state_t ux;
 extern stellar_nv_state_t const N_state_pic;
 #define N_stellar_pstate  (*(volatile  stellar_nv_state_t *)PIC(&N_state_pic))
 

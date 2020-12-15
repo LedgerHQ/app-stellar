@@ -19,13 +19,12 @@
 #include "os.h"
 #endif
 #include "stellar_types.h"
+#include "stellar_ux.h"
 
 #ifdef TARGET_NANOX
-
 #include "stellar_format.h"
 #include "stellar_api.h"
 #include "string.h"
-#include "stellar_ux.h"
 
 char opCaption[20];
 char detailCaption[20];

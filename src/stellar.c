@@ -23,10 +23,6 @@
 #include "stellar_vars.h"
 #include "stellar_ux.h"
 
-#ifdef TARGET_BLUE
-static void io_seproxyhal_io_heartbeat(void){}
-#endif
-
 static void app_set_state(enum app_state_t state) {
   ctx.state = state;
 }
@@ -53,11 +49,7 @@ static int read_bip32(const uint8_t *dataBuffer, size_t size, uint32_t *bip32) {
 void derive_private_key(cx_ecfp_private_key_t *privateKey, uint32_t *bip32, uint8_t bip32Len) {
     uint8_t privateKeyData[32];
     io_seproxyhal_io_heartbeat();
-#ifdef TARGET_BLUE
-    os_perso_derive_node_bip32(CX_CURVE_Ed25519, bip32, bip32Len, privateKeyData, NULL);
-#else
     os_perso_derive_node_bip32_seed_key(HDW_ED25519_SLIP10, CX_CURVE_Ed25519, bip32, bip32Len, privateKeyData, NULL, (unsigned char*) "ed25519 seed", 12);
-#endif
     io_seproxyhal_io_heartbeat();
     cx_ecfp_init_private_key(CX_CURVE_Ed25519, privateKeyData, 32, privateKey);
     MEMCLEAR(privateKeyData);

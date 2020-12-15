@@ -20,12 +20,8 @@
 
 #include "stellar_types.h"
 
-#ifdef TARGET_BLUE
-#include "os_io_seproxyhal.h"
-#else
+#ifndef TEST
 #include "ux.h"
-#endif
-
 // ------------------------------------------------------------------------- //
 //                     Implemented by stellar_ux_common.c                    //
 // ------------------------------------------------------------------------- //
@@ -37,14 +33,13 @@ unsigned int io_seproxyhal_touch_address_ok(const bagl_element_t *e);
 unsigned int io_seproxyhal_touch_address_cancel(const bagl_element_t *e);
 
 // ------------------------------------------------------------------------- //
-//        Implemented by both stellar_ux_nanos.c and stellar_ux_blue.c       //
+//        Implemented by stellar_ux_nanox.c                                  //
 // ------------------------------------------------------------------------- //
+#endif
 
 void ui_show_address_init(void);
 void ui_approve_tx_init(void);
 void display_next_screen(void);
-void set_state_data(bool forward);
-void ui_approve_tx_next_screen(tx_context_t *txCtx);
 void ui_approve_tx_hash_init(void);
 void ui_idle(void);
 
