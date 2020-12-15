@@ -134,25 +134,11 @@ static const char* NETWORK_NAMES[3] = { "Public", "Test", "Unknown" };
 #define PRINTF(msg, arg) printf(msg, arg)
 #define PIC(code) code
 //#define TARGET_NANOS 1
-#define TARGET_BLUE 1
 #define MEMCLEAR(dest) memset(&dest, 0, sizeof(dest));
 #else
 #define MEMCLEAR(dest) do { os_memset(&dest, 0, sizeof(dest)); } while (0)
 #include "bolos_target.h"
 #endif // TEST
-
-// ------------------------------------------------------------------------- //
-//                           DISPLAY CONSTANTS                               //
-// ------------------------------------------------------------------------- //
-
-#ifdef TARGET_BLUE
-#define COLOR_BG_1 0xF9F9F9
-#define COLOR_APP 0x07a2cc
-#define COLOR_APP_LIGHT 0xd4eef7
-#define BAGL_FONT_OPEN_SANS_LIGHT_16_22PX_AVG_WIDTH 10
-#define BAGL_FONT_OPEN_SANS_REGULAR_10_13PX_AVG_WIDTH 8
-#define MAX_CHAR_PER_LINE 28
-#endif
 
 // ------------------------------------------------------------------------- //
 //                           TYPE DEFINITIONS                                //

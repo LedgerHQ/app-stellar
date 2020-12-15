@@ -29,14 +29,10 @@ APPVERSION_P=2
 APPVERSION=$(APPVERSION_M).$(APPVERSION_N).$(APPVERSION_P)
 
 #prepare hsm generation
-ifeq ($(TARGET_NAME),TARGET_BLUE)
-	ICONNAME=blue_app_stellar.gif
+ifeq ($(TARGET_NAME),TARGET_NANOX)
+	ICONNAME=nanox_app_stellar.gif
 else
-	ifeq ($(TARGET_NAME),TARGET_NANOX)
-		ICONNAME=nanox_app_stellar.gif
-	else
-		ICONNAME=nanos_app_stellar.gif
-	endif
+	ICONNAME=nanos_app_stellar.gif
 endif
 
 ################
@@ -62,10 +58,7 @@ DEFINES   += U2F_REQUEST_TIMEOUT=28000 # 28 seconds
 DEFINES   += UNUSED\(x\)=\(void\)x
 DEFINES   += APPVERSION=\"$(APPVERSION)\"
 
-
-ifneq ($(TARGET_NAME), TARGET_BLUE)
-	DEFINES		  += HAVE_UX_FLOW
-endif
+DEFINES		  += HAVE_UX_FLOW
 
 ifeq ($(TARGET_NAME),TARGET_NANOX)
 	DEFINES       += IO_SEPROXYHAL_BUFFER_SIZE_B=300
@@ -134,22 +127,12 @@ APP_SOURCE_PATH  += src
 SDK_SOURCE_PATH  += lib_stusb
 SDK_SOURCE_PATH  += lib_stusb_impl
 SDK_SOURCE_PATH  += lib_u2f
+SDK_SOURCE_PATH  += lib_ux
 
 ifeq ($(TARGET_NAME),TARGET_NANOX)
 	SDK_SOURCE_PATH  += lib_blewbxx lib_blewbxx_impl
-	SDK_SOURCE_PATH  += lib_ux
 endif
 
-# If the SDK supports Flow for Nano S, build for it
-
-#ifeq ($(TARGET_NAME),TARGET_NANOS)
-#
-#	ifneq "$(wildcard $(BOLOS_SDK)/lib_ux)" ""
-#		SDK_SOURCE_PATH  += lib_ux
-#		DEFINES		       += HAVE_UX_FLOW		
-#	endif
-#
-#endif
 
 load: all
 	python -m ledgerblue.loadApp $(APP_LOAD_PARAMS)

@@ -248,14 +248,13 @@ unsigned char io_event(unsigned char channel) {
 
     case SEPROXYHAL_TAG_TICKER_EVENT:
 
-#ifndef TARGET_BLUE // S & X only
         if (G_io_apdu_media == IO_APDU_MEDIA_U2F && ctx.u2fTimer > 0) {
             ctx.u2fTimer -= 100;
             if (ctx.u2fTimer <= 0) {
                 u2f_send_keep_alive();
             }
         }
-#endif
+
         UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer, {
 #if defined(TARGET_NANOS) && !defined(HAVE_UX_FLOW) // S legacy only
             if (UX_ALLOWED) {
@@ -319,10 +318,6 @@ __attribute__((section(".boot"))) int main(void) {
                 BLE_power(0, NULL);
                 BLE_power(1, "Nano X");
 #endif // HAVE_BLE
-
-#if defined(TARGET_BLUE)
-                UX_SET_STATUS_BAR_COLOR(0xFFFFFF, COLOR_APP);
-#endif
 
                 stellar_main();
             }
