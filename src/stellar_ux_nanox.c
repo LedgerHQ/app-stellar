@@ -21,7 +21,8 @@ void settings_submenu_selector(unsigned int idx);
 // ------------------------------------------------------------------------- //
 
 //////////////////////////////////////////////////////////////////////////////////////
-UX_FLOW_DEF_VALID(
+// clang-format off
+UX_STEP_CB(
   settings_hash_signing_enable_step,
   pbb,
   settings_hash_signing_change(1),
@@ -30,7 +31,7 @@ UX_FLOW_DEF_VALID(
     "Enable hash", 
     "signing?",
   });
-UX_FLOW_DEF_VALID(
+UX_STEP_CB(
   settings_hash_signing_disable_step,
   pb,
   settings_hash_signing_change(0),
@@ -38,7 +39,7 @@ UX_FLOW_DEF_VALID(
     &C_icon_crossmark,
     "Disable", 
   });
-UX_FLOW_DEF_VALID(
+UX_STEP_CB(
   settings_hash_signing_go_back_step,
   pb,
   ux_menulist_init(0, settings_submenu_getter, settings_submenu_selector),
@@ -52,13 +53,14 @@ UX_DEF(settings_hash_signing_flow,
   &settings_hash_signing_disable_step,
   &settings_hash_signing_go_back_step
 );
+// clang-format on
 
 void settings_hash_signing(void) {
-     ux_flow_init(0, settings_hash_signing_flow, NULL);
+    ux_flow_init(0, settings_hash_signing_flow, NULL);
 }
 
 void settings_hash_signing_change(unsigned int enabled) {
-    nvm_write((void*)&N_stellar_pstate.hashSigning, &enabled, 1);
+    nvm_write((void*) &N_stellar_pstate.hashSigning, &enabled, 1);
     ui_idle();
 }
 
@@ -66,29 +68,30 @@ void settings_hash_signing_change(unsigned int enabled) {
 // Settings menu:
 
 const char* const settings_submenu_getter_values[] = {
-  "Hash signing",
-  "Back",
+    "Hash signing",
+    "Back",
 };
 
 const char* settings_submenu_getter(unsigned int idx) {
-  if (idx < ARRAYLEN(settings_submenu_getter_values)) {
-    return settings_submenu_getter_values[idx];
-  }
-  return NULL;
+    if (idx < ARRAYLEN(settings_submenu_getter_values)) {
+        return settings_submenu_getter_values[idx];
+    }
+    return NULL;
 }
 
 void settings_submenu_selector(unsigned int idx) {
-  switch(idx) {
-    case 0:
-      settings_hash_signing();
-      break;
-    default:
-      ui_idle();
-  }
+    switch (idx) {
+        case 0:
+            settings_hash_signing();
+            break;
+        default:
+            ui_idle();
+    }
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
-UX_FLOW_DEF_NOCB(
+// clang-format off
+UX_STEP_NOCB(
   idle_welcome_step,
   pbb,
   {
@@ -96,7 +99,7 @@ UX_FLOW_DEF_NOCB(
     "Use wallet to", 
     "view accounts",
   });
-UX_FLOW_DEF_VALID(
+UX_STEP_CB(
   idle_settings_step,
   pb,
   ux_menulist_init(0, settings_submenu_getter, settings_submenu_selector),
@@ -106,14 +109,14 @@ UX_FLOW_DEF_VALID(
     "Settings",
   });
 
-UX_FLOW_DEF_NOCB(
+UX_STEP_NOCB(
   idle_version_step,
   bn,
   {
     "Version",
     APPVERSION,
   });
-UX_FLOW_DEF_VALID(
+UX_STEP_CB(
   idle_quit_step,
   pb,
   os_sched_exit(-1),
@@ -128,23 +131,23 @@ UX_DEF(idle_flow,
   &idle_version_step,
   &idle_quit_step
 );
+// clang-format on
 
 void ui_idle(void) {
-    if(G_ux.stack_count == 0) {
+    if (G_ux.stack_count == 0) {
         ux_stack_push();
     }
-     ux_flow_init(0, idle_flow, NULL);
+    ux_flow_init(0, idle_flow, NULL);
 }
 
-
 bagl_element_t tmp_element;
-
 
 // ------------------------------------------------------------------------- //
 //                             CONFIRM ADDRESS                               //
 // ------------------------------------------------------------------------- //
 
 //////////////////////////////////////////////////////////////////////////////////////
+// clang-format off
 UX_STEP_NOCB(
     ux_display_public_flow_0_step, 
     pnn, 
@@ -153,14 +156,14 @@ UX_STEP_NOCB(
       "Confirm",
       "Address",
     });
-UX_FLOW_DEF_NOCB(
+UX_STEP_NOCB(
     ux_display_public_flow_1_step, 
     bnnn_paging, 
     {
       .title = "Confirm Address",
       .text = detailValue,
     });
-UX_FLOW_DEF_VALID(
+UX_STEP_CB(
     ux_display_public_flow_2_step, 
     pb, 
     io_seproxyhal_touch_address_ok(NULL),
@@ -168,7 +171,7 @@ UX_FLOW_DEF_VALID(
       &C_icon_validate_14,
       "Approve",
     });
-UX_FLOW_DEF_VALID(
+UX_STEP_CB(
     ux_display_public_flow_3_step, 
     pb, 
     io_seproxyhal_touch_address_cancel(NULL),
@@ -183,9 +186,10 @@ UX_DEF(ux_display_public_flow,
   &ux_display_public_flow_2_step,
   &ux_display_public_flow_3_step
 );
+// clang-format on
 
 void ui_show_address_init(void) {
-    if(G_ux.stack_count == 0) {
+    if (G_ux.stack_count == 0) {
         ux_stack_push();
     }
     print_public_key(ctx.req.pk.publicKey, detailValue, 0, 0);
@@ -198,6 +202,7 @@ void ui_show_address_init(void) {
 
 void display_next_state(bool is_upper_border);
 
+// clang-format off
 UX_STEP_NOCB(
     ux_confirm_tx_init_flow_step, 
     pnn, 
@@ -229,7 +234,7 @@ UX_STEP_INIT(
         display_next_state(false);
     });
 
-UX_FLOW_DEF_VALID(
+UX_STEP_CB(
     ux_confirm_tx_finalize_step, 
     pnn, 
     io_seproxyhal_touch_tx_ok(NULL),
@@ -239,7 +244,7 @@ UX_FLOW_DEF_VALID(
       "Transaction",
     });
 
-UX_FLOW_DEF_VALID(
+UX_STEP_CB(
     ux_reject_tx_flow_step, 
     pb, 
     io_seproxyhal_touch_tx_cancel(NULL),
@@ -258,6 +263,7 @@ UX_FLOW(ux_confirm_flow,
   &ux_confirm_tx_finalize_step,
   &ux_reject_tx_flow_step
 );
+// clang-format on
 
 uint8_t num_data;
 volatile uint8_t current_state;
@@ -265,61 +271,56 @@ volatile uint8_t current_state;
 #define INSIDE_BORDERS 0
 #define OUT_OF_BORDERS 1
 
-void display_next_state(bool is_upper_border){
-
-    if(is_upper_border){ // -> from first screen
-        if(current_state == OUT_OF_BORDERS){
+void display_next_state(bool is_upper_border) {
+    if (is_upper_border) {  // -> from first screen
+        if (current_state == OUT_OF_BORDERS) {
             current_state = INSIDE_BORDERS;
             set_state_data(true);
             ux_flow_next();
-        }
-        else{ 
+        } else {
             formatter_index -= 1;
-            if(current_data_index>0){ // <- from middle, more screens available
+            if (current_data_index > 0) {  // <- from middle, more screens available
                 set_state_data(false);
-                if(formatter_stack[formatter_index] != NULL){
+                if (formatter_stack[formatter_index] != NULL) {
                     ux_flow_next();
-                }
-                else{
+                } else {
                     current_state = OUT_OF_BORDERS;
                     current_data_index = 0;
                     ux_flow_prev();
                 }
-            }
-            else{ // <- from middle, no more screens available
+            } else {  // <- from middle, no more screens available
                 current_state = OUT_OF_BORDERS;
                 current_data_index = 0;
                 ux_flow_prev();
             }
         }
-    }
-    else // walking over the second border
+    } else  // walking over the second border
     {
-        if(current_state == OUT_OF_BORDERS){ // <- from last screen
+        if (current_state == OUT_OF_BORDERS) {  // <- from last screen
             current_state = INSIDE_BORDERS;
             set_state_data(false);
             ux_flow_prev();
-        }
-        else{ 
+        } else {
             formatter_index += 1;
-            if((num_data != 0 && current_data_index<num_data-1) || formatter_stack[formatter_index] != NULL){ // -> from middle, more screens available
+            if ((num_data != 0 && current_data_index < num_data - 1) ||
+                formatter_stack[formatter_index] !=
+                    NULL) {  // -> from middle, more screens available
                 set_state_data(true);
 
-                /*dirty hack to have coherent behavior on bnnn_paging when there are multiple screens*/
-                G_ux.flow_stack[G_ux.stack_count-1].prev_index = G_ux.flow_stack[G_ux.stack_count-1].index-2;
-                G_ux.flow_stack[G_ux.stack_count-1].index--;
+                /*dirty hack to have coherent behavior on bnnn_paging when there are multiple
+                 * screens*/
+                G_ux.flow_stack[G_ux.stack_count - 1].prev_index =
+                    G_ux.flow_stack[G_ux.stack_count - 1].index - 2;
+                G_ux.flow_stack[G_ux.stack_count - 1].index--;
                 ux_flow_relayout();
                 /*end of dirty hack*/
-            }
-            else{ // -> from middle, no more screens available
+            } else {  // -> from middle, no more screens available
                 current_state = OUT_OF_BORDERS;
                 ux_flow_next();
             }
         }
     }
-    
 }
-
 
 void ui_approve_tx_init(void) {
     ctx.req.tx.offset = 0;
@@ -331,7 +332,6 @@ void ui_approve_tx_init(void) {
     ux_flow_init(0, ux_confirm_flow, NULL);
 }
 
-
 void ui_approve_tx_hash_init(void) {
     formatter_index = 0;
     MEMCLEAR(formatter_stack);
@@ -340,8 +340,5 @@ void ui_approve_tx_hash_init(void) {
     current_state = OUT_OF_BORDERS;
     ux_flow_init(0, ux_confirm_flow, NULL);
 }
-
-
-
 
 #endif

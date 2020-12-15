@@ -24,10 +24,12 @@
 #include "stellar_ux.h"
 
 static void app_set_state(enum app_state_t state) {
-  ctx.state = state;
+    ctx.state = state;
 }
 
-static enum app_state_t app_get_state() { return ctx.state; }
+static enum app_state_t app_get_state() {
+    return ctx.state;
+}
 
 static int read_bip32(const uint8_t *dataBuffer, size_t size, uint32_t *bip32) {
     size_t bip32Len = dataBuffer[0];
@@ -36,11 +38,12 @@ static int read_bip32(const uint8_t *dataBuffer, size_t size, uint32_t *bip32) {
         THROW(0x6a80);
     }
     if (1 + 4 * bip32Len > size) {
-      THROW(0x6a80);
+        THROW(0x6a80);
     }
 
     for (unsigned int i = 0; i < bip32Len; i++) {
-        bip32[i] = (dataBuffer[0] << 24u) | (dataBuffer[1] << 16u) | (dataBuffer[2] << 8u) | (dataBuffer[3]);
+        bip32[i] = (dataBuffer[0] << 24u) | (dataBuffer[1] << 16u) | (dataBuffer[2] << 8u) |
+                   (dataBuffer[3]);
         dataBuffer += 4;
     }
     return bip32Len;
@@ -49,13 +52,22 @@ static int read_bip32(const uint8_t *dataBuffer, size_t size, uint32_t *bip32) {
 void derive_private_key(cx_ecfp_private_key_t *privateKey, uint32_t *bip32, uint8_t bip32Len) {
     uint8_t privateKeyData[32];
     io_seproxyhal_io_heartbeat();
-    os_perso_derive_node_bip32_seed_key(HDW_ED25519_SLIP10, CX_CURVE_Ed25519, bip32, bip32Len, privateKeyData, NULL, (unsigned char*) "ed25519 seed", 12);
+    os_perso_derive_node_bip32_seed_key(HDW_ED25519_SLIP10,
+                                        CX_CURVE_Ed25519,
+                                        bip32,
+                                        bip32Len,
+                                        privateKeyData,
+                                        NULL,
+                                        (unsigned char *) "ed25519 seed",
+                                        12);
     io_seproxyhal_io_heartbeat();
     cx_ecfp_init_private_key(CX_CURVE_Ed25519, privateKeyData, 32, privateKey);
     MEMCLEAR(privateKeyData);
 }
 
-void init_public_key(cx_ecfp_private_key_t *privateKey, cx_ecfp_public_key_t *publicKey, uint8_t *buffer) {
+void init_public_key(cx_ecfp_private_key_t *privateKey,
+                     cx_ecfp_public_key_t *publicKey,
+                     uint8_t *buffer) {
     cx_ecfp_generate_pair(CX_CURVE_Ed25519, publicKey, privateKey, 1);
 
     // copy public key little endian to big endian
@@ -89,7 +101,12 @@ static uint32_t set_result_get_public_key(void) {
     return tx;
 }
 
-void handle_get_public_key(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLength, volatile unsigned int *flags, volatile unsigned int *tx) {
+void handle_get_public_key(uint8_t p1,
+                           uint8_t p2,
+                           uint8_t *dataBuffer,
+                           uint16_t dataLength,
+                           volatile unsigned int *flags,
+                           volatile unsigned int *tx) {
     app_set_state(STATE_NONE);
 
     if ((p1 != P1_SIGNATURE) && (p1 != P1_NO_SIGNATURE)) {
@@ -116,7 +133,7 @@ void handle_get_public_key(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t
         if (msgLength >= 32) {
             THROW(0x6a80);
         }
-        for (i=0; i<msgLength; i++) {
+        for (i = 0; i < msgLength; i++) {
             if ((dataBuffer[i] < 0x20) || (dataBuffer[i] > 0x7e)) {
                 THROW(0x6a80);
             }
@@ -132,7 +149,16 @@ void handle_get_public_key(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t
     if (ctx.req.pk.returnSignature) {
 #if CX_APILEVEL >= 8
         io_seproxyhal_io_heartbeat();
-        cx_eddsa_sign(&privateKey, CX_LAST, CX_SHA512, msg, msgLength, NULL, 0, ctx.req.pk.signature, 64, NULL);
+        cx_eddsa_sign(&privateKey,
+                      CX_LAST,
+                      CX_SHA512,
+                      msg,
+                      msgLength,
+                      NULL,
+                      0,
+                      ctx.req.pk.signature,
+                      64,
+                      NULL);
         io_seproxyhal_io_heartbeat();
 #else
         cx_eddsa_sign(&privateKey, NULL, CX_LAST, CX_SHA512, msg, msgLength, ctx.req.pk.signature);
@@ -152,8 +178,11 @@ void handle_get_public_key(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t
     }
 }
 
-void handle_sign_tx(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLength, volatile unsigned int *flags) {
-
+void handle_sign_tx(uint8_t p1,
+                    uint8_t p2,
+                    uint8_t *dataBuffer,
+                    uint16_t dataLength,
+                    volatile unsigned int *flags) {
     if ((p1 != P1_FIRST) && (p1 != P1_MORE)) {
         THROW(0x6B00);
     }
@@ -185,7 +214,7 @@ void handle_sign_tx(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLe
         if (ctx.req.tx.rawLength > MAX_RAW_TX) {
             THROW(0x6700);
         }
-        os_memmove(ctx.req.tx.raw+offset, dataBuffer, dataLength);
+        os_memmove(ctx.req.tx.raw + offset, dataBuffer, dataLength);
     }
 
     if (p2 == P2_MORE) {
@@ -209,10 +238,20 @@ void handle_sign_tx(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLe
     // sign hash
 #if CX_APILEVEL >= 8
     io_seproxyhal_io_heartbeat();
-    ctx.req.tx.tx = cx_eddsa_sign(&privateKey, CX_LAST, CX_SHA512, ctx.req.tx.hash, 32, NULL, 0, G_io_apdu_buffer, 64, NULL);
+    ctx.req.tx.tx = cx_eddsa_sign(&privateKey,
+                                  CX_LAST,
+                                  CX_SHA512,
+                                  ctx.req.tx.hash,
+                                  32,
+                                  NULL,
+                                  0,
+                                  G_io_apdu_buffer,
+                                  64,
+                                  NULL);
     io_seproxyhal_io_heartbeat();
 #else
-    ctx.req.tx.tx = cx_eddsa_sign(&privateKey, NULL, CX_LAST, CX_SHA512, ctx.req.tx.hash, 32, G_io_apdu_buffer);
+    ctx.req.tx.tx =
+        cx_eddsa_sign(&privateKey, NULL, CX_LAST, CX_SHA512, ctx.req.tx.hash, 32, G_io_apdu_buffer);
 #endif
 
     MEMCLEAR(privateKey);

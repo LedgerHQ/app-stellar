@@ -29,7 +29,7 @@ unsigned int io_seproxyhal_respond(unsigned short sw, uint32_t tx) {
 
     // Display back the original UX
     ui_idle();
-    return 0; // do not redraw the widgets
+    return 0;  // do not redraw the widgets
 }
 
 unsigned int io_seproxyhal_touch_address_ok(const bagl_element_t *e) {

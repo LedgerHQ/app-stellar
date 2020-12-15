@@ -28,30 +28,30 @@
 
 static const char hexAlphabet[] = "0123456789ABCDEF";
 static const char base32Alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-static const char base64Alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+static const char base64Alphabet[] =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 static int base64ModTable[] = {0, 2, 1};
 
-
 unsigned short crc16(char *ptr, int count) {
-   int  crc;
-   char i;
-   crc = 0;
-   while (--count >= 0) {
-      crc = crc ^ (int) *ptr++ << 8;
-      i = 8;
-      do
-      {
-         if (crc & 0x8000)
-            crc = crc << 1 ^ 0x1021;
-         else
-            crc = crc << 1;
-      } while(--i);
-   }
-   return (crc);
+    int crc;
+    char i;
+    crc = 0;
+    while (--count >= 0) {
+        crc = crc ^ (int) *ptr++ << 8;
+        i = 8;
+        do {
+            if (crc & 0x8000)
+                crc = crc << 1 ^ 0x1021;
+            else
+                crc = crc << 1;
+        } while (--i);
+    }
+    return (crc);
 }
 
 /**
- * adapted from https://stash.forgerock.org/projects/OPENAM/repos/forgerock-authenticator-ios/browse/ForgeRock-Authenticator/base32.c
+ * adapted from
+ * https://stash.forgerock.org/projects/OPENAM/repos/forgerock-authenticator-ios/browse/ForgeRock-Authenticator/base32.c
  */
 int base32_encode(const uint8_t *data, int length, char *result, int bufSize) {
     int count = 0;
@@ -108,13 +108,10 @@ int base32_encode(const uint8_t *data, int length, char *result, int bufSize) {
     }
 }
 
-
 void base64_encode(const uint8_t *data, int inLen, char *out) {
-
     size_t outLen = 4 * ((inLen + 2) / 3);
 
     for (int i = 0, j = 0; i < inLen;) {
-
         uint32_t octet_a = i < inLen ? data[i++] : 0;
         uint32_t octet_b = i < inLen ? data[i++] : 0;
         uint32_t octet_c = i < inLen ? data[i++] : 0;
@@ -140,9 +137,9 @@ void encode_key(const uint8_t *in, char *out, uint8_t versionByte) {
     buffer[0] = versionByte;
     int i;
     for (i = 0; i < 32; i++) {
-        buffer[i+1] = in[i];
+        buffer[i + 1] = in[i];
     }
-    short crc = crc16((char *)buffer, 33); // checksum
+    short crc = crc16((char *) buffer, 33);  // checksum
     buffer[33] = crc;
     buffer[34] = crc >> 8;
     base32_encode(buffer, 35, out, 56);
@@ -167,8 +164,8 @@ void print_summary(char *in, char *out, uint8_t numCharsL, uint8_t numCharsR) {
     if (inLength > outLength) {
         memcpy(out, in, numCharsL);
         out[numCharsL] = '.';
-        out[numCharsL+1] = '.';
-        memcpy(out + numCharsL+2, in + inLength - numCharsR, numCharsR);
+        out[numCharsL + 1] = '.';
+        memcpy(out + numCharsL + 2, in + inLength - numCharsR, numCharsR);
         out[outLength] = '\0';
     } else {
         memcpy(out, in, inLength);
@@ -179,9 +176,9 @@ void print_binary(const uint8_t *in, char *out, uint8_t len) {
     out[0] = '0';
     out[1] = 'x';
     uint8_t i, j;
-    for (i = 0, j = 2; i < len; i+=1, j+=2) {
+    for (i = 0, j = 2; i < len; i += 1, j += 2) {
         out[j] = hexAlphabet[in[i] / 16];
-        out[j+1] = hexAlphabet[in[i] % 16];
+        out[j + 1] = hexAlphabet[in[i] % 16];
     }
     out[j] = '\0';
 }
@@ -189,17 +186,17 @@ void print_binary(const uint8_t *in, char *out, uint8_t len) {
 void print_binary_summary(const uint8_t *in, char *out, uint8_t len) {
     out[0] = '0';
     out[1] = 'x';
-    if (2+len*2 > 18) {
+    if (2 + len * 2 > 18) {
         uint8_t i, j;
-        for (i = 0, j = 2; i < 4; i+=1, j+=2) {
+        for (i = 0, j = 2; i < 4; i += 1, j += 2) {
             out[j] = hexAlphabet[in[i] / 16];
-            out[j+1] = hexAlphabet[in[i] % 16];
+            out[j + 1] = hexAlphabet[in[i] % 16];
         }
         out[j++] = '.';
         out[j++] = '.';
-        for (i = len - 4; i < len; i+=1, j+=2) {
+        for (i = len - 4; i < len; i += 1, j += 2) {
             out[j] = hexAlphabet[in[i] / 16];
-            out[j+1] = hexAlphabet[in[i] % 16];
+            out[j + 1] = hexAlphabet[in[i] % 16];
         }
         out[j] = '\0';
     } else {
@@ -231,7 +228,7 @@ void print_amount(uint64_t amount, const char *asset, char *out) {
         } else {
             buffer[i] = '0';
         }
-        if (i == 6) { // stroops to xlm: 1 xlm = 10000000 stroops
+        if (i == 6) {  // stroops to xlm: 1 xlm = 10000000 stroops
             i += 1;
             buffer[i] = '.';
         }
@@ -240,7 +237,7 @@ void print_amount(uint64_t amount, const char *asset, char *out) {
         }
     }
     // reverse order
-    for (i -= 1, j = 0; i >= 0 && j < AMOUNT_MAX_SIZE-1; i--, j++) {
+    for (i -= 1, j = 0; i >= 0 && j < AMOUNT_MAX_SIZE - 1; i--, j++) {
         out[j] = buffer[i];
     }
     // strip trailing 0s
@@ -250,17 +247,16 @@ void print_amount(uint64_t amount, const char *asset, char *out) {
     j += 1;
 
     // strip trailing .
-    if (out[j-1] == '.') j -= 1;
+    if (out[j - 1] == '.') j -= 1;
 
     if (asset) {
         // qualify amount
         out[j++] = ' ';
         strcpy(out + j, asset);
-        out[j+strlen(asset)] = '\0';
+        out[j + strlen(asset)] = '\0';
     } else {
         out[j] = '\0';
     }
-
 }
 
 void print_int(int64_t l, char *out) {
@@ -286,7 +282,7 @@ void print_int(int64_t l, char *out) {
         out[j++] = '-';
     }
     // reverse order
-    for (i -= 1; i >= 0 && j < AMOUNT_MAX_SIZE-1; i--, j++) {
+    for (i -= 1; i >= 0 && j < AMOUNT_MAX_SIZE - 1; i--, j++) {
         out[j] = buffer[i];
     }
     out[j] = '\0';
@@ -311,7 +307,7 @@ void print_uint(uint64_t l, char *out) {
         dVal /= 10;
     }
     // reverse order
-    for (i -= 1, j = 0; i >= 0 && j < AMOUNT_MAX_SIZE-1; i--, j++) {
+    for (i -= 1, j = 0; i >= 0 && j < AMOUNT_MAX_SIZE - 1; i--, j++) {
         out[j] = buffer[i];
     }
     out[j] = '\0';
@@ -327,20 +323,20 @@ void print_asset(char *code, char *issuer, char *out) {
     uint8_t offset = strlen(code);
     strcpy(out, code);
     out[offset] = '@';
-    strcpy(out+offset+1, issuer);
+    strcpy(out + offset + 1, issuer);
 }
 
 void print_flag(char *flag, char *out, char prefix) {
     uint8_t len = strlen(out);
     if (len) {
-        strcpy(out+len, ", ");
+        strcpy(out + len, ", ");
         len += 2;
     }
     if (prefix) {
         out[len] = prefix;
         len += 1;
     }
-    strcpy(out+len, flag);
+    strcpy(out + len, flag);
 }
 
 void print_flags(uint32_t flags, char *out, char prefix) {
