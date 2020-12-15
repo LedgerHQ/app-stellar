@@ -19,36 +19,35 @@
 #include <stdint.h>
 
 int read_file(char *filename, uint8_t *buffer, int maxlen) {
-   int size, read;
-   FILE *handler = fopen(filename, "r");
+    int size, read;
+    FILE *handler = fopen(filename, "r");
 
-   if (handler) {
+    if (handler) {
+        // calculate the needed buffer size
+        fseek(handler, 0, SEEK_END);
+        size = ftell(handler);
+        rewind(handler);
 
-       // calculate the needed buffer size
-       fseek(handler, 0, SEEK_END);
-       size = ftell(handler);
-       rewind(handler);
+        if (size / 2 > maxlen) {
+            printf("Buffer too small\n");
+        }
 
-       if (size/2 > maxlen) {
-           printf("Buffer too small\n");
-       }
+        char *hex = (char *) malloc(size);
+        read = fread(hex, 1, size, handler);
+        fclose(handler);
 
-       char *hex = (char*) malloc(size);
-       read = fread(hex, 1, size, handler);
-       fclose(handler);
+        if (size != read) {
+            printf("Failed to read file\n");
+            free(hex);
+            hex = NULL;
+            return 0;
+        }
 
-       if (size != read) {
-           printf("Failed to read file\n");
-           free(hex);
-           hex = NULL;
-           return 0;
-       }
-
-       int i;
-       for (i = 0; i < maxlen; i++) {
-           sscanf(hex + 2*i, "%2hhx", &buffer[i]);
-       }
-       return read / 2;
+        int i;
+        for (i = 0; i < maxlen; i++) {
+            sscanf(hex + 2 * i, "%2hhx", &buffer[i]);
+        }
+        return read / 2;
     } else {
         printf("No such file\n");
         return 0;

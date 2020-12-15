@@ -30,17 +30,25 @@
 void handle_get_app_configuration(volatile unsigned int *tx);
 
 /** handles get public key request */
-void handle_get_public_key(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLength, volatile unsigned int *flags, volatile unsigned int *tx);
+void handle_get_public_key(uint8_t p1,
+                           uint8_t p2,
+                           uint8_t *dataBuffer,
+                           uint16_t dataLength,
+                           volatile unsigned int *flags,
+                           volatile unsigned int *tx);
 
 /** handles sign transaction request (displays transaction details) */
-void handle_sign_tx(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLength, volatile unsigned int *flags);
+void handle_sign_tx(uint8_t p1,
+                    uint8_t p2,
+                    uint8_t *dataBuffer,
+                    uint16_t dataLength,
+                    volatile unsigned int *flags);
 
 /** handles sign transaction hash request (displays only transaction hash) */
 void handle_sign_tx_hash(uint8_t *dataBuffer, uint16_t dataLength, volatile unsigned int *flags);
 
 /** u2f keep alive */
 void handle_keep_alive(volatile unsigned int *flags);
-
 
 // ------------------------------------------------------------------------- //
 //                           TRANSACTION PARSING                             //
@@ -75,11 +83,11 @@ void print_public_key(const uint8_t *in, char *out, uint8_t numCharsL, uint8_t n
 void print_summary(char *in, char *out, uint8_t numCharsL, uint8_t numCharsR);
 
 /** raw byte buffer to hexadecimal string representation.
-  * len is length of input, provided output must be twice that size */
+ * len is length of input, provided output must be twice that size */
 void print_binary(const uint8_t *in, char *out, uint8_t len);
 
 /** raw byte buffer to summarized hexadecimal string representation
-  * len is length of input, provided output must be at least length 19 */
+ * len is length of input, provided output must be at least length 19 */
 void print_binary_summary(const uint8_t *in, char *out, uint8_t len);
 
 /** raw amount integer to asset-qualified string representation */

@@ -24,28 +24,28 @@
 //                       REQUEST PARSING CONSTANTS                           //
 // ------------------------------------------------------------------------- //
 
-#define CLA 0xe0
-#define INS_GET_PUBLIC_KEY 0x02
-#define INS_SIGN_TX 0x04
+#define CLA                       0xe0
+#define INS_GET_PUBLIC_KEY        0x02
+#define INS_SIGN_TX               0x04
 #define INS_GET_APP_CONFIGURATION 0x06
-#define INS_SIGN_TX_HASH 0x08
-#define INS_KEEP_ALIVE 0x10
-#define P1_NO_SIGNATURE 0x00
-#define P1_SIGNATURE 0x01
-#define P2_NO_CONFIRM 0x00
-#define P2_CONFIRM 0x01
-#define P1_FIRST 0x00
-#define P1_MORE 0x80
-#define P2_LAST 0x00
-#define P2_MORE 0x80
+#define INS_SIGN_TX_HASH          0x08
+#define INS_KEEP_ALIVE            0x10
+#define P1_NO_SIGNATURE           0x00
+#define P1_SIGNATURE              0x01
+#define P2_NO_CONFIRM             0x00
+#define P2_CONFIRM                0x01
+#define P1_FIRST                  0x00
+#define P1_MORE                   0x80
+#define P2_LAST                   0x00
+#define P2_MORE                   0x80
 
 #define MIN_APDU_SIZE 5
 
-#define OFFSET_CLA 0
-#define OFFSET_INS 1
-#define OFFSET_P1 2
-#define OFFSET_P2 3
-#define OFFSET_LC 4
+#define OFFSET_CLA   0
+#define OFFSET_INS   1
+#define OFFSET_P1    2
+#define OFFSET_P2    3
+#define OFFSET_LC    4
 #define OFFSET_CDATA 5
 
 /* Max transaction size is 1.4Kb */
@@ -58,48 +58,47 @@
 /* max amount is max int64 scaled down: "922337203685.4775807" */
 #define AMOUNT_MAX_SIZE 21
 
-
 // ------------------------------------------------------------------------- //
 //                       TRANSACTION PARSING CONSTANTS                       //
 // ------------------------------------------------------------------------- //
 
-#define ASSET_TYPE_NATIVE 0
-#define ASSET_TYPE_CREDIT_ALPHANUM4 1
+#define ASSET_TYPE_NATIVE            0
+#define ASSET_TYPE_CREDIT_ALPHANUM4  1
 #define ASSET_TYPE_CREDIT_ALPHANUM12 2
 
-#define MEMO_TYPE_NONE 0
-#define MEMO_TYPE_TEXT 1
-#define MEMO_TYPE_ID 2
-#define MEMO_TYPE_HASH 3
+#define MEMO_TYPE_NONE   0
+#define MEMO_TYPE_TEXT   1
+#define MEMO_TYPE_ID     2
+#define MEMO_TYPE_HASH   3
 #define MEMO_TYPE_RETURN 4
 
-#define NETWORK_TYPE_PUBLIC 0
-#define NETWORK_TYPE_TEST 1
+#define NETWORK_TYPE_PUBLIC  0
+#define NETWORK_TYPE_TEST    1
 #define NETWORK_TYPE_UNKNOWN 2
 
-#define XDR_OPERATION_TYPE_CREATE_ACCOUNT 0
-#define XDR_OPERATION_TYPE_PAYMENT 1
-#define XDR_OPERATION_TYPE_PATH_PAYMENT 2
-#define XDR_OPERATION_TYPE_MANAGE_SELL_OFFER 3
+#define XDR_OPERATION_TYPE_CREATE_ACCOUNT       0
+#define XDR_OPERATION_TYPE_PAYMENT              1
+#define XDR_OPERATION_TYPE_PATH_PAYMENT         2
+#define XDR_OPERATION_TYPE_MANAGE_SELL_OFFER    3
 #define XDR_OPERATION_TYPE_CREATE_PASSIVE_OFFER 4
-#define XDR_OPERATION_TYPE_SET_OPTIONS 5
-#define XDR_OPERATION_TYPE_CHANGE_TRUST 6
-#define XDR_OPERATION_TYPE_ALLOW_TRUST 7
-#define XDR_OPERATION_TYPE_ACCOUNT_MERGE 8
-#define XDR_OPERATION_TYPE_INFLATION 9
-#define XDR_OPERATION_TYPE_MANAGE_DATA 10
-#define XDR_OPERATION_TYPE_BUMP_SEQUENCE 11
-#define XDR_OPERATION_TYPE_MANAGE_BUY_OFFER 12
+#define XDR_OPERATION_TYPE_SET_OPTIONS          5
+#define XDR_OPERATION_TYPE_CHANGE_TRUST         6
+#define XDR_OPERATION_TYPE_ALLOW_TRUST          7
+#define XDR_OPERATION_TYPE_ACCOUNT_MERGE        8
+#define XDR_OPERATION_TYPE_INFLATION            9
+#define XDR_OPERATION_TYPE_MANAGE_DATA          10
+#define XDR_OPERATION_TYPE_BUMP_SEQUENCE        11
+#define XDR_OPERATION_TYPE_MANAGE_BUY_OFFER     12
 
-#define SIGNER_KEY_TYPE_ED25519 0
+#define SIGNER_KEY_TYPE_ED25519     0
 #define SIGNER_KEY_TYPE_PRE_AUTH_TX 1
-#define SIGNER_KEY_TYPE_HASH_X 2
+#define SIGNER_KEY_TYPE_HASH_X      2
 
 #define PUBLIC_KEY_TYPE_ED25519 0
-#define MEMO_TEXT_MAX_SIZE 28
-#define DATA_NAME_MAX_SIZE 64
-#define DATA_VALUE_MAX_SIZE 64
-#define HOME_DOMAIN_MAX_SIZE 32
+#define MEMO_TEXT_MAX_SIZE      28
+#define DATA_NAME_MAX_SIZE      64
+#define DATA_VALUE_MAX_SIZE     64
+#define HOME_DOMAIN_MAX_SIZE    32
 
 // ------------------------------------------------------------------------- //
 //                             DISPLAY CONSTANTS                             //
@@ -116,13 +115,14 @@
 #define DETAIL_CAPTION_MAX_SIZE 20
 
 /*
- * DETAIL_VALUE_MAX_SIZE value of 89 is due to the maximum length of managed data value which can be 64 bytes long.
- * Managed data values are displayed as base64 encoded strings, which are 4*((len+2)/3) characters long.
- * (An additional slot is required for the end-of-string character of course)
+ * DETAIL_VALUE_MAX_SIZE value of 89 is due to the maximum length of managed data value which can be
+ * 64 bytes long. Managed data values are displayed as base64 encoded strings, which are
+ * 4*((len+2)/3) characters long. (An additional slot is required for the end-of-string character of
+ * course)
  */
 #define DETAIL_VALUE_MAX_SIZE 89
 
-static const char* NETWORK_NAMES[3] = { "Public", "Test", "Unknown" };
+static const char *NETWORK_NAMES[3] = {"Public", "Test", "Unknown"};
 
 // ------------------------------------------------------------------------- //
 //                              UTILITIES                                    //
@@ -130,15 +130,21 @@ static const char* NETWORK_NAMES[3] = { "Public", "Test", "Unknown" };
 
 #ifdef TEST
 #include <stdio.h>
-#define THROW(code) do { printf("error: %d", code); } while (0)
+#define THROW(code)                \
+    do {                           \
+        printf("error: %d", code); \
+    } while (0)
 #define PRINTF(msg, arg) printf(msg, arg)
-#define PIC(code) code
+#define PIC(code)        code
 //#define TARGET_NANOS 1
 #define MEMCLEAR(dest) memset(&dest, 0, sizeof(dest));
 #else
-#define MEMCLEAR(dest) do { os_memset(&dest, 0, sizeof(dest)); } while (0)
+#define MEMCLEAR(dest)                     \
+    do {                                   \
+        os_memset(&dest, 0, sizeof(dest)); \
+    } while (0)
 #include "bolos_target.h"
-#endif // TEST
+#endif  // TEST
 
 // ------------------------------------------------------------------------- //
 //                           TYPE DEFINITIONS                                //
@@ -297,17 +303,9 @@ typedef struct {
     uint32_t tx;
 } tx_context_t;
 
-enum request_type_t {
-    CONFIRM_ADDRESS,
-    CONFIRM_TRANSACTION
-};
+enum request_type_t { CONFIRM_ADDRESS, CONFIRM_TRANSACTION };
 
-enum app_state_t {
-  STATE_NONE,
-  STATE_PARSE_TX,
-  STATE_APPROVE_TX,
-  STATE_APPROVE_TX_HASH
-};
+enum app_state_t { STATE_NONE, STATE_PARSE_TX, STATE_APPROVE_TX, STATE_APPROVE_TX_HASH };
 
 typedef struct {
     enum app_state_t state;

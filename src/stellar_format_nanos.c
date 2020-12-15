@@ -1,19 +1,19 @@
 /*******************************************************************************
-*   Ledger Stellar App
-*   (c) 2017-2018 Ledger
-*
-*  Licensed under the Apache License, Version 2.0 (the "License");
-*  you may not use this file except in compliance with the License.
-*  You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-*  Unless required by applicable law or agreed to in writing, software
-*  distributed under the License is distributed on an "AS IS" BASIS,
-*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-*  See the License for the specific language governing permissions and
-*  limitations under the License.
-********************************************************************************/
+ *   Ledger Stellar App
+ *   (c) 2017-2018 Ledger
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ ********************************************************************************/
 #ifndef TEST
 #include "bolos_target.h"
 #include "os.h"
@@ -34,11 +34,11 @@ char detailValue[89];
 format_function_t formatter_stack[MAX_FORMATTERS_PER_OPERATION];
 int8_t formatter_index;
 
-void push_to_formatter_stack(format_function_t formatter){
-    if(formatter_index + 1 >= MAX_FORMATTERS_PER_OPERATION){
+void push_to_formatter_stack(format_function_t formatter) {
+    if (formatter_index + 1 >= MAX_FORMATTERS_PER_OPERATION) {
         THROW(0x6124);
     }
-    formatter_stack[formatter_index+1] = formatter;
+    formatter_stack[formatter_index + 1] = formatter;
 }
 
 void format_sequence_number(tx_context_t *txCtx) {
@@ -77,7 +77,7 @@ void format_time_bounds(tx_context_t *txCtx) {
 
 void format_network(tx_context_t *txCtx) {
     strcpy(detailCaption, "Network");
-    strcpy(detailValue, ((char *)PIC(NETWORK_NAMES[txCtx->txDetails.network])));
+    strcpy(detailValue, ((char *) PIC(NETWORK_NAMES[txCtx->txDetails.network])));
     push_to_formatter_stack(&format_time_bounds);
 }
 
@@ -170,7 +170,9 @@ void format_account_merge(tx_context_t *txCtx) {
 void format_manage_data_value(tx_context_t *txCtx) {
     strcpy(detailCaption, "Data Value");
     char tmp[89];
-    base64_encode(txCtx->opDetails.op.manageData.dataValue, txCtx->opDetails.op.manageData.dataValueSize, tmp);
+    base64_encode(txCtx->opDetails.op.manageData.dataValue,
+                  txCtx->opDetails.op.manageData.dataValueSize,
+                  tmp);
     print_summary(tmp, detailValue, 12, 12);
     push_to_formatter_stack(&format_operation_source);
 }
@@ -184,7 +186,9 @@ void format_manage_data(tx_context_t *txCtx) {
         push_to_formatter_stack(&format_operation_source);
     }
     char tmp[65];
-    memcpy(tmp, txCtx->opDetails.op.manageData.dataName, txCtx->opDetails.op.manageData.dataNameSize);
+    memcpy(tmp,
+           txCtx->opDetails.op.manageData.dataName,
+           txCtx->opDetails.op.manageData.dataNameSize);
     tmp[txCtx->opDetails.op.manageData.dataNameSize] = '\0';
     print_summary(tmp, detailValue, 12, 12);
 }
@@ -218,24 +222,23 @@ void format_set_option_signer_weight(tx_context_t *txCtx) {
 void format_set_option_signer_detail(tx_context_t *txCtx) {
     strcpy(detailCaption, "Signer Key");
     switch (txCtx->opDetails.op.setOptions.signer.type) {
-    case SIGNER_KEY_TYPE_ED25519: {
-        print_public_key(txCtx->opDetails.op.setOptions.signer.data, detailValue, 0, 0);
-        break;
-    }
-    case SIGNER_KEY_TYPE_HASH_X: {
-        char tmp[57];
-        encode_hash_x_key(txCtx->opDetails.op.setOptions.signer.data, tmp);
-        print_summary(tmp, detailValue, 12, 12);
-        break;
-    }
+        case SIGNER_KEY_TYPE_ED25519: {
+            print_public_key(txCtx->opDetails.op.setOptions.signer.data, detailValue, 0, 0);
+            break;
+        }
+        case SIGNER_KEY_TYPE_HASH_X: {
+            char tmp[57];
+            encode_hash_x_key(txCtx->opDetails.op.setOptions.signer.data, tmp);
+            print_summary(tmp, detailValue, 12, 12);
+            break;
+        }
 
-    case SIGNER_KEY_TYPE_PRE_AUTH_TX: {
-        char tmp[57];
-        encode_pre_auth_key(txCtx->opDetails.op.setOptions.signer.data, tmp);
-        print_summary(tmp, detailValue, 12, 12);
-        break;
-
-    }
+        case SIGNER_KEY_TYPE_PRE_AUTH_TX: {
+            char tmp[57];
+            encode_pre_auth_key(txCtx->opDetails.op.setOptions.signer.data, tmp);
+            print_summary(tmp, detailValue, 12, 12);
+            break;
+        }
     }
     push_to_formatter_stack(&format_set_option_signer_weight);
 }
@@ -248,18 +251,18 @@ void format_set_option_signer(tx_context_t *txCtx) {
             strcpy(detailCaption, "Remove Signer");
         }
         switch (txCtx->opDetails.op.setOptions.signer.type) {
-        case SIGNER_KEY_TYPE_ED25519: {
-            strcpy(detailValue, "Type Public Key");
-            break;
-        }
-        case SIGNER_KEY_TYPE_HASH_X: {
-            strcpy(detailValue, "Type Hash(x)");
-            break;
-        }
-        case SIGNER_KEY_TYPE_PRE_AUTH_TX: {
-            strcpy(detailValue, "Type Pre-Auth");
-            break;
-        }
+            case SIGNER_KEY_TYPE_ED25519: {
+                strcpy(detailValue, "Type Public Key");
+                break;
+            }
+            case SIGNER_KEY_TYPE_HASH_X: {
+                strcpy(detailValue, "Type Hash(x)");
+                break;
+            }
+            case SIGNER_KEY_TYPE_PRE_AUTH_TX: {
+                strcpy(detailValue, "Type Pre-Auth");
+                break;
+            }
         }
         push_to_formatter_stack(&format_set_option_signer_detail);
     } else {
@@ -270,7 +273,9 @@ void format_set_option_signer(tx_context_t *txCtx) {
 void format_set_option_home_domain(tx_context_t *txCtx) {
     if (txCtx->opDetails.op.setOptions.homeDomainSize) {
         strcpy(detailCaption, "Home Domain");
-        memcpy(detailValue, txCtx->opDetails.op.setOptions.homeDomain, txCtx->opDetails.op.setOptions.homeDomainSize);
+        memcpy(detailValue,
+               txCtx->opDetails.op.setOptions.homeDomain,
+               txCtx->opDetails.op.setOptions.homeDomainSize);
         detailValue[txCtx->opDetails.op.setOptions.homeDomainSize] = '\0';
         push_to_formatter_stack(&format_set_option_signer);
     } else {
@@ -376,18 +381,22 @@ void format_change_trust(tx_context_t *txCtx) {
 void format_manage_offer_sell(tx_context_t *txCtx) {
     if (txCtx->opDetails.op.manageOffer.buy) {
         strcpy(detailCaption, "Buy");
-        print_amount(txCtx->opDetails.op.manageOffer.amount, txCtx->opDetails.op.manageOffer.buying.code, detailValue);
+        print_amount(txCtx->opDetails.op.manageOffer.amount,
+                     txCtx->opDetails.op.manageOffer.buying.code,
+                     detailValue);
     } else {
         strcpy(detailCaption, "Sell");
-        print_amount(txCtx->opDetails.op.manageOffer.amount, txCtx->opDetails.op.manageOffer.selling.code, detailValue);
+        print_amount(txCtx->opDetails.op.manageOffer.amount,
+                     txCtx->opDetails.op.manageOffer.selling.code,
+                     detailValue);
     }
     push_to_formatter_stack(&format_operation_source);
 }
 
 void format_manage_offer_price(tx_context_t *txCtx) {
     strcpy(detailCaption, "Price");
-    uint64_t price = ((uint64_t)txCtx->opDetails.op.manageOffer.price.numerator * 10000000) /
-        txCtx->opDetails.op.manageOffer.price.denominator;
+    uint64_t price = ((uint64_t) txCtx->opDetails.op.manageOffer.price.numerator * 10000000) /
+                     txCtx->opDetails.op.manageOffer.price.denominator;
     if (txCtx->opDetails.op.manageOffer.buy) {
         print_amount(price, txCtx->opDetails.op.manageOffer.selling.code, detailValue);
     } else {
@@ -444,10 +453,10 @@ void format_path_via(tx_context_t *txCtx) {
             asset_t asset = txCtx->opDetails.op.pathPayment.path[i];
             uint8_t len = strlen(detailValue);
             if (len) {
-                strcpy(detailValue+len, ", ");
+                strcpy(detailValue + len, ", ");
                 len += 2;
             }
-            strcpy(detailValue+len, asset.code);
+            strcpy(detailValue + len, asset.code);
         }
         push_to_formatter_stack(&format_operation_source);
     } else {
@@ -457,7 +466,9 @@ void format_path_via(tx_context_t *txCtx) {
 
 void format_path_receive(tx_context_t *txCtx) {
     strcpy(detailCaption, "Receive");
-    print_amount(txCtx->opDetails.op.pathPayment.destAmount, txCtx->opDetails.op.pathPayment.destAsset.code, detailValue);
+    print_amount(txCtx->opDetails.op.pathPayment.destAmount,
+                 txCtx->opDetails.op.pathPayment.destAsset.code,
+                 detailValue);
     push_to_formatter_stack(&format_path_via);
 }
 
@@ -469,7 +480,9 @@ void format_path_destination(tx_context_t *txCtx) {
 
 void format_path_payment(tx_context_t *txCtx) {
     strcpy(detailCaption, "Send Max");
-    print_amount(txCtx->opDetails.op.pathPayment.sendMax, txCtx->opDetails.op.pathPayment.sourceAsset.code, detailValue);
+    print_amount(txCtx->opDetails.op.pathPayment.sendMax,
+                 txCtx->opDetails.op.pathPayment.sourceAsset.code,
+                 detailValue);
     push_to_formatter_stack(&format_path_destination);
 }
 
@@ -481,7 +494,9 @@ void format_payment_destination(tx_context_t *txCtx) {
 
 void format_payment(tx_context_t *txCtx) {
     strcpy(detailCaption, "Send");
-    print_amount(txCtx->opDetails.op.payment.amount, txCtx->opDetails.op.payment.asset.code, detailValue);
+    print_amount(txCtx->opDetails.op.payment.amount,
+                 txCtx->opDetails.op.payment.asset.code,
+                 detailValue);
     push_to_formatter_stack(&format_payment_destination);
 }
 
@@ -499,31 +514,29 @@ void format_create_account(tx_context_t *txCtx) {
     push_to_formatter_stack(&format_create_account_amount);
 }
 
-const format_function_t formatters[13] = {
-    &format_create_account,
-    &format_payment,
-    &format_path_payment,
-    &format_manage_offer,
-    &format_manage_offer,
-    &format_set_options,
-    &format_change_trust,
-    &format_allow_trust,
-    &format_account_merge,
-    &format_inflation,
-    &format_manage_data,
-    &format_bump_sequence,
-    &format_manage_offer
-};
+const format_function_t formatters[13] = {&format_create_account,
+                                          &format_payment,
+                                          &format_path_payment,
+                                          &format_manage_offer,
+                                          &format_manage_offer,
+                                          &format_set_options,
+                                          &format_change_trust,
+                                          &format_allow_trust,
+                                          &format_account_merge,
+                                          &format_inflation,
+                                          &format_manage_data,
+                                          &format_bump_sequence,
+                                          &format_manage_offer};
 
 void format_confirm_operation(tx_context_t *txCtx) {
     if (txCtx->opCount > 1) {
         strcpy(opCaption, "Operation ");
-        print_uint(txCtx->opIdx, opCaption+strlen(opCaption));
-        strcpy(opCaption+strlen(opCaption), " of ");
-        print_uint(txCtx->opCount, opCaption+strlen(opCaption));
-        push_to_formatter_stack(((format_function_t)PIC(formatters[txCtx->opDetails.type])));
+        print_uint(txCtx->opIdx, opCaption + strlen(opCaption));
+        strcpy(opCaption + strlen(opCaption), " of ");
+        print_uint(txCtx->opCount, opCaption + strlen(opCaption));
+        push_to_formatter_stack(((format_function_t) PIC(formatters[txCtx->opDetails.type])));
     } else {
-        ((format_function_t)PIC(formatters[txCtx->opDetails.type]))(txCtx);
+        ((format_function_t) PIC(formatters[txCtx->opDetails.type]))(txCtx);
     }
 }
 
