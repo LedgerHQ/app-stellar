@@ -15,12 +15,7 @@ typedef struct {
 
 typedef struct {
   size_t num_details;
-  const detail_t items[8];
-} details_t;
-
-typedef struct {
-  const char *name;
-  const details_t details;
+  const detail_t items[15];
 } op_summary;
 
 typedef struct {
@@ -28,53 +23,64 @@ typedef struct {
   op_summary ops[3];
 } ops_summary;
 
+stellar_context_t ctx;
+
 static void test_tx(const uint8_t *data, size_t size,
-                    const ops_summary *summary, const details_t *details) {
-  tx_context_t ctx = {0};
+                    const ops_summary *summary, const op_summary *details) {
+  tx_context_t tx_ctx = {0};
+    formatter_index = 0;
+    ctx.state = STATE_APPROVE_TX;
 
-  assert_true(parse_tx_xdr(data, size, &ctx));
-  assert_int_equal(summary->num_ops, ctx.opCount);
+  assert_true(parse_tx_xdr(data, size, &tx_ctx));
+  assert_int_equal(summary->num_ops, tx_ctx.opCount);
 
-  for (int n = 0; n < ctx.opCount; n++) {
-    formatter = format_confirm_operation;
+  for (int n = 0; n < tx_ctx.opCount; n++) {
+     formatter_stack[formatter_index] = format_confirm_operation;
     const op_summary *op = &summary->ops[n];
 
-    for (int i = 0; i < op->details.num_details; i++) {
+    if (tx_ctx.opCount > 1) {
+            char tmp[30];
+            assert_non_null(formatter_stack[formatter_index]);
+            formatter_stack[formatter_index](&tx_ctx);
+            formatter_index++;
+            sprintf(tmp, "Operation %d of %d", n + 1, tx_ctx.opCount);
+            assert_string_equal(tmp, opCaption);
+    }
+
+    for (int i = 0; i < op->num_details; i++) {
       memset(opCaption, 0, sizeof(opCaption));
       memset(detailCaption, 0, sizeof(detailCaption));
       memset(detailValue, 0, sizeof(detailValue));
 
-      assert_non_null(formatter);
-      formatter(&ctx);
+      assert_non_null( formatter_stack[formatter_index]);
+      formatter_stack[formatter_index](&tx_ctx);
 
-      if (i == 0) {
-        assert_string_equal(op->name, opCaption);
-      }
-      if (i < op->details.num_details) {
-        assert_string_equal(op->details.items[i].name, detailCaption);
-        assert_string_equal(op->details.items[i].value, detailValue);
-      }
+      assert_string_equal(op->items[i].name, detailCaption);
+      assert_string_equal(op->items[i].value, detailValue);
+      formatter_index++;
     }
-    assert_null(formatter);
 
-    if (n != ctx.opCount - 1) {
-      assert_true(parse_tx_xdr(data, size, &ctx));
+    if (n != tx_ctx.opCount - 1) {
+      assert_true(parse_tx_xdr(data, size, &tx_ctx));
     }
   }
-  assert_false(parse_tx_xdr(data, size, &ctx));
+  assert_false(parse_tx_xdr(data, size, &tx_ctx));
 
-  formatter = format_confirm_transaction_details;
+  //  formatter_stack[formatter_index] = format_confirm_transaction_details;
 
   for (int i = 0; i < details->num_details; i++) {
     memset(opCaption, 0, sizeof(opCaption));
     memset(detailCaption, 0, sizeof(detailCaption));
     memset(detailValue, 0, sizeof(detailValue));
 
-    formatter(&ctx);
+    assert_non_null( formatter_stack[formatter_index]);
+    formatter_stack[formatter_index](&tx_ctx);
+
     assert_string_equal(details->items[i].name, detailCaption);
     assert_string_equal(details->items[i].value, detailValue);
+    formatter_index++;
   }
-  assert_null(formatter);
+  assert_null( formatter_stack[formatter_index]);
 }
 
 static void test_tx_simple(void **state) {
@@ -98,23 +104,23 @@ static void test_tx_simple(void **state) {
 
   const ops_summary summary = {
       1,
-      {"Payment",
-       {3,
+
+       {2,
         {
-            {"Amount", "1 XLM"},
+            {"Send", "1 XLM"},
             {"Destination",
              "GCKUD4BHIYSAYHU7HBB5FDSW6CSYH3GSOUBPWD2KE7KNBERP4BSKEJDV"},
-            {"", ""}, // No source
-        }}}};
+            
+        }}};
 
-  const details_t details = {
-      5,
+  const op_summary details = {
+      4,
       {{"Memo", "[none]"},
        {"Fee", "0.00001 XLM"},
        {"Network", "Public"},
        {"Tx Source",
         "GAQNVGMLOXSCWH37QXIHLQJH6WZENXYSVWLPAEF4673W64VRNZLRHMFM"},
-       {"Sequence Number", "55649191174602777"}}};
+       }};
 
   test_tx(tx_data, sizeof(tx_data), &summary, &details);
 }
@@ -140,23 +146,23 @@ static void test_tx_memo_id(void **state) {
 
   const ops_summary summary = {
       1,
-      {"Payment",
-       {3,
+
+       {2,
         {
-            {"Amount", "30 XLM"},
+            {"Send", "30 XLM"},
             {"Destination",
              "GCKUD4BHIYSAYHU7HBB5FDSW6CSYH3GSOUBPWD2KE7KNBERP4BSKEJDV"},
-            {"", ""}, // No source
-        }}}};
+            
+        }}};
 
-  const details_t details = {
-      5,
-      {{"Memo Id", "16"},
+  const op_summary details = {
+      4,
+      {{"Memo ID", "16"},
        {"Fee", "0.00001 XLM"},
        {"Network", "Public"},
        {"Tx Source",
         "GAQNVGMLOXSCWH37QXIHLQJH6WZENXYSVWLPAEF4673W64VRNZLRHMFM"},
-       {"Sequence Number", "55649191174602781"}}};
+       }};
 
   test_tx(tx_data, sizeof(tx_data), &summary, &details);
 }
@@ -183,23 +189,23 @@ static void test_tx_memo_text(void **state) {
 
   const ops_summary summary = {
       1,
-      {"Payment",
-       {3,
+
+       {2,
         {
-            {"Amount", "30 XLM"},
+            {"Send", "30 XLM"},
             {"Destination",
              "GCKUD4BHIYSAYHU7HBB5FDSW6CSYH3GSOUBPWD2KE7KNBERP4BSKEJDV"},
-            {"", ""}, // No source
-        }}}};
+            
+        }}};
 
-  const details_t details = {
-      5,
+  const op_summary details = {
+      4,
       {{"Memo Text", "starlight"},
        {"Fee", "0.00001 XLM"},
        {"Network", "Public"},
        {"Tx Source",
         "GAQNVGMLOXSCWH37QXIHLQJH6WZENXYSVWLPAEF4673W64VRNZLRHMFM"},
-       {"Sequence Number", "55649191174602781"}}};
+       }};
 
   test_tx(tx_data, sizeof(tx_data), &summary, &details);
 }
@@ -227,24 +233,24 @@ static void test_tx_memo_hash(void **state) {
 
   const ops_summary summary = {
       1,
-      {"Payment",
-       {3,
+
+       {2,
         {
-            {"Amount", "30 XLM"},
+            {"Send", "30 XLM"},
             {"Destination",
              "GCKUD4BHIYSAYHU7HBB5FDSW6CSYH3GSOUBPWD2KE7KNBERP4BSKEJDV"},
-            {"", ""}, // No source
-        }}}};
+            
+        }}};
 
-  const details_t details = {
-      5,
+  const op_summary details = {
+      4,
       {{"Memo Hash",
-        "0x42A084410ABD856C4B6704E1C38AFF733E8F63B8838A6C18E5CB7875D9204D3B"},
+        "0x42A084..204D3B"},
        {"Fee", "0.00001 XLM"},
        {"Network", "Public"},
        {"Tx Source",
         "GAQNVGMLOXSCWH37QXIHLQJH6WZENXYSVWLPAEF4673W64VRNZLRHMFM"},
-       {"Sequence Number", "55649191174602782"}}};
+       }};
 
   test_tx(tx_data, sizeof(tx_data), &summary, &details);
 }
@@ -273,23 +279,23 @@ static void test_tx_custom_asset4(void **state) {
 
   const ops_summary summary = {
       1,
-      {"Payment",
-       {3,
+
+       {2,
         {
-            {"Amount", "30 DUPE"},
+            {"Send", "30 DUPE"},
             {"Destination",
              "GCKUD4BHIYSAYHU7HBB5FDSW6CSYH3GSOUBPWD2KE7KNBERP4BSKEJDV"},
-            {"", ""}, // No source
-        }}}};
+            
+        }}};
 
-  const details_t details = {
-      5,
+  const op_summary details = {
+      4,
       {{"Memo", "[none]"},
        {"Fee", "0.00001 XLM"},
        {"Network", "Public"},
        {"Tx Source",
         "GAQNVGMLOXSCWH37QXIHLQJH6WZENXYSVWLPAEF4673W64VRNZLRHMFM"},
-       {"Sequence Number", "55649191174602781"}}};
+       }};
 
   test_tx(tx_data, sizeof(tx_data), &summary, &details);
 }
@@ -319,23 +325,23 @@ static void test_tx_custom_asset12(void **state) {
 
   const ops_summary summary = {
       1,
-      {"Payment",
-       {3,
+
+       {2,
         {
-            {"Amount", "30 LENONDUPE"},
+            {"Send", "30 LENONDUPE"},
             {"Destination",
              "GCKUD4BHIYSAYHU7HBB5FDSW6CSYH3GSOUBPWD2KE7KNBERP4BSKEJDV"},
-            {"", ""}, // No source
-        }}}};
+            
+        }}};
 
-  const details_t details = {
-      5,
+  const op_summary details = {
+      4,
       {{"Memo", "[none]"},
        {"Fee", "0.00001 XLM"},
        {"Network", "Public"},
        {"Tx Source",
         "GAQNVGMLOXSCWH37QXIHLQJH6WZENXYSVWLPAEF4673W64VRNZLRHMFM"},
-       {"Sequence Number", "55649191174602781"}}};
+       }};
 
   test_tx(tx_data, sizeof(tx_data), &summary, &details);
 }
@@ -363,24 +369,24 @@ static void test_tx_time_bounds(void **state) {
 
   const ops_summary summary = {
       1,
-      {"Payment",
-       {3,
+
+       {2,
         {
-            {"Amount", "1 XLM"},
+            {"Send", "1 XLM"},
             {"Destination",
              "GCKUD4BHIYSAYHU7HBB5FDSW6CSYH3GSOUBPWD2KE7KNBERP4BSKEJDV"},
-            {"", ""}, // No source
-        }}}};
+        }}};
 
-  const details_t details = {
+  const op_summary details = {
       6,
-      {{"Memo Id", "33"},
+      {{"Memo ID", "33"},
        {"Fee", "0.00001 XLM"},
        {"Network", "Public"},
-       {"Time Bounds", "From 50 To 100"},
+       {"Time Bounds From", "50"},
+       {"Time Bounds To", "100"},
        {"Tx Source",
         "GAQNVGMLOXSCWH37QXIHLQJH6WZENXYSVWLPAEF4673W64VRNZLRHMFM"},
-       {"Sequence Number", "55649191174602781"}}};
+       }};
 
   test_tx(tx_data, sizeof(tx_data), &summary, &details);
 }
@@ -409,24 +415,24 @@ static void test_tx_op_source(void **state) {
 
   const ops_summary summary = {
       1,
-      {"Payment",
+
        {3,
         {
-            {"Amount", "30 XLM"},
+            {"Send", "30 XLM"},
             {"Destination",
              "GCKUD4BHIYSAYHU7HBB5FDSW6CSYH3GSOUBPWD2KE7KNBERP4BSKEJDV"},
             {"Op Source",
              "GAQNVGMLOXSCWH37QXIHLQJH6WZENXYSVWLPAEF4673W64VRNZLRHMFM"},
-        }}}};
+        }}};
 
-  const details_t details = {
-      5,
-      {{"Memo Id", "16"},
+  const op_summary details = {
+      4,
+      {{"Memo ID", "16"},
        {"Fee", "0.00001 XLM"},
        {"Network", "Public"},
        {"Tx Source",
         "GAQNVGMLOXSCWH37QXIHLQJH6WZENXYSVWLPAEF4673W64VRNZLRHMFM"},
-       {"Sequence Number", "55649191174602781"}}};
+       }};
 
   test_tx(tx_data, sizeof(tx_data), &summary, &details);
 }
@@ -451,23 +457,22 @@ static void test_tx_create_account(void **state) {
 
   const ops_summary summary = {
       1,
-      {"Create Account",
-       {3,
+       {2,
         {
-            {"Account ID",
+            {"Create Account",
              "GBMHY2EIEGFHW6G4OIC6QA7I7IUPUDD33PGCJLVC57THODEUQY62KNHD"},
             {"Starting Balance", "100 XLM"},
-            {"", ""},
-        }}}};
+            
+        }}};
 
-  const details_t details = {
-      5,
+  const op_summary details = {
+      4,
       {{"Memo", "[none]"},
        {"Fee", "0.00001 XLM"},
        {"Network", "Test"},
        {"Tx Source",
         "GBGBTCCP7WG2E5XFYLQFJP2DYOQZPCCDCHK62K6TZD4BHMNYI5WSXESH"},
-       {"Sequence Number", "21728338334711809"}}};
+       }};
 
   test_tx(tx_data, sizeof(tx_data), &summary, &details);
 }
@@ -493,22 +498,21 @@ static void test_tx_account_merge(void **state) {
 
   const ops_summary summary = {
       1,
-      {"Merge Account",
-       {3,
-        {{"Account ID",
+       {2,
+        {{"Merge Account",
           "GBGBTCCP7WG2E5XFYLQFJP2DYOQZPCCDCHK62K6TZD4BHMNYI5WSXESH"},
          {"Destination",
           "GBMHY2EIEGFHW6G4OIC6QA7I7IUPUDD33PGCJLVC57THODEUQY62KNHD"},
-         {"", ""}}}}};
+         }}};
 
-  const details_t details = {
-      5,
+  const op_summary details = {
+      4,
       {{"Memo Text", "merge account"},
        {"Fee", "0.00001 XLM"},
        {"Network", "Test"},
        {"Tx Source",
         "GBGBTCCP7WG2E5XFYLQFJP2DYOQZPCCDCHK62K6TZD4BHMNYI5WSXESH"},
-       {"Sequence Number", "21728338334711809"}}};
+       }};
 
   test_tx(tx_data, sizeof(tx_data), &summary, &details);
 }
@@ -551,23 +555,22 @@ static void test_tx_path_payment(void **state) {
 
   const ops_summary summary = {
       1,
-      {"Path Payment",
-       {5,
+       {4,
         {{"Send Max", "50 USD"},
          {"Destination",
           "GBMHY2EIEGFHW6G4OIC6QA7I7IUPUDD33PGCJLVC57THODEUQY62KNHD"},
          {"Receive", "18000 NGN"},
          {"Via", "YEN, CAD"},
-         {"", ""}}}}};
+         }}};
 
-  const details_t details = {
-      5,
+  const op_summary details = {
+      4,
       {{"Memo Text", "dollar to naira"},
        {"Fee", "0.00001 XLM"},
        {"Network", "Test"},
        {"Tx Source",
         "GADFVW3UXVKDOU626XUPYDJU2BFCGFJHQ6SREYOZ6IJV4XSHOALEQN2I"},
-       {"Sequence Number", "27888631402201089"}}};
+       }};
 
   test_tx(tx_data, sizeof(tx_data), &summary, &details);
 }
@@ -592,17 +595,16 @@ static void test_tx_set_data(void **state) {
 
   const ops_summary summary = {
       1,
-      {"Set Data",
-       {3, {{"Data Key", "name"}, {"Data Value", "dmFsdWU="}, {"", ""}}}}};
+       {2, {{"Set Data", "name"}, {"Data Value", "dmFsdWU="}, }}};
 
-  const details_t details = {
-      5,
+  const op_summary details = {
+      4,
       {{"Memo Text", "manage data"},
        {"Fee", "0.00001 XLM"},
        {"Network", "Test"},
        {"Tx Source",
         "GBGBTCCP7WG2E5XFYLQFJP2DYOQZPCCDCHK62K6TZD4BHMNYI5WSXESH"},
-       {"Sequence Number", "21728338334711809"}}};
+       }};
 
   test_tx(tx_data, sizeof(tx_data), &summary, &details);
 }
@@ -626,16 +628,16 @@ static void test_tx_remove_data(void **state) {
       0x00, 0x00, 0x00, 0x00, 0x00};
 
   const ops_summary summary = {
-      1, {"Remove Data", {2, {{"Data Key", "managedDataKey"}, {"", ""}}}}};
+      1, {1, {{"Remove Data", "managedDataKey"}, }}};
 
-  const details_t details = {
-      5,
+  const op_summary details = {
+      4,
       {{"Memo Text", "manage data"},
        {"Fee", "0.00001 XLM"},
        {"Network", "Test"},
        {"Tx Source",
         "GADFVW3UXVKDOU626XUPYDJU2BFCGFJHQ6SREYOZ6IJV4XSHOALEQN2I"},
-       {"Sequence Number", "27888631402201089"}}};
+       }};
 
   test_tx(tx_data, sizeof(tx_data), &summary, &details);
 }
@@ -661,17 +663,16 @@ static void test_tx_change_trust(void **state) {
 
   const ops_summary summary = {
       1,
-      {"Change Trust",
-       {3, {{"Asset", "DUPE@GBG..XESH"}, {"Limit", "[maximum]"}, {"", ""}}}}};
+       {2, {{"Change Trust", "DUPE@GBG..XESH"}, {"Trust Limit", "[maximum]"}, }}};
 
-  const details_t details = {
-      5,
+  const op_summary details = {
+      4,
       {{"Memo", "[none]"},
        {"Fee", "0.00001 XLM"},
        {"Network", "Test"},
        {"Tx Source",
         "GBGBTCCP7WG2E5XFYLQFJP2DYOQZPCCDCHK62K6TZD4BHMNYI5WSXESH"},
-       {"Sequence Number", "21728338334711809"}}};
+       }};
 
   test_tx(tx_data, sizeof(tx_data), &summary, &details);
 }
@@ -696,16 +697,16 @@ static void test_tx_remove_trust(void **state) {
       0x00, 0x00, 0x00, 0x00, 0x00};
 
   const ops_summary summary = {
-      1, {"Remove Trust", {2, {{"Asset", "SLT@GAD..QN2I"}, {"", ""}}}}};
+      1, {1, {{"Remove Trust", "SLT@GAD..QN2I"}, }}};
 
-  const details_t details = {
-      5,
+  const op_summary details = {
+      4,
       {{"Memo", "[none]"},
        {"Fee", "0.00001 XLM"},
        {"Network", "Test"},
        {"Tx Source",
         "GADFVW3UXVKDOU626XUPYDJU2BFCGFJHQ6SREYOZ6IJV4XSHOALEQN2I"},
-       {"Sequence Number", "27888631402201089"}}};
+       }};
 
   test_tx(tx_data, sizeof(tx_data), &summary, &details);
 }
@@ -732,21 +733,20 @@ static void test_tx_allow_trust(void **state) {
 
   const ops_summary summary = {
       1,
-      {"Allow Trust",
-       {3,
-        {{"Asset Code", "JPY"},
+       {2,
+        {{"Allow Trust", "JPY"},
          {"Account ID",
           "GBMHY2EIEGFHW6G4OIC6QA7I7IUPUDD33PGCJLVC57THODEUQY62KNHD"},
-         {"", ""}}}}};
+         }}};
 
-  const details_t details = {
-      5,
+  const op_summary details = {
+      4,
       {{"Memo Text", "allow trust"},
        {"Fee", "0.00001 XLM"},
        {"Network", "Test"},
        {"Tx Source",
         "GBGBTCCP7WG2E5XFYLQFJP2DYOQZPCCDCHK62K6TZD4BHMNYI5WSXESH"},
-       {"Sequence Number", "21728338334711809"}}};
+       }};
 
   test_tx(tx_data, sizeof(tx_data), &summary, &details);
 }
@@ -773,21 +773,20 @@ static void test_tx_revoke_trust(void **state) {
 
   const ops_summary summary = {
       1,
-      {"Revoke Trust",
-       {3,
-        {{"Asset Code", "JPY"},
+       {2,
+        {{"Revoke Trust", "JPY"},
          {"Account ID",
           "GBMHY2EIEGFHW6G4OIC6QA7I7IUPUDD33PGCJLVC57THODEUQY62KNHD"},
-         {"", ""}}}}};
+         }}};
 
-  const details_t details = {
-      5,
+  const op_summary details = {
+      4,
       {{"Memo Text", "revoke trust"},
        {"Fee", "0.00001 XLM"},
        {"Network", "Test"},
        {"Tx Source",
         "GADFVW3UXVKDOU626XUPYDJU2BFCGFJHQ6SREYOZ6IJV4XSHOALEQN2I"},
-       {"Sequence Number", "27888631402201089"}}};
+       }};
 
   test_tx(tx_data, sizeof(tx_data), &summary, &details);
 }
@@ -814,22 +813,21 @@ static void test_tx_create_offer(void **state) {
       0x00};
 
   const ops_summary summary = {1,
-                               {"Create Offer",
-                                {5,
-                                 {{"Offer Type", "Active"},
+                                {4,
+                                 {{"Create Offer", "Type Active"},
                                   {"Buy", "DUPE@GBG..XESH"},
                                   {"Price", "0.3333333 DUPE"},
                                   {"Sell", "300 XLM"},
-                                  {"", ""}}}}};
+                                  }}};
 
-  const details_t details = {
-      5,
+  const op_summary details = {
+      4,
       {{"Memo", "[none]"},
        {"Fee", "0.00001 XLM"},
        {"Network", "Test"},
        {"Tx Source",
         "GBGBTCCP7WG2E5XFYLQFJP2DYOQZPCCDCHK62K6TZD4BHMNYI5WSXESH"},
-       {"Sequence Number", "21728338334711809"}}};
+       }};
 
   test_tx(tx_data, sizeof(tx_data), &summary, &details);
 }
@@ -856,22 +854,21 @@ static void test_tx_create_offer2(void **state) {
       0x00};
 
   const ops_summary summary = {1,
-                               {"Create Offer",
-                                {5,
-                                 {{"Offer Type", "Active"},
+                                {4,
+                                 {{"Create Offer", "Type Active"},
                                   {"Buy", "XLM"},
                                   {"Price", "1.5644199 XLM"},
                                   {"Sell", "1000 RMT"},
-                                  {"", ""}}}}};
+                                  }}};
 
-  const details_t details = {
-      5,
+  const op_summary details = {
+      4,
       {{"Memo", "[none]"},
        {"Fee", "0.00001 XLM"},
        {"Network", "Test"},
        {"Tx Source",
         "GCGNXZ5G6FWCNDB7H7G27WYSQDWYW3IBKMZOUXM7K6UPNMDAQDMONKJ2"},
-       {"Sequence Number", "1234567891"}}};
+       }};
 
   test_tx(tx_data, sizeof(tx_data), &summary, &details);
 }
@@ -898,22 +895,21 @@ static void test_tx_change_offer(void **state) {
       0x00};
 
   const ops_summary summary = {1,
-                               {"Change Offer",
-                                {5,
-                                 {{"Offer ID", "6849038322"},
+                                {4,
+                                 {{"Change Offer", "6849038322"},
                                   {"Buy", "SLT@GAD..QN2I"},
                                   {"Price", "1.6666666 SLT"},
                                   {"Sell", "200 XLM"},
-                                  {"", ""}}}}};
+                                  }}};
 
-  const details_t details = {
-      5,
+  const op_summary details = {
+      4,
       {{"Memo", "[none]"},
        {"Fee", "0.00001 XLM"},
        {"Network", "Test"},
        {"Tx Source",
         "GADFVW3UXVKDOU626XUPYDJU2BFCGFJHQ6SREYOZ6IJV4XSHOALEQN2I"},
-       {"Sequence Number", "27888631402201089"}}};
+       }};
 
   test_tx(tx_data, sizeof(tx_data), &summary, &details);
 }
@@ -940,16 +936,16 @@ static void test_tx_remove_offer(void **state) {
       0x00};
 
   const ops_summary summary = {
-      1, {"Remove Offer", {2, {{"Offer ID", "209583721"}, {"", ""}}}}};
+      1, {1, {{"Remove Offer", "209583721"}, }}};
 
-  const details_t details = {
-      5,
+  const op_summary details = {
+      4,
       {{"Memo", "[none]"},
        {"Fee", "0.00001 XLM"},
        {"Network", "Test"},
        {"Tx Source",
         "GADFVW3UXVKDOU626XUPYDJU2BFCGFJHQ6SREYOZ6IJV4XSHOALEQN2I"},
-       {"Sequence Number", "27888631402201089"}}};
+       }};
 
   test_tx(tx_data, sizeof(tx_data), &summary, &details);
 }
@@ -976,22 +972,21 @@ static void test_tx_passive_offer(void **state) {
       0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00};
 
   const ops_summary summary = {1,
-                               {"Create Offer",
-                                {5,
-                                 {{"Offer Type", "Passive"},
+                                {4,
+                                 {{"Create Offer", "Type Passive"},
                                   {"Buy", "SLT@GAD..QN2I"},
                                   {"Price", "0.25 SLT"},
                                   {"Sell", "1000 XLM"},
-                                  {"", ""}}}}};
+                                  }}};
 
-  const details_t details = {
-      5,
+  const op_summary details = {
+      4,
       {{"Memo Text", "create offer"},
        {"Fee", "0.00001 XLM"},
        {"Network", "Test"},
        {"Tx Source",
         "GADFVW3UXVKDOU626XUPYDJU2BFCGFJHQ6SREYOZ6IJV4XSHOALEQN2I"},
-       {"Sequence Number", "27888631402201089"}}};
+       }};
 
   test_tx(tx_data, sizeof(tx_data), &summary, &details);
 }
@@ -1026,25 +1021,29 @@ static void test_tx_set_all_options(void **state) {
 
   const ops_summary summary = {
       1,
-      {"Set Options",
-       {7,
+       {11,
         {{"Inflation Dest",
           "GDGU5OAPHNPU5UCLE5RDJHG7PXZFQYWKCFOEXSXNMR6KRQRI5T6XXCD7"},
-         {"Account Flags", "-Auth revocable, -Auth immutable, +Auth required"},
+         {"Clear Flags", "Auth revocable, Auth immutable"},
+        {"Set Flags", "Auth required"},
          {"Master Weight", "0"},
-         {"Thresholds", "low: 1; medium: 2; high: 3"},
+         {"Low Threshold", "1"},
+         {"Medium Threshold", "2"},
+         {"High Threshold", "3"},
          {"Home Domain", "www.example.com"},
-         {"Add Signer", "Public Key: GDGU5OAPHNPU..RQRI5T6XXCD7; weight = 1"},
-         {"", ""}}}}};
+         {"Add Signer", "Type Public Key"},
+         {"Signer Key", "GDGU5OAPHNPU5UCLE5RDJHG7PXZFQYWKCFOEXSXNMR6KRQRI5T6XXCD7"},
+         {"Weight", "1"},
+         }}};
 
-  const details_t details = {
-      5,
+  const op_summary details = {
+      4,
       {{"Memo", "[none]"},
        {"Fee", "0.00001 XLM"},
        {"Network", "Test"},
        {"Tx Source",
         "GBGBTCCP7WG2E5XFYLQFJP2DYOQZPCCDCHK62K6TZD4BHMNYI5WSXESH"},
-       {"Sequence Number", "21728338334711809"}}};
+       }};
 
   test_tx(tx_data, sizeof(tx_data), &summary, &details);
 }
@@ -1078,24 +1077,26 @@ static void test_tx_set_some_options(void **state) {
 
   const ops_summary summary = {
       1,
-      {"Set Options",
-       {6,
+       {8,
         {{"Inflation Dest",
           "GDGU5OAPHNPU5UCLE5RDJHG7PXZFQYWKCFOEXSXNMR6KRQRI5T6XXCD7"},
-         {"Account Flags", "+Auth required"},
-         {"Thresholds", "low: 1; high: 3"},
+         {"Set Flags", "Auth required"},
+         {"Low Threshold", "1"},
+         {"High Threshold", "3"},
          {"Home Domain", "www.example.com"},
-         {"Add Signer", "Public Key: GDGU5OAPHNPU..RQRI5T6XXCD7; weight = 1"},
-         {"", ""}}}}};
+        {"Add Signer", "Type Public Key"},
+         {"Signer Key", "GDGU5OAPHNPU5UCLE5RDJHG7PXZFQYWKCFOEXSXNMR6KRQRI5T6XXCD7"},
+         {"Weight", "1"},
+         }}};
 
-  const details_t details = {
-      5,
+  const op_summary details = {
+      4,
       {{"Memo", "[none]"},
        {"Fee", "0.00001 XLM"},
        {"Network", "Test"},
        {"Tx Source",
         "GBGBTCCP7WG2E5XFYLQFJP2DYOQZPCCDCHK62K6TZD4BHMNYI5WSXESH"},
-       {"Sequence Number", "21728338334711809"}}};
+       }};
 
   test_tx(tx_data, sizeof(tx_data), &summary, &details);
 }
@@ -1118,16 +1119,16 @@ static void test_tx_inflation(void **state) {
       0x00, 0x00, 0x00, 0x09, 0x00, 0x00, 0x00, 0x00, 0x00};
 
   const ops_summary summary = {1,
-                               {{"Run Inflation", {2, {{"", ""}, {"", ""}}}}}};
+                               {1, {"", ""}}};
 
-  const details_t details = {
-      5,
+  const op_summary details = {
+      4,
       {{"Memo Text", "maximum memo length 28 chars"},
        {"Fee", "0.00001 XLM"},
        {"Network", "Test"},
        {"Tx Source",
         "GADFVW3UXVKDOU626XUPYDJU2BFCGFJHQ6SREYOZ6IJV4XSHOALEQN2I"},
-       {"Sequence Number", "27888631402201089"}}};
+       }};
 
   test_tx(tx_data, sizeof(tx_data), &summary, &details);
 }
@@ -1157,28 +1158,27 @@ static void test_tx_multi_op(void **state) {
 
   const ops_summary summary = {
       2,
-      {{"Merge Account",
-        {3,
-         {{"Account ID",
+      {
+        {2,
+         {{"Merge Account",
            "GADFVW3UXVKDOU626XUPYDJU2BFCGFJHQ6SREYOZ6IJV4XSHOALEQN2I"},
           {"Destination",
            "GBMHY2EIEGFHW6G4OIC6QA7I7IUPUDD33PGCJLVC57THODEUQY62KNHD"},
-          {"", ""}}}},
-       {"Allow Trust",
-        {3,
-         {{"Asset Code", "JPY"},
+          }},
+         {2,
+         {{"Allow Trust", "JPY"},
           {"Account ID",
            "GBMHY2EIEGFHW6G4OIC6QA7I7IUPUDD33PGCJLVC57THODEUQY62KNHD"},
-          {"", ""}}}}}};
+          }}}};
 
-  const details_t details = {
-      5,
+  const op_summary details = {
+      4,
       {{"Memo Text", "multi-op"},
        {"Fee", "0.00002 XLM"},
        {"Network", "Test"},
        {"Tx Source",
         "GADFVW3UXVKDOU626XUPYDJU2BFCGFJHQ6SREYOZ6IJV4XSHOALEQN2I"},
-       {"Sequence Number", "27888631402201089"}}};
+       }};
 
   test_tx(tx_data, sizeof(tx_data), &summary, &details);
 }
@@ -1199,16 +1199,16 @@ static void test_tx_bump_sequence(void **state) {
       0x00, 0x00, 0x00, 0x02, 0x00};
 
   const ops_summary summary = {
-      1, {"Bump Sequence", {2, {{"Bump To", "2"}, {"", ""}}}}};
+      1, {1, {{"Bump Sequence", "2"}, }}};
 
-  const details_t details = {
-      5,
+  const op_summary details = {
+      4,
       {{"Memo", "[none]"},
        {"Fee", "0.00001 XLM"},
        {"Network", "Test"},
        {"Tx Source",
         "GCGNXZ5G6FWCNDB7H7G27WYSQDWYW3IBKMZOUXM7K6UPNMDAQDMONKJ2"},
-       {"Sequence Number", "1234567891"}}};
+       }};
 
   test_tx(tx_data, sizeof(tx_data), &summary, &details);
 }
