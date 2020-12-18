@@ -22,10 +22,7 @@
 #include "stellar_types.h"
 #include "stellar_vars.h"
 #include "stellar_ux.h"
-
-#ifdef TARGET_BLUE
-static void io_seproxyhal_io_heartbeat(void){}
-#endif
+#include "os_io_seproxyhal.h"
 
 static void app_set_state(enum app_state_t state) {
   ctx.state = state;
