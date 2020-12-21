@@ -18,9 +18,16 @@
 #define _STELLAR_API_H_
 
 #include "stellar_types.h"
+
+#ifndef TEST
+#include "os.h"
+#include "cx.h"
+#endif
+
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <sys/types.h>
 
 // ------------------------------------------------------------------------- //
 //                             Request handlers                              //
@@ -64,8 +71,31 @@ void handle_keep_alive(volatile unsigned int *flags);
 bool parse_tx_xdr(const uint8_t *data, size_t size, tx_context_t *txCtx);
 
 // ------------------------------------------------------------------------- //
+//                           DATA STRUCTURES                                 //
+// ------------------------------------------------------------------------- //
+
+typedef struct {
+    const uint8_t *ptr;
+    size_t size;
+    off_t offset;
+} buffer_t;
+
+// ------------------------------------------------------------------------- //
 //                                UTILITIES                                  //
 // ------------------------------------------------------------------------- //
+
+#ifndef TEST
+/**  derive a private key from a bip32 path */
+void derive_private_key(cx_ecfp_private_key_t *privateKey, uint32_t *bip32, uint8_t bip32Len);
+
+/**  intialize a public key the Stellar way */
+void init_public_key(cx_ecfp_private_key_t *privateKey,
+                     cx_ecfp_public_key_t *publicKey,
+                     uint8_t *buffer);
+#endif
+
+/**  parse a bip32 path from a byte stream */
+int read_bip32(const uint8_t *dataBuffer, size_t size, uint32_t *bip32);
 
 /**  base32 encode public key */
 void encode_public_key(const uint8_t *in, char *out);
@@ -113,5 +143,8 @@ void print_uint(uint64_t l, char *out);
 
 /** base64 encoding function used to display managed data values */
 void base64_encode(const uint8_t *data, int inLen, char *out);
+
+/** read a BE 64 bits unsigned integer from buffer */
+bool buffer_read64(buffer_t *buffer, uint64_t *n);
 
 #endif

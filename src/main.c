@@ -27,6 +27,8 @@
 #include "stellar_vars.h"
 #include "stellar_ux.h"
 
+#include "swap/swap_lib_calls.h"
+
 unsigned short io_exchange_al(unsigned char channel, unsigned short tx_len) {
     switch (channel & ~(IO_FLAGS)) {
         case CHANNEL_KEYBOARD:
@@ -290,15 +292,13 @@ void app_exit(void) {
     END_TRY_L(exit);
 }
 
-__attribute__((section(".boot"))) int main(void) {
-    // exit critical section
-    __asm volatile("cpsie i");
-
-    // ensure exception will work as planned
-    os_boot();
-
+void coin_main() {
     for (;;) {
+        // called_from_swap = false;
+        // resetTransactionContext();
+
         UX_INIT();
+
         BEGIN_TRY {
             TRY {
                 io_seproxyhal_init();
@@ -310,7 +310,6 @@ __attribute__((section(".boot"))) int main(void) {
 
                 stellar_nv_state_init();
 
-                // deactivate usb before activating
                 USB_power(0);
                 USB_power(1);
 
@@ -324,9 +323,12 @@ __attribute__((section(".boot"))) int main(void) {
                 stellar_main();
             }
             CATCH(EXCEPTION_IO_RESET) {
+                // reset IO and UX before continuing
+                CLOSE_TRY;
                 continue;
             }
             CATCH_ALL {
+                CLOSE_TRY;
                 break;
             }
             FINALLY {
@@ -335,6 +337,84 @@ __attribute__((section(".boot"))) int main(void) {
         END_TRY;
     }
     app_exit();
+}
+
+struct libargs_s {
+    unsigned int id;
+    unsigned int command;
+    unsigned int unused;
+    union {
+        check_address_parameters_t *check_address;
+        create_transaction_parameters_t *create_transaction;
+        get_printable_amount_parameters_t *get_printable_amount;
+    };
+};
+
+static void library_main_helper(struct libargs_s *args) {
+    check_api_level(CX_COMPAT_APILEVEL);
+    PRINTF("Inside library \n");
+    switch (args->command) {
+        case CHECK_ADDRESS:
+            // ensure result is zero if an exception is thrown
+            args->check_address->result = 0;
+            args->check_address->result = handle_check_address(args->check_address);
+            break;
+        case SIGN_TRANSACTION:
+            if (copy_transaction_parameters(args->create_transaction)) {
+                // never returns
+                handle_swap_sign_transaction();
+            }
+            break;
+        case GET_PRINTABLE_AMOUNT:
+            // ensure result is zero if an exception is thrown
+            args->get_printable_amount->result = 0;
+            args->get_printable_amount->result =
+                handle_get_printable_amount(args->get_printable_amount);
+            break;
+        default:
+            break;
+    }
+}
+
+void library_main(struct libargs_s *args) {
+    bool end = false;
+    /* This loop ensures that library_main_helper and os_lib_end are called
+     * within a try context, even if an exception is thrown */
+    while (1) {
+        BEGIN_TRY {
+            TRY {
+                if (!end) {
+                    library_main_helper(args);
+                }
+                os_lib_end();
+            }
+            FINALLY {
+                end = true;
+            }
+        }
+        END_TRY;
+    }
+}
+
+__attribute__((section(".boot"))) int main(int arg0) {
+    // exit critical section
+    __asm volatile("cpsie i");
+
+    // ensure exception will work as planned
+    os_boot();
+
+    if (arg0 == 0) {
+        // called from dashboard as standalone xrp app
+        coin_main();
+    } else {
+        // Called as library from another app
+        struct libargs_s *args = (struct libargs_s *) arg0;
+        if (args->id == 0x100) {
+            library_main(args);
+        } else {
+            app_exit();
+        }
+    }
 
     return 0;
 }
