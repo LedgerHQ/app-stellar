@@ -25,12 +25,6 @@
 #include "os.h"
 #endif
 
-typedef struct {
-    const uint8_t *ptr;
-    size_t size;
-    off_t offset;
-} buffer_t;
-
 /* SHA256("Public Global Stellar Network ; September 2015") */
 static const uint8_t NETWORK_ID_PUBLIC_HASH[64] = {
     0x7a, 0xc3, 0x39, 0x97, 0x54, 0x4e, 0x31, 0x75, 0xd2, 0x66, 0xbd, 0x02, 0x24, 0x39, 0xb2, 0x2c,
@@ -61,7 +55,7 @@ static bool buffer_read32(buffer_t *buffer, uint32_t *n) {
     return true;
 }
 
-static bool buffer_read64(buffer_t *buffer, uint64_t *n) {
+bool buffer_read64(buffer_t *buffer, uint64_t *n) {
     if (buffer->size - buffer->offset < 8) {
         *n = 0;
         return false;

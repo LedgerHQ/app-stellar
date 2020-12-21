@@ -31,7 +31,7 @@ static enum app_state_t app_get_state() {
     return ctx.state;
 }
 
-static int read_bip32(const uint8_t *dataBuffer, size_t size, uint32_t *bip32) {
+int read_bip32(const uint8_t *dataBuffer, size_t size, uint32_t *bip32) {
     size_t bip32Len = dataBuffer[0];
     dataBuffer += 1;
     if (bip32Len < 0x01 || bip32Len > MAX_BIP32_LEN) {

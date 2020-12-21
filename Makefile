@@ -21,7 +21,7 @@ endif
 include $(BOLOS_SDK)/Makefile.defines
 
 APPNAME = Stellar
-APP_LOAD_PARAMS=--appFlags 0x240 --path "44'/148'" --curve ed25519 $(COMMON_LOAD_PARAMS)
+APP_LOAD_PARAMS=--appFlags 0xa40 --path "44'/148'" --curve ed25519 $(COMMON_LOAD_PARAMS)
 
 APPVERSION_M=3
 APPVERSION_N=2
