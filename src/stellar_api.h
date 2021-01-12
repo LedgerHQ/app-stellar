@@ -144,7 +144,4 @@ void print_uint(uint64_t l, char *out);
 /** base64 encoding function used to display managed data values */
 void base64_encode(const uint8_t *data, int inLen, char *out);
 
-/** read a BE 64 bits unsigned integer from buffer */
-bool buffer_read64(buffer_t *buffer, uint64_t *n);
-
 #endif

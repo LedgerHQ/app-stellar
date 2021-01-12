@@ -1,7 +1,9 @@
 #ifndef SWAP_LIB_CALLS
 #define SWAP_LIB_CALLS
 
-#include "stdbool.h"
+#include <stddef.h>
+#include <stdbool.h>
+#include <stdint.h>
 
 #define SIGN_TRANSACTION 2
 
@@ -34,7 +36,7 @@ typedef struct get_printable_amount_parameters_s {
     bool is_fee;
     // OUT
     char printable_amount[30];
-    int result;
+    // int result;
 } get_printable_amount_parameters_t;
 
 typedef struct create_transaction_parameters_s {
@@ -52,5 +54,7 @@ int handle_check_address(check_address_parameters_t* params);
 int handle_get_printable_amount(get_printable_amount_parameters_t* params);
 bool copy_transaction_parameters(create_transaction_parameters_t* sign_transaction_params);
 void handle_swap_sign_transaction(void);
+void swap_check();
+bool swap_str_to_u64(const uint8_t* src, size_t length, uint64_t* result);
 
 #endif

@@ -28,16 +28,14 @@ int handle_check_address(check_address_parameters_t* params) {
     uint8_t stellar_publicKey[32];
     derive_private_key(&privateKey, bip32_path, bip32_path_length);
     init_public_key(&privateKey, &publicKey, stellar_publicKey);
+    explicit_bzero(&privateKey, sizeof(privateKey));
 
     char address[57];
     encode_public_key(stellar_publicKey, address);
 
     if (os_strcmp(address, params->address_to_check) != 0) {
         PRINTF("Addresses don't match\n");
-        memcpy(params->address_to_check, address, 57);
-        params->address_to_check[56] = '\0';
-        // memcpy(params->address_to_check, bip32_path, 12);
-        // params->address_to_check[12] = bip32_path_length;
+        // memcpy(params->address_to_check, address, 57);
         return 0;
     }
 

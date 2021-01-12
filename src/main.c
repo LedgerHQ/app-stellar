@@ -72,7 +72,7 @@ static void handle_apdu(uint8_t *buffer,
                 THROW(0x6e00);
             }
 
-            PRINTF("New APDU:\n%.*H\n", dataLength + 4, G_io_apdu_buffer);
+            PRINTF("New APDU:\n%.*H\n", size, buffer);
 
             // reset keep-alive for u2f just short of 30sec
             ctx.u2fTimer = U2F_REQUEST_TIMEOUT;
@@ -140,7 +140,9 @@ static void stellar_nv_state_init() {
     }
 }
 
-static void stellar_main(void) {
+static unsigned char last_ins = 0;
+
+void stellar_main(void) {
     // hash sig support is not persistent
 
     os_memset(&ctx, 0, sizeof(ctx));
@@ -171,6 +173,12 @@ static void stellar_main(void) {
                 if (rx == 0) {
                     THROW(0x6982);
                 }
+                // Reset transaction context before starting to parse a new APDU message type.
+                // This helps protect against "Instruction Change" attacks
+                if (G_io_apdu_buffer[OFFSET_INS] != last_ins) {
+                    reset_ctx();
+                }
+                last_ins = G_io_apdu_buffer[OFFSET_INS];
 
                 handle_apdu(G_io_apdu_buffer, rx, &flags, &tx);
             }
@@ -294,8 +302,8 @@ void app_exit(void) {
 
 void coin_main() {
     for (;;) {
-        // called_from_swap = false;
-        // resetTransactionContext();
+        called_from_swap = false;
+        reset_ctx();
 
         UX_INIT();
 
@@ -366,10 +374,11 @@ static void library_main_helper(struct libargs_s *args) {
             }
             break;
         case GET_PRINTABLE_AMOUNT:
-            // ensure result is zero if an exception is thrown
-            args->get_printable_amount->result = 0;
-            args->get_printable_amount->result =
-                handle_get_printable_amount(args->get_printable_amount);
+            // ensure result is zero if an exception is thrown (compatibility breaking, disabled
+            // until LL is ready)
+            // args->get_printable_amount->result = 0;
+            // args->get_printable_amount->result =
+            handle_get_printable_amount(args->get_printable_amount);
             break;
         default:
             break;
