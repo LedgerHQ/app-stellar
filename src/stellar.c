@@ -24,6 +24,8 @@
 #include "stellar_vars.h"
 #include "stellar_ux.h"
 
+#include "swap/swap_lib_calls.h"
+
 static void app_set_state(enum app_state_t state) {
     ctx.state = state;
 }
@@ -51,26 +53,57 @@ int read_bip32(const uint8_t *dataBuffer, size_t size, uint32_t *bip32) {
 }
 
 void derive_private_key(cx_ecfp_private_key_t *privateKey, uint32_t *bip32, uint8_t bip32Len) {
+    int error = 0;
     uint8_t privateKeyData[32];
-    io_seproxyhal_io_heartbeat();
-    os_perso_derive_node_bip32_seed_key(HDW_ED25519_SLIP10,
-                                        CX_CURVE_Ed25519,
-                                        bip32,
-                                        bip32Len,
-                                        privateKeyData,
-                                        NULL,
-                                        (unsigned char *) "ed25519 seed",
-                                        12);
-    io_seproxyhal_io_heartbeat();
-    cx_ecfp_init_private_key(CX_CURVE_Ed25519, privateKeyData, 32, privateKey);
-    MEMCLEAR(privateKeyData);
+    BEGIN_TRY {
+        TRY {
+            io_seproxyhal_io_heartbeat();
+            os_perso_derive_node_bip32_seed_key(HDW_ED25519_SLIP10,
+                                                CX_CURVE_Ed25519,
+                                                bip32,
+                                                bip32Len,
+                                                privateKeyData,
+                                                NULL,
+                                                (unsigned char *) "ed25519 seed",
+                                                12);
+            io_seproxyhal_io_heartbeat();
+            cx_ecfp_init_private_key(CX_CURVE_Ed25519, privateKeyData, 32, privateKey);
+        }
+        CATCH_OTHER(e) {
+            explicit_bzero(privateKey, sizeof(cx_ecfp_private_key_t));
+            error = e;
+        }
+        FINALLY {
+            explicit_bzero(privateKeyData, sizeof(privateKeyData));
+        }
+    }
+    END_TRY;
+
+    if (error) {
+        THROW(error);
+    }
 }
 
 void init_public_key(cx_ecfp_private_key_t *privateKey,
                      cx_ecfp_public_key_t *publicKey,
                      uint8_t *buffer) {
-    cx_ecfp_generate_pair(CX_CURVE_Ed25519, publicKey, privateKey, 1);
+    int error = 0;
+    BEGIN_TRY {
+        TRY {
+            cx_ecfp_generate_pair(CX_CURVE_Ed25519, publicKey, privateKey, 1);
+        }
+        CATCH_OTHER(e) {
+            explicit_bzero(privateKey, sizeof(cx_ecfp_private_key_t));
+            error = e;
+        }
+        FINALLY {
+        }
+    }
+    END_TRY;
 
+    if (error) {
+        THROW(error);
+    }
     // copy public key little endian to big endian
     uint8_t i;
     for (i = 0; i < 32; i++) {
@@ -147,25 +180,36 @@ void handle_get_public_key(uint8_t p1,
     derive_private_key(&privateKey, bip32, bip32Len);
     init_public_key(&privateKey, &publicKey, ctx.req.pk.publicKey);
 
-    if (ctx.req.pk.returnSignature) {
-#if CX_APILEVEL >= 8
-        io_seproxyhal_io_heartbeat();
-        cx_eddsa_sign(&privateKey,
-                      CX_LAST,
-                      CX_SHA512,
-                      msg,
-                      msgLength,
-                      NULL,
-                      0,
-                      ctx.req.pk.signature,
-                      64,
-                      NULL);
-        io_seproxyhal_io_heartbeat();
-#else
-        cx_eddsa_sign(&privateKey, NULL, CX_LAST, CX_SHA512, msg, msgLength, ctx.req.pk.signature);
-#endif
+    int error = 0;
+    BEGIN_TRY {
+        TRY {
+            if (ctx.req.pk.returnSignature) {
+                io_seproxyhal_io_heartbeat();
+                cx_eddsa_sign(&privateKey,
+                              CX_LAST,
+                              CX_SHA512,
+                              msg,
+                              msgLength,
+                              NULL,
+                              0,
+                              ctx.req.pk.signature,
+                              64,
+                              NULL);
+                io_seproxyhal_io_heartbeat();
+            }
+        }
+        CATCH_OTHER(e) {
+            error = e;
+        }
+        FINALLY {
+            explicit_bzero(&privateKey, sizeof(privateKey));
+        }
     }
-    MEMCLEAR(privateKey);
+    END_TRY;
+
+    if (error) {
+        THROW(error);
+    }
 
     uint32_t pk_tx = set_result_get_public_key();
     if (p2 & P2_CONFIRM) {
@@ -236,27 +280,40 @@ void handle_sign_tx(uint8_t p1,
     cx_ecfp_private_key_t privateKey;
     derive_private_key(&privateKey, ctx.req.tx.bip32, ctx.req.tx.bip32Len);
 
-    // sign hash
-#if CX_APILEVEL >= 8
-    io_seproxyhal_io_heartbeat();
-    ctx.req.tx.tx = cx_eddsa_sign(&privateKey,
-                                  CX_LAST,
-                                  CX_SHA512,
-                                  ctx.req.tx.hash,
-                                  32,
-                                  NULL,
-                                  0,
-                                  G_io_apdu_buffer,
-                                  64,
-                                  NULL);
-    io_seproxyhal_io_heartbeat();
-#else
-    ctx.req.tx.tx =
-        cx_eddsa_sign(&privateKey, NULL, CX_LAST, CX_SHA512, ctx.req.tx.hash, 32, G_io_apdu_buffer);
-#endif
+    int error = 0;
+    BEGIN_TRY {
+        TRY {
+            // sign hash
+            io_seproxyhal_io_heartbeat();
+            ctx.req.tx.tx = cx_eddsa_sign(&privateKey,
+                                          CX_LAST,
+                                          CX_SHA512,
+                                          ctx.req.tx.hash,
+                                          32,
+                                          NULL,
+                                          0,
+                                          G_io_apdu_buffer,
+                                          64,
+                                          NULL);
+            io_seproxyhal_io_heartbeat();
+        }
+        CATCH_OTHER(e) {
+            error = e;
+        }
+        FINALLY {
+            explicit_bzero(&privateKey, sizeof(privateKey));
+        }
+    }
+    END_TRY;
 
-    MEMCLEAR(privateKey);
+    if (error) {
+        THROW(error);
+    }
 
+    if (called_from_swap) {
+        swap_check();
+        os_sched_exit(0);
+    }
     ui_approve_tx_init();
 
     *flags |= IO_ASYNCH_REPLY;

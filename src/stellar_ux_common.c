@@ -46,5 +46,6 @@ unsigned int io_seproxyhal_touch_tx_ok(const bagl_element_t *e) {
 }
 
 unsigned int io_seproxyhal_touch_tx_cancel(const bagl_element_t *e) {
+    explicit_bzero(G_io_apdu_buffer, sizeof(G_io_apdu_buffer));
     return io_seproxyhal_respond(0x6985, 0);
 }
