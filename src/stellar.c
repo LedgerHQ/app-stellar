@@ -33,25 +33,23 @@ static enum app_state_t app_get_state() {
     return ctx.state;
 }
 
-int read_bip32(const uint8_t *dataBuffer, size_t size, uint32_t *bip32) {
-    size_t bip32Len = dataBuffer[0];
-    dataBuffer += 1;
-    if (bip32Len < 0x01 || bip32Len > MAX_BIP32_LEN) {
-        THROW(0x6a80);
-    }
-    if (1 + 4 * bip32Len > size) {
-        THROW(0x6a80);
+bool parse_bip32_path(uint8_t *path,
+                      size_t path_length,
+                      uint32_t *path_parsed,
+                      size_t path_parsed_length) {
+    if ((path_length < 0x01) || (path_length > path_parsed_length)) {
+        return false;
     }
 
-    for (unsigned int i = 0; i < bip32Len; i++) {
-        bip32[i] = (dataBuffer[0] << 24u) | (dataBuffer[1] << 16u) | (dataBuffer[2] << 8u) |
-                   (dataBuffer[3]);
-        dataBuffer += 4;
+    for (size_t i = 0; i < path_length; i++) {
+        path_parsed[i] = (path[0] << 24u) | (path[1] << 16u) | (path[2] << 8u) | (path[3]);
+        path += 4;
     }
-    return bip32Len;
+
+    return true;
 }
 
-void derive_private_key(cx_ecfp_private_key_t *privateKey, uint32_t *bip32, uint8_t bip32Len) {
+int derive_private_key(cx_ecfp_private_key_t *privateKey, uint32_t *bip32, uint8_t bip32Len) {
     int error = 0;
     uint8_t privateKeyData[32];
     BEGIN_TRY {
@@ -78,14 +76,12 @@ void derive_private_key(cx_ecfp_private_key_t *privateKey, uint32_t *bip32, uint
     }
     END_TRY;
 
-    if (error) {
-        THROW(error);
-    }
+    return error;
 }
 
-void init_public_key(cx_ecfp_private_key_t *privateKey,
-                     cx_ecfp_public_key_t *publicKey,
-                     uint8_t *buffer) {
+int init_public_key(cx_ecfp_private_key_t *privateKey,
+                    cx_ecfp_public_key_t *publicKey,
+                    uint8_t *buffer) {
     int error = 0;
     BEGIN_TRY {
         TRY {
@@ -101,7 +97,7 @@ void init_public_key(cx_ecfp_private_key_t *privateKey,
     END_TRY;
 
     if (error) {
-        THROW(error);
+        return error;
     }
     // copy public key little endian to big endian
     uint8_t i;
@@ -111,6 +107,8 @@ void init_public_key(cx_ecfp_private_key_t *privateKey,
     if ((publicKey->W[32] & 1) != 0) {
         buffer[31] |= 0x80;
     }
+
+    return 0;
 }
 
 void handle_get_app_configuration(volatile unsigned int *tx) {
@@ -151,7 +149,11 @@ void handle_get_public_key(uint8_t p1,
     ctx.req.pk.returnSignature = (p1 == P1_SIGNATURE);
 
     uint32_t bip32[MAX_BIP32_LEN];
-    int bip32Len = read_bip32(dataBuffer, dataLength, bip32);
+    uint8_t bip32Len = *dataBuffer;
+    if (!parse_bip32_path(dataBuffer + 1, bip32Len, bip32, MAX_BIP32_LEN)) {
+        PRINTF("Invalid path\n");
+        THROW(0x6a80);
+    }
     dataBuffer += 1 + bip32Len * 4;
     dataLength -= 1 + bip32Len * 4;
 
@@ -240,7 +242,14 @@ void handle_sign_tx(uint8_t p1,
         MEMCLEAR(ctx.req.tx);
         ctx.reqType = CONFIRM_TRANSACTION;
         // read the bip32 path
-        ctx.req.tx.bip32Len = read_bip32(dataBuffer, dataLength, ctx.req.tx.bip32);
+        ctx.req.tx.bip32Len = *dataBuffer;
+        if (!parse_bip32_path(dataBuffer + 1,
+                              ctx.req.tx.bip32Len,
+                              ctx.req.tx.bip32,
+                              MAX_BIP32_LEN)) {
+            PRINTF("Invalid path\n");
+            THROW(0x6a80);
+        }
         dataBuffer += 1 + ctx.req.tx.bip32Len * 4;
         dataLength -= 1 + ctx.req.tx.bip32Len * 4;
 
@@ -329,7 +338,11 @@ void handle_sign_tx_hash(uint8_t *dataBuffer, uint16_t dataLength, volatile unsi
     MEMCLEAR(ctx.req.tx);
     ctx.reqType = CONFIRM_TRANSACTION;
 
-    ctx.req.tx.bip32Len = read_bip32(dataBuffer, dataLength, ctx.req.tx.bip32);
+    ctx.req.tx.bip32Len = *dataBuffer;
+    if (!parse_bip32_path(dataBuffer + 1, ctx.req.tx.bip32Len, ctx.req.tx.bip32, MAX_BIP32_LEN)) {
+        PRINTF("Invalid path\n");
+        THROW(0x6a80);
+    }
     dataBuffer += 1 + ctx.req.tx.bip32Len * 4;
     dataLength -= 1 + ctx.req.tx.bip32Len * 4;
 
