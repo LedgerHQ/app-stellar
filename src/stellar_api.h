@@ -86,16 +86,19 @@ typedef struct {
 
 #ifndef TEST
 /**  derive a private key from a bip32 path */
-void derive_private_key(cx_ecfp_private_key_t *privateKey, uint32_t *bip32, uint8_t bip32Len);
+int derive_private_key(cx_ecfp_private_key_t *privateKey, uint32_t *bip32, uint8_t bip32Len);
 
 /**  intialize a public key the Stellar way */
-void init_public_key(cx_ecfp_private_key_t *privateKey,
-                     cx_ecfp_public_key_t *publicKey,
-                     uint8_t *buffer);
+int init_public_key(cx_ecfp_private_key_t *privateKey,
+                    cx_ecfp_public_key_t *publicKey,
+                    uint8_t *buffer);
 #endif
 
 /**  parse a bip32 path from a byte stream */
-int read_bip32(const uint8_t *dataBuffer, size_t size, uint32_t *bip32);
+bool parse_bip32_path(uint8_t *path,
+                      size_t path_length,
+                      uint32_t *path_parsed,
+                      size_t path_parsed_length);
 
 /**  base32 encode public key */
 void encode_public_key(const uint8_t *in, char *out);
