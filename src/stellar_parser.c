@@ -219,11 +219,11 @@ static bool parse_memo(buffer_t *buffer, tx_details_t *txDetails) {
         }
         case MEMO_TYPE_HASH:
         case MEMO_TYPE_RETURN:
-            if (buffer->size - buffer->offset < 32) {
+            if (buffer->size - buffer->offset < HASH_SIZE) {
                 return false;
             }
-            print_binary(buffer->ptr + buffer->offset, txDetails->memo.data, 32);
-            buffer->offset += 32;
+            print_binary(buffer->ptr + buffer->offset, txDetails->memo.data, HASH_SIZE);
+            buffer->offset += HASH_SIZE;
             return true;
         default:
             return false;  // unknown memo type
