@@ -80,7 +80,7 @@ void encode_hash_x_key(const uint8_t *in, char *out);
 void print_public_key(const uint8_t *in, char *out, uint8_t numCharsL, uint8_t numCharsR);
 
 /** output first numCharsL of input + last numCharsR of input separated by ".." */
-void print_summary(char *in, char *out, uint8_t numCharsL, uint8_t numCharsR);
+void print_summary(const char *in, char *out, uint8_t numCharsL, uint8_t numCharsR);
 
 /** raw byte buffer to hexadecimal string representation.
  * len is length of input, provided output must be twice that size */

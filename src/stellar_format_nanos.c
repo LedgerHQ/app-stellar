@@ -29,7 +29,7 @@
 
 char opCaption[20];
 char detailCaption[20];
-char detailValue[89];
+char detailValue[DETAIL_VALUE_MAX_SIZE];
 
 format_function_t formatter_stack[MAX_FORMATTERS_PER_OPERATION];
 int8_t formatter_index;
@@ -77,7 +77,9 @@ void format_time_bounds(tx_context_t *txCtx) {
 
 void format_network(tx_context_t *txCtx) {
     strcpy(detailCaption, "Network");
-    strcpy(detailValue, ((char *) PIC(NETWORK_NAMES[txCtx->txDetails.network])));
+    strlcpy(detailValue,
+            (char *) PIC(NETWORK_NAMES[txCtx->txDetails.network]),
+            DETAIL_VALUE_MAX_SIZE);
     push_to_formatter_stack(&format_time_bounds);
 }
 

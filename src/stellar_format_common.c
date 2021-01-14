@@ -2,6 +2,10 @@
 #include "stellar_vars.h"
 #include "stellar_api.h"
 
+#ifdef TEST
+#include <bsd/string.h>
+#endif
+
 uint8_t current_data_index;
 
 format_function_t get_formatter(tx_context_t *txCtx, bool forward) {
@@ -33,6 +37,7 @@ format_function_t get_formatter(tx_context_t *txCtx, bool forward) {
         default:
             THROW(0x6123);
     }
+    return NULL;
 }
 
 void ui_approve_tx_next_screen(tx_context_t *txCtx) {
@@ -68,9 +73,9 @@ void set_state_data(bool forward) {
         formatter_stack[formatter_index](&ctx.req.tx);
 
         if (opCaption[0] != '\0') {
-            strncpy(detailCaption, opCaption, sizeof(detailCaption));
+            strlcpy(detailCaption, opCaption, sizeof(detailCaption));
             detailValue[0] = ' ';
-            PRINTF("caption: %s %u\n", detailCaption);
+            PRINTF("caption: %s\n", detailCaption);
         } else if (detailCaption[0] != '\0' && detailValue[0] != '\0') {
             PRINTF("caption: %s\n", detailCaption);
             PRINTF("details: %s\n", detailValue);
