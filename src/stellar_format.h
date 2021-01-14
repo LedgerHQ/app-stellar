@@ -26,7 +26,7 @@
 typedef void (*format_function_t)(tx_context_t *txCtx);
 
 /* 15 formatters in a row ought to be enough for everybody*/
-#define MAX_FORMATTERS_PER_OPERATION 15
+#define MAX_FORMATTERS_PER_OPERATION 16
 
 /* the current formatter */
 extern format_function_t formatter;
