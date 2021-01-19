@@ -68,9 +68,9 @@ static bool buffer_read64(buffer_t *buffer, uint64_t *n) {
     }
 
     const uint8_t *ptr = buffer->ptr + buffer->offset;
-    uint64_t i1 = ptr[3] + (ptr[2] << 8u) + (ptr[1] << 16u) + (ptr[0] << 24u);
+    uint32_t i1 = ptr[3] + (ptr[2] << 8u) + (ptr[1] << 16u) + (ptr[0] << 24u);
     uint32_t i2 = ptr[7] + (ptr[6] << 8u) + (ptr[5] << 16u) + (ptr[4] << 24u);
-    *n = i2 | (i1 << 32u);
+    *n = i2 | ((uint64_t) i1 << 32u);
     buffer->offset += 8;
     return true;
 }
@@ -130,17 +130,17 @@ bool parse_account_id(buffer_t *buffer, const uint8_t **account_id) {
 }
 
 static bool parse_network(buffer_t *buffer, tx_details_t *txDetails) {
-    if (!buffer_can_read(buffer, 32)) {
+    if (!buffer_can_read(buffer, HASH_SIZE)) {
         return false;
     }
-    if (memcmp(buffer->ptr, NETWORK_ID_PUBLIC_HASH, 32) == 0) {
+    if (memcmp(buffer->ptr, NETWORK_ID_PUBLIC_HASH, HASH_SIZE) == 0) {
         network_id = txDetails->network = NETWORK_TYPE_PUBLIC;
-    } else if (memcmp(buffer->ptr, NETWORK_ID_TEST_HASH, 32) == 0) {
+    } else if (memcmp(buffer->ptr, NETWORK_ID_TEST_HASH, HASH_SIZE) == 0) {
         network_id = txDetails->network = NETWORK_TYPE_TEST;
     } else {
         network_id = txDetails->network = NETWORK_TYPE_UNKNOWN;
     }
-    buffer_advance(buffer, 32);
+    buffer_advance(buffer, HASH_SIZE);
     return true;
 }
 
@@ -219,11 +219,11 @@ static bool parse_memo(buffer_t *buffer, tx_details_t *txDetails) {
         }
         case MEMO_TYPE_HASH:
         case MEMO_TYPE_RETURN:
-            if (buffer->size - buffer->offset < 32) {
+            if (buffer->size - buffer->offset < HASH_SIZE) {
                 return false;
             }
-            print_binary(buffer->ptr + buffer->offset, txDetails->memo.data, 32);
-            buffer->offset += 32;
+            print_binary(buffer->ptr + buffer->offset, txDetails->memo.data, HASH_SIZE);
+            buffer->offset += HASH_SIZE;
             return true;
         default:
             return false;  // unknown memo type

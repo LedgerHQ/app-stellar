@@ -58,6 +58,8 @@
 /* max amount is max int64 scaled down: "922337203685.4775807" */
 #define AMOUNT_MAX_SIZE 21
 
+#define HASH_SIZE 32
+
 // ------------------------------------------------------------------------- //
 //                       TRANSACTION PARSING CONSTANTS                       //
 // ------------------------------------------------------------------------- //
@@ -130,6 +132,8 @@ static const char *NETWORK_NAMES[3] = {"Public", "Test", "Unknown"};
 
 #ifdef TEST
 #include <stdio.h>
+#include <string.h>
+
 #define THROW(code)                \
     do {                           \
         printf("error: %d", code); \
@@ -264,7 +268,8 @@ typedef struct {
 
 typedef struct {
     uint8_t type;
-    char data[65];
+    // Hash in hexa, preceeded by "0x"
+    char data[2 * HASH_SIZE + 2 + 1];
 } memo_t;
 
 typedef struct {
@@ -294,7 +299,7 @@ typedef struct {
     uint32_t bip32[MAX_BIP32_LEN];
     uint8_t raw[MAX_RAW_TX];
     uint32_t rawLength;
-    uint8_t hash[32];
+    uint8_t hash[HASH_SIZE];
     uint16_t offset;
     operation_details_t opDetails;
     tx_details_t txDetails;

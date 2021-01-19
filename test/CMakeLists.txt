@@ -14,7 +14,7 @@ add_executable(test_printers
         test_utils.c
         ../src/stellar_utils.c)
 
-target_link_libraries(test_printers PUBLIC cmocka)
+target_link_libraries(test_printers PUBLIC cmocka bsd)
 
 add_executable(test_parser
         test_parser.c
@@ -24,7 +24,7 @@ add_executable(test_parser
         ../src/stellar_parser.c
         ../src/stellar_utils.c)
 
-target_link_libraries(test_parser PUBLIC cmocka)
+target_link_libraries(test_parser PUBLIC cmocka bsd)
 
 add_test(test_printers test_printers)
 add_test(test_parser test_parser)

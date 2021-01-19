@@ -158,7 +158,7 @@ void encode_hash_x_key(const uint8_t *in, char *out) {
     encode_key(in, out, 23 << 3);
 }
 
-void print_summary(char *in, char *out, uint8_t numCharsL, uint8_t numCharsR) {
+void print_summary(const char *in, char *out, uint8_t numCharsL, uint8_t numCharsR) {
     uint8_t outLength = numCharsL + numCharsR + 2;
     uint16_t inLength = strlen(in);
     if (inLength > outLength) {
