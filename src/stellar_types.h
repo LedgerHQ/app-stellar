@@ -50,7 +50,7 @@
 
 /* Max transaction size */
 #ifdef TARGET_NANOX
-#define MAX_RAW_TX 3000
+#define MAX_RAW_TX 1120
 #else  // Nano S has less ram available
 #define MAX_RAW_TX 1120
 #endif
