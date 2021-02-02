@@ -34,22 +34,6 @@ static enum app_state_t app_get_state() {
     return ctx.state;
 }
 
-bool parse_bip32_path(uint8_t *path,
-                      size_t path_length,
-                      uint32_t *path_parsed,
-                      size_t path_parsed_length) {
-    if ((path_length < 0x01) || (path_length > path_parsed_length)) {
-        return false;
-    }
-
-    for (size_t i = 0; i < path_length; i++) {
-        path_parsed[i] = (path[0] << 24u) | (path[1] << 16u) | (path[2] << 8u) | (path[3]);
-        path += 4;
-    }
-
-    return true;
-}
-
 int derive_private_key(cx_ecfp_private_key_t *privateKey, uint32_t *bip32, uint8_t bip32Len) {
     int error = 0;
     uint8_t privateKeyData[32];

@@ -32,6 +32,22 @@ static const char base64Alphabet[] =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 static int base64ModTable[] = {0, 2, 1};
 
+bool parse_bip32_path(uint8_t *path,
+                      size_t path_length,
+                      uint32_t *path_parsed,
+                      size_t path_parsed_length) {
+    if ((path_length < 0x01) || (path_length > path_parsed_length)) {
+        return false;
+    }
+
+    for (size_t i = 0; i < path_length; i++) {
+        path_parsed[i] = (path[0] << 24u) | (path[1] << 16u) | (path[2] << 8u) | (path[3]);
+        path += 4;
+    }
+
+    return true;
+}
+
 unsigned short crc16(char *ptr, int count) {
     int crc;
     char i;

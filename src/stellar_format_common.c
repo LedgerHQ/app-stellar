@@ -2,9 +2,7 @@
 #include "stellar_vars.h"
 #include "stellar_api.h"
 
-#ifdef TEST
 #include <bsd/string.h>
-#endif
 
 uint8_t current_data_index;
 

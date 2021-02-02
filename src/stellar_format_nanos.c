@@ -27,6 +27,8 @@
 #include "string.h"
 #include "stellar_ux.h"
 
+#include <bsd/string.h>
+
 char opCaption[20];
 char detailCaption[20];
 char detailValue[DETAIL_VALUE_MAX_SIZE];

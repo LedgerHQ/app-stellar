@@ -10,6 +10,12 @@ A companion [Javascript library](https://github.com/LedgerHQ/ledgerjs) is availa
 
 To build and install the app on your Nano S or X you must set up the Ledger Nano S or X build environments. Please follow the Getting Started instructions at the [Ledger Nano S github repository](https://github.com/LedgerHQ/ledger-nano-s).
 
+Additionaly, install this dependancy:
+
+```shell script
+sudo apt install libbsd-dev
+```
+
 Alternatively, you can set up the Vagrant Virtualbox Ledger environment maintained [here](https://github.com/fix/ledger-vagrant). This sets up an Ubuntu virtual machine with the Ledger build environment already set up.
 
 The command to compile and load the app onto the device is:
@@ -31,7 +37,7 @@ The `./test` directory contains files for testing the xdr transaction parser and
 They require the [cmocka](https://cmocka.org/) unit testing framework, [CMake](https://cmake.org/) and [libbsd](https://libbsd.freedesktop.org/wiki/) to be installed:
 
 ```shell script
-sudo apt install libcmocka-dev cmake libbsd-dev
+sudo apt install libcmocka-dev cmake
 ```
 
 To build and execute the tests, run the following commands:
