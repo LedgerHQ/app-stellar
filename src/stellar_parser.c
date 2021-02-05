@@ -206,8 +206,7 @@ static bool parse_memo(buffer_t *buffer, tx_details_t *txDetails) {
             if (!buffer_read64(buffer, &memo_id)) {
                 return false;
             }
-            print_uint(memo_id, txDetails->memo.data);
-            return true;
+            return print_uint(memo_id, txDetails->memo.data, sizeof(txDetails->memo.data)) == 0;
         case MEMO_TYPE_TEXT: {
             return parse_string(buffer, txDetails->memo.data, MEMO_TEXT_MAX_SIZE);
         }
@@ -233,7 +232,7 @@ static bool parse_asset(buffer_t *buffer, asset_t *asset) {
     asset->type = assetType;
     switch (asset->type) {
         case ASSET_TYPE_NATIVE: {
-            print_native_asset_code(network_id, asset->code);
+            print_native_asset_code(network_id, asset->code, sizeof(asset->code));
             return true;
         }
         case ASSET_TYPE_CREDIT_ALPHANUM4: {

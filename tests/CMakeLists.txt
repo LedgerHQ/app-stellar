@@ -3,7 +3,7 @@ project(test_parser C)
 
 include(CTest)
 
-set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD 99)
 
 # required for fuzzing
 set(CMAKE_C_COMPILER /usr/bin/clang)
@@ -12,7 +12,6 @@ enable_testing()
 
 include_directories(include/ ../src)
 add_compile_definitions(TEST)
-add_compile_definitions(TARGET_NANOS)
 
 add_library(stellar
 ../src/stellar_format_common.c
@@ -50,9 +49,9 @@ add_executable(test_tx
   include/os.h
 )
 
-target_link_libraries(test_printers PRIVATE cmocka crypto ssl stellar)
+target_link_libraries(test_printers PRIVATE cmocka crypto ssl bsd stellar)
 target_link_libraries(test_tx PRIVATE cmocka crypto ssl bsd stellar)
-target_link_libraries(test_swap PRIVATE cmocka crypto ssl stellar)
+target_link_libraries(test_swap PRIVATE cmocka crypto ssl bsd stellar)
 
 add_test(test_printers test_printers)
 add_test(test_tx test_tx)

@@ -142,7 +142,7 @@ void handle_get_public_key(uint8_t p1,
     dataBuffer += 1 + bip32Len * 4;
     dataLength -= 1 + bip32Len * 4;
 
-    uint16_t msgLength;
+    uint16_t msgLength = 0;
     uint8_t msg[32];
     if (ctx.req.pk.returnSignature) {
         uint8_t i;
