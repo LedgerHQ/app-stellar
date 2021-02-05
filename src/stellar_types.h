@@ -147,9 +147,9 @@ static const char *NETWORK_NAMES[3] = {"Public", "Test", "Unknown"};
 //#define TARGET_NANOS 1
 #define MEMCLEAR(dest) memset(&dest, 0, sizeof(dest));
 #else
-#define MEMCLEAR(dest)                     \
-    do {                                   \
-        os_memset(&dest, 0, sizeof(dest)); \
+#define MEMCLEAR(dest)                       \
+    do {                                     \
+        explicit_bzero(&dest, sizeof(dest)); \
     } while (0)
 #include "bolos_target.h"
 #endif  // TEST

@@ -5,11 +5,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define SIGN_TRANSACTION 2
-
-#define CHECK_ADDRESS 3
-
+#define SIGN_TRANSACTION     2
+#define CHECK_ADDRESS        3
 #define GET_PRINTABLE_AMOUNT 4
+
+void stellar_main(void);
 
 // structure that should be send to specific coin application to get address
 typedef struct check_address_parameters_s {

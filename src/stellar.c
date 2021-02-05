@@ -108,10 +108,10 @@ void handle_get_app_configuration(volatile unsigned int *tx) {
 }
 
 static uint32_t set_result_get_public_key(void) {
-    os_memmove(G_io_apdu_buffer, ctx.req.pk.publicKey, 32);
+    memcpy(G_io_apdu_buffer, ctx.req.pk.publicKey, 32);
     uint32_t tx = 32;
     if (ctx.req.pk.returnSignature) {
-        os_memmove(G_io_apdu_buffer + tx, ctx.req.pk.signature, 64);
+        memcpy(G_io_apdu_buffer + tx, ctx.req.pk.signature, 64);
         tx += 64;
     }
     return tx;
@@ -158,7 +158,7 @@ void handle_get_public_key(uint8_t p1,
                 THROW(0x6a80);
             }
         }
-        os_memmove(msg, dataBuffer, msgLength);
+        memcpy(msg, dataBuffer, msgLength);
     }
 
     cx_ecfp_private_key_t privateKey;
@@ -240,7 +240,7 @@ void handle_sign_tx(uint8_t p1,
 
         // read raw tx data
         ctx.req.tx.rawLength = dataLength;
-        os_memmove(ctx.req.tx.raw, dataBuffer, dataLength);
+        memcpy(ctx.req.tx.raw, dataBuffer, dataLength);
     } else {
         if (app_get_state() != STATE_PARSE_TX) {
             THROW(0x6700);
@@ -252,7 +252,7 @@ void handle_sign_tx(uint8_t p1,
         if (ctx.req.tx.rawLength > MAX_RAW_TX) {
             THROW(0x6700);
         }
-        os_memmove(ctx.req.tx.raw + offset, dataBuffer, dataLength);
+        memcpy(ctx.req.tx.raw + offset, dataBuffer, dataLength);
     }
 
     if (p2 == P2_MORE) {
@@ -334,7 +334,7 @@ void handle_sign_tx_hash(uint8_t *dataBuffer, uint16_t dataLength, volatile unsi
     if (dataLength != 32) {
         THROW(0x6a80);
     }
-    os_memmove(ctx.req.tx.hash, dataBuffer, dataLength);
+    memcpy(ctx.req.tx.hash, dataBuffer, dataLength);
 
     ui_approve_tx_hash_init();
 

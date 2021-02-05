@@ -2,8 +2,6 @@
 #include "stellar_vars.h"
 #include "stellar_api.h"
 
-#include <bsd/string.h>
-
 uint8_t current_data_index;
 
 format_function_t get_formatter(tx_context_t *txCtx, bool forward) {

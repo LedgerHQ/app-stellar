@@ -145,7 +145,7 @@ static unsigned char last_ins = 0;
 void stellar_main(void) {
     // hash sig support is not persistent
 
-    os_memset(&ctx, 0, sizeof(ctx));
+    memset(&ctx, 0, sizeof(ctx));
 
     volatile unsigned int rx = 0;
     volatile unsigned int tx = 0;
@@ -233,6 +233,8 @@ void u2f_send_keep_alive() {
 }
 
 unsigned char io_event(unsigned char channel) {
+    (void) channel;
+
     // can't have more than one tag in the reply, not supported yet.
     switch (G_io_seproxyhal_spi_buffer[0]) {
         case SEPROXYHAL_TAG_FINGER_EVENT:

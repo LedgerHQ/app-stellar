@@ -1,3 +1,4 @@
+#include "os_io_seproxyhal.h"
 #include "swap_lib_calls.h"
 #include "ux.h"
 #include "stellar_vars.h"

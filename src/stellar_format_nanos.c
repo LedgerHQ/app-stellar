@@ -27,8 +27,6 @@
 #include "string.h"
 #include "stellar_ux.h"
 
-#include <bsd/string.h>
-
 char opCaption[20];
 char detailCaption[20];
 char detailValue[DETAIL_VALUE_MAX_SIZE];
@@ -151,6 +149,7 @@ void format_bump_sequence(tx_context_t *txCtx) {
 }
 
 void format_inflation(tx_context_t *txCtx) {
+    (void) txCtx;
     strcpy(opCaption, "Run Inflation");
     push_to_formatter_stack(&format_operation_source);
 }
@@ -545,6 +544,7 @@ void format_confirm_operation(tx_context_t *txCtx) {
 }
 
 void format_confirm_transaction(tx_context_t *txCtx) {
+    (void) txCtx;
     push_to_formatter_stack(&format_confirm_operation);
 }
 
@@ -555,6 +555,7 @@ void format_confirm_hash_detail(tx_context_t *txCtx) {
 }
 
 void format_confirm_hash_warning(tx_context_t *txCtx) {
+    (void) txCtx;
     strcpy(detailCaption, "WARNING");
     strcpy(detailValue, "No details available");
     push_to_formatter_stack(&format_confirm_hash_detail);
