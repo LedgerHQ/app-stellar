@@ -1,3 +1,5 @@
+#include "bolos_target.h"
+
 #include "stellar_format.h"
 #include "stellar_vars.h"
 #include "stellar_api.h"

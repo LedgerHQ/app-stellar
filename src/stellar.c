@@ -259,12 +259,7 @@ void handle_sign_tx(uint8_t p1,
         THROW(0x9000);
     }
 
-    // hash transaction
-#if CX_APILEVEL >= 8
-    cx_hash_sha256(ctx.req.tx.raw, ctx.req.tx.rawLength, ctx.req.tx.hash, 32);
-#else
-    cx_hash_sha256(ctx.req.tx.raw, ctx.req.tx.rawLength, ctx.req.tx.hash);
-#endif
+    cx_hash_sha256(ctx.req.tx.raw, ctx.req.tx.rawLength, ctx.req.tx.hash, HASH_SIZE);
 
     if (!parse_tx_xdr(ctx.req.tx.raw, ctx.req.tx.rawLength, &ctx.req.tx)) {
         THROW(0x6800);
@@ -282,7 +277,7 @@ void handle_sign_tx(uint8_t p1,
                                           CX_LAST,
                                           CX_SHA512,
                                           ctx.req.tx.hash,
-                                          32,
+                                          HASH_SIZE,
                                           NULL,
                                           0,
                                           G_io_apdu_buffer,

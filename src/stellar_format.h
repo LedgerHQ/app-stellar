@@ -39,7 +39,6 @@ extern char opCaption[OPERATION_CAPTION_MAX_SIZE];
 extern char detailCaption[DETAIL_CAPTION_MAX_SIZE];
 extern char detailValue[DETAIL_VALUE_MAX_SIZE];
 
-void format_confirm_transaction(tx_context_t *txCtx);
 void format_confirm_operation(tx_context_t *txCtx);
 void format_confirm_transaction_details(tx_context_t *txCtx);
 void set_state_data(bool forward);

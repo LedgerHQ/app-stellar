@@ -99,7 +99,6 @@ static void handle_apdu(uint8_t *buffer,
                     break;
                 default:
                     THROW(0x6D00);
-                    break;
             }
         }
         CATCH(EXCEPTION_IO_RESET) {
@@ -269,16 +268,7 @@ unsigned char io_event(unsigned char channel) {
                 }
             }
 
-            UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer, {
-#if defined(TARGET_NANOS) && !defined(HAVE_UX_FLOW)  // S legacy only
-                if (UX_ALLOWED) {
-                    if (ctx.reqType == CONFIRM_TRANSACTION) {
-                        ui_approve_tx_next_screen(&ctx.req.tx);
-                    }
-                    UX_REDISPLAY();
-                }
-#endif
-            });
+            UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer, {});
             break;
     }
 

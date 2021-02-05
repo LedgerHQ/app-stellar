@@ -26,8 +26,8 @@
 #include "stellar_api.h"
 #include "string.h"
 
-char opCaption[20];
-char detailCaption[20];
+char opCaption[OPERATION_CAPTION_MAX_SIZE];
+char detailCaption[DETAIL_CAPTION_MAX_SIZE];
 char detailValue[DETAIL_VALUE_MAX_SIZE];
 
 format_function_t formatter_stack[MAX_FORMATTERS_PER_OPERATION];
@@ -38,14 +38,6 @@ void push_to_formatter_stack(format_function_t formatter) {
         THROW(0x6124);
     }
     formatter_stack[formatter_index + 1] = formatter;
-}
-
-void format_sequence_number(tx_context_t *txCtx) {
-    strcpy(detailCaption, "Sequence Number");
-    char sequenceNumber[22];
-    print_uint(txCtx->txDetails.sequenceNumber, sequenceNumber, sizeof(sequenceNumber));
-    print_summary(sequenceNumber, detailValue, 6, 6);
-    push_to_formatter_stack(NULL);
 }
 
 void format_transaction_source(tx_context_t *txCtx) {
@@ -77,7 +69,7 @@ void format_time_bounds(tx_context_t *txCtx) {
 void format_network(tx_context_t *txCtx) {
     strcpy(detailCaption, "Network");
     strlcpy(detailValue,
-            ((char *) PIC(NETWORK_NAMES[txCtx->txDetails.network])),
+            (char *) PIC(NETWORK_NAMES[txCtx->txDetails.network]),
             DETAIL_VALUE_MAX_SIZE);
     push_to_formatter_stack(&format_time_bounds);
 }
@@ -149,7 +141,6 @@ void format_bump_sequence(tx_context_t *txCtx) {
 
 void format_inflation(tx_context_t *txCtx) {
     (void) txCtx;
-
     strcpy(opCaption, "Run Inflation");
     push_to_formatter_stack(&format_operation_source);
 }
@@ -540,11 +531,6 @@ void format_confirm_operation(tx_context_t *txCtx) {
     } else {
         ((format_function_t) PIC(formatters[txCtx->opDetails.type]))(txCtx);
     }
-}
-
-void format_confirm_transaction(tx_context_t *txCtx) {
-    (void) txCtx;
-    push_to_formatter_stack(&format_confirm_operation);
 }
 
 void format_confirm_hash_detail(tx_context_t *txCtx) {

@@ -39,14 +39,6 @@ void push_to_formatter_stack(format_function_t formatter) {
     formatter_stack[formatter_index + 1] = formatter;
 }
 
-void format_sequence_number(tx_context_t *txCtx) {
-    strcpy(detailCaption, "Sequence Number");
-    char sequenceNumber[22];
-    print_uint(txCtx->txDetails.sequenceNumber, sequenceNumber, sizeof(sequenceNumber));
-    print_summary(sequenceNumber, detailValue, 6, 6);
-    push_to_formatter_stack(NULL);
-}
-
 void format_transaction_source(tx_context_t *txCtx) {
     strcpy(detailCaption, "Tx Source");
     print_public_key(txCtx->txDetails.source, detailValue, 0, 0);
@@ -567,11 +559,6 @@ void format_confirm_operation(tx_context_t *txCtx) {
     } else {
         ((format_function_t) PIC(formatters[txCtx->opDetails.type]))(txCtx);
     }
-}
-
-void format_confirm_transaction(tx_context_t *txCtx) {
-    (void) txCtx;
-    push_to_formatter_stack(&format_confirm_operation);
 }
 
 void format_confirm_hash_detail(tx_context_t *txCtx) {

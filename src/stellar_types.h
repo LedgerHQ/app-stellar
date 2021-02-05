@@ -323,7 +323,7 @@ typedef struct {
         tx_context_t tx;
     } req;
     enum request_type_t reqType;
-    uint16_t u2fTimer;
+    int16_t u2fTimer;
 } stellar_context_t;
 
 typedef struct {

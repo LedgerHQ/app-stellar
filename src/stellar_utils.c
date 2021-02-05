@@ -48,11 +48,10 @@ bool parse_bip32_path(uint8_t *path,
 
 unsigned short crc16(char *ptr, int count) {
     int crc;
-    char i;
     crc = 0;
     while (--count >= 0) {
         crc = crc ^ (int) *ptr++ << 8;
-        i = 8;
+        int i = 8;
         do {
             if (crc & 0x8000)
                 crc = crc << 1 ^ 0x1021;
@@ -69,7 +68,6 @@ unsigned short crc16(char *ptr, int count) {
  */
 int base32_encode(const uint8_t *data, int length, char *result, int bufSize) {
     int count = 0;
-    int quantum = 8;
 
     if (length < 0 || length > (1 << 28)) {
         return -1;
@@ -79,6 +77,7 @@ int base32_encode(const uint8_t *data, int length, char *result, int bufSize) {
         int buffer = data[0];
         int next = 1;
         int bitsLeft = 8;
+        int quantum = 8;
 
         while (count < bufSize && (bitsLeft > 0 || next < length)) {
             if (bitsLeft < 5) {
@@ -93,9 +92,9 @@ int base32_encode(const uint8_t *data, int length, char *result, int bufSize) {
                 }
             }
 
-            int index = 0x1F & (buffer >> (bitsLeft - 5));
+            int idx = 0x1F & (buffer >> (bitsLeft - 5));
             bitsLeft -= 5;
-            result[count++] = base32Alphabet[index];
+            result[count++] = base32Alphabet[idx];
 
             // Track the characters which make up a single quantum of 8 characters
             quantum--;
