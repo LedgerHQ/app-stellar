@@ -20,7 +20,6 @@
 
 #ifndef TEST
 #include "os.h"
-#include "cx.h"
 #include "ux.h"
 
 extern ux_state_t ux;

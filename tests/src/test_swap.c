@@ -31,9 +31,8 @@ void test_check_address(void **state) {
     uint32_t bip32_path_parsed[MAX_BIP32_LEN];
     uint8_t *bip32_path_ptr = params.address_parameters;
     uint8_t bip32_path_length = *(bip32_path_ptr++);
-    assert_int_equal(
-        parse_bip32_path(bip32_path_ptr, bip32_path_length, bip32_path_parsed, MAX_BIP32_LEN),
-        1);
+    assert_true(
+        parse_bip32_path(bip32_path_ptr, bip32_path_length, bip32_path_parsed, MAX_BIP32_LEN));
 
     char address[57];
     encode_public_key(public_key.W, address);
@@ -50,9 +49,11 @@ void test_get_printable_amount(void **state) {
     };
 
     uint64_t amount;
-    assert_int_equal(swap_str_to_u64(params.amount, params.amount_length, &amount), 1);
-    assert_int_equal(amount, 0x4d2);
-    print_amount(amount, "XLM", params.printable_amount, sizeof(params.printable_amount));
+    assert_true(swap_str_to_u64(params.amount, params.amount_length, &amount));
+    assert_int_equal(amount, 1234);
+    assert_int_equal(
+        print_amount(amount, "XLM", params.printable_amount, sizeof(params.printable_amount)),
+        0);
     assert_string_equal(params.printable_amount, "0.0001234 XLM");
 }
 

@@ -8,7 +8,7 @@
 int handle_get_printable_amount(get_printable_amount_parameters_t* params) {
     uint64_t amount;
 
-    params->printable_amount[0] = '\x00';
+    params->printable_amount[0] = '\0';
 
     if (!swap_str_to_u64(params->amount, params->amount_length, &amount)) {
         PRINTF("Amount is too big");

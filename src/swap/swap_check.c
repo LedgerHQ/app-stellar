@@ -1,13 +1,10 @@
-#include "swap_lib_calls.h"
 #include "stellar_vars.h"
 #include "stellar_ux.h"
 #include "stellar_api.h"
 #include "stellar_format.h"
 
-#include "os_io_seproxyhal.h"
-
 void swap_check() {
-    uint8_t *tmp_buf = (uint8_t *) detailValue;
+    char *tmp_buf = detailValue;
 
     tx_context_t *txCtx = &ctx.req.tx;
 
@@ -28,8 +25,8 @@ void swap_check() {
     }
 
     // destination addr
-    print_public_key(txCtx->opDetails.op.payment.destination, (char *) tmp_buf, 0, 0);
-    if (strcmp((char *) tmp_buf, swap_values.destination) != 0) {
+    print_public_key(txCtx->opDetails.op.payment.destination, tmp_buf, 0, 0);
+    if (strcmp(tmp_buf, swap_values.destination) != 0) {
         io_seproxyhal_touch_tx_cancel(NULL);
     }
 
