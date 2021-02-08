@@ -14,11 +14,10 @@ include_directories(include/ ../src)
 add_compile_definitions(TEST)
 
 add_library(stellar
-../src/stellar_format_common.c
+../src/stellar_format.c
 ../src/stellar_utils.c
 ../src/stellar_nvram.c
 ../src/stellar_parser.c
-../src/stellar_format_nanos.c
 )
 
 add_executable(test_printers
