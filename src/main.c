@@ -366,8 +366,6 @@ static void library_main_helper(struct libargs_s *args) {
             }
             break;
         case GET_PRINTABLE_AMOUNT:
-            // ensure result is zero if an exception is thrown (compatibility breaking, disabled
-            // until LL is ready)
             handle_get_printable_amount(args->get_printable_amount);
             break;
         default:

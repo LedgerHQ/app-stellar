@@ -15,17 +15,8 @@ int handle_get_printable_amount(get_printable_amount_parameters_t* params) {
         return 0;
     }
 
-    BEGIN_TRY {
-        TRY {
-            print_amount(amount, "XLM", params->printable_amount, sizeof(params->printable_amount));
-        }
-        CATCH_ALL {
-            return 0;
-        }
-        FINALLY {
-        }
+    if (print_amount(amount, "XLM", params->printable_amount, sizeof(params->printable_amount))) {
+        return 0;
     }
-    END_TRY;
-
     return 1;
 }
