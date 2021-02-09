@@ -356,6 +356,10 @@ void format_change_trust(tx_context_t *txCtx) {
         strcpy(detailCaption, "Remove Trust");
         push_to_formatter_stack(&format_operation_source);
     }
+    uint8_t asset_type = txCtx->opDetails.op.changeTrust.asset.type;
+    if (asset_type != ASSET_TYPE_CREDIT_ALPHANUM4 && asset_type != ASSET_TYPE_CREDIT_ALPHANUM12) {
+        return;
+    }
     print_asset_t(&txCtx->opDetails.op.changeTrust.asset, detailValue, DETAIL_VALUE_MAX_SIZE);
 }
 
