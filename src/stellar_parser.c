@@ -568,7 +568,7 @@ static bool parse_op_xdr(buffer_t *buffer, operation_details_t *opDetails) {
         case XDR_OPERATION_TYPE_PATH_PAYMENT: {
             return parse_path_payment(buffer, &opDetails->op.pathPayment);
         }
-        case XDR_OPERATION_TYPE_CREATE_PASSIVE_OFFER: {
+        case XDR_OPERATION_TYPE_CREATE_PASSIVE_SELL_OFFER: {
             return parse_passive_offer(buffer, &opDetails->op.manageOffer);
         }
         case XDR_OPERATION_TYPE_MANAGE_SELL_OFFER: {
