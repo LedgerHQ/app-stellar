@@ -13,45 +13,35 @@ stellar_context_t ctx;
 tx_context_t tx_ctx;
 
 static const char *testcases[] = {
-    "../testcases/txMultiOp.hex",        "../testcases/txSimple.hex",
-    "../testcases/txMemoId.hex",         "../testcases/txMemoText.hex",
-    "../testcases/txMemoHash.hex",       "../testcases/txCustomAsset4.hex",
-    "../testcases/txCustomAsset12.hex",  "../testcases/txTimeBounds.hex",
-    "../testcases/txOpSource.hex",       "../testcases/txCreateAccount.hex",
-    "../testcases/txAccountMerge.hex",   "../testcases/txPathPayment.hex",
-    "../testcases/txSetData.hex",        "../testcases/txRemoveData.hex",
-    "../testcases/txChangeTrust.hex",    "../testcases/txRemoveTrust.hex",
-    "../testcases/txAllowTrust.hex",     "../testcases/txRevokeTrust.hex",
-    "../testcases/txCreateOffer.hex",    "../testcases/txCreateOffer2.hex",
-    "../testcases/txChangeOffer.hex",    "../testcases/txRemoveOffer.hex",
-    "../testcases/txPassiveOffer.hex",   "../testcases/txSetAllOptions.hex",
-    "../testcases/txSetSomeOptions.hex", "../testcases/txInflation.hex",
-    "../testcases/txBumpSequence.hex",   NULL,
+    "../testcases/txMultiOp.raw",        "../testcases/txSimple.raw",
+    "../testcases/txMemoId.raw",         "../testcases/txMemoText.raw",
+    "../testcases/txMemoHash.raw",       "../testcases/txCustomAsset4.raw",
+    "../testcases/txCustomAsset12.raw",  "../testcases/txTimeBounds.raw",
+    "../testcases/txOpSource.raw",       "../testcases/txCreateAccount.raw",
+    "../testcases/txAccountMerge.raw",   "../testcases/txPathPayment.raw",
+    "../testcases/txSetData.raw",        "../testcases/txRemoveData.raw",
+    "../testcases/txChangeTrust.raw",    "../testcases/txRemoveTrust.raw",
+    "../testcases/txAllowTrust.raw",     "../testcases/txRevokeTrust.raw",
+    "../testcases/txCreateOffer.raw",    "../testcases/txCreateOffer2.raw",
+    "../testcases/txChangeOffer.raw",    "../testcases/txRemoveOffer.raw",
+    "../testcases/txPassiveOffer.raw",   "../testcases/txSetAllOptions.raw",
+    "../testcases/txSetSomeOptions.raw", "../testcases/txInflation.raw",
+    "../testcases/txBumpSequence.raw",   NULL,
 };
 
 static void load_transaction_data(const char *filename, tx_context_t *txCtx) {
-    FILE *f = fopen(filename, "r");
+    FILE *f = fopen(filename, "rb");
     assert_non_null(f);
 
-    char line[2400];
-    char *pos = line;
-    assert_non_null(fgets(line, sizeof(line), f));
-
+    txCtx->rawLength = fread(txCtx->raw, 1, MAX_RAW_TX, f);
+    assert_int_not_equal(txCtx->rawLength, 0);
     fclose(f);
-
-    size_t i;
-    txCtx->rawLength = strlen(line) / 2;
-
-    for (size_t count = 0; count < txCtx->rawLength; count++) {
-        sscanf(pos, "%2hhx", &txCtx->raw[count]);
-        pos += 2;
-    }
 }
 
 static void get_result_filename(const char *filename, char *path, size_t size) {
     strncpy(path, filename, size);
 
-    char *ext = strstr(path, ".hex");
+    char *ext = strstr(path, ".raw");
     assert_non_null(ext);
     memcpy(ext, ".txt", 4);
 }
@@ -108,8 +98,6 @@ static void test_tx(const char *filename) {
     ctx.state = STATE_APPROVE_TX;
 
     check_transaction_results(filename);
-
-    // free(data);
 }
 
 void test_transactions(void **state) {

@@ -144,9 +144,14 @@ static const char *NETWORK_NAMES[3] = {"Public", "Test", "Unknown"};
     do {                           \
         printf("error: %d", code); \
     } while (0)
+
+#ifdef FUZZ
+#define PRINTF(...)
+#else
 #define PRINTF(strbuf, ...) fprintf(stderr, strbuf, __VA_ARGS__)
-#define PIC(code)           code
-//#define TARGET_NANOS 1
+#endif  // FUZZ
+#define PIC(code) code
+
 #define MEMCLEAR(dest) memset(&dest, 0, sizeof(dest));
 #else
 #define MEMCLEAR(dest)                       \

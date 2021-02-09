@@ -626,10 +626,6 @@ void set_state_data(bool forward) {
         if (opCaption[0] != '\0') {
             strlcpy(detailCaption, opCaption, sizeof(detailCaption));
             detailValue[0] = ' ';
-            PRINTF("caption: %s\n", detailCaption);
-        } else if (detailCaption[0] != '\0' && detailValue[0] != '\0') {
-            PRINTF("caption: %s\n", detailCaption);
-            PRINTF("details: %s\n", detailValue);
         }
     }
 }
