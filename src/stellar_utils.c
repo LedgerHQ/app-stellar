@@ -201,13 +201,13 @@ void print_binary_summary(const uint8_t *in, char *out, uint8_t len) {
     out[1] = 'x';
     if (2 + len * 2 > 18) {
         uint8_t i, j;
-        for (i = 0, j = 2; i < 4; i += 1, j += 2) {
+        for (i = 0, j = 2; i < 3; i += 1, j += 2) {
             out[j] = hexAlphabet[in[i] / 16];
             out[j + 1] = hexAlphabet[in[i] % 16];
         }
         out[j++] = '.';
         out[j++] = '.';
-        for (i = len - 4; i < len; i += 1, j += 2) {
+        for (i = len - 3; i < len; i += 1, j += 2) {
             out[j] = hexAlphabet[in[i] / 16];
             out[j + 1] = hexAlphabet[in[i] % 16];
         }

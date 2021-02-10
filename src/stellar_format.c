@@ -59,25 +59,26 @@ static void format_fee(tx_context_t *txCtx) {
 }
 
 static void format_memo(tx_context_t *txCtx) {
-    switch (txCtx->txDetails.memo.type) {
+    Memo *memo = &txCtx->txDetails.memo;
+    switch (memo->type) {
         case MEMO_ID: {
             strcpy(detailCaption, "Memo ID");
-            strlcpy(detailValue, txCtx->txDetails.memo.data, DETAIL_VALUE_MAX_SIZE);
+            print_uint(memo->id, detailValue, DETAIL_VALUE_MAX_SIZE);
             break;
         }
         case MEMO_TEXT: {
             strcpy(detailCaption, "Memo Text");
-            strlcpy(detailValue, txCtx->txDetails.memo.data, DETAIL_VALUE_MAX_SIZE);
+            strlcpy(detailValue, memo->text, MEMO_TEXT_MAX_SIZE + 1);
             break;
         }
         case MEMO_HASH: {
             strcpy(detailCaption, "Memo Hash");
-            print_summary(txCtx->txDetails.memo.data, detailValue, 8, 6);
+            print_binary_summary(memo->hash, detailValue, HASH_SIZE);
             break;
         }
         case MEMO_RETURN: {
             strcpy(detailCaption, "Memo Return");
-            print_summary(txCtx->txDetails.memo.data, detailValue, 8, 6);
+            print_binary_summary(memo->hash, detailValue, HASH_SIZE);
             break;
         }
         default: {

@@ -36,7 +36,7 @@ void swap_check() {
 
     // memo
     if (txCtx->txDetails.memo.type != MEMO_TEXT ||
-        strcmp(txCtx->txDetails.memo.data, swap_values.memo) != 0) {
+        strcmp(txCtx->txDetails.memo.text, swap_values.memo) != 0) {
         io_seproxyhal_touch_tx_cancel(NULL);
     }
 

@@ -147,26 +147,6 @@ static bool parse_time_bounds(buffer_t *buffer, TimeBounds *bounds) {
 }
 
 /* TODO: max_length does not include terminal null character */
-static bool parse_string(buffer_t *buffer, char *string, size_t max_length) {
-    uint32_t size;
-
-    if (!buffer_read32(buffer, &size)) {
-        return false;
-    }
-    if (size > max_length || !buffer_can_read(buffer, num_bytes(size))) {
-        return false;
-    }
-    if (!check_padding(buffer->ptr + buffer->offset, size,
-                       num_bytes(size))) {  // security check
-        return false;
-    }
-    memcpy(string, buffer->ptr + buffer->offset, size);
-    string[size] = '\0';
-    buffer_advance(buffer, num_bytes(size));
-    return true;
-}
-
-/* TODO: max_length does not include terminal null character */
 static bool parse_string_ptr(buffer_t *buffer,
                              const char **string,
                              size_t *out_len,
@@ -193,7 +173,6 @@ static bool parse_string_ptr(buffer_t *buffer,
 
 static bool parse_memo(buffer_t *buffer, tx_details_t *txDetails) {
     uint32_t type;
-    uint64_t memo_id;
 
     if (!buffer_read32(buffer, &type)) {
         return 0;
@@ -201,22 +180,17 @@ static bool parse_memo(buffer_t *buffer, tx_details_t *txDetails) {
     txDetails->memo.type = type;
     switch (txDetails->memo.type) {
         case MEMO_NONE:
-            strcpy(txDetails->memo.data, "[none]");
             return true;
         case MEMO_ID:
-            if (!buffer_read64(buffer, &memo_id)) {
-                return false;
-            }
-            return print_uint(memo_id, txDetails->memo.data, sizeof(txDetails->memo.data)) == 0;
-        case MEMO_TEXT: {
-            return parse_string(buffer, txDetails->memo.data, MEMO_TEXT_MAX_SIZE);
-        }
+            return buffer_read64(buffer, &txDetails->memo.id);
+        case MEMO_TEXT:
+            return parse_string_ptr(buffer, &txDetails->memo.text, NULL, MEMO_TEXT_MAX_SIZE);
         case MEMO_HASH:
         case MEMO_RETURN:
             if (buffer->size - buffer->offset < HASH_SIZE) {
                 return false;
             }
-            print_binary(buffer->ptr + buffer->offset, txDetails->memo.data, HASH_SIZE);
+            txDetails->memo.hash = buffer->ptr + buffer->offset;
             buffer->offset += HASH_SIZE;
             return true;
         default:

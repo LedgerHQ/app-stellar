@@ -315,8 +315,11 @@ typedef struct {
 
 typedef struct {
     MemoType type;
-    // Hash in hexa, preceeded by "0x"
-    char data[2 * HASH_SIZE + 2 + 1];
+    union {
+        uint64_t id;
+        const char *text;
+        const uint8_t *hash;
+    };
 } Memo;
 
 typedef struct {

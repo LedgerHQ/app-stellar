@@ -102,7 +102,7 @@ void test_print_binary(void **state) {
     char hex[16];
 
     print_binary_summary(binary, hex, 32);
-    assert_string_equal(hex, "0x00010203..1C1D1E1F");
+    assert_string_equal(hex, "0x000102..1D1E1F");
 }
 
 void test_base64_encode(void **state) {
