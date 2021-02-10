@@ -52,9 +52,8 @@ static void format_network(tx_context_t *txCtx) {
 
 static void format_fee(tx_context_t *txCtx) {
     strcpy(detailCaption, "Fee");
-    char nativeAssetCode[7];
-    print_native_asset_code(txCtx->network, nativeAssetCode, sizeof(nativeAssetCode));
-    print_amount(txCtx->txDetails.fee, nativeAssetCode, detailValue, DETAIL_VALUE_MAX_SIZE);
+    Asset asset = {.type = ASSET_TYPE_NATIVE};
+    print_amount(txCtx->txDetails.fee, &asset, txCtx->network, detailValue, DETAIL_VALUE_MAX_SIZE);
     push_to_formatter_stack(&format_network);
 }
 
@@ -338,6 +337,7 @@ static void format_change_trust_limit(tx_context_t *txCtx) {
     } else {
         print_amount(txCtx->opDetails.changeTrustOp.limit,
                      NULL,
+                     txCtx->network,
                      detailValue,
                      DETAIL_VALUE_MAX_SIZE);
     }
@@ -356,13 +356,17 @@ static void format_change_trust(tx_context_t *txCtx) {
     if (asset_type != ASSET_TYPE_CREDIT_ALPHANUM4 && asset_type != ASSET_TYPE_CREDIT_ALPHANUM12) {
         return;
     }
-    print_asset_t(&txCtx->opDetails.changeTrustOp.line, detailValue, DETAIL_VALUE_MAX_SIZE);
+    print_asset_t(&txCtx->opDetails.changeTrustOp.line,
+                  txCtx->network,
+                  detailValue,
+                  DETAIL_VALUE_MAX_SIZE);
 }
 
 static void format_manage_offer_sell(tx_context_t *txCtx) {
     strcpy(detailCaption, "Sell");
     print_amount(txCtx->opDetails.manageSellOfferOp.amount,
-                 txCtx->opDetails.manageSellOfferOp.selling.code,
+                 &txCtx->opDetails.manageSellOfferOp.selling,
+                 txCtx->network,
                  detailValue,
                  DETAIL_VALUE_MAX_SIZE);
     push_to_formatter_stack(&format_operation_source);
@@ -373,7 +377,8 @@ static void format_manage_offer_price(tx_context_t *txCtx) {
     uint64_t price = ((uint64_t) txCtx->opDetails.manageSellOfferOp.price.n * 10000000) /
                      txCtx->opDetails.manageSellOfferOp.price.d;
     print_amount(price,
-                 txCtx->opDetails.manageSellOfferOp.buying.code,
+                 &txCtx->opDetails.manageSellOfferOp.buying,
+                 txCtx->network,
                  detailValue,
                  DETAIL_VALUE_MAX_SIZE);
     push_to_formatter_stack(&format_manage_offer_sell);
@@ -385,6 +390,7 @@ static void format_manage_offer_buy(tx_context_t *txCtx) {
         print_native_asset_code(txCtx->network, detailValue, DETAIL_VALUE_MAX_SIZE);
     } else {
         print_asset_t(&txCtx->opDetails.manageSellOfferOp.buying,
+                      txCtx->network,
                       detailValue,
                       DETAIL_VALUE_MAX_SIZE);
     }
@@ -414,7 +420,7 @@ static void format_manage_buy_offer_buy(tx_context_t *txCtx) {
     ManageBuyOfferOp *op = &txCtx->opDetails.manageBuyOfferOp;
 
     strcpy(detailCaption, "Buy");
-    print_amount(op->buyAmount, op->buying.code, detailValue, DETAIL_VALUE_MAX_SIZE);
+    print_amount(op->buyAmount, &op->buying, txCtx->network, detailValue, DETAIL_VALUE_MAX_SIZE);
     push_to_formatter_stack(&format_operation_source);
 }
 
@@ -423,7 +429,7 @@ static void format_manage_buy_offer_price(tx_context_t *txCtx) {
 
     strcpy(detailCaption, "Price");
     uint64_t price = ((uint64_t) op->price.n * 10000000) / op->price.d;
-    print_amount(price, op->selling.code, detailValue, DETAIL_VALUE_MAX_SIZE);
+    print_amount(price, &op->selling, txCtx->network, detailValue, DETAIL_VALUE_MAX_SIZE);
     push_to_formatter_stack(&format_manage_buy_offer_buy);
 }
 
@@ -434,7 +440,7 @@ static void format_manage_buy_offer_sell(tx_context_t *txCtx) {
     if (op->selling.type == ASSET_TYPE_NATIVE) {
         print_native_asset_code(txCtx->network, detailValue, DETAIL_VALUE_MAX_SIZE);
     } else {
-        print_asset_t(&op->selling, detailValue, DETAIL_VALUE_MAX_SIZE);
+        print_asset_t(&op->selling, txCtx->network, detailValue, DETAIL_VALUE_MAX_SIZE);
     }
     push_to_formatter_stack(&format_manage_buy_offer_price);
 }
@@ -461,7 +467,8 @@ static void format_manage_buy_offer(tx_context_t *txCtx) {
 static void format_create_passive_sell_offer_sell(tx_context_t *txCtx) {
     strcpy(detailCaption, "Sell");
     print_amount(txCtx->opDetails.createPassiveSellOfferOp.amount,
-                 txCtx->opDetails.createPassiveSellOfferOp.selling.code,
+                 &txCtx->opDetails.createPassiveSellOfferOp.selling,
+                 txCtx->network,
                  detailValue,
                  DETAIL_VALUE_MAX_SIZE);
     push_to_formatter_stack(&format_operation_source);
@@ -472,7 +479,7 @@ static void format_create_passive_sell_offer_price(tx_context_t *txCtx) {
 
     CreatePassiveSellOfferOp *op = &txCtx->opDetails.createPassiveSellOfferOp;
     uint64_t price = ((uint64_t) op->price.n * 10000000) / op->price.d;
-    print_amount(price, op->buying.code, detailValue, DETAIL_VALUE_MAX_SIZE);
+    print_amount(price, &op->buying, txCtx->network, detailValue, DETAIL_VALUE_MAX_SIZE);
     push_to_formatter_stack(&format_create_passive_sell_offer_sell);
 }
 
@@ -482,6 +489,7 @@ static void format_create_passive_sell_offer_buy(tx_context_t *txCtx) {
         print_native_asset_code(txCtx->network, detailValue, DETAIL_VALUE_MAX_SIZE);
     } else {
         print_asset_t(&txCtx->opDetails.createPassiveSellOfferOp.buying,
+                      txCtx->network,
                       detailValue,
                       DETAIL_VALUE_MAX_SIZE);
     }
@@ -500,11 +508,13 @@ static void format_path_via(tx_context_t *txCtx) {
         strcpy(detailCaption, "Via");
         uint8_t i;
         for (i = 0; i < txCtx->opDetails.pathPaymentStrictReceiveOp.pathLen; i++) {
-            Asset asset = txCtx->opDetails.pathPaymentStrictReceiveOp.path[i];
+            char asset_name[12 + 1];
+            Asset *asset = &txCtx->opDetails.pathPaymentStrictReceiveOp.path[i];
             if (strlen(detailValue) != 0) {
                 strlcat(detailValue, ", ", DETAIL_VALUE_MAX_SIZE);
             }
-            strlcat(detailValue, asset.code, DETAIL_VALUE_MAX_SIZE);
+            print_asset_name(asset, txCtx->network, asset_name, sizeof(asset_name));
+            strlcat(detailValue, asset_name, DETAIL_VALUE_MAX_SIZE);
         }
         push_to_formatter_stack(&format_operation_source);
     } else {
@@ -515,7 +525,8 @@ static void format_path_via(tx_context_t *txCtx) {
 static void format_path_receive(tx_context_t *txCtx) {
     strcpy(detailCaption, "Receive");
     print_amount(txCtx->opDetails.pathPaymentStrictReceiveOp.destAmount,
-                 txCtx->opDetails.pathPaymentStrictReceiveOp.destAsset.code,
+                 &txCtx->opDetails.pathPaymentStrictReceiveOp.destAsset,
+                 txCtx->network,
                  detailValue,
                  DETAIL_VALUE_MAX_SIZE);
     push_to_formatter_stack(&format_path_via);
@@ -530,7 +541,8 @@ static void format_path_destination(tx_context_t *txCtx) {
 static void format_path_payment(tx_context_t *txCtx) {
     strcpy(detailCaption, "Send Max");
     print_amount(txCtx->opDetails.pathPaymentStrictReceiveOp.sendMax,
-                 txCtx->opDetails.pathPaymentStrictReceiveOp.sendAsset.code,
+                 &txCtx->opDetails.pathPaymentStrictReceiveOp.sendAsset,
+                 txCtx->network,
                  detailValue,
                  DETAIL_VALUE_MAX_SIZE);
     push_to_formatter_stack(&format_path_destination);
@@ -545,7 +557,8 @@ static void format_payment_destination(tx_context_t *txCtx) {
 static void format_payment(tx_context_t *txCtx) {
     strcpy(detailCaption, "Send");
     print_amount(txCtx->opDetails.payment.amount,
-                 txCtx->opDetails.payment.asset.code,
+                 &txCtx->opDetails.payment.asset,
+                 txCtx->network,
                  detailValue,
                  DETAIL_VALUE_MAX_SIZE);
     push_to_formatter_stack(&format_payment_destination);
@@ -553,10 +566,10 @@ static void format_payment(tx_context_t *txCtx) {
 
 static void format_create_account_amount(tx_context_t *txCtx) {
     strcpy(detailCaption, "Starting Balance");
-    char nativeAssetCode[7];
-    print_native_asset_code(txCtx->network, nativeAssetCode, sizeof(nativeAssetCode));
+    Asset asset = {.type = ASSET_TYPE_NATIVE};
     print_amount(txCtx->opDetails.createAccount.startingBalance,
-                 nativeAssetCode,
+                 &asset,
+                 txCtx->network,
                  detailValue,
                  DETAIL_VALUE_MAX_SIZE);
     push_to_formatter_stack(&format_operation_source);

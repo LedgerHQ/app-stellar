@@ -7,6 +7,7 @@
 /* return 0 on error, 1 otherwise */
 int handle_get_printable_amount(get_printable_amount_parameters_t* params) {
     uint64_t amount;
+    Asset asset = {.type = ASSET_TYPE_NATIVE};
 
     params->printable_amount[0] = '\0';
 
@@ -15,7 +16,11 @@ int handle_get_printable_amount(get_printable_amount_parameters_t* params) {
         return 0;
     }
 
-    if (print_amount(amount, "XLM", params->printable_amount, sizeof(params->printable_amount))) {
+    if (print_amount(amount,
+                     &asset,
+                     NETWORK_TYPE_PUBLIC,
+                     params->printable_amount,
+                     sizeof(params->printable_amount))) {
         return 0;
     }
     return 1;

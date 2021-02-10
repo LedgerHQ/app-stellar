@@ -228,7 +228,39 @@ void print_public_key(MuxedAccount in, char *out, uint8_t numCharsL, uint8_t num
     }
 }
 
-int print_amount(uint64_t amount, const char *asset, char *out, size_t out_len) {
+int print_asset_name(const Asset *asset, uint8_t network_id, char *out, size_t out_len) {
+    switch (asset->type) {
+        case ASSET_TYPE_NATIVE:
+            print_native_asset_code(network_id, out, out_len);
+            return 0;
+        case ASSET_TYPE_CREDIT_ALPHANUM4:
+            for (int i = 0; i < 4; i++) {
+                out[i] = asset->assetCode[i];
+                if (out[i] == 0) {
+                    break;
+                }
+            }
+            out[4] = 0;
+            return 0;
+        case ASSET_TYPE_CREDIT_ALPHANUM12:
+            for (int i = 0; i < 12; i++) {
+                out[i] = asset->assetCode[i];
+                if (out[i] == 0) {
+                    break;
+                }
+            }
+            out[12] = 0;
+            return 0;
+        default:
+            return -1;
+    }
+}
+
+int print_amount(uint64_t amount,
+                 const Asset *asset,
+                 uint8_t network_id,
+                 char *out,
+                 size_t out_len) {
     char buffer[AMOUNT_MAX_SIZE] = {0};
     uint64_t dVal = amount;
     int i;
@@ -268,8 +300,9 @@ int print_amount(uint64_t amount, const char *asset, char *out, size_t out_len) 
 
     if (asset) {
         // qualify amount
+        print_asset_name(asset, network_id, buffer, AMOUNT_MAX_SIZE);
         strlcat(out, " ", out_len);
-        strlcat(out, asset, out_len);
+        strlcat(out, buffer, out_len);
     }
     return 0;
 }
@@ -317,10 +350,13 @@ int print_uint(uint64_t l, char *out, size_t out_len) {
     return 0;
 }
 
-void print_asset_t(const Asset *asset, char *out, size_t out_len) {
+void print_asset_t(const Asset *asset, uint8_t network_id, char *out, size_t out_len) {
     char issuer[12];
+    char asset_name[12 + 1];
+
+    print_asset_name(asset, network_id, asset_name, sizeof(asset_name));
     print_public_key(asset->issuer, issuer, 3, 4);
-    print_asset(asset->code, issuer, out, out_len);
+    print_asset(asset_name, issuer, out, out_len);
 }
 
 void print_asset(const char *code, char *issuer, char *out, size_t out_len) {

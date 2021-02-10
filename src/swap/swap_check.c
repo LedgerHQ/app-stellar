@@ -19,7 +19,7 @@ void swap_check() {
     }
 
     // amount
-    if (strcmp("XLM", txCtx->opDetails.payment.asset.code) ||
+    if (txCtx->opDetails.payment.asset.type != ASSET_TYPE_NATIVE ||
         txCtx->opDetails.payment.amount != (int64_t) swap_values.amount) {
         io_seproxyhal_touch_tx_cancel(NULL);
     }

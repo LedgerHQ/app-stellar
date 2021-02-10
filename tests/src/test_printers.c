@@ -26,17 +26,17 @@ void test_print_amount(void **state) {
     (void) state;
 
     char printed[24];
-    const char *asset = "XLM";
+    const Asset asset = {.type = ASSET_TYPE_NATIVE};
 
-    print_amount(1, asset, printed, sizeof(printed));
+    print_amount(1, &asset, NETWORK_TYPE_PUBLIC, printed, sizeof(printed));
     assert_string_equal(printed, "0.0000001 XLM");
-    print_amount(10000000, asset, printed, sizeof(printed));
+    print_amount(10000000, &asset, NETWORK_TYPE_PUBLIC, printed, sizeof(printed));
     assert_string_equal(printed, "1 XLM");
-    print_amount(100000000000001, asset, printed, sizeof(printed));
+    print_amount(100000000000001, &asset, NETWORK_TYPE_PUBLIC, printed, sizeof(printed));
     assert_string_equal(printed, "10000000.0000001 XLM");
-    print_amount(100000001, asset, printed, sizeof(printed));
+    print_amount(100000001, &asset, NETWORK_TYPE_PUBLIC, printed, sizeof(printed));
     assert_string_equal(printed, "10.0000001 XLM");
-    print_amount(100000001000000, asset, printed, sizeof(printed));
+    print_amount(100000001000000, &asset, NETWORK_TYPE_PUBLIC, printed, sizeof(printed));
     assert_string_equal(printed, "10000000.1 XLM");
 }
 

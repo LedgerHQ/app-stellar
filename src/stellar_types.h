@@ -68,9 +68,11 @@
 //                       TRANSACTION PARSING CONSTANTS                       //
 // ------------------------------------------------------------------------- //
 
-#define ASSET_TYPE_NATIVE            0
-#define ASSET_TYPE_CREDIT_ALPHANUM4  1
-#define ASSET_TYPE_CREDIT_ALPHANUM12 2
+typedef enum {
+    ASSET_TYPE_NATIVE = 0,
+    ASSET_TYPE_CREDIT_ALPHANUM4 = 1,
+    ASSET_TYPE_CREDIT_ALPHANUM12 = 2,
+} AssetType;
 
 typedef enum {
     MEMO_NONE = 0,
@@ -171,8 +173,8 @@ typedef uint64_t TimePoint;
 typedef const uint8_t *MuxedAccount;
 
 typedef struct {
-    uint8_t type;
-    char code[13];
+    AssetType type;
+    const char *assetCode;
     AccountID issuer;
 } Asset;
 

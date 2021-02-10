@@ -207,21 +207,22 @@ static bool parse_asset(buffer_t *buffer, Asset *asset) {
     asset->type = assetType;
     switch (asset->type) {
         case ASSET_TYPE_NATIVE: {
-            print_native_asset_code(network_id, asset->code, sizeof(asset->code));
             return true;
         }
         case ASSET_TYPE_CREDIT_ALPHANUM4: {
-            if (!buffer_read_bytes(buffer, (uint8_t *) asset->code, 4)) {
+            if (!buffer_can_read(buffer, 4)) {
                 return false;
             }
-            asset->code[4] = '\0';
+            asset->assetCode = (const char *) buffer->ptr + buffer->offset;
+            buffer_advance(buffer, 4);
             return parse_account_id(buffer, &asset->issuer);
         }
         case ASSET_TYPE_CREDIT_ALPHANUM12: {
-            if (!buffer_read_bytes(buffer, (uint8_t *) asset->code, 12)) {
+            if (!buffer_can_read(buffer, 12)) {
                 return false;
             }
-            asset->code[12] = '\0';
+            asset->assetCode = (const char *) buffer->ptr + buffer->offset;
+            buffer_advance(buffer, 12);
             return parse_account_id(buffer, &asset->issuer);
         }
         default:

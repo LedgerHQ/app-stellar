@@ -124,10 +124,17 @@ void print_binary(const uint8_t *in, char *out, uint8_t len);
 void print_binary_summary(const uint8_t *in, char *out, uint8_t len);
 
 /** raw amount integer to asset-qualified string representation */
-int print_amount(uint64_t amount, const char *asset, char *out, size_t out_len);
+int print_amount(uint64_t amount,
+                 const Asset *asset,
+                 uint8_t network_id,
+                 char *out,
+                 size_t out_len);
 
 /** concatenate assetCode and assetIssuer summary */
-void print_asset_t(const Asset *asset, char *out, size_t out_len);
+void print_asset_t(const Asset *asset, uint8_t network_id, char *out, size_t out_len);
+
+/** asset name */
+int print_asset_name(const Asset *asset, uint8_t network_id, char *out, size_t out_len);
 
 /** concatenate code and issuer */
 void print_asset(const char *code, char *issuer, char *out, size_t out_len);
