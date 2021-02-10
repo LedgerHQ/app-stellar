@@ -99,7 +99,6 @@ static void handle_apdu(uint8_t *buffer,
                     break;
                 default:
                     THROW(0x6D00);
-                    break;
             }
         }
         CATCH(EXCEPTION_IO_RESET) {
@@ -145,7 +144,7 @@ static unsigned char last_ins = 0;
 void stellar_main(void) {
     // hash sig support is not persistent
 
-    os_memset(&ctx, 0, sizeof(ctx));
+    memset(&ctx, 0, sizeof(ctx));
 
     volatile unsigned int rx = 0;
     volatile unsigned int tx = 0;
@@ -233,6 +232,8 @@ void u2f_send_keep_alive() {
 }
 
 unsigned char io_event(unsigned char channel) {
+    (void) channel;
+
     // can't have more than one tag in the reply, not supported yet.
     switch (G_io_seproxyhal_spi_buffer[0]) {
         case SEPROXYHAL_TAG_FINGER_EVENT:
@@ -267,16 +268,7 @@ unsigned char io_event(unsigned char channel) {
                 }
             }
 
-            UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer, {
-#if defined(TARGET_NANOS) && !defined(HAVE_UX_FLOW)  // S legacy only
-                if (UX_ALLOWED) {
-                    if (ctx.reqType == CONFIRM_TRANSACTION) {
-                        ui_approve_tx_next_screen(&ctx.req.tx);
-                    }
-                    UX_REDISPLAY();
-                }
-#endif
-            });
+            UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer, {});
             break;
     }
 
@@ -374,10 +366,6 @@ static void library_main_helper(struct libargs_s *args) {
             }
             break;
         case GET_PRINTABLE_AMOUNT:
-            // ensure result is zero if an exception is thrown (compatibility breaking, disabled
-            // until LL is ready)
-            // args->get_printable_amount->result = 0;
-            // args->get_printable_amount->result =
             handle_get_printable_amount(args->get_printable_amount);
             break;
         default:

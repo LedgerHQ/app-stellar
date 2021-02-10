@@ -15,13 +15,8 @@
  *  limitations under the License.
  ********************************************************************************/
 
-#include "os.h"
-#include "cx.h"
 #include "stellar_types.h"
-#include "stellar_api.h"
-#include "stellar_vars.h"
-
-#include "os_io_seproxyhal.h"
+#include "ux.h"
 
 stellar_context_t ctx;
 ux_state_t ux;

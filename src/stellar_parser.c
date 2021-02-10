@@ -21,10 +21,6 @@
 #include <string.h>
 #include <sys/types.h>
 
-#ifndef TEST
-#include "os.h"
-#endif
-
 /* SHA256("Public Global Stellar Network ; September 2015") */
 static const uint8_t NETWORK_ID_PUBLIC_HASH[64] = {
     0x7a, 0xc3, 0x39, 0x97, 0x54, 0x4e, 0x31, 0x75, 0xd2, 0x66, 0xbd, 0x02, 0x24, 0x39, 0xb2, 0x2c,
@@ -109,6 +105,11 @@ static bool check_padding(const uint8_t *buffer, size_t offset, size_t length) {
     return true;
 }
 
+#define PARSER_CHECK(x)         \
+    {                           \
+        if (!(x)) return false; \
+    }
+
 bool parse_account_id(buffer_t *buffer, const uint8_t **account_id) {
     uint32_t accountType;
 
@@ -123,46 +124,26 @@ bool parse_account_id(buffer_t *buffer, const uint8_t **account_id) {
     return true;
 }
 
-static bool parse_network(buffer_t *buffer, tx_details_t *txDetails) {
+static bool parse_network(buffer_t *buffer, uint8_t *network) {
     if (!buffer_can_read(buffer, HASH_SIZE)) {
         return false;
     }
     if (memcmp(buffer->ptr, NETWORK_ID_PUBLIC_HASH, HASH_SIZE) == 0) {
-        network_id = txDetails->network = NETWORK_TYPE_PUBLIC;
+        network_id = *network = NETWORK_TYPE_PUBLIC;
     } else if (memcmp(buffer->ptr, NETWORK_ID_TEST_HASH, HASH_SIZE) == 0) {
-        network_id = txDetails->network = NETWORK_TYPE_TEST;
+        network_id = *network = NETWORK_TYPE_TEST;
     } else {
-        network_id = txDetails->network = NETWORK_TYPE_UNKNOWN;
+        network_id = *network = NETWORK_TYPE_UNKNOWN;
     }
     buffer_advance(buffer, HASH_SIZE);
     return true;
 }
 
-static bool parse_time_bounds(buffer_t *buffer, time_bounds_t *bounds) {
+static bool parse_time_bounds(buffer_t *buffer, TimeBounds *bounds) {
     if (!buffer_read64(buffer, &bounds->minTime)) {
         return false;
     }
     return buffer_read64(buffer, &bounds->maxTime);
-}
-
-/* TODO: max_length does not include terminal null character */
-static bool parse_string(buffer_t *buffer, char *string, size_t max_length) {
-    uint32_t size;
-
-    if (!buffer_read32(buffer, &size)) {
-        return false;
-    }
-    if (size > max_length || !buffer_can_read(buffer, num_bytes(size))) {
-        return false;
-    }
-    if (!check_padding(buffer->ptr + buffer->offset, size,
-                       num_bytes(size))) {  // security check
-        return false;
-    }
-    memcpy(string, buffer->ptr + buffer->offset, size);
-    string[size] = '\0';
-    buffer_advance(buffer, num_bytes(size));
-    return true;
 }
 
 /* TODO: max_length does not include terminal null character */
@@ -192,31 +173,24 @@ static bool parse_string_ptr(buffer_t *buffer,
 
 static bool parse_memo(buffer_t *buffer, tx_details_t *txDetails) {
     uint32_t type;
-    uint64_t memo_id;
 
     if (!buffer_read32(buffer, &type)) {
         return 0;
     }
     txDetails->memo.type = type;
     switch (txDetails->memo.type) {
-        case MEMO_TYPE_NONE:
-            strcpy(txDetails->memo.data, "[none]");
+        case MEMO_NONE:
             return true;
-        case MEMO_TYPE_ID:
-            if (!buffer_read64(buffer, &memo_id)) {
-                return false;
-            }
-            print_uint(memo_id, txDetails->memo.data);
-            return true;
-        case MEMO_TYPE_TEXT: {
-            return parse_string(buffer, txDetails->memo.data, MEMO_TEXT_MAX_SIZE);
-        }
-        case MEMO_TYPE_HASH:
-        case MEMO_TYPE_RETURN:
+        case MEMO_ID:
+            return buffer_read64(buffer, &txDetails->memo.id);
+        case MEMO_TEXT:
+            return parse_string_ptr(buffer, &txDetails->memo.text, NULL, MEMO_TEXT_MAX_SIZE);
+        case MEMO_HASH:
+        case MEMO_RETURN:
             if (buffer->size - buffer->offset < HASH_SIZE) {
                 return false;
             }
-            print_binary(buffer->ptr + buffer->offset, txDetails->memo.data, HASH_SIZE);
+            txDetails->memo.hash = buffer->ptr + buffer->offset;
             buffer->offset += HASH_SIZE;
             return true;
         default:
@@ -224,7 +198,7 @@ static bool parse_memo(buffer_t *buffer, tx_details_t *txDetails) {
     }
 }
 
-static bool parse_asset(buffer_t *buffer, asset_t *asset) {
+static bool parse_asset(buffer_t *buffer, Asset *asset) {
     uint32_t assetType;
 
     if (!buffer_read32(buffer, &assetType)) {
@@ -233,21 +207,22 @@ static bool parse_asset(buffer_t *buffer, asset_t *asset) {
     asset->type = assetType;
     switch (asset->type) {
         case ASSET_TYPE_NATIVE: {
-            print_native_asset_code(network_id, asset->code);
             return true;
         }
         case ASSET_TYPE_CREDIT_ALPHANUM4: {
-            if (!buffer_read_bytes(buffer, (uint8_t *) asset->code, 4)) {
+            if (!buffer_can_read(buffer, 4)) {
                 return false;
             }
-            asset->code[4] = '\0';
+            asset->assetCode = (const char *) buffer->ptr + buffer->offset;
+            buffer_advance(buffer, 4);
             return parse_account_id(buffer, &asset->issuer);
         }
         case ASSET_TYPE_CREDIT_ALPHANUM12: {
-            if (!buffer_read_bytes(buffer, (uint8_t *) asset->code, 12)) {
+            if (!buffer_can_read(buffer, 12)) {
                 return false;
             }
-            asset->code[12] = '\0';
+            asset->assetCode = (const char *) buffer->ptr + buffer->offset;
+            buffer_advance(buffer, 12);
             return parse_account_id(buffer, &asset->issuer);
         }
         default:
@@ -255,14 +230,14 @@ static bool parse_asset(buffer_t *buffer, asset_t *asset) {
     }
 }
 
-static bool parse_create_account(buffer_t *buffer, create_account_op_t *createAccount) {
-    if (!parse_account_id(buffer, &createAccount->accountId)) {
+static bool parse_create_account(buffer_t *buffer, CreateAccountOp *createAccount) {
+    if (!parse_account_id(buffer, &createAccount->destination)) {
         return false;
     }
-    return buffer_read64(buffer, &createAccount->amount);
+    return buffer_read64(buffer, (uint64_t *) &createAccount->startingBalance);
 }
 
-static bool parse_payment(buffer_t *buffer, payment_op_t *payment) {
+static bool parse_payment(buffer_t *buffer, PaymentOp *payment) {
     if (!parse_account_id(buffer, &payment->destination)) {
         return false;
     }
@@ -271,49 +246,33 @@ static bool parse_payment(buffer_t *buffer, payment_op_t *payment) {
         return false;
     }
 
-    return buffer_read64(buffer, &payment->amount);
+    return buffer_read64(buffer, (uint64_t *) &payment->amount);
 }
 
-static bool parse_path_payment(buffer_t *buffer, path_payment_op_t *pathPayment) {
+static bool parse_path_payment(buffer_t *buffer, PathPaymentStrictReceiveOp *op) {
     uint32_t pathLen;
 
-    if (!parse_asset(buffer, &pathPayment->sourceAsset)) {
-        return false;
-    }
-    if (!buffer_read64(buffer, &pathPayment->sendMax)) {
-        return false;
-    }
-    if (!parse_account_id(buffer, &pathPayment->destination)) {
-        return false;
-    }
+    PARSER_CHECK(parse_asset(buffer, &op->sendAsset));
+    PARSER_CHECK(buffer_read64(buffer, &op->sendMax));
+    PARSER_CHECK(parse_account_id(buffer, &op->destination));
+    PARSER_CHECK(parse_asset(buffer, &op->destAsset));
+    PARSER_CHECK(buffer_read64(buffer, (uint64_t *) &op->destAmount));
 
-    if (!parse_asset(buffer, &pathPayment->destAsset)) {
+    PARSER_CHECK(buffer_read32(buffer, (uint32_t *) &pathLen));
+    op->pathLen = pathLen;
+    if (op->pathLen > 5) {
         return false;
     }
-
-    if (!buffer_read64(buffer, &pathPayment->destAmount)) {
-        return false;
-    }
-
-    if (!buffer_read32(buffer, &pathLen)) {
-        return false;
-    }
-    pathPayment->pathLen = pathLen;
-    if (pathPayment->pathLen > 5) {
-        return false;
-    }
-    for (int i = 0; i < pathPayment->pathLen; i++) {
-        if (!parse_asset(buffer, &pathPayment->path[i])) {
-            return false;
-        }
+    for (int i = 0; i < op->pathLen; i++) {
+        PARSER_CHECK(parse_asset(buffer, &op->path[i]));
     }
     return true;
 }
 
-static bool parse_allow_trust(buffer_t *buffer, allow_trust_op_t *allowTrust) {
+static bool parse_allow_trust(buffer_t *buffer, AllowTrustOp *op) {
     uint32_t assetType;
 
-    if (!parse_account_id(buffer, &allowTrust->trustee)) {
+    if (!parse_account_id(buffer, &op->trustor)) {
         return false;
     }
 
@@ -323,40 +282,37 @@ static bool parse_allow_trust(buffer_t *buffer, allow_trust_op_t *allowTrust) {
 
     switch (assetType) {
         case ASSET_TYPE_CREDIT_ALPHANUM4: {
-            if (!buffer_read_bytes(buffer, (uint8_t *) allowTrust->assetCode, 4)) {
+            if (!buffer_read_bytes(buffer, (uint8_t *) op->assetCode, 4)) {
                 return false;
             }
-            allowTrust->assetCode[4] = '\0';
+            op->assetCode[4] = '\0';
             break;
         }
         case ASSET_TYPE_CREDIT_ALPHANUM12: {
-            if (!buffer_read_bytes(buffer, (uint8_t *) allowTrust->assetCode, 12)) {
+            if (!buffer_read_bytes(buffer, (uint8_t *) op->assetCode, 12)) {
                 return false;
             }
-            allowTrust->assetCode[12] = '\0';
+            op->assetCode[12] = '\0';
             break;
         }
         default:
             return false;  // unknown asset type
     }
 
-    return buffer_read_bool(buffer, &allowTrust->authorize);
+    return buffer_read32(buffer, &op->authorize);
 }
 
-static bool parse_account_merge(buffer_t *buffer, account_merge_op_t *accountMerge) {
-    return parse_account_id(buffer, &accountMerge->destination);
+static bool parse_account_merge(buffer_t *buffer, MuxedAccount *destination) {
+    return parse_account_id(buffer, destination);
 }
 
-static bool parse_manage_data(buffer_t *buffer, manage_data_op_t *manageData) {
+static bool parse_manage_data(buffer_t *buffer, ManageDataOp *op) {
     size_t size;
 
-    if (!parse_string_ptr(buffer,
-                          (const char **) &manageData->dataName,
-                          &size,
-                          DATA_NAME_MAX_SIZE)) {
+    if (!parse_string_ptr(buffer, (const char **) &op->dataName, &size, DATA_NAME_MAX_SIZE)) {
         return false;
     }
-    manageData->dataNameSize = size;
+    op->dataNameSize = size;
 
     // DataValue* dataValue;
     bool hasValue;
@@ -364,68 +320,58 @@ static bool parse_manage_data(buffer_t *buffer, manage_data_op_t *manageData) {
         return false;
     }
     if (hasValue) {
-        if (!parse_string_ptr(buffer,
-                              (const char **) &manageData->dataValue,
-                              &size,
-                              DATA_VALUE_MAX_SIZE)) {
+        if (!parse_string_ptr(buffer, (const char **) &op->dataValue, &size, DATA_VALUE_MAX_SIZE)) {
             return false;
         }
-        manageData->dataValueSize = size;
+        op->dataValueSize = size;
     } else {
-        manageData->dataValueSize = 0;
+        op->dataValueSize = 0;
     }
     return true;
 }
 
-static bool parse_offer(buffer_t *buffer, manage_offer_op_t *manageOffer) {
-    if (!parse_asset(buffer, &manageOffer->selling)) {
-        return false;
-    }
-    if (!parse_asset(buffer, &manageOffer->buying)) {
-        return false;
-    }
-    if (!buffer_read64(buffer, &manageOffer->amount)) {
-        return false;
-    }
-    if (!buffer_read32(buffer, &manageOffer->price.numerator)) {
-        return false;
-    }
-    if (!buffer_read32(buffer, &manageOffer->price.denominator)) {
-        return false;
-    }
+static bool parse_price(buffer_t *buffer, Price *price) {
+    // FIXME: must correctly read int32_t
+    PARSER_CHECK(buffer_read32(buffer, (uint32_t *) &price->n));
+    PARSER_CHECK(buffer_read32(buffer, (uint32_t *) &price->d));
+
     // Denominator cannot be null, as it would lead to a division by zero.
-    return manageOffer->price.denominator != 0;
+    return price->d != 0;
 }
 
-static bool parse_active_offer(buffer_t *buffer, manage_offer_op_t *manageOffer) {
-    manageOffer->active = true;
-    if (!parse_offer(buffer, manageOffer)) {
+static bool parse_manage_sell_offer(buffer_t *buffer, ManageSellOfferOp *op) {
+    PARSER_CHECK(parse_asset(buffer, &op->selling));
+    PARSER_CHECK(parse_asset(buffer, &op->buying));
+    PARSER_CHECK(buffer_read64(buffer, (uint64_t *) &op->amount));
+    PARSER_CHECK(parse_price(buffer, &op->price));
+
+    PARSER_CHECK(buffer_read64(buffer, (uint64_t *) &op->offerID));
+    return true;
+}
+
+static bool parse_manage_buy_offer_op(buffer_t *buffer, ManageBuyOfferOp *op) {
+    PARSER_CHECK(parse_asset(buffer, &op->selling));
+    PARSER_CHECK(parse_asset(buffer, &op->buying));
+    PARSER_CHECK(buffer_read64(buffer, (uint64_t *) &op->buyAmount));
+    PARSER_CHECK(parse_price(buffer, &op->price));
+
+    PARSER_CHECK(buffer_read64(buffer, (uint64_t *) &op->offerID));
+    return true;
+}
+
+static bool parse_create_passive_sell_offer(buffer_t *buffer, CreatePassiveSellOfferOp *op) {
+    PARSER_CHECK(parse_asset(buffer, &op->selling));
+    PARSER_CHECK(parse_asset(buffer, &op->buying));
+    PARSER_CHECK(buffer_read64(buffer, (uint64_t *) &op->amount));
+    PARSER_CHECK(parse_price(buffer, &op->price));
+    return true;
+}
+
+static bool parse_change_trust(buffer_t *buffer, ChangeTrustOp *op) {
+    if (!parse_asset(buffer, &op->line)) {
         return false;
     }
-    return buffer_read64(buffer, &manageOffer->offerId);
-}
-
-static bool parse_active_sell_offer(buffer_t *buffer, manage_offer_op_t *manageOffer) {
-    manageOffer->buy = false;
-    return parse_active_offer(buffer, manageOffer);
-}
-
-static bool parse_active_buy_offer(buffer_t *buffer, manage_offer_op_t *manageOffer) {
-    manageOffer->buy = true;
-    return parse_active_offer(buffer, manageOffer);
-}
-
-static bool parse_passive_offer(buffer_t *buffer, manage_offer_op_t *manageOffer) {
-    manageOffer->active = false;
-    manageOffer->offerId = 0;
-    return parse_offer(buffer, manageOffer);
-}
-
-static bool parse_change_trust(buffer_t *buffer, change_trust_op_t *changeTrust) {
-    if (!parse_asset(buffer, &changeTrust->asset)) {
-        return false;
-    }
-    return buffer_read64(buffer, &changeTrust->limit);
+    return buffer_read64(buffer, &op->limit);
 }
 
 typedef bool (*xdr_type_parser)(buffer_t *, void *);
@@ -449,24 +395,30 @@ static bool parse_optional_type(buffer_t *buffer, xdr_type_parser parser, void *
     }
 }
 
-static bool parse_signer(buffer_t *buffer, signer_t *signer) {
+static bool parse_signer_key(buffer_t *buffer, SignerKey *key) {
     uint32_t signerType;
 
-    if (!buffer_read32(buffer, &signerType)) {
+    PARSER_CHECK(buffer_read32(buffer, &signerType));
+    if (signerType != SIGNER_KEY_TYPE_ED25519 && signerType != SIGNER_KEY_TYPE_PRE_AUTH_TX &&
+        signerType != SIGNER_KEY_TYPE_HASH_X) {
         return false;
     }
-    signer->type = signerType;
 
     if (buffer->size - buffer->offset < 32) {
         return false;
     }
-    signer->data = buffer->ptr + buffer->offset;
+    key->data = buffer->ptr + buffer->offset;
     buffer_advance(buffer, 32);
-
-    return buffer_read32(buffer, &signer->weight);
+    return true;
 }
 
-static bool parse_set_options(buffer_t *buffer, set_options_op_t *setOptions) {
+static bool parse_signer(buffer_t *buffer, signer_t *signer) {
+    PARSER_CHECK(parse_signer_key(buffer, &signer->key));
+    PARSER_CHECK(buffer_read32(buffer, &signer->weight));
+    return true;
+}
+
+static bool parse_set_options(buffer_t *buffer, SetOptionsOp *setOptions) {
     uint32_t tmp;
 
     if (!parse_optional_type(buffer,
@@ -541,17 +493,17 @@ static bool parse_set_options(buffer_t *buffer, set_options_op_t *setOptions) {
                                &setOptions->signerPresent);
 }
 
-static bool parse_bump_sequence(buffer_t *buffer, bump_sequence_op_t *bumpSequence) {
-    return buffer_read64(buffer, (uint64_t *) &bumpSequence->bumpTo);
+static bool parse_bump_sequence(buffer_t *buffer, BumpSequenceOp *op) {
+    return buffer_read64(buffer, (uint64_t *) &op->bumpTo);
 }
 
-static bool parse_op_xdr(buffer_t *buffer, operation_details_t *opDetails) {
+static bool parse_operation(buffer_t *buffer, Operation *opDetails) {
     uint32_t opType;
 
     if (!parse_optional_type(buffer,
                              (xdr_type_parser) parse_account_id,
-                             &opDetails->source,
-                             &opDetails->sourcePresent)) {
+                             &opDetails->sourceAccount,
+                             &opDetails->sourceAccountPresent)) {
         return false;
     }
 
@@ -561,43 +513,43 @@ static bool parse_op_xdr(buffer_t *buffer, operation_details_t *opDetails) {
     opDetails->type = opType;
     switch (opDetails->type) {
         case XDR_OPERATION_TYPE_CREATE_ACCOUNT: {
-            return parse_create_account(buffer, &opDetails->op.createAccount);
+            return parse_create_account(buffer, &opDetails->createAccount);
         }
         case XDR_OPERATION_TYPE_PAYMENT: {
-            return parse_payment(buffer, &opDetails->op.payment);
+            return parse_payment(buffer, &opDetails->payment);
         }
-        case XDR_OPERATION_TYPE_PATH_PAYMENT: {
-            return parse_path_payment(buffer, &opDetails->op.pathPayment);
+        case XDR_OPERATION_TYPE_PATH_PAYMENT_STRICT_RECEIVE: {
+            return parse_path_payment(buffer, &opDetails->pathPaymentStrictReceiveOp);
         }
-        case XDR_OPERATION_TYPE_CREATE_PASSIVE_OFFER: {
-            return parse_passive_offer(buffer, &opDetails->op.manageOffer);
+        case XDR_OPERATION_TYPE_CREATE_PASSIVE_SELL_OFFER: {
+            return parse_create_passive_sell_offer(buffer, &opDetails->createPassiveSellOfferOp);
         }
         case XDR_OPERATION_TYPE_MANAGE_SELL_OFFER: {
-            return parse_active_sell_offer(buffer, &opDetails->op.manageOffer);
+            return parse_manage_sell_offer(buffer, &opDetails->manageSellOfferOp);
         }
         case XDR_OPERATION_TYPE_SET_OPTIONS: {
-            return parse_set_options(buffer, &opDetails->op.setOptions);
+            return parse_set_options(buffer, &opDetails->setOptionsOp);
         }
         case XDR_OPERATION_TYPE_CHANGE_TRUST: {
-            return parse_change_trust(buffer, &opDetails->op.changeTrust);
+            return parse_change_trust(buffer, &opDetails->changeTrustOp);
         }
         case XDR_OPERATION_TYPE_ALLOW_TRUST: {
-            return parse_allow_trust(buffer, &opDetails->op.allowTrust);
+            return parse_allow_trust(buffer, &opDetails->allowTrustOp);
         }
         case XDR_OPERATION_TYPE_ACCOUNT_MERGE: {
-            return parse_account_merge(buffer, &opDetails->op.accountMerge);
+            return parse_account_merge(buffer, &opDetails->destination);
         }
         case XDR_OPERATION_TYPE_INFLATION: {
             return true;
         }
         case XDR_OPERATION_TYPE_MANAGE_DATA: {
-            return parse_manage_data(buffer, &opDetails->op.manageData);
+            return parse_manage_data(buffer, &opDetails->manageDataOp);
         }
         case XDR_OPERATION_TYPE_BUMP_SEQUENCE: {
-            return parse_bump_sequence(buffer, &opDetails->op.bumpSequence);
+            return parse_bump_sequence(buffer, &opDetails->bumpSequenceOp);
         }
         case XDR_OPERATION_TYPE_MANAGE_BUY_OFFER: {
-            return parse_active_buy_offer(buffer, &opDetails->op.manageOffer);
+            return parse_manage_buy_offer_op(buffer, &opDetails->manageBuyOfferOp);
         }
         default:
             return false;  // Unknown operation
@@ -616,7 +568,7 @@ bool parse_tx_xdr(const uint8_t *data, size_t size, tx_context_t *txCtx) {
     if (offset == 0) {
         MEMCLEAR(txCtx->txDetails);
 
-        if (!parse_network(&buffer, &txCtx->txDetails)) {
+        if (!parse_network(&buffer, &txCtx->network)) {
             return false;
         }
         if (!buffer_read32(&buffer, &envelopeType) || envelopeType != ENVELOPE_TYPE_TX) {
@@ -624,7 +576,7 @@ bool parse_tx_xdr(const uint8_t *data, size_t size, tx_context_t *txCtx) {
         }
 
         // account used to run the transaction
-        if (!parse_account_id(&buffer, &txCtx->txDetails.source)) {
+        if (!parse_account_id(&buffer, &txCtx->txDetails.sourceAccount)) {
             return false;
         }
 
@@ -663,7 +615,7 @@ bool parse_tx_xdr(const uint8_t *data, size_t size, tx_context_t *txCtx) {
         txCtx->opIdx = 0;
     }
 
-    if (!parse_op_xdr(&buffer, &txCtx->opDetails)) {
+    if (!parse_operation(&buffer, &txCtx->opDetails)) {
         return false;
     }
     offset = buffer.offset;

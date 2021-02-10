@@ -108,10 +108,10 @@ void handle_get_app_configuration(volatile unsigned int *tx) {
 }
 
 static uint32_t set_result_get_public_key(void) {
-    os_memmove(G_io_apdu_buffer, ctx.req.pk.publicKey, 32);
+    memcpy(G_io_apdu_buffer, ctx.req.pk.publicKey, 32);
     uint32_t tx = 32;
     if (ctx.req.pk.returnSignature) {
-        os_memmove(G_io_apdu_buffer + tx, ctx.req.pk.signature, 64);
+        memcpy(G_io_apdu_buffer + tx, ctx.req.pk.signature, 64);
         tx += 64;
     }
     return tx;
@@ -142,7 +142,7 @@ void handle_get_public_key(uint8_t p1,
     dataBuffer += 1 + bip32Len * 4;
     dataLength -= 1 + bip32Len * 4;
 
-    uint16_t msgLength;
+    uint16_t msgLength = 0;
     uint8_t msg[32];
     if (ctx.req.pk.returnSignature) {
         uint8_t i;
@@ -158,7 +158,7 @@ void handle_get_public_key(uint8_t p1,
                 THROW(0x6a80);
             }
         }
-        os_memmove(msg, dataBuffer, msgLength);
+        memcpy(msg, dataBuffer, msgLength);
     }
 
     cx_ecfp_private_key_t privateKey;
@@ -240,7 +240,7 @@ void handle_sign_tx(uint8_t p1,
 
         // read raw tx data
         ctx.req.tx.rawLength = dataLength;
-        os_memmove(ctx.req.tx.raw, dataBuffer, dataLength);
+        memcpy(ctx.req.tx.raw, dataBuffer, dataLength);
     } else {
         if (app_get_state() != STATE_PARSE_TX) {
             THROW(0x6700);
@@ -252,19 +252,14 @@ void handle_sign_tx(uint8_t p1,
         if (ctx.req.tx.rawLength > MAX_RAW_TX) {
             THROW(0x6700);
         }
-        os_memmove(ctx.req.tx.raw + offset, dataBuffer, dataLength);
+        memcpy(ctx.req.tx.raw + offset, dataBuffer, dataLength);
     }
 
     if (p2 == P2_MORE) {
         THROW(0x9000);
     }
 
-    // hash transaction
-#if CX_APILEVEL >= 8
-    cx_hash_sha256(ctx.req.tx.raw, ctx.req.tx.rawLength, ctx.req.tx.hash, 32);
-#else
-    cx_hash_sha256(ctx.req.tx.raw, ctx.req.tx.rawLength, ctx.req.tx.hash);
-#endif
+    cx_hash_sha256(ctx.req.tx.raw, ctx.req.tx.rawLength, ctx.req.tx.hash, HASH_SIZE);
 
     if (!parse_tx_xdr(ctx.req.tx.raw, ctx.req.tx.rawLength, &ctx.req.tx)) {
         THROW(0x6800);
@@ -282,7 +277,7 @@ void handle_sign_tx(uint8_t p1,
                                           CX_LAST,
                                           CX_SHA512,
                                           ctx.req.tx.hash,
-                                          32,
+                                          HASH_SIZE,
                                           NULL,
                                           0,
                                           G_io_apdu_buffer,
@@ -334,7 +329,7 @@ void handle_sign_tx_hash(uint8_t *dataBuffer, uint16_t dataLength, volatile unsi
     if (dataLength != 32) {
         THROW(0x6a80);
     }
-    os_memmove(ctx.req.tx.hash, dataBuffer, dataLength);
+    memcpy(ctx.req.tx.hash, dataBuffer, dataLength);
 
     ui_approve_tx_hash_init();
 

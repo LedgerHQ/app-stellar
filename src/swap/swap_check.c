@@ -1,13 +1,10 @@
-#include "swap_lib_calls.h"
 #include "stellar_vars.h"
 #include "stellar_ux.h"
 #include "stellar_api.h"
 #include "stellar_format.h"
 
-#include "os_io_seproxyhal.h"
-
 void swap_check() {
-    uint8_t *tmp_buf = (uint8_t *) detailValue;
+    char *tmp_buf = detailValue;
 
     tx_context_t *txCtx = &ctx.req.tx;
 
@@ -22,30 +19,29 @@ void swap_check() {
     }
 
     // amount
-    if (strcmp("XLM", txCtx->opDetails.op.payment.asset.code) ||
-        txCtx->opDetails.op.payment.amount != swap_values.amount) {
+    if (txCtx->opDetails.payment.asset.type != ASSET_TYPE_NATIVE ||
+        txCtx->opDetails.payment.amount != (int64_t) swap_values.amount) {
         io_seproxyhal_touch_tx_cancel(NULL);
     }
 
     // destination addr
-    print_public_key(txCtx->opDetails.op.payment.destination, (char *) tmp_buf, 0, 0);
-    if (strcmp((char *) tmp_buf, swap_values.destination) != 0) {
+    print_public_key(txCtx->opDetails.payment.destination, tmp_buf, 0, 0);
+    if (strcmp(tmp_buf, swap_values.destination) != 0) {
         io_seproxyhal_touch_tx_cancel(NULL);
     }
 
-    if (txCtx->opDetails.sourcePresent) {
+    if (txCtx->opDetails.sourceAccountPresent) {
         io_seproxyhal_touch_tx_cancel(NULL);
     }
 
     // memo
-    if (txCtx->txDetails.memo.type != MEMO_TYPE_TEXT ||
-        strcmp(txCtx->txDetails.memo.data, swap_values.memo) != 0) {
+    if (txCtx->txDetails.memo.type != MEMO_TEXT ||
+        strcmp(txCtx->txDetails.memo.text, swap_values.memo) != 0) {
         io_seproxyhal_touch_tx_cancel(NULL);
     }
 
     // fees
-    if (txCtx->txDetails.network != NETWORK_TYPE_PUBLIC ||
-        txCtx->txDetails.fee != swap_values.fees) {
+    if (txCtx->network != NETWORK_TYPE_PUBLIC || txCtx->txDetails.fee != swap_values.fees) {
         io_seproxyhal_touch_tx_cancel(NULL);
     }
 

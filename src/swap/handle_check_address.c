@@ -4,12 +4,7 @@
 #include "os.h"
 #include "stellar_api.h"
 
-static int os_strcmp(const char* s1, const char* s2) {
-    size_t size = strlen(s1) + 1;
-    return memcmp(s1, s2, size);
-}
-
-int handle_check_address(check_address_parameters_t* params) {
+int handle_check_address(const check_address_parameters_t* params) {
     PRINTF("Params on the address %d\n", (unsigned int) params);
     PRINTF("Address to check %s\n", params->address_to_check);
     PRINTF("Inside handle_check_address\n");
@@ -48,9 +43,8 @@ int handle_check_address(check_address_parameters_t* params) {
     char address[57];
     encode_public_key(stellar_publicKey, address);
 
-    if (os_strcmp(address, params->address_to_check) != 0) {
-        PRINTF("Addresses don't match\n");
-        // memcpy(params->address_to_check, address, 57);
+    if (strcmp(address, params->address_to_check) != 0) {
+        PRINTF("Addresses do not match\n");
         return 0;
     }
 

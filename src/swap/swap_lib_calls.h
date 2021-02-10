@@ -5,11 +5,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define SIGN_TRANSACTION 2
-
-#define CHECK_ADDRESS 3
-
+#define SIGN_TRANSACTION     2
+#define CHECK_ADDRESS        3
 #define GET_PRINTABLE_AMOUNT 4
+
+void stellar_main(void);
 
 // structure that should be send to specific coin application to get address
 typedef struct check_address_parameters_s {
@@ -36,7 +36,6 @@ typedef struct get_printable_amount_parameters_s {
     bool is_fee;
     // OUT
     char printable_amount[30];
-    // int result;
 } get_printable_amount_parameters_t;
 
 typedef struct create_transaction_parameters_s {
@@ -50,9 +49,9 @@ typedef struct create_transaction_parameters_s {
     char* destination_address_extra_id;
 } create_transaction_parameters_t;
 
-int handle_check_address(check_address_parameters_t* params);
+int handle_check_address(const check_address_parameters_t* params);
 int handle_get_printable_amount(get_printable_amount_parameters_t* params);
-bool copy_transaction_parameters(create_transaction_parameters_t* sign_transaction_params);
+bool copy_transaction_parameters(const create_transaction_parameters_t* params);
 void handle_swap_sign_transaction(void);
 void swap_check();
 bool swap_str_to_u64(const uint8_t* src, size_t length, uint64_t* result);

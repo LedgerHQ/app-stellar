@@ -124,25 +124,32 @@ void print_binary(const uint8_t *in, char *out, uint8_t len);
 void print_binary_summary(const uint8_t *in, char *out, uint8_t len);
 
 /** raw amount integer to asset-qualified string representation */
-void print_amount(uint64_t amount, const char *asset, char *out);
+int print_amount(uint64_t amount,
+                 const Asset *asset,
+                 uint8_t network_id,
+                 char *out,
+                 size_t out_len);
 
 /** concatenate assetCode and assetIssuer summary */
-void print_asset_t(asset_t *asset, char *out);
+void print_asset_t(const Asset *asset, uint8_t network_id, char *out, size_t out_len);
 
-/** concatenate assetCode and assetIssuer */
-void print_asset(char *assetCode, char *assetIssuer, char *out);
+/** asset name */
+int print_asset_name(const Asset *asset, uint8_t network_id, char *out, size_t out_len);
+
+/** concatenate code and issuer */
+void print_asset(const char *code, char *issuer, char *out, size_t out_len);
 
 /** "XLM" or "native" depending on the network id */
-void print_native_asset_code(uint8_t network, char *out);
+void print_native_asset_code(uint8_t network, char *out, size_t out_len);
 
 /** string representation of flags present */
-void print_flags(uint32_t flags, char *out, char prefix);
+void print_flags(uint32_t flags, char *out, size_t out_len);
 
 /** integer to string for display of sequence number */
-void print_int(int64_t l, char *out);
+int print_int(int64_t l, char *out, size_t out_len);
 
 /** integer to string for display of offerid, sequence number, threshold weights, etc */
-void print_uint(uint64_t l, char *out);
+int print_uint(uint64_t l, char *out, size_t out_len);
 
 /** base64 encoding function used to display managed data values */
 void base64_encode(const uint8_t *data, int inLen, char *out);

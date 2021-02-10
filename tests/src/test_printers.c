@@ -26,17 +26,17 @@ void test_print_amount(void **state) {
     (void) state;
 
     char printed[24];
-    const char *asset = "XLM";
+    const Asset asset = {.type = ASSET_TYPE_NATIVE};
 
-    print_amount(1, asset, printed);
+    print_amount(1, &asset, NETWORK_TYPE_PUBLIC, printed, sizeof(printed));
     assert_string_equal(printed, "0.0000001 XLM");
-    print_amount(10000000, asset, printed);
+    print_amount(10000000, &asset, NETWORK_TYPE_PUBLIC, printed, sizeof(printed));
     assert_string_equal(printed, "1 XLM");
-    print_amount(100000000000001, asset, printed);
+    print_amount(100000000000001, &asset, NETWORK_TYPE_PUBLIC, printed, sizeof(printed));
     assert_string_equal(printed, "10000000.0000001 XLM");
-    print_amount(100000001, asset, printed);
+    print_amount(100000001, &asset, NETWORK_TYPE_PUBLIC, printed, sizeof(printed));
     assert_string_equal(printed, "10.0000001 XLM");
-    print_amount(100000001000000, asset, printed);
+    print_amount(100000001000000, &asset, NETWORK_TYPE_PUBLIC, printed, sizeof(printed));
     assert_string_equal(printed, "10000000.1 XLM");
 }
 
@@ -44,18 +44,44 @@ void test_print_uint(void **state) {
     (void) state;
 
     char printed[24];
-    print_uint(1230, printed);
+
+    assert_int_equal(print_uint(0, printed, sizeof(printed)), 0);
+    assert_string_equal(printed, "0");
+
+    assert_int_equal(print_uint(1230, printed, sizeof(printed)), 0);
     assert_string_equal(printed, "1230");
+
+    // output buffer too small
+    assert_int_equal(print_uint(1230, printed, 4), -1);
+
+    // output buffer just big enough to store output data
+    assert_int_equal(print_uint(9999, printed, 5), 0);
+    assert_string_equal(printed, "9999");
 }
 
 void test_print_int(void **state) {
     (void) state;
 
     char printed[24];
-    print_int(1230, printed);
+
+    assert_int_equal(print_int(0, printed, sizeof(printed)), 0);
+    assert_string_equal(printed, "0");
+
+    assert_int_equal(print_int(1230, printed, sizeof(printed)), 0);
     assert_string_equal(printed, "1230");
-    print_int(-1230, printed);
+
+    assert_int_equal(print_int(-1230, printed, sizeof(printed)), 0);
     assert_string_equal(printed, "-1230");
+
+    // output buffer too small
+    assert_int_equal(print_int(-1230, printed, 5), -1);
+    assert_int_equal(print_int(1230, printed, 4), -1);
+
+    // output buffer just big enough to store output data
+    assert_int_equal(print_int(-9999, printed, 6), 0);
+    assert_string_equal(printed, "-9999");
+    assert_int_equal(print_int(9999, printed, 5), 0);
+    assert_string_equal(printed, "9999");
 }
 
 void test_print_summary(void **state) {
@@ -76,7 +102,7 @@ void test_print_binary(void **state) {
     char hex[16];
 
     print_binary_summary(binary, hex, 32);
-    assert_string_equal(hex, "0x00010203..1C1D1E1F");
+    assert_string_equal(hex, "0x000102..1D1E1F");
 }
 
 void test_base64_encode(void **state) {
