@@ -127,10 +127,10 @@ void print_binary_summary(const uint8_t *in, char *out, uint8_t len);
 int print_amount(uint64_t amount, const char *asset, char *out, size_t out_len);
 
 /** concatenate assetCode and assetIssuer summary */
-void print_asset_t(asset_t *asset, char *out, size_t out_len);
+void print_asset_t(const Asset *asset, char *out, size_t out_len);
 
 /** concatenate code and issuer */
-void print_asset(char *code, char *issuer, char *out, size_t out_len);
+void print_asset(const char *code, char *issuer, char *out, size_t out_len);
 
 /** "XLM" or "native" depending on the network id */
 void print_native_asset_code(uint8_t network, char *out, size_t out_len);

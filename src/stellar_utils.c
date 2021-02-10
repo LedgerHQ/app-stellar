@@ -218,7 +218,7 @@ void print_binary_summary(const uint8_t *in, char *out, uint8_t len) {
     }
 }
 
-void print_public_key(const uint8_t *in, char *out, uint8_t numCharsL, uint8_t numCharsR) {
+void print_public_key(MuxedAccount in, char *out, uint8_t numCharsL, uint8_t numCharsR) {
     if (numCharsL > 0) {
         char buffer[57];
         encode_public_key(in, buffer);
@@ -317,13 +317,13 @@ int print_uint(uint64_t l, char *out, size_t out_len) {
     return 0;
 }
 
-void print_asset_t(asset_t *asset, char *out, size_t out_len) {
+void print_asset_t(const Asset *asset, char *out, size_t out_len) {
     char issuer[12];
     print_public_key(asset->issuer, issuer, 3, 4);
     print_asset(asset->code, issuer, out, out_len);
 }
 
-void print_asset(char *code, char *issuer, char *out, size_t out_len) {
+void print_asset(const char *code, char *issuer, char *out, size_t out_len) {
     strlcpy(out, code, out_len);
     strlcat(out, "@", out_len);
     strlcat(out, issuer, out_len);

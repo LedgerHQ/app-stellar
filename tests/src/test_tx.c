@@ -13,20 +13,35 @@ stellar_context_t ctx;
 tx_context_t tx_ctx;
 
 static const char *testcases[] = {
-    "../testcases/txMultiOp.raw",        "../testcases/txSimple.raw",
-    "../testcases/txMemoId.raw",         "../testcases/txMemoText.raw",
-    "../testcases/txMemoHash.raw",       "../testcases/txCustomAsset4.raw",
-    "../testcases/txCustomAsset12.raw",  "../testcases/txTimeBounds.raw",
-    "../testcases/txOpSource.raw",       "../testcases/txCreateAccount.raw",
-    "../testcases/txAccountMerge.raw",   "../testcases/txPathPayment.raw",
-    "../testcases/txSetData.raw",        "../testcases/txRemoveData.raw",
-    "../testcases/txChangeTrust.raw",    "../testcases/txRemoveTrust.raw",
-    "../testcases/txAllowTrust.raw",     "../testcases/txRevokeTrust.raw",
-    "../testcases/txCreateOffer.raw",    "../testcases/txCreateOffer2.raw",
-    "../testcases/txChangeOffer.raw",    "../testcases/txRemoveOffer.raw",
-    "../testcases/txPassiveOffer.raw",   "../testcases/txSetAllOptions.raw",
-    "../testcases/txSetSomeOptions.raw", "../testcases/txInflation.raw",
-    "../testcases/txBumpSequence.raw",   NULL,
+    "../testcases/txMultiOp.raw",
+    "../testcases/txSimple.raw",
+    "../testcases/txMemoId.raw",
+    "../testcases/txMemoText.raw",
+    "../testcases/txMemoHash.raw",
+    "../testcases/txCustomAsset4.raw",
+    "../testcases/txCustomAsset12.raw",
+    "../testcases/txTimeBounds.raw",
+    "../testcases/txOpSource.raw",
+    "../testcases/txCreateAccount.raw",
+    "../testcases/txAccountMerge.raw",
+    "../testcases/txPathPayment.raw",
+    "../testcases/txSetData.raw",
+    "../testcases/txRemoveData.raw",
+    "../testcases/txChangeTrust.raw",
+    "../testcases/txRemoveTrust.raw",
+    "../testcases/txAllowTrust.raw",
+    "../testcases/txRevokeTrust.raw",
+    "../testcases/txCreateOffer.raw",
+    "../testcases/txCreateOffer2.raw",
+    "../testcases/txChangeOffer.raw",
+    "../testcases/txRemoveOffer.raw",
+    "../testcases/txPassiveOffer.raw",
+    "../testcases/txSetAllOptions.raw",
+    "../testcases/txSetSomeOptions.raw",
+    "../testcases/txInflation.raw",
+    "../testcases/txBumpSequence.raw",
+    "../testcases/txManageBuyOffer.raw",
+    NULL,
 };
 
 static void load_transaction_data(const char *filename, tx_context_t *txCtx) {
@@ -83,7 +98,8 @@ static void check_transaction_results(const char *filename) {
             set_state_data(true);
         }
     }
-
+    assert_int_equal(fgets(line, sizeof(line), fp), 0);
+    assert_int_equal(feof(fp), 1);
     fclose(fp);
 }
 

@@ -1,0 +1,10 @@
+Change Offer; 987654
+Sell; SLT@GAD..QN2I
+Price; 200 SLT
+Buy; 300 XLM
+Memo; [none]
+Fee; 0.00001 XLM
+Network; Test
+Time Bounds From; 0
+Time Bounds To; 0
+Tx Source; GADFVW3UXVKDOU626XUPYDJU2BFCGFJHQ6SREYOZ6IJV4XSHOALEQN2I
