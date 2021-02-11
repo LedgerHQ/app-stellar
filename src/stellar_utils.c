@@ -22,9 +22,7 @@
 #include "stellar_types.h"
 #include "stellar_api.h"
 
-#ifndef TEST
-#include "os.h"
-#endif
+#include "bolos_target.h"
 
 static const char hexAlphabet[] = "0123456789ABCDEF";
 static const char base32Alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
@@ -32,13 +30,28 @@ static const char base64Alphabet[] =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 static int base64ModTable[] = {0, 2, 1};
 
+bool parse_bip32_path(uint8_t *path,
+                      size_t path_length,
+                      uint32_t *path_parsed,
+                      size_t path_parsed_length) {
+    if ((path_length < 0x01) || (path_length > path_parsed_length)) {
+        return false;
+    }
+
+    for (size_t i = 0; i < path_length; i++) {
+        path_parsed[i] = (path[0] << 24u) | (path[1] << 16u) | (path[2] << 8u) | (path[3]);
+        path += 4;
+    }
+
+    return true;
+}
+
 unsigned short crc16(char *ptr, int count) {
     int crc;
-    char i;
     crc = 0;
     while (--count >= 0) {
         crc = crc ^ (int) *ptr++ << 8;
-        i = 8;
+        int i = 8;
         do {
             if (crc & 0x8000)
                 crc = crc << 1 ^ 0x1021;
@@ -55,7 +68,6 @@ unsigned short crc16(char *ptr, int count) {
  */
 int base32_encode(const uint8_t *data, int length, char *result, int bufSize) {
     int count = 0;
-    int quantum = 8;
 
     if (length < 0 || length > (1 << 28)) {
         return -1;
@@ -65,6 +77,7 @@ int base32_encode(const uint8_t *data, int length, char *result, int bufSize) {
         int buffer = data[0];
         int next = 1;
         int bitsLeft = 8;
+        int quantum = 8;
 
         while (count < bufSize && (bitsLeft > 0 || next < length)) {
             if (bitsLeft < 5) {
@@ -79,9 +92,9 @@ int base32_encode(const uint8_t *data, int length, char *result, int bufSize) {
                 }
             }
 
-            int index = 0x1F & (buffer >> (bitsLeft - 5));
+            int idx = 0x1F & (buffer >> (bitsLeft - 5));
             bitsLeft -= 5;
-            result[count++] = base32Alphabet[index];
+            result[count++] = base32Alphabet[idx];
 
             // Track the characters which make up a single quantum of 8 characters
             quantum--;
@@ -188,13 +201,13 @@ void print_binary_summary(const uint8_t *in, char *out, uint8_t len) {
     out[1] = 'x';
     if (2 + len * 2 > 18) {
         uint8_t i, j;
-        for (i = 0, j = 2; i < 4; i += 1, j += 2) {
+        for (i = 0, j = 2; i < 3; i += 1, j += 2) {
             out[j] = hexAlphabet[in[i] / 16];
             out[j + 1] = hexAlphabet[in[i] % 16];
         }
         out[j++] = '.';
         out[j++] = '.';
-        for (i = len - 4; i < len; i += 1, j += 2) {
+        for (i = len - 3; i < len; i += 1, j += 2) {
             out[j] = hexAlphabet[in[i] / 16];
             out[j + 1] = hexAlphabet[in[i] % 16];
         }
@@ -205,7 +218,7 @@ void print_binary_summary(const uint8_t *in, char *out, uint8_t len) {
     }
 }
 
-void print_public_key(const uint8_t *in, char *out, uint8_t numCharsL, uint8_t numCharsR) {
+void print_public_key(MuxedAccount in, char *out, uint8_t numCharsL, uint8_t numCharsR) {
     if (numCharsL > 0) {
         char buffer[57];
         encode_public_key(in, buffer);
@@ -215,12 +228,43 @@ void print_public_key(const uint8_t *in, char *out, uint8_t numCharsL, uint8_t n
     }
 }
 
-void print_amount(uint64_t amount, const char *asset, char *out) {
-    char buffer[AMOUNT_MAX_SIZE];
-    uint64_t dVal = amount;
-    int i, j;
+int print_asset_name(const Asset *asset, uint8_t network_id, char *out, size_t out_len) {
+    switch (asset->type) {
+        case ASSET_TYPE_NATIVE:
+            print_native_asset_code(network_id, out, out_len);
+            return 0;
+        case ASSET_TYPE_CREDIT_ALPHANUM4:
+            for (int i = 0; i < 4; i++) {
+                out[i] = asset->assetCode[i];
+                if (out[i] == 0) {
+                    break;
+                }
+            }
+            out[4] = 0;
+            return 0;
+        case ASSET_TYPE_CREDIT_ALPHANUM12:
+            for (int i = 0; i < 12; i++) {
+                out[i] = asset->assetCode[i];
+                if (out[i] == 0) {
+                    break;
+                }
+            }
+            out[12] = 0;
+            return 0;
+        default:
+            return -1;
+    }
+}
 
-    memset(buffer, 0, AMOUNT_MAX_SIZE);
+int print_amount(uint64_t amount,
+                 const Asset *asset,
+                 uint8_t network_id,
+                 char *out,
+                 size_t out_len) {
+    char buffer[AMOUNT_MAX_SIZE] = {0};
+    uint64_t dVal = amount;
+    int i;
+
     for (i = 0; dVal > 0 || i < 9; i++) {
         if (dVal > 0) {
             buffer[i] = (dVal % 10) + '0';
@@ -233,128 +277,117 @@ void print_amount(uint64_t amount, const char *asset, char *out) {
             buffer[i] = '.';
         }
         if (i >= AMOUNT_MAX_SIZE) {
-            THROW(0x6700);
+            return -1;
         }
     }
-    // reverse order
-    for (i -= 1, j = 0; i >= 0 && j < AMOUNT_MAX_SIZE - 1; i--, j++) {
-        out[j] = buffer[i];
-    }
-    // strip trailing 0s
-    for (j -= 1; j > 0; j--) {
-        if (out[j] != '0') break;
-    }
-    j += 1;
 
+    // reverse order
+    for (int j = 0; j < i / 2; j++) {
+        char c = buffer[j];
+        buffer[j] = buffer[i - j - 1];
+        buffer[i - j - 1] = c;
+    }
+
+    // strip trailing 0s
+    i -= 1;
+    while (buffer[i] == '0') {
+        buffer[i] = 0;
+        i -= 1;
+    }
     // strip trailing .
-    if (out[j - 1] == '.') j -= 1;
+    if (buffer[i] == '.') buffer[i] = 0;
+    strlcpy(out, buffer, out_len);
 
     if (asset) {
         // qualify amount
-        out[j++] = ' ';
-        strcpy(out + j, asset);
-        out[j + strlen(asset)] = '\0';
-    } else {
-        out[j] = '\0';
+        print_asset_name(asset, network_id, buffer, AMOUNT_MAX_SIZE);
+        strlcat(out, " ", out_len);
+        strlcat(out, buffer, out_len);
     }
+    return 0;
 }
 
-void print_int(int64_t l, char *out) {
-    if (l == 0) {
-        strcpy(out, "0");
-        return;
+int print_int(int64_t l, char *out, size_t out_len) {
+    if (out_len == 0) {
+        return -1;
     }
-
-    char buffer[AMOUNT_MAX_SIZE];
-    int64_t dVal = l < 0 ? -l : l;
-    int i;
-
-    memset(buffer, 0, AMOUNT_MAX_SIZE);
-    for (i = 0; dVal > 0; i++) {
-        if (i >= AMOUNT_MAX_SIZE) {
-            THROW(0x6700);
-        }
-        buffer[i] = (dVal % 10) + '0';
-        dVal /= 10;
-    }
-    int j = 0;
     if (l < 0) {
-        out[j++] = '-';
+        out[0] = '-';
+        return print_uint(-l, out + 1, out_len - 1);
     }
-    // reverse order
-    for (i -= 1; i >= 0 && j < AMOUNT_MAX_SIZE - 1; i--, j++) {
-        out[j] = buffer[i];
-    }
-    out[j] = '\0';
+    return print_uint(l, out, out_len);
 }
 
-void print_uint(uint64_t l, char *out) {
-    if (l == 0) {
-        strcpy(out, "0");
-        return;
-    }
-
+int print_uint(uint64_t l, char *out, size_t out_len) {
     char buffer[AMOUNT_MAX_SIZE];
     uint64_t dVal = l;
-    int i, j;
+    size_t i, j;
+
+    if (l == 0) {
+        if (out_len < 2) {
+            return -1;
+        }
+        strlcpy(out, "0", out_len);
+        return 0;
+    }
 
     memset(buffer, 0, AMOUNT_MAX_SIZE);
     for (i = 0; dVal > 0; i++) {
         if (i >= AMOUNT_MAX_SIZE) {
-            THROW(0x6700);
+            return -1;
         }
         buffer[i] = (dVal % 10) + '0';
         dVal /= 10;
     }
+    if (out_len <= i) {
+        return -1;
+    }
     // reverse order
-    for (i -= 1, j = 0; i >= 0 && j < AMOUNT_MAX_SIZE - 1; i--, j++) {
-        out[j] = buffer[i];
+    for (j = 0; j < i; j++) {
+        out[j] = buffer[i - j - 1];
     }
-    out[j] = '\0';
+    out[i] = '\0';
+    return 0;
 }
 
-void print_asset_t(asset_t *asset, char *out) {
+void print_asset_t(const Asset *asset, uint8_t network_id, char *out, size_t out_len) {
     char issuer[12];
+    char asset_name[12 + 1];
+
+    print_asset_name(asset, network_id, asset_name, sizeof(asset_name));
     print_public_key(asset->issuer, issuer, 3, 4);
-    print_asset(asset->code, issuer, out);
+    print_asset(asset_name, issuer, out, out_len);
 }
 
-void print_asset(char *code, char *issuer, char *out) {
-    uint8_t offset = strlen(code);
-    strcpy(out, code);
-    out[offset] = '@';
-    strcpy(out + offset + 1, issuer);
+void print_asset(const char *code, char *issuer, char *out, size_t out_len) {
+    strlcpy(out, code, out_len);
+    strlcat(out, "@", out_len);
+    strlcat(out, issuer, out_len);
 }
 
-void print_flag(char *flag, char *out, char prefix) {
-    uint8_t len = strlen(out);
-    if (len) {
-        strcpy(out + len, ", ");
-        len += 2;
+static void print_flag(char *flag, char *out, size_t out_len) {
+    if (out[0]) {
+        strlcat(out, ", ", out_len);
     }
-    if (prefix) {
-        out[len] = prefix;
-        len += 1;
-    }
-    strcpy(out + len, flag);
+    strlcat(out, flag, out_len);
 }
 
-void print_flags(uint32_t flags, char *out, char prefix) {
+void print_flags(uint32_t flags, char *out, size_t out_len) {
     if (flags & 0x01u) {
-        print_flag("Auth required", out, prefix);
+        print_flag("Auth required", out, out_len);
     }
     if (flags & 0x02u) {
-        print_flag("Auth revocable", out, prefix);
+        print_flag("Auth revocable", out, out_len);
     }
     if (flags & 0x04u) {
-        print_flag("Auth immutable", out, prefix);
+        print_flag("Auth immutable", out, out_len);
     }
 }
 
-void print_native_asset_code(uint8_t network, char *out) {
+void print_native_asset_code(uint8_t network, char *out, size_t out_len) {
     if (network == NETWORK_TYPE_UNKNOWN) {
-        strcpy(out, "native");
+        strlcpy(out, "native", out_len);
     } else {
-        strcpy(out, "XLM");
+        strlcpy(out, "XLM", out_len);
     }
 }

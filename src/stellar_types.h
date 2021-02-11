@@ -48,8 +48,12 @@
 #define OFFSET_LC    4
 #define OFFSET_CDATA 5
 
-/* Max transaction size is 1.4Kb */
-#define MAX_RAW_TX 1350
+/* Max transaction size */
+#ifdef TARGET_NANOX
+#define MAX_RAW_TX 1120
+#else  // Nano S has less ram available
+#define MAX_RAW_TX 1120
+#endif
 /* For sure not more than 35 operations will fit in that */
 #define MAX_OPS 35
 /* Although SEP-0005 only allows 3 bip32 path elements we support more */
@@ -64,37 +68,40 @@
 //                       TRANSACTION PARSING CONSTANTS                       //
 // ------------------------------------------------------------------------- //
 
-#define ASSET_TYPE_NATIVE            0
-#define ASSET_TYPE_CREDIT_ALPHANUM4  1
-#define ASSET_TYPE_CREDIT_ALPHANUM12 2
+typedef enum {
+    ASSET_TYPE_NATIVE = 0,
+    ASSET_TYPE_CREDIT_ALPHANUM4 = 1,
+    ASSET_TYPE_CREDIT_ALPHANUM12 = 2,
+} AssetType;
 
-#define MEMO_TYPE_NONE   0
-#define MEMO_TYPE_TEXT   1
-#define MEMO_TYPE_ID     2
-#define MEMO_TYPE_HASH   3
-#define MEMO_TYPE_RETURN 4
+typedef enum {
+    MEMO_NONE = 0,
+    MEMO_TEXT = 1,
+    MEMO_ID = 2,
+    MEMO_HASH = 3,
+    MEMO_RETURN = 4,
+} MemoType;
 
 #define NETWORK_TYPE_PUBLIC  0
 #define NETWORK_TYPE_TEST    1
 #define NETWORK_TYPE_UNKNOWN 2
 
-#define XDR_OPERATION_TYPE_CREATE_ACCOUNT       0
-#define XDR_OPERATION_TYPE_PAYMENT              1
-#define XDR_OPERATION_TYPE_PATH_PAYMENT         2
-#define XDR_OPERATION_TYPE_MANAGE_SELL_OFFER    3
-#define XDR_OPERATION_TYPE_CREATE_PASSIVE_OFFER 4
-#define XDR_OPERATION_TYPE_SET_OPTIONS          5
-#define XDR_OPERATION_TYPE_CHANGE_TRUST         6
-#define XDR_OPERATION_TYPE_ALLOW_TRUST          7
-#define XDR_OPERATION_TYPE_ACCOUNT_MERGE        8
-#define XDR_OPERATION_TYPE_INFLATION            9
-#define XDR_OPERATION_TYPE_MANAGE_DATA          10
-#define XDR_OPERATION_TYPE_BUMP_SEQUENCE        11
-#define XDR_OPERATION_TYPE_MANAGE_BUY_OFFER     12
-
-#define SIGNER_KEY_TYPE_ED25519     0
-#define SIGNER_KEY_TYPE_PRE_AUTH_TX 1
-#define SIGNER_KEY_TYPE_HASH_X      2
+typedef enum {
+    XDR_OPERATION_TYPE_CREATE_ACCOUNT = 0,
+    XDR_OPERATION_TYPE_PAYMENT = 1,
+    XDR_OPERATION_TYPE_PATH_PAYMENT_STRICT_RECEIVE = 2,
+    XDR_OPERATION_TYPE_MANAGE_SELL_OFFER = 3,
+    XDR_OPERATION_TYPE_CREATE_PASSIVE_SELL_OFFER = 4,
+    XDR_OPERATION_TYPE_SET_OPTIONS = 5,
+    XDR_OPERATION_TYPE_CHANGE_TRUST = 6,
+    XDR_OPERATION_TYPE_ALLOW_TRUST = 7,
+    XDR_OPERATION_TYPE_ACCOUNT_MERGE = 8,
+    XDR_OPERATION_TYPE_INFLATION = 9,
+    XDR_OPERATION_TYPE_MANAGE_DATA = 10,
+    XDR_OPERATION_TYPE_BUMP_SEQUENCE = 11,
+    XDR_OPERATION_TYPE_MANAGE_BUY_OFFER = 12,
+    XDR_OPERATION_TYPE_PATH_PAYMENT_STRICT_SEND = 13,
+} xdr_operation_type_e;
 
 #define PUBLIC_KEY_TYPE_ED25519 0
 #define MEMO_TEXT_MAX_SIZE      28
@@ -138,14 +145,19 @@ static const char *NETWORK_NAMES[3] = {"Public", "Test", "Unknown"};
     do {                           \
         printf("error: %d", code); \
     } while (0)
-#define PRINTF(msg, arg) printf(msg, arg)
-#define PIC(code)        code
-//#define TARGET_NANOS 1
+
+#ifdef FUZZ
+#define PRINTF(...)
+#else
+#define PRINTF(strbuf, ...) fprintf(stderr, strbuf, __VA_ARGS__)
+#endif  // FUZZ
+#define PIC(code) code
+
 #define MEMCLEAR(dest) memset(&dest, 0, sizeof(dest));
 #else
-#define MEMCLEAR(dest)                     \
-    do {                                   \
-        os_memset(&dest, 0, sizeof(dest)); \
+#define MEMCLEAR(dest)                       \
+    do {                                     \
+        explicit_bzero(&dest, sizeof(dest)); \
     } while (0)
 #include "bolos_target.h"
 #endif  // TEST
@@ -154,77 +166,112 @@ static const char *NETWORK_NAMES[3] = {"Public", "Test", "Unknown"};
 //                           TYPE DEFINITIONS                                //
 // ------------------------------------------------------------------------- //
 
-typedef struct {
-    uint8_t type;
-    char code[13];
-    const uint8_t *issuer;
-} asset_t;
+typedef const uint8_t *AccountID;
+typedef int64_t SequenceNumber;
+typedef uint64_t TimePoint;
+
+typedef const uint8_t *MuxedAccount;
 
 typedef struct {
-    uint32_t numerator;
-    uint32_t denominator;
-} price_t;
+    AssetType type;
+    const char *assetCode;
+    AccountID issuer;
+} Asset;
 
 typedef struct {
-    const uint8_t *accountId;
-    uint64_t amount;
-
-} create_account_op_t;
-
-typedef struct {
-    const uint8_t *destination;
-    uint64_t amount;
-    asset_t asset;
-} payment_op_t;
+    int32_t n;  // numerator
+    int32_t d;  // denominator
+} Price;
 
 typedef struct {
-    const uint8_t *destination;
-    asset_t sourceAsset;
-    uint64_t sendMax;
-    asset_t destAsset;
-    uint64_t destAmount;
+    AccountID destination;    // account to create
+    int64_t startingBalance;  // amount they end up with
+} CreateAccountOp;
+
+typedef struct {
+    MuxedAccount destination;  // recipient of the payment
+    Asset asset;               // what they end up with
+    int64_t amount;            // amount they end up with
+} PaymentOp;
+
+typedef struct {
+    Asset sendAsset;   // asset we pay with
+    uint64_t sendMax;  // the maximum amount of sendAsset to send (excluding fees).
+                       // The operation will fail if can't be met
+
+    MuxedAccount destination;  // recipient of the payment
+    Asset destAsset;           // what they end up with
+    int64_t destAmount;        // amount they end up with
+
     uint8_t pathLen;
-    asset_t path[5];
-} path_payment_op_t;
+    Asset path[5];  // additional hops it must go through to get there
+} PathPaymentStrictReceiveOp;
 
 typedef struct {
-    asset_t buying;
-    asset_t selling;
-    uint64_t amount;
-    price_t price;
-    uint64_t offerId;
-    bool active;
-    bool buy;
-} manage_offer_op_t;
+    Asset selling;   // A
+    Asset buying;    // B
+    int64_t amount;  // amount taker gets
+    Price price;     // cost of A in terms of B
+} CreatePassiveSellOfferOp;
 
 typedef struct {
-    asset_t asset;
-    uint64_t limit;
-} change_trust_op_t;
+    Asset selling;
+    Asset buying;
+    int64_t amount;  // amount being sold. if set to 0, delete the offer
+    Price price;     // price of thing being sold in terms of what you are buying
+
+    // 0=create a new offer, otherwise edit an existing offer
+    int64_t offerID;
+} ManageSellOfferOp;
 
 typedef struct {
+    Asset selling;
+    Asset buying;
+    int64_t buyAmount;  // amount being bought. if set to 0, delete the offer
+    Price price;        // price of thing being bought in terms of what you are
+                        // selling
+
+    // 0=create a new offer, otherwise edit an existing offer
+    int64_t offerID;
+} ManageBuyOfferOp;
+
+typedef struct {
+    Asset line;
+
+    uint64_t limit;  // if limit is set to 0, deletes the trust line
+} ChangeTrustOp;
+
+typedef struct {
+    AccountID trustor;
     char assetCode[13];
-    const uint8_t *trustee;
-    bool authorize;
-} allow_trust_op_t;
+    uint32_t authorize;
+} AllowTrustOp;
+
+typedef MuxedAccount AccountMergeOp;
 
 typedef struct {
-    const uint8_t *destination;
-} account_merge_op_t;
+    SequenceNumber bumpTo;
+} BumpSequenceOp;
+
+typedef enum {
+    SIGNER_KEY_TYPE_ED25519 = 0,
+    SIGNER_KEY_TYPE_PRE_AUTH_TX = 1,
+    SIGNER_KEY_TYPE_HASH_X = 2,
+} SignerKeyType;
 
 typedef struct {
-    int64_t bumpTo;
-} bump_sequence_op_t;
-
-typedef struct {
-    uint8_t type;
+    SignerKeyType type;
     const uint8_t *data;
-    uint32_t weight;
+} SignerKey;
+
+typedef struct {
+    SignerKey key;
+    uint32_t weight;  // really only need 1 byte
 } signer_t;
 
 typedef struct {
     bool inflationDestinationPresent;
-    const uint8_t *inflationDestination;
+    AccountID inflationDestination;
     uint32_t clearFlags;
     uint32_t setFlags;
     bool masterWeightPresent;
@@ -239,52 +286,56 @@ typedef struct {
     const uint8_t *homeDomain;
     bool signerPresent;
     signer_t signer;
-} set_options_op_t;
+} SetOptionsOp;
 
 typedef struct {
     uint8_t dataNameSize;
     const uint8_t *dataName;
     uint8_t dataValueSize;
     const uint8_t *dataValue;
-} manage_data_op_t;
+} ManageDataOp;
 
 typedef struct {
+    bool sourceAccountPresent;
+    MuxedAccount sourceAccount;
     uint8_t type;
-    bool sourcePresent;
-    const uint8_t *source;
     union {
-        create_account_op_t createAccount;
-        payment_op_t payment;
-        path_payment_op_t pathPayment;
-        manage_offer_op_t manageOffer;
-        change_trust_op_t changeTrust;
-        allow_trust_op_t allowTrust;
-        account_merge_op_t accountMerge;
-        set_options_op_t setOptions;
-        manage_data_op_t manageData;
-        bump_sequence_op_t bumpSequence;
-    } op;
-} operation_details_t;
+        CreateAccountOp createAccount;
+        PaymentOp payment;
+        PathPaymentStrictReceiveOp pathPaymentStrictReceiveOp;
+        ManageSellOfferOp manageSellOfferOp;
+        CreatePassiveSellOfferOp createPassiveSellOfferOp;
+        SetOptionsOp setOptionsOp;
+        ChangeTrustOp changeTrustOp;
+        AllowTrustOp allowTrustOp;
+        MuxedAccount destination;
+        ManageDataOp manageDataOp;
+        BumpSequenceOp bumpSequenceOp;
+        ManageBuyOfferOp manageBuyOfferOp;
+    };
+} Operation;
 
 typedef struct {
-    uint8_t type;
-    // Hash in hexa, preceeded by "0x"
-    char data[2 * HASH_SIZE + 2 + 1];
-} memo_t;
+    MemoType type;
+    union {
+        uint64_t id;
+        const char *text;
+        const uint8_t *hash;
+    };
+} Memo;
 
 typedef struct {
-    uint64_t minTime;
-    uint64_t maxTime;
-} time_bounds_t;
+    TimePoint minTime;
+    TimePoint maxTime;  // 0 here means no maxTime
+} TimeBounds;
 
 typedef struct {
-    memo_t memo;
-    uint64_t fee;
-    uint8_t network;
+    MuxedAccount sourceAccount;     // account used to run the transaction
+    uint32_t fee;                   // the fee the sourceAccount will pay
+    SequenceNumber sequenceNumber;  // sequence number to consume in the account
     bool hasTimeBounds;
-    time_bounds_t timeBounds;
-    const uint8_t *source;
-    int64_t sequenceNumber;
+    TimeBounds timeBounds;  // validity range (inclusive) for the last ledger close time
+    Memo memo;
 } tx_details_t;
 
 typedef struct {
@@ -301,7 +352,8 @@ typedef struct {
     uint32_t rawLength;
     uint8_t hash[HASH_SIZE];
     uint16_t offset;
-    operation_details_t opDetails;
+    uint8_t network;
+    Operation opDetails;
     tx_details_t txDetails;
     uint8_t opCount;
     uint8_t opIdx;
@@ -319,12 +371,19 @@ typedef struct {
         tx_context_t tx;
     } req;
     enum request_type_t reqType;
-    uint16_t u2fTimer;
+    int16_t u2fTimer;
 } stellar_context_t;
 
 typedef struct {
     uint8_t initialized;
     uint8_t hashSigning;
 } stellar_nv_state_t;
+
+typedef struct {
+    uint64_t amount;
+    uint64_t fees;
+    char destination[57];
+    char memo[20];
+} swap_values_t;
 
 #endif

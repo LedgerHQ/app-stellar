@@ -27,6 +27,8 @@
 #include "stellar_vars.h"
 #include "stellar_ux.h"
 
+#include "swap/swap_lib_calls.h"
+
 unsigned short io_exchange_al(unsigned char channel, unsigned short tx_len) {
     switch (channel & ~(IO_FLAGS)) {
         case CHANNEL_KEYBOARD:
@@ -70,7 +72,7 @@ static void handle_apdu(uint8_t *buffer,
                 THROW(0x6e00);
             }
 
-            PRINTF("New APDU:\n%.*H\n", dataLength + 4, G_io_apdu_buffer);
+            PRINTF("New APDU:\n%.*H\n", size, buffer);
 
             // reset keep-alive for u2f just short of 30sec
             ctx.u2fTimer = U2F_REQUEST_TIMEOUT;
@@ -97,7 +99,6 @@ static void handle_apdu(uint8_t *buffer,
                     break;
                 default:
                     THROW(0x6D00);
-                    break;
             }
         }
         CATCH(EXCEPTION_IO_RESET) {
@@ -138,10 +139,12 @@ static void stellar_nv_state_init() {
     }
 }
 
-static void stellar_main(void) {
+static unsigned char last_ins = 0;
+
+void stellar_main(void) {
     // hash sig support is not persistent
 
-    os_memset(&ctx, 0, sizeof(ctx));
+    memset(&ctx, 0, sizeof(ctx));
 
     volatile unsigned int rx = 0;
     volatile unsigned int tx = 0;
@@ -169,6 +172,12 @@ static void stellar_main(void) {
                 if (rx == 0) {
                     THROW(0x6982);
                 }
+                // Reset transaction context before starting to parse a new APDU message type.
+                // This helps protect against "Instruction Change" attacks
+                if (G_io_apdu_buffer[OFFSET_INS] != last_ins) {
+                    reset_ctx();
+                }
+                last_ins = G_io_apdu_buffer[OFFSET_INS];
 
                 handle_apdu(G_io_apdu_buffer, rx, &flags, &tx);
             }
@@ -223,6 +232,8 @@ void u2f_send_keep_alive() {
 }
 
 unsigned char io_event(unsigned char channel) {
+    (void) channel;
+
     // can't have more than one tag in the reply, not supported yet.
     switch (G_io_seproxyhal_spi_buffer[0]) {
         case SEPROXYHAL_TAG_FINGER_EVENT:
@@ -257,16 +268,7 @@ unsigned char io_event(unsigned char channel) {
                 }
             }
 
-            UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer, {
-#if defined(TARGET_NANOS) && !defined(HAVE_UX_FLOW)  // S legacy only
-                if (UX_ALLOWED) {
-                    if (ctx.reqType == CONFIRM_TRANSACTION) {
-                        ui_approve_tx_next_screen(&ctx.req.tx);
-                    }
-                    UX_REDISPLAY();
-                }
-#endif
-            });
+            UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer, {});
             break;
     }
 
@@ -290,15 +292,13 @@ void app_exit(void) {
     END_TRY_L(exit);
 }
 
-__attribute__((section(".boot"))) int main(void) {
-    // exit critical section
-    __asm volatile("cpsie i");
-
-    // ensure exception will work as planned
-    os_boot();
-
+void coin_main() {
     for (;;) {
+        called_from_swap = false;
+        reset_ctx();
+
         UX_INIT();
+
         BEGIN_TRY {
             TRY {
                 io_seproxyhal_init();
@@ -310,7 +310,6 @@ __attribute__((section(".boot"))) int main(void) {
 
                 stellar_nv_state_init();
 
-                // deactivate usb before activating
                 USB_power(0);
                 USB_power(1);
 
@@ -324,9 +323,12 @@ __attribute__((section(".boot"))) int main(void) {
                 stellar_main();
             }
             CATCH(EXCEPTION_IO_RESET) {
+                // reset IO and UX before continuing
+                CLOSE_TRY;
                 continue;
             }
             CATCH_ALL {
+                CLOSE_TRY;
                 break;
             }
             FINALLY {
@@ -335,6 +337,81 @@ __attribute__((section(".boot"))) int main(void) {
         END_TRY;
     }
     app_exit();
+}
+
+struct libargs_s {
+    unsigned int id;
+    unsigned int command;
+    unsigned int unused;
+    union {
+        check_address_parameters_t *check_address;
+        create_transaction_parameters_t *create_transaction;
+        get_printable_amount_parameters_t *get_printable_amount;
+    };
+};
+
+static void library_main_helper(struct libargs_s *args) {
+    check_api_level(CX_COMPAT_APILEVEL);
+    PRINTF("Inside library \n");
+    switch (args->command) {
+        case CHECK_ADDRESS:
+            // ensure result is zero if an exception is thrown
+            args->check_address->result = 0;
+            args->check_address->result = handle_check_address(args->check_address);
+            break;
+        case SIGN_TRANSACTION:
+            if (copy_transaction_parameters(args->create_transaction)) {
+                // never returns
+                handle_swap_sign_transaction();
+            }
+            break;
+        case GET_PRINTABLE_AMOUNT:
+            handle_get_printable_amount(args->get_printable_amount);
+            break;
+        default:
+            break;
+    }
+}
+
+void library_main(struct libargs_s *args) {
+    bool end = false;
+    /* This loop ensures that library_main_helper and os_lib_end are called
+     * within a try context, even if an exception is thrown */
+    while (1) {
+        BEGIN_TRY {
+            TRY {
+                if (!end) {
+                    library_main_helper(args);
+                }
+                os_lib_end();
+            }
+            FINALLY {
+                end = true;
+            }
+        }
+        END_TRY;
+    }
+}
+
+__attribute__((section(".boot"))) int main(int arg0) {
+    // exit critical section
+    __asm volatile("cpsie i");
+
+    // ensure exception will work as planned
+    os_boot();
+
+    if (arg0 == 0) {
+        // called from dashboard as standalone xrp app
+        coin_main();
+    } else {
+        // Called as library from another app
+        struct libargs_s *args = (struct libargs_s *) arg0;
+        if (args->id == 0x100) {
+            library_main(args);
+        } else {
+            app_exit();
+        }
+    }
 
     return 0;
 }

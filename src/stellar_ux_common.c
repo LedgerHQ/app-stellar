@@ -33,18 +33,23 @@ unsigned int io_seproxyhal_respond(unsigned short sw, uint32_t tx) {
 }
 
 unsigned int io_seproxyhal_touch_address_ok(const bagl_element_t *e) {
+    (void) e;
     return io_seproxyhal_respond(0x9000, ctx.req.pk.tx);
 }
 
 unsigned int io_seproxyhal_touch_address_cancel(const bagl_element_t *e) {
+    (void) e;
     return io_seproxyhal_respond(0x6985, 0);
 }
 
 unsigned int io_seproxyhal_touch_tx_ok(const bagl_element_t *e) {
+    (void) e;
     ctx.state = STATE_NONE;
     return io_seproxyhal_respond(0x9000, ctx.req.tx.tx);
 }
 
 unsigned int io_seproxyhal_touch_tx_cancel(const bagl_element_t *e) {
+    (void) e;
+    explicit_bzero(G_io_apdu_buffer, sizeof(G_io_apdu_buffer));
     return io_seproxyhal_respond(0x6985, 0);
 }

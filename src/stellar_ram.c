@@ -15,14 +15,18 @@
  *  limitations under the License.
  ********************************************************************************/
 
-#include "os.h"
-#include "cx.h"
 #include "stellar_types.h"
-#include "stellar_api.h"
-#include "stellar_vars.h"
-
-#include "os_io_seproxyhal.h"
+#include "ux.h"
 
 stellar_context_t ctx;
 ux_state_t ux;
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
+bool called_from_swap;
+swap_values_t swap_values;
+
+void reset_ctx() {
+    explicit_bzero(&ctx, sizeof(ctx));
+    if (!called_from_swap) {
+        explicit_bzero(&swap_values, sizeof(swap_values));
+    }
+}

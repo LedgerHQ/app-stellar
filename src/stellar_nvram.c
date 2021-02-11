@@ -15,10 +15,6 @@
  *  limitations under the License.
  ********************************************************************************/
 
-#include "os.h"
-#include "cx.h"
 #include "stellar_types.h"
-#include "stellar_api.h"
-#include "stellar_vars.h"
 
 stellar_nv_state_t const N_state_pic;

@@ -20,7 +20,6 @@
 
 #ifndef TEST
 #include "os.h"
-#include "cx.h"
 #include "ux.h"
 
 extern ux_state_t ux;
@@ -29,7 +28,11 @@ extern ux_state_t ux;
 #include "stellar_types.h"
 
 extern stellar_context_t ctx;
+extern bool called_from_swap;
+extern swap_values_t swap_values;
 extern stellar_nv_state_t const N_state_pic;
 #define N_stellar_pstate (*(volatile stellar_nv_state_t *) PIC(&N_state_pic))
+
+void reset_ctx();
 
 #endif

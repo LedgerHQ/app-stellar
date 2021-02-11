@@ -125,11 +125,12 @@ UX_STEP_CB(
     "Quit",
   });
 
-UX_DEF(idle_flow,
+UX_FLOW(idle_flow,
   &idle_welcome_step,
   &idle_settings_step,
   &idle_version_step,
-  &idle_quit_step
+  &idle_quit_step,
+  FLOW_LOOP
 );
 // clang-format on
 

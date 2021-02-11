@@ -1,0 +1,8 @@
+Create Offer; Type Active
+Buy; XLM
+Price; 1.5644199 XLM
+Sell; 1000 RMT
+Memo; [none]
+Fee; 0.00001 XLM
+Network; Test
+Tx Source; GCGNXZ5G6FWCNDB7H7G27WYSQDWYW3IBKMZOUXM7K6UPNMDAQDMONKJ2
