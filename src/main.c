@@ -29,6 +29,8 @@
 
 #include "swap/swap_lib_calls.h"
 
+unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
+
 unsigned short io_exchange_al(unsigned char channel, unsigned short tx_len) {
     switch (channel & ~(IO_FLAGS)) {
         case CHANNEL_KEYBOARD:

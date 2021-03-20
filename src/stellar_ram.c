@@ -20,7 +20,6 @@
 
 stellar_context_t ctx;
 ux_state_t ux;
-unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 bool called_from_swap;
 swap_values_t swap_values;
 
