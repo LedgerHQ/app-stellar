@@ -39,7 +39,6 @@ int derive_private_key(cx_ecfp_private_key_t *privateKey, uint32_t *bip32, uint8
     uint8_t privateKeyData[32];
     BEGIN_TRY {
         TRY {
-            io_seproxyhal_io_heartbeat();
             os_perso_derive_node_bip32_seed_key(HDW_ED25519_SLIP10,
                                                 CX_CURVE_Ed25519,
                                                 bip32,
@@ -48,7 +47,6 @@ int derive_private_key(cx_ecfp_private_key_t *privateKey, uint32_t *bip32, uint8
                                                 NULL,
                                                 (unsigned char *) "ed25519 seed",
                                                 12);
-            io_seproxyhal_io_heartbeat();
             cx_ecfp_init_private_key(CX_CURVE_Ed25519, privateKeyData, 32, privateKey);
         }
         CATCH_OTHER(e) {
@@ -170,7 +168,6 @@ void handle_get_public_key(uint8_t p1,
     BEGIN_TRY {
         TRY {
             if (ctx.req.pk.returnSignature) {
-                io_seproxyhal_io_heartbeat();
                 cx_eddsa_sign(&privateKey,
                               CX_LAST,
                               CX_SHA512,
@@ -181,7 +178,6 @@ void handle_get_public_key(uint8_t p1,
                               ctx.req.pk.signature,
                               64,
                               NULL);
-                io_seproxyhal_io_heartbeat();
             }
         }
         CATCH_OTHER(e) {
@@ -272,7 +268,6 @@ void handle_sign_tx(uint8_t p1,
     BEGIN_TRY {
         TRY {
             // sign hash
-            io_seproxyhal_io_heartbeat();
             ctx.req.tx.tx = cx_eddsa_sign(&privateKey,
                                           CX_LAST,
                                           CX_SHA512,
@@ -283,7 +278,6 @@ void handle_sign_tx(uint8_t p1,
                                           G_io_apdu_buffer,
                                           64,
                                           NULL);
-            io_seproxyhal_io_heartbeat();
         }
         CATCH_OTHER(e) {
             error = e;

@@ -43,7 +43,8 @@ jobs:
 
       - name: Install dependancies
         run: |
-          apt-get install libssl-dev libbsd-dev
+          apt-get update -y
+          apt-get install libssl-dev libbsd-dev -y
 
       - name: Build unit tests
         run: |
