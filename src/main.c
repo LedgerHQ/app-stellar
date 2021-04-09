@@ -74,9 +74,6 @@ static void handle_apdu(uint8_t *buffer,
 
             PRINTF("New APDU:\n%.*H\n", size, buffer);
 
-            // reset keep-alive for u2f just short of 30sec
-            ctx.u2fTimer = U2F_REQUEST_TIMEOUT;
-
             switch (ins) {
                 case INS_GET_PUBLIC_KEY:
                     handle_get_public_key(p1, p2, dataBuffer, dataLength, flags, tx);
@@ -260,14 +257,6 @@ unsigned char io_event(unsigned char channel) {
             break;
 
         case SEPROXYHAL_TAG_TICKER_EVENT:
-
-            if (G_io_apdu_media == IO_APDU_MEDIA_U2F && ctx.u2fTimer > 0) {
-                ctx.u2fTimer -= 100;
-                if (ctx.u2fTimer <= 0) {
-                    u2f_send_keep_alive();
-                }
-            }
-
             UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer, {});
             break;
     }
