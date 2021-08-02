@@ -45,10 +45,6 @@ void swap_check() {
         io_seproxyhal_touch_tx_cancel(NULL);
     }
 
-    if (txCtx->txDetails.hasTimeBounds) {
-        io_seproxyhal_touch_tx_cancel(NULL);
-    }
-
     // // we don't do any check on "TX Source" field
     // // If we've reached this point without failure, we're good to go !
     io_seproxyhal_touch_tx_ok(NULL);
