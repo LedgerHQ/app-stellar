@@ -108,9 +108,8 @@ class TestSign:
 
     def test_sign_valid_tx(self, client, raw_tx_path):
 
-        with open(raw_tx_path, "r") as fp:
+        with open(raw_tx_path, "rb") as fp:
             tx = fp.read()
-            tx = bytes.fromhex(tx)
 
         path = Bip32Path.build(DEFAULT_PATH)
         payload = path + tx

@@ -8,7 +8,7 @@ set(CMAKE_C_STANDARD 99)
 enable_testing()
 
 add_compile_options(-g -ggdb2)
-add_compile_definitions(TEST)
+add_definitions(-DTEST)
 
 add_library(stellar
     ../src/stellar_format.c
