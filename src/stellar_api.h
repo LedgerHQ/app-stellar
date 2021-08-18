@@ -151,6 +151,9 @@ void print_native_asset_code(uint8_t network, char *out, size_t out_len);
 /** string representation of flags present */
 void print_flags(uint32_t flags, char *out, size_t out_len);
 
+/** string representation of trust line flags present */
+void print_trust_line_flags(uint32_t flags, char *out, size_t out_len);
+
 /** integer to string for display of sequence number */
 int print_int(int64_t l, char *out, size_t out_len);
 
@@ -160,4 +163,6 @@ int print_uint(uint64_t l, char *out, size_t out_len);
 /** base64 encoding function used to display managed data values */
 void base64_encode(const uint8_t *data, int inLen, char *out);
 
+/** hex representation of flags claimable balance id */
+void print_claimable_balance_id(const ClaimableBalanceID *claimableBalanceID, char *out);
 #endif

@@ -1,0 +1,5 @@
+Operation Type; End Sponsoring Future Reserves
+Memo; [none]
+Fee; 0.00001 XLM
+Network; Test
+Tx Source; GD2J5ZZTU4XM5LEX3XPKSCJIQ3UMXU7NLZMHOZEMELXKI4XLPHHKGVM5

@@ -168,6 +168,7 @@ static void format_allow_trust_trustor(tx_context_t *txCtx) {
 }
 
 static void format_allow_trust(tx_context_t *txCtx) {
+    // TODO: Add support for AUTHORIZED_TO_MAINTAIN_LIABILITIES_FLAG
     if (txCtx->opDetails.allowTrustOp.authorize) {
         strcpy(detailCaption, "Allow Trust");
     } else {
@@ -362,7 +363,7 @@ static void format_change_trust(tx_context_t *txCtx) {
                   DETAIL_VALUE_MAX_SIZE);
 }
 
-static void format_manage_offer_sell(tx_context_t *txCtx) {
+static void format_manage_sell_offer_sell(tx_context_t *txCtx) {
     strcpy(detailCaption, "Sell");
     print_amount(txCtx->opDetails.manageSellOfferOp.amount,
                  &txCtx->opDetails.manageSellOfferOp.selling,
@@ -372,7 +373,7 @@ static void format_manage_offer_sell(tx_context_t *txCtx) {
     push_to_formatter_stack(&format_operation_source);
 }
 
-static void format_manage_offer_price(tx_context_t *txCtx) {
+static void format_manage_sell_offer_price(tx_context_t *txCtx) {
     strcpy(detailCaption, "Price");
     uint64_t price = ((uint64_t) txCtx->opDetails.manageSellOfferOp.price.n * 10000000) /
                      txCtx->opDetails.manageSellOfferOp.price.d;
@@ -381,10 +382,10 @@ static void format_manage_offer_price(tx_context_t *txCtx) {
                  txCtx->network,
                  detailValue,
                  DETAIL_VALUE_MAX_SIZE);
-    push_to_formatter_stack(&format_manage_offer_sell);
+    push_to_formatter_stack(&format_manage_sell_offer_sell);
 }
 
-static void format_manage_offer_buy(tx_context_t *txCtx) {
+static void format_manage_sell_offer_buy(tx_context_t *txCtx) {
     strcpy(detailCaption, "Buy");
     if (txCtx->opDetails.manageSellOfferOp.buying.type == ASSET_TYPE_NATIVE) {
         print_native_asset_code(txCtx->network, detailValue, DETAIL_VALUE_MAX_SIZE);
@@ -394,10 +395,10 @@ static void format_manage_offer_buy(tx_context_t *txCtx) {
                       detailValue,
                       DETAIL_VALUE_MAX_SIZE);
     }
-    push_to_formatter_stack(&format_manage_offer_price);
+    push_to_formatter_stack(&format_manage_sell_offer_price);
 }
 
-static void format_manage_offer(tx_context_t *txCtx) {
+static void format_manage_sell_offer(tx_context_t *txCtx) {
     if (!txCtx->opDetails.manageSellOfferOp.amount) {
         strcpy(detailCaption, "Remove Offer");
         print_uint(txCtx->opDetails.manageSellOfferOp.offerID, detailValue, DETAIL_VALUE_MAX_SIZE);
@@ -412,7 +413,7 @@ static void format_manage_offer(tx_context_t *txCtx) {
             strcpy(detailCaption, "Create Offer");
             strcpy(detailValue, "Type Active");
         }
-        push_to_formatter_stack(&format_manage_offer_buy);
+        push_to_formatter_stack(&format_manage_sell_offer_buy);
     }
 }
 
@@ -522,7 +523,7 @@ static void format_path_via(tx_context_t *txCtx) {
     }
 }
 
-static void format_path_receive(tx_context_t *txCtx) {
+static void format_path_payment_strict_receive_receive(tx_context_t *txCtx) {
     strcpy(detailCaption, "Receive");
     print_amount(txCtx->opDetails.pathPaymentStrictReceiveOp.destAmount,
                  &txCtx->opDetails.pathPaymentStrictReceiveOp.destAsset,
@@ -532,23 +533,52 @@ static void format_path_receive(tx_context_t *txCtx) {
     push_to_formatter_stack(&format_path_via);
 }
 
-static void format_path_destination(tx_context_t *txCtx) {
+static void format_path_payment_strict_receive_destination(tx_context_t *txCtx) {
     strcpy(detailCaption, "Destination");
     print_muxed_account(&txCtx->opDetails.pathPaymentStrictReceiveOp.destination,
                         detailValue,
                         0,
                         0);
-    push_to_formatter_stack(&format_path_receive);
+    push_to_formatter_stack(&format_path_payment_strict_receive_receive);
 }
 
-static void format_path_payment(tx_context_t *txCtx) {
+static void format_path_payment_strict_receive(tx_context_t *txCtx) {
     strcpy(detailCaption, "Send Max");
     print_amount(txCtx->opDetails.pathPaymentStrictReceiveOp.sendMax,
                  &txCtx->opDetails.pathPaymentStrictReceiveOp.sendAsset,
                  txCtx->network,
                  detailValue,
                  DETAIL_VALUE_MAX_SIZE);
-    push_to_formatter_stack(&format_path_destination);
+    push_to_formatter_stack(&format_path_payment_strict_receive_destination);
+}
+
+static void format_path_payment_strict_send_receive(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Receive Min");
+    print_amount(txCtx->opDetails.pathPaymentStrictReceiveOp.destAmount,
+                 &txCtx->opDetails.pathPaymentStrictReceiveOp.destAsset,
+                 txCtx->network,
+                 detailValue,
+                 DETAIL_VALUE_MAX_SIZE);
+    push_to_formatter_stack(&format_path_via);
+}
+
+static void format_path_payment_strict_send_destination(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Destination");
+    print_muxed_account(&txCtx->opDetails.pathPaymentStrictReceiveOp.destination,
+                        detailValue,
+                        0,
+                        0);
+    push_to_formatter_stack(&format_path_payment_strict_send_receive);
+}
+
+static void format_path_payment_strict_send(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Send");
+    print_amount(txCtx->opDetails.pathPaymentStrictSendOp.sendAmount,
+                 &txCtx->opDetails.pathPaymentStrictSendOp.sendAsset,
+                 txCtx->network,
+                 detailValue,
+                 DETAIL_VALUE_MAX_SIZE);
+    push_to_formatter_stack(&format_path_payment_strict_send_destination);
 }
 
 static void format_payment_destination(tx_context_t *txCtx) {
@@ -584,19 +614,329 @@ static void format_create_account(tx_context_t *txCtx) {
     push_to_formatter_stack(&format_create_account_amount);
 }
 
-static const format_function_t formatters[13] = {&format_create_account,
-                                                 &format_payment,
-                                                 &format_path_payment,
-                                                 &format_manage_offer,
-                                                 &format_create_passive_sell_offer,
-                                                 &format_set_options,
-                                                 &format_change_trust,
-                                                 &format_allow_trust,
-                                                 &format_account_merge,
-                                                 &format_inflation,
-                                                 &format_manage_data,
-                                                 &format_bump_sequence,
-                                                 &format_manage_buy_offer};
+void format_create_claimable_balance_warning(tx_context_t *txCtx) {
+    (void) txCtx;
+    // TODO: The claimant can be very complicated. I haven't figured out how to
+    // display it for the time being, so let's display an WARNING here first.
+    strcpy(detailCaption, "WARNING");
+    strcpy(detailValue, "Currently does not support displaying claimant details");
+    push_to_formatter_stack(&format_operation_source);
+}
+
+static void format_create_claimable_balance_balance(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Balance");
+    print_amount(txCtx->opDetails.createClaimableBalanceOp.amount,
+                 &txCtx->opDetails.createClaimableBalanceOp.asset,
+                 txCtx->network,
+                 detailValue,
+                 DETAIL_VALUE_MAX_SIZE);
+    push_to_formatter_stack(&format_create_claimable_balance_warning);
+}
+
+static void format_create_claimable_balance(tx_context_t *txCtx) {
+    (void) txCtx;
+    strcpy(detailCaption, "Operation Type");
+    strcpy(detailValue, "Create Claimable Balance");
+    push_to_formatter_stack(&format_create_claimable_balance_balance);
+}
+
+static void format_claim_claimable_balance_balance_id(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Balance ID");
+    print_claimable_balance_id(&txCtx->opDetails.claimClaimableBalanceOp.balanceID, detailValue);
+    push_to_formatter_stack(&format_operation_source);
+}
+
+static void format_claim_claimable_balance(tx_context_t *txCtx) {
+    (void) txCtx;
+    strcpy(detailCaption, "Operation Type");
+    strcpy(detailValue, "Claim Claimable Balance");
+    push_to_formatter_stack(&format_claim_claimable_balance_balance_id);
+}
+
+static void format_claim_claimable_balance_sponsored_id(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Sponsored ID");
+    print_public_key(txCtx->opDetails.beginSponsoringFutureReservesOp.sponsoredID,
+                     detailValue,
+                     0,
+                     0);
+    push_to_formatter_stack(&format_operation_source);
+}
+
+static void format_begin_sponsoring_future_reserves(tx_context_t *txCtx) {
+    (void) txCtx;
+    strcpy(detailCaption, "Operation Type");
+    strcpy(detailValue, "Begin Sponsoring Future Reserves");
+    push_to_formatter_stack(&format_claim_claimable_balance_sponsored_id);
+}
+
+static void format_end_sponsoring_future_reserves(tx_context_t *txCtx) {
+    (void) txCtx;
+    strcpy(detailCaption, "Operation Type");
+    strcpy(detailValue, "End Sponsoring Future Reserves");
+    push_to_formatter_stack(&format_operation_source);
+}
+
+static void format_revoke_sponsorship_account(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Account ID");
+    print_public_key(txCtx->opDetails.revokeSponsorshipOp.ledgerKey.account.accountID,
+                     detailValue,
+                     0,
+                     0);
+    push_to_formatter_stack(&format_operation_source);
+}
+
+static void format_revoke_sponsorship_trust_line_asset(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Asset");
+    print_asset_t(&txCtx->opDetails.revokeSponsorshipOp.ledgerKey.trustLine.asset,
+                  txCtx->network,
+                  detailValue,
+                  DETAIL_VALUE_MAX_SIZE);
+    push_to_formatter_stack(&format_operation_source);
+}
+
+static void format_revoke_sponsorship_trust_line_account(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Account ID");
+    print_public_key(txCtx->opDetails.revokeSponsorshipOp.ledgerKey.trustLine.accountID,
+                     detailValue,
+                     0,
+                     0);
+    push_to_formatter_stack(&format_revoke_sponsorship_trust_line_asset);
+}
+static void format_revoke_sponsorship_offer_offer_id(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Offer ID");
+    print_uint(txCtx->opDetails.revokeSponsorshipOp.ledgerKey.offer.offerID,
+               detailValue,
+               DETAIL_VALUE_MAX_SIZE);
+
+    push_to_formatter_stack(&format_operation_source);
+}
+
+static void format_revoke_sponsorship_offer_seller_id(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Seller ID");
+    print_public_key(txCtx->opDetails.revokeSponsorshipOp.ledgerKey.offer.sellerID,
+                     detailValue,
+                     0,
+                     0);
+    push_to_formatter_stack(&format_revoke_sponsorship_offer_offer_id);
+}
+
+static void format_revoke_sponsorship_data_data_name(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Data Name");
+    char tmp[65];
+    memcpy(tmp,
+           txCtx->opDetails.revokeSponsorshipOp.ledgerKey.data.dataName,
+           txCtx->opDetails.revokeSponsorshipOp.ledgerKey.data.dataNameSize);
+    tmp[txCtx->opDetails.revokeSponsorshipOp.ledgerKey.data.dataNameSize] = '\0';
+    strcpy(detailValue, tmp);
+    push_to_formatter_stack(&format_operation_source);
+}
+
+static void format_revoke_sponsorship_data_account(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Account ID");
+    print_public_key(txCtx->opDetails.revokeSponsorshipOp.ledgerKey.data.accountID,
+                     detailValue,
+                     0,
+                     0);
+    push_to_formatter_stack(&format_revoke_sponsorship_data_data_name);
+}
+
+static void format_revoke_sponsorship_claimable_balance(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Balance ID");
+    print_claimable_balance_id(
+        &txCtx->opDetails.revokeSponsorshipOp.ledgerKey.claimableBalance.balanceId,
+        detailValue);
+    push_to_formatter_stack(&format_operation_source);
+}
+
+static void format_revoke_sponsorship_claimable_signer_signer_key_detail(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Signer Key");
+    SignerKey *key = &txCtx->opDetails.revokeSponsorshipOp.signer.signerKey;
+
+    switch (key->type) {
+        case SIGNER_KEY_TYPE_ED25519: {
+            print_public_key(key->data, detailValue, 0, 0);
+            break;
+        }
+        case SIGNER_KEY_TYPE_HASH_X: {
+            char tmp[57];
+            encode_hash_x_key(key->data, tmp);
+            print_summary(tmp, detailValue, 12, 12);
+            break;
+        }
+
+        case SIGNER_KEY_TYPE_PRE_AUTH_TX: {
+            char tmp[57];
+            encode_pre_auth_key(key->data, tmp);
+            print_summary(tmp, detailValue, 12, 12);
+            break;
+        }
+    }
+    push_to_formatter_stack(&format_operation_source);
+}
+
+static void format_revoke_sponsorship_claimable_signer_signer_key_type(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Signer Key Type");
+    switch (txCtx->opDetails.revokeSponsorshipOp.signer.signerKey.type) {
+        case SIGNER_KEY_TYPE_ED25519: {
+            strcpy(detailValue, "Public Key");
+            break;
+        }
+        case SIGNER_KEY_TYPE_HASH_X: {
+            strcpy(detailValue, "Hash(x)");
+            break;
+        }
+        case SIGNER_KEY_TYPE_PRE_AUTH_TX: {
+            strcpy(detailValue, "Pre-Auth");
+            break;
+        }
+    }
+
+    push_to_formatter_stack(&format_revoke_sponsorship_claimable_signer_signer_key_detail);
+}
+
+static void format_revoke_sponsorship_claimable_signer_account(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Account ID");
+    print_public_key(txCtx->opDetails.revokeSponsorshipOp.signer.accountID, detailValue, 0, 0);
+    push_to_formatter_stack(&format_revoke_sponsorship_claimable_signer_signer_key_type);
+}
+
+static void format_revoke_sponsorship(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Operation Type");
+    if (txCtx->opDetails.revokeSponsorshipOp.type == REVOKE_SPONSORSHIP_SIGNER) {
+        strcpy(detailValue, "Revoke Sponsorship (SIGNER_KEY)");
+        push_to_formatter_stack(&format_revoke_sponsorship_claimable_signer_account);
+    } else {
+        switch (txCtx->opDetails.revokeSponsorshipOp.ledgerKey.type) {
+            case ACCOUNT:
+                strcpy(detailValue, "Revoke Sponsorship (ACCOUNT)");
+                push_to_formatter_stack(&format_revoke_sponsorship_account);
+                break;
+            case OFFER:
+                strcpy(detailValue, "Revoke Sponsorship (OFFER)");
+                push_to_formatter_stack(&format_revoke_sponsorship_offer_seller_id);
+                break;
+            case TRUSTLINE:
+                strcpy(detailValue, "Revoke Sponsorship (TRUSTLINE)");
+                push_to_formatter_stack(&format_revoke_sponsorship_trust_line_account);
+                break;
+            case DATA:
+                strcpy(detailValue, "Revoke Sponsorship (DATA)");
+                push_to_formatter_stack(&format_revoke_sponsorship_data_account);
+                break;
+            case CLAIMABLE_BALANCE:
+                strcpy(detailValue, "Revoke Sponsorship (CLAIMABLE_BALANCE)");
+                push_to_formatter_stack(&format_revoke_sponsorship_claimable_balance);
+                break;
+        }
+    }
+}
+
+static void format_clawback_from(tx_context_t *txCtx) {
+    strcpy(detailCaption, "From");
+    print_muxed_account(&txCtx->opDetails.clawbackOp.from, detailValue, 0, 0);
+    push_to_formatter_stack(&format_operation_source);
+}
+
+static void format_clawback_amount(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Clawback Balance");
+    print_amount(txCtx->opDetails.clawbackOp.amount,
+                 &txCtx->opDetails.clawbackOp.asset,
+                 txCtx->network,
+                 detailValue,
+                 DETAIL_VALUE_MAX_SIZE);
+    push_to_formatter_stack(&format_clawback_from);
+}
+
+static void format_clawback(tx_context_t *txCtx) {
+    (void) txCtx;
+    strcpy(detailCaption, "Operation Type");
+    strcpy(detailValue, "Clawback");
+    push_to_formatter_stack(&format_clawback_amount);
+}
+
+static void format_clawback_claimable_balance_balance_id(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Balance ID");
+    print_claimable_balance_id(&txCtx->opDetails.clawbackClaimableBalanceOp.balanceID, detailValue);
+    push_to_formatter_stack(&format_operation_source);
+}
+
+static void format_clawback_claimable_balance(tx_context_t *txCtx) {
+    (void) txCtx;
+    strcpy(detailCaption, "Operation Type");
+    strcpy(detailValue, "Clawback Claimable Balance");
+    push_to_formatter_stack(&format_clawback_claimable_balance_balance_id);
+}
+
+static void format_set_trust_line_set_flags(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Set Flags");
+    if (txCtx->opDetails.setTrustLineFlagsOp.setFlags) {
+        print_trust_line_flags(txCtx->opDetails.setTrustLineFlagsOp.setFlags,
+                               detailValue,
+                               DETAIL_VALUE_MAX_SIZE);
+    } else {
+        strcpy(detailValue, "[none]");
+    }
+    push_to_formatter_stack(&format_operation_source);
+}
+
+static void format_set_trust_line_clear_flags(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Clear Flags");
+    if (txCtx->opDetails.setTrustLineFlagsOp.clearFlags) {
+        print_trust_line_flags(txCtx->opDetails.setTrustLineFlagsOp.clearFlags,
+                               detailValue,
+                               DETAIL_VALUE_MAX_SIZE);
+    } else {
+        strcpy(detailValue, "[none]");
+    }
+    push_to_formatter_stack(&format_set_trust_line_set_flags);
+}
+
+static void format_set_trust_line_asset(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Asset");
+    print_asset_t(&txCtx->opDetails.setTrustLineFlagsOp.asset,
+                  txCtx->network,
+                  detailValue,
+                  DETAIL_VALUE_MAX_SIZE);
+    push_to_formatter_stack(&format_set_trust_line_clear_flags);
+}
+
+static void format_set_trust_line_trustor(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Trustor");
+    print_public_key(txCtx->opDetails.setTrustLineFlagsOp.trustor, detailValue, 0, 0);
+    push_to_formatter_stack(&format_set_trust_line_asset);
+}
+
+static void format_set_trust_line_flags(tx_context_t *txCtx) {
+    (void) txCtx;
+    strcpy(detailCaption, "Operation Type");
+    strcpy(detailValue, "Set Trust Line Flags");
+    push_to_formatter_stack(&format_set_trust_line_trustor);
+}
+
+static const format_function_t formatters[] = {
+    &format_create_account,
+    &format_payment,
+    &format_path_payment_strict_receive,
+    &format_manage_sell_offer,
+    &format_create_passive_sell_offer,
+    &format_set_options,
+    &format_change_trust,
+    &format_allow_trust,
+    &format_account_merge,
+    &format_inflation,
+    &format_manage_data,
+    &format_bump_sequence,
+    &format_manage_buy_offer,
+    &format_path_payment_strict_send,
+    &format_create_claimable_balance,
+    &format_claim_claimable_balance,
+    &format_begin_sponsoring_future_reserves,
+    &format_end_sponsoring_future_reserves,
+    &format_revoke_sponsorship,
+    &format_clawback,
+    &format_clawback_claimable_balance,
+    &format_set_trust_line_flags,
+};
 
 void format_confirm_operation(tx_context_t *txCtx) {
     if (txCtx->opCount > 1) {

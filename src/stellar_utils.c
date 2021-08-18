@@ -415,10 +415,30 @@ void print_flags(uint32_t flags, char *out, size_t out_len) {
     }
 }
 
+void print_trust_line_flags(uint32_t flags, char *out, size_t out_len) {
+    if (flags & AUTHORIZED_FLAG) {
+        print_flag("AUTHORIZED", out, out_len);
+    }
+    if (flags & AUTHORIZED_TO_MAINTAIN_LIABILITIES_FLAG) {
+        print_flag("AUTHORIZED_TO_MAINTAIN_LIABILITIES", out, out_len);
+    }
+    if (flags & TRUSTLINE_CLAWBACK_ENABLED_FLAG) {
+        print_flag("TRUSTLINE_CLAWBACK_ENABLED", out, out_len);
+    }
+}
+
 void print_native_asset_code(uint8_t network, char *out, size_t out_len) {
     if (network == NETWORK_TYPE_UNKNOWN) {
         strlcpy(out, "native", out_len);
     } else {
         strlcpy(out, "XLM", out_len);
     }
+}
+
+void print_claimable_balance_id(const ClaimableBalanceID *claimableBalanceID, char *out) {
+    size_t data_len = 36;
+    uint8_t data[data_len];
+    memcpy(data, &claimableBalanceID->type, 4);
+    memcpy(data + 4, claimableBalanceID->v0, 32);
+    print_binary(data, out, data_len);
 }

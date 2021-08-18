@@ -271,11 +271,11 @@ static bool parse_payment(buffer_t *buffer, PaymentOp *payment) {
     return buffer_read64(buffer, (uint64_t *) &payment->amount);
 }
 
-static bool parse_path_payment(buffer_t *buffer, PathPaymentStrictReceiveOp *op) {
+static bool parse_path_payment_strict_receive(buffer_t *buffer, PathPaymentStrictReceiveOp *op) {
     uint32_t pathLen;
 
     PARSER_CHECK(parse_asset(buffer, &op->sendAsset));
-    PARSER_CHECK(buffer_read64(buffer, &op->sendMax));
+    PARSER_CHECK(buffer_read64(buffer, (uint64_t *) &op->sendMax));
     PARSER_CHECK(parse_muxed_account(buffer, &op->destination));
     PARSER_CHECK(parse_asset(buffer, &op->destAsset));
     PARSER_CHECK(buffer_read64(buffer, (uint64_t *) &op->destAmount));
@@ -371,7 +371,7 @@ static bool parse_manage_sell_offer(buffer_t *buffer, ManageSellOfferOp *op) {
     return true;
 }
 
-static bool parse_manage_buy_offer_op(buffer_t *buffer, ManageBuyOfferOp *op) {
+static bool parse_manage_buy_offer(buffer_t *buffer, ManageBuyOfferOp *op) {
     PARSER_CHECK(parse_asset(buffer, &op->selling));
     PARSER_CHECK(parse_asset(buffer, &op->buying));
     PARSER_CHECK(buffer_read64(buffer, (uint64_t *) &op->buyAmount));
@@ -421,6 +421,7 @@ static bool parse_signer_key(buffer_t *buffer, SignerKey *key) {
     uint32_t signerType;
 
     PARSER_CHECK(buffer_read32(buffer, &signerType));
+    key->type = signerType;
     if (signerType != SIGNER_KEY_TYPE_ED25519 && signerType != SIGNER_KEY_TYPE_PRE_AUTH_TX &&
         signerType != SIGNER_KEY_TYPE_HASH_X) {
         return false;
@@ -519,6 +520,201 @@ static bool parse_bump_sequence(buffer_t *buffer, BumpSequenceOp *op) {
     return buffer_read64(buffer, (uint64_t *) &op->bumpTo);
 }
 
+static bool parse_path_payment_strict_send(buffer_t *buffer, PathPaymentStrictSendOp *op) {
+    uint32_t pathLen;
+
+    PARSER_CHECK(parse_asset(buffer, &op->sendAsset));
+    PARSER_CHECK(buffer_read64(buffer, (uint64_t *) &op->sendAmount));
+    PARSER_CHECK(parse_muxed_account(buffer, &op->destination));
+    PARSER_CHECK(parse_asset(buffer, &op->destAsset));
+    PARSER_CHECK(buffer_read64(buffer, (uint64_t *) &op->destMin));
+    PARSER_CHECK(buffer_read32(buffer, (uint32_t *) &pathLen));
+    op->pathLen = pathLen;
+    if (op->pathLen > 5) {
+        return false;
+    }
+    for (int i = 0; i < op->pathLen; i++) {
+        PARSER_CHECK(parse_asset(buffer, &op->path[i]));
+    }
+    return true;
+}
+
+static bool parse_claimant_predicate(buffer_t *buffer, ClaimPredicate *claimPredicate) {
+    uint32_t claimPredicateType;
+    uint32_t predicatesLen;
+
+    PARSER_CHECK(buffer_read32(buffer, &claimPredicateType));
+    claimPredicate->type = claimPredicateType;
+    switch (claimPredicate->type) {
+        case CLAIM_PREDICATE_UNCONDITIONAL:
+            return true;
+        case CLAIM_PREDICATE_AND:
+            PARSER_CHECK(buffer_read32(buffer, &predicatesLen));
+            if (predicatesLen != 2) {
+                return false;
+            }
+            ClaimPredicate andPredicatesLeft, andPredicatesRight;
+            claimPredicate->andPredicates[0] = &andPredicatesLeft;
+            claimPredicate->andPredicates[1] = &andPredicatesRight;
+            PARSER_CHECK(parse_claimant_predicate(buffer, claimPredicate->andPredicates[0]));
+            PARSER_CHECK(parse_claimant_predicate(buffer, claimPredicate->andPredicates[1]));
+            return true;
+        case CLAIM_PREDICATE_OR:
+            PARSER_CHECK(buffer_read32(buffer, &predicatesLen));
+            if (predicatesLen != 2) {
+                return false;
+            }
+            ClaimPredicate orPredicatesLeft, orPredicatesRight;
+            claimPredicate->orPredicates[0] = &orPredicatesLeft;
+            claimPredicate->orPredicates[1] = &orPredicatesRight;
+            PARSER_CHECK(parse_claimant_predicate(buffer, claimPredicate->orPredicates[0]));
+            PARSER_CHECK(parse_claimant_predicate(buffer, claimPredicate->orPredicates[1]));
+            return true;
+        case CLAIM_PREDICATE_NOT:
+            PARSER_CHECK(
+                buffer_read_bool(buffer, &claimPredicate->notPredicate.notPredicatePresent));
+            if (claimPredicate->notPredicate.notPredicatePresent) {
+                ClaimPredicate notPredicate;
+                claimPredicate->notPredicate.notPredicate = &notPredicate;
+                PARSER_CHECK(
+                    parse_claimant_predicate(buffer, claimPredicate->notPredicate.notPredicate));
+            }
+            return true;
+        case CLAIM_PREDICATE_BEFORE_ABSOLUTE_TIME:
+            PARSER_CHECK(buffer_read64(buffer, (uint64_t *) &claimPredicate->absBefore));
+            return true;
+        case CLAIM_PREDICATE_BEFORE_RELATIVE_TIME:
+            PARSER_CHECK(buffer_read64(buffer, (uint64_t *) &claimPredicate->relBefore));
+            return true;
+        default:
+            return false;
+    }
+}
+
+static bool parse_claimant(buffer_t *buffer, Claimant *claimant) {
+    uint32_t claimantType;
+    PARSER_CHECK(buffer_read32(buffer, &claimantType));
+    claimant->type = claimantType;
+
+    switch (claimant->type) {
+        case CLAIMANT_TYPE_V0:
+            PARSER_CHECK(parse_account_id(buffer, &claimant->v0.destination));
+            PARSER_CHECK(parse_claimant_predicate(buffer, &claimant->v0.predicate));
+            return true;
+        default:
+            return false;
+    }
+}
+
+static bool parse_create_claimable_balance(buffer_t *buffer, CreateClaimableBalanceOp *op) {
+    uint32_t claimantLen;
+    PARSER_CHECK(parse_asset(buffer, &op->asset));
+    PARSER_CHECK(buffer_read64(buffer, (uint64_t *) &op->amount));
+    PARSER_CHECK(buffer_read32(buffer, (uint32_t *) &claimantLen));
+    if (claimantLen > 10) {
+        return false;
+    }
+    op->claimantLen = claimantLen;
+    for (int i = 0; i < op->claimantLen; i++) {
+        PARSER_CHECK(parse_claimant(buffer, &op->claimants[i]));
+    }
+    return true;
+}
+static bool parse_claimable_balance_id(buffer_t *buffer, ClaimableBalanceID *claimableBalanceID) {
+    uint32_t claimableBalanceIDType;
+    PARSER_CHECK(buffer_read32(buffer, &claimableBalanceIDType));
+    claimableBalanceID->type = claimableBalanceIDType;
+
+    switch (claimableBalanceID->type) {
+        case CLAIMABLE_BALANCE_ID_TYPE_V0:
+            PARSER_CHECK(buffer_read_bytes(buffer, claimableBalanceID->v0, 32));
+            return true;
+        default:
+            return false;
+    }
+}
+
+static bool parse_claim_claimable_balance(buffer_t *buffer, ClaimClaimableBalanceOp *op) {
+    PARSER_CHECK(parse_claimable_balance_id(buffer, &op->balanceID));
+    return true;
+}
+
+static bool parse_begin_sponsoring_future_reserves(buffer_t *buffer,
+                                                   BeginSponsoringFutureReservesOp *op) {
+    PARSER_CHECK(parse_account_id(buffer, &op->sponsoredID));
+    return true;
+}
+
+static bool parse_ledger_key(buffer_t *buffer, LedgerKey *ledgerKey) {
+    uint32_t ledgerEntryType;
+    PARSER_CHECK(buffer_read32(buffer, &ledgerEntryType));
+    ledgerKey->type = ledgerEntryType;
+    switch (ledgerKey->type) {
+        case ACCOUNT:
+            PARSER_CHECK(parse_account_id(buffer, &ledgerKey->account.accountID));
+            return true;
+        case TRUSTLINE:
+            PARSER_CHECK(parse_account_id(buffer, &ledgerKey->trustLine.accountID));
+            PARSER_CHECK(parse_asset(buffer, &ledgerKey->trustLine.asset));
+            return true;
+        case OFFER:
+            PARSER_CHECK(parse_account_id(buffer, &ledgerKey->offer.sellerID));
+            PARSER_CHECK(buffer_read64(buffer, (uint64_t *) &ledgerKey->offer.offerID));
+            return true;
+        case DATA:
+            PARSER_CHECK(parse_account_id(buffer, &ledgerKey->data.accountID));
+            PARSER_CHECK(parse_string_ptr(buffer,
+                                          (const char **) &ledgerKey->data.dataName,
+                                          (size_t *) &ledgerKey->data.dataNameSize,
+                                          DATA_VALUE_MAX_SIZE));
+            return true;
+        case CLAIMABLE_BALANCE:
+            PARSER_CHECK(
+                parse_claimable_balance_id(buffer, &ledgerKey->claimableBalance.balanceId));
+            return true;
+        default:
+            return false;
+    }
+}
+
+static bool parse_revoke_sponsorship(buffer_t *buffer, RevokeSponsorshipOp *op) {
+    uint32_t revokeSponsorshipType;
+    PARSER_CHECK(buffer_read32(buffer, &revokeSponsorshipType))
+    op->type = revokeSponsorshipType;
+
+    switch (op->type) {
+        case REVOKE_SPONSORSHIP_LEDGER_ENTRY:
+            PARSER_CHECK(parse_ledger_key(buffer, &op->ledgerKey));
+            return true;
+        case REVOKE_SPONSORSHIP_SIGNER:
+            PARSER_CHECK(parse_account_id(buffer, &op->signer.accountID));
+            PARSER_CHECK(parse_signer_key(buffer, &op->signer.signerKey));
+            return true;
+        default:
+            return false;
+    }
+}
+
+static bool parse_clawback(buffer_t *buffer, ClawbackOp *op) {
+    PARSER_CHECK(parse_asset(buffer, &op->asset));
+    PARSER_CHECK(parse_muxed_account(buffer, &op->from));
+    PARSER_CHECK(buffer_read64(buffer, (uint64_t *) &op->amount));
+    return true;
+}
+
+static bool parse_clawback_claimable_balance(buffer_t *buffer, ClawbackClaimableBalanceOp *op) {
+    PARSER_CHECK(parse_claimable_balance_id(buffer, &op->balanceID));
+    return true;
+}
+
+static bool parse_set_trust_line_flags(buffer_t *buffer, SetTrustLineFlagsOp *op) {
+    PARSER_CHECK(parse_account_id(buffer, &op->trustor));
+    PARSER_CHECK(parse_asset(buffer, &op->asset));
+    PARSER_CHECK(buffer_read32(buffer, &op->clearFlags));
+    PARSER_CHECK(buffer_read32(buffer, &op->setFlags));
+    return true;
+}
+
 static bool parse_operation(buffer_t *buffer, Operation *opDetails) {
     uint32_t opType;
 
@@ -541,7 +737,8 @@ static bool parse_operation(buffer_t *buffer, Operation *opDetails) {
             return parse_payment(buffer, &opDetails->payment);
         }
         case XDR_OPERATION_TYPE_PATH_PAYMENT_STRICT_RECEIVE: {
-            return parse_path_payment(buffer, &opDetails->pathPaymentStrictReceiveOp);
+            return parse_path_payment_strict_receive(buffer,
+                                                     &opDetails->pathPaymentStrictReceiveOp);
         }
         case XDR_OPERATION_TYPE_CREATE_PASSIVE_SELL_OFFER: {
             return parse_create_passive_sell_offer(buffer, &opDetails->createPassiveSellOfferOp);
@@ -571,7 +768,36 @@ static bool parse_operation(buffer_t *buffer, Operation *opDetails) {
             return parse_bump_sequence(buffer, &opDetails->bumpSequenceOp);
         }
         case XDR_OPERATION_TYPE_MANAGE_BUY_OFFER: {
-            return parse_manage_buy_offer_op(buffer, &opDetails->manageBuyOfferOp);
+            return parse_manage_buy_offer(buffer, &opDetails->manageBuyOfferOp);
+        }
+        case XDR_OPERATION_TYPE_PATH_PAYMENT_STRICT_SEND: {
+            return parse_path_payment_strict_send(buffer, &opDetails->pathPaymentStrictSendOp);
+        }
+        case XDR_OPERATION_TYPE_CREATE_CLAIMABLE_BALANCE: {
+            return parse_create_claimable_balance(buffer, &opDetails->createClaimableBalanceOp);
+        }
+        case XDR_OPERATION_TYPE_CLAIM_CLAIMABLE_BALANCE: {
+            return parse_claim_claimable_balance(buffer, &opDetails->claimClaimableBalanceOp);
+        }
+        case XDR_OPERATION_TYPE_BEGIN_SPONSORING_FUTURE_RESERVES: {
+            return parse_begin_sponsoring_future_reserves(
+                buffer,
+                &opDetails->beginSponsoringFutureReservesOp);
+        }
+        case XDR_OPERATION_TYPE_END_SPONSORING_FUTURE_RESERVES: {
+            return true;
+        }
+        case XDR_OPERATION_TYPE_REVOKE_SPONSORSHIP: {
+            return parse_revoke_sponsorship(buffer, &opDetails->revokeSponsorshipOp);
+        }
+        case XDR_OPERATION_TYPE_CLAWBACK: {
+            return parse_clawback(buffer, &opDetails->clawbackOp);
+        }
+        case XDR_OPERATION_TYPE_CLAWBACK_CLAIMABLE_BALANCE: {
+            return parse_clawback_claimable_balance(buffer, &opDetails->clawbackClaimableBalanceOp);
+        }
+        case XDR_OPERATION_TYPE_SET_TRUST_LINE_FLAGS: {
+            return parse_set_trust_line_flags(buffer, &opDetails->setTrustLineFlagsOp);
         }
         default:
             return false;  // Unknown operation

@@ -150,6 +150,22 @@ void test_print_muxed_account(void **state) {
     assert_string_equal(printed, "MA7QYNF7SOWQ..AAAAAAAAAJLK");
 }
 
+void test_print_claimable_balance_id(void **state) {
+    (void) state;
+
+    ClaimableBalanceID claimableBalanceID = {
+        .type = CLAIMABLE_BALANCE_ID_TYPE_V0,
+        .v0 = {0xc9, 0xc4, 0xa9, 0xe3, 0xa4, 0x68, 0x91, 0xa3, 0x60, 0x15, 0xc3,
+               0x17, 0xb3, 0xdf, 0x17, 0xb4, 0x2b, 0xf,  0x2a, 0xd8, 0xa2, 0xee,
+               0xa6, 0xc9, 0x34, 0xc9, 0xf7, 0xc8, 0x42, 0x5d, 0xa7, 0xad}};
+
+    char printed[89];
+    print_claimable_balance_id(&claimableBalanceID, printed);
+    assert_string_equal(
+        printed,
+        "0x00000000C9C4A9E3A46891A36015C317B3DF17B42B0F2AD8A2EEA6C934C9F7C8425DA7AD");
+}
+
 int main() {
     const struct CMUnitTest tests[] = {
         cmocka_unit_test(test_print_amount),
@@ -159,6 +175,7 @@ int main() {
         cmocka_unit_test(test_print_binary),
         cmocka_unit_test(test_base64_encode),
         cmocka_unit_test(test_print_muxed_account),
+        cmocka_unit_test(test_print_claimable_balance_id),
     };
     return cmocka_run_group_tests(tests, NULL, NULL);
 }
