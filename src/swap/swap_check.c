@@ -25,7 +25,7 @@ void swap_check() {
     }
 
     // destination addr
-    print_public_key(txCtx->opDetails.payment.destination, tmp_buf, 0, 0);
+    print_muxed_account(&txCtx->opDetails.payment.destination, tmp_buf, 0, 0);
     if (strcmp(tmp_buf, swap_values.destination) != 0) {
         io_seproxyhal_touch_tx_cancel(NULL);
     }

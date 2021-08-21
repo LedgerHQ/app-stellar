@@ -20,7 +20,7 @@ static void push_to_formatter_stack(format_function_t formatter) {
 
 static void format_transaction_source(tx_context_t *txCtx) {
     strcpy(detailCaption, "Tx Source");
-    print_public_key(txCtx->txDetails.sourceAccount, detailValue, 0, 0);
+    print_muxed_account(&txCtx->txDetails.sourceAccount, detailValue, 0, 0);
     push_to_formatter_stack(NULL);
 }
 
@@ -95,7 +95,7 @@ static void format_confirm_transaction_details(tx_context_t *txCtx) {
 static void format_operation_source(tx_context_t *txCtx) {
     if (txCtx->opDetails.sourceAccountPresent) {
         strcpy(detailCaption, "Op Source");
-        print_public_key(txCtx->opDetails.sourceAccount, detailValue, 0, 0);
+        print_muxed_account(&txCtx->opDetails.sourceAccount, detailValue, 0, 0);
         push_to_formatter_stack(&format_confirm_transaction_details);
     } else {
         if (txCtx->opIdx == txCtx->opCount) {
@@ -123,16 +123,16 @@ static void format_inflation(tx_context_t *txCtx) {
 
 static void format_account_merge_destination(tx_context_t *txCtx) {
     strcpy(detailCaption, "Destination");
-    print_public_key(txCtx->opDetails.destination, detailValue, 0, 0);
+    print_muxed_account(&txCtx->opDetails.destination, detailValue, 0, 0);
     push_to_formatter_stack(&format_operation_source);
 }
 
 static void format_account_merge(tx_context_t *txCtx) {
     strcpy(detailCaption, "Merge Account");
     if (txCtx->opDetails.sourceAccountPresent) {
-        print_public_key(txCtx->opDetails.sourceAccount, detailValue, 0, 0);
+        print_muxed_account(&txCtx->opDetails.sourceAccount, detailValue, 0, 0);
     } else {
-        print_public_key(txCtx->txDetails.sourceAccount, detailValue, 0, 0);
+        print_muxed_account(&txCtx->txDetails.sourceAccount, detailValue, 0, 0);
     }
     push_to_formatter_stack(&format_account_merge_destination);
 }
@@ -534,7 +534,10 @@ static void format_path_receive(tx_context_t *txCtx) {
 
 static void format_path_destination(tx_context_t *txCtx) {
     strcpy(detailCaption, "Destination");
-    print_public_key(txCtx->opDetails.pathPaymentStrictReceiveOp.destination, detailValue, 0, 0);
+    print_muxed_account(&txCtx->opDetails.pathPaymentStrictReceiveOp.destination,
+                        detailValue,
+                        0,
+                        0);
     push_to_formatter_stack(&format_path_receive);
 }
 
@@ -550,7 +553,7 @@ static void format_path_payment(tx_context_t *txCtx) {
 
 static void format_payment_destination(tx_context_t *txCtx) {
     strcpy(detailCaption, "Destination");
-    print_public_key(txCtx->opDetails.payment.destination, detailValue, 0, 0);
+    print_muxed_account(&txCtx->opDetails.payment.destination, detailValue, 0, 0);
     push_to_formatter_stack(&format_operation_source);
 }
 

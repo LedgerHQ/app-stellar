@@ -113,6 +113,43 @@ void test_base64_encode(void **state) {
     assert_string_equal(base64, "c3RhcmxpZ2h0");
 }
 
+void test_print_muxed_account(void **state) {
+    // https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0023.md#valid-test-cases
+    (void) state;
+
+    char printed[89];
+    // GA7QYNF7SOWQ3GLR2BGMZEHXAVIRZA4KVWLTJJFC7MGXUA74P7UJVSGZ
+    const uint8_t ed25519[] = {
+        0x3f, 0x0c, 0x34, 0xbf, 0x93, 0xad, 0x0d, 0x99, 0x71, 0xd0, 0x4c,
+        0xcc, 0x90, 0xf7, 0x05, 0x51, 0x1c, 0x83, 0x8a, 0xad, 0x97, 0x34,
+        0xa4, 0xa2, 0xfb, 0x0d, 0x7a, 0x03, 0xfc, 0x7f, 0xe8, 0x9a,
+    };
+    // Valid non-multiplexed account
+    MuxedAccount account1 = {.type = KEY_TYPE_ED25519, .ed25519 = ed25519};
+    print_muxed_account(&account1, printed, 0, 0);
+    assert_string_equal(printed, "GA7QYNF7SOWQ3GLR2BGMZEHXAVIRZA4KVWLTJJFC7MGXUA74P7UJVSGZ");
+    print_muxed_account(&account1, printed, 12, 12);
+    assert_string_equal(printed, "GA7QYNF7SOWQ..UA74P7UJVSGZ");
+
+    // Valid multiplexed account
+    MuxedAccount account2 = {.type = KEY_TYPE_MUXED_ED25519,
+                             .med25519 = {.id = 0, .ed25519 = ed25519}};
+    print_muxed_account(&account2, printed, 0, 0);
+    assert_string_equal(printed,
+                        "MA7QYNF7SOWQ3GLR2BGMZEHXAVIRZA4KVWLTJJFC7MGXUA74P7UJUAAAAAAAAAAAACJUQ");
+    print_muxed_account(&account2, printed, 12, 12);
+    assert_string_equal(printed, "MA7QYNF7SOWQ..AAAAAAAACJUQ");
+
+    // Valid multiplexed account in which unsigned id exceeds maximum signed 64-bit integer
+    MuxedAccount account3 = {.type = KEY_TYPE_MUXED_ED25519,
+                             .med25519 = {.id = 9223372036854775808, .ed25519 = ed25519}};
+    print_muxed_account(&account3, printed, 0, 0);
+    assert_string_equal(printed,
+                        "MA7QYNF7SOWQ3GLR2BGMZEHXAVIRZA4KVWLTJJFC7MGXUA74P7UJVAAAAAAAAAAAAAJLK");
+    print_muxed_account(&account3, printed, 12, 12);
+    assert_string_equal(printed, "MA7QYNF7SOWQ..AAAAAAAAAJLK");
+}
+
 int main() {
     const struct CMUnitTest tests[] = {
         cmocka_unit_test(test_print_amount),
@@ -121,6 +158,7 @@ int main() {
         cmocka_unit_test(test_print_summary),
         cmocka_unit_test(test_print_binary),
         cmocka_unit_test(test_base64_encode),
+        cmocka_unit_test(test_print_muxed_account),
     };
     return cmocka_run_group_tests(tests, NULL, NULL);
 }

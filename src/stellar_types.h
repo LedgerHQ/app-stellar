@@ -170,7 +170,20 @@ typedef const uint8_t *AccountID;
 typedef int64_t SequenceNumber;
 typedef uint64_t TimePoint;
 
-typedef const uint8_t *MuxedAccount;
+typedef enum { KEY_TYPE_ED25519 = 0, KEY_TYPE_MUXED_ED25519 = 0x100 } CryptoKeyType;
+
+typedef struct {
+    uint64_t id;
+    const uint8_t *ed25519;
+} MuxedAccountMed25519;
+
+typedef struct {
+    CryptoKeyType type;
+    union {
+        const uint8_t *ed25519;
+        MuxedAccountMed25519 med25519;
+    };
+} MuxedAccount;
 
 typedef struct {
     AssetType type;

@@ -112,6 +112,12 @@ void encode_hash_x_key(const uint8_t *in, char *out);
 /** raw public key to base32 encoded (summarized) address */
 void print_public_key(const uint8_t *in, char *out, uint8_t numCharsL, uint8_t numCharsR);
 
+/**  base32 encode muxed account */
+void encode_muxed_account(const MuxedAccount *in, char *out);
+
+/** raw muxed account to base32 encoded muxed address */
+void print_muxed_account(const MuxedAccount *in, char *out, uint8_t numCharsL, uint8_t numCharsR);
+
 /** output first numCharsL of input + last numCharsR of input separated by ".." */
 void print_summary(const char *in, char *out, uint8_t numCharsL, uint8_t numCharsR);
 

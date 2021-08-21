@@ -124,6 +124,28 @@ bool parse_account_id(buffer_t *buffer, const uint8_t **account_id) {
     return true;
 }
 
+static bool parse_muxed_account(buffer_t *buffer, MuxedAccount *muxed_account) {
+    uint32_t cryptoKeyType;
+    PARSER_CHECK(buffer_read32(buffer, &cryptoKeyType))
+    muxed_account->type = cryptoKeyType;
+
+    switch (muxed_account->type) {
+        case KEY_TYPE_ED25519:
+            PARSER_CHECK(buffer_can_read(buffer, 32));
+            muxed_account->ed25519 = buffer->ptr + buffer->offset;
+            buffer_advance(buffer, 32);
+            return true;
+        case KEY_TYPE_MUXED_ED25519:
+            PARSER_CHECK(buffer_read64(buffer, &muxed_account->med25519.id));
+            PARSER_CHECK(buffer_can_read(buffer, 32));
+            muxed_account->med25519.ed25519 = buffer->ptr + buffer->offset;
+            buffer_advance(buffer, 32);
+            return true;
+        default:
+            return false;
+    }
+}
+
 static bool parse_network(buffer_t *buffer, uint8_t *network) {
     if (!buffer_can_read(buffer, HASH_SIZE)) {
         return false;
@@ -238,7 +260,7 @@ static bool parse_create_account(buffer_t *buffer, CreateAccountOp *createAccoun
 }
 
 static bool parse_payment(buffer_t *buffer, PaymentOp *payment) {
-    if (!parse_account_id(buffer, &payment->destination)) {
+    if (!parse_muxed_account(buffer, &payment->destination)) {
         return false;
     }
 
@@ -254,7 +276,7 @@ static bool parse_path_payment(buffer_t *buffer, PathPaymentStrictReceiveOp *op)
 
     PARSER_CHECK(parse_asset(buffer, &op->sendAsset));
     PARSER_CHECK(buffer_read64(buffer, &op->sendMax));
-    PARSER_CHECK(parse_account_id(buffer, &op->destination));
+    PARSER_CHECK(parse_muxed_account(buffer, &op->destination));
     PARSER_CHECK(parse_asset(buffer, &op->destAsset));
     PARSER_CHECK(buffer_read64(buffer, (uint64_t *) &op->destAmount));
 
@@ -303,7 +325,7 @@ static bool parse_allow_trust(buffer_t *buffer, AllowTrustOp *op) {
 }
 
 static bool parse_account_merge(buffer_t *buffer, MuxedAccount *destination) {
-    return parse_account_id(buffer, destination);
+    return parse_muxed_account(buffer, destination);
 }
 
 static bool parse_manage_data(buffer_t *buffer, ManageDataOp *op) {
@@ -501,7 +523,7 @@ static bool parse_operation(buffer_t *buffer, Operation *opDetails) {
     uint32_t opType;
 
     if (!parse_optional_type(buffer,
-                             (xdr_type_parser) parse_account_id,
+                             (xdr_type_parser) parse_muxed_account,
                              &opDetails->sourceAccount,
                              &opDetails->sourceAccountPresent)) {
         return false;
@@ -576,7 +598,7 @@ bool parse_tx_xdr(const uint8_t *data, size_t size, tx_context_t *txCtx) {
         }
 
         // account used to run the transaction
-        if (!parse_account_id(&buffer, &txCtx->txDetails.sourceAccount)) {
+        if (!parse_muxed_account(&buffer, &txCtx->txDetails.sourceAccount)) {
             return false;
         }
 
