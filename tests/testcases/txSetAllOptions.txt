@@ -1,3 +1,4 @@
+Operation Type; Set Options
 Inflation Dest; GDGU5OAPHNPU5UCLE5RDJHG7PXZFQYWKCFOEXSXNMR6KRQRI5T6XXCD7
 Clear Flags; Auth revocable, Auth immutable
 Set Flags; Auth required

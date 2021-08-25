@@ -2,7 +2,7 @@
   "version": 1,
   "rules": [
     {
-      "regexp": "Review|Send|Destination|Memo( ID| Text){0,1}|Fee|Network|Time Bounds (To|From)|Tx Source.*|Receive|Via|Remove.*|Create Account|Buy|Price|Sell|(Allow|Change|Revoke) Trust|Run Inflation|Operation.*|Trust Limit|Bump Sequence|Create Offer|Change Offer|Starting Balance|Set (Flags|Data)|Clear Flags|Master Weight|(Low|Medium|High) Threshold|Home Domain|Add Signer|Weight|Data Value|Account ID.*|Op Source.*|Merge Account.*|Inflation Dest.*|Signer Key.*|Sponsored ID.*|Balance ID.*|Clawback Balance|From.*|WARNING.*|Balance|Data Name.*|Offer ID|Asset|Trustor",
+      "regexp": "Review|Send|Destination|Memo( ID| Text){0,1}|Fee|Network|Time Bounds (To|From)|Tx Source.*|Receive|Via|Remove.*|Create Account|Buy|Price|Sell|(Allow|Change|Revoke) Trust|Operation.*|Trust Limit|Bump To|Create Offer|Change Offer|Starting Balance|Set (Flags|Data)|Clear Flags|Master Weight|(Low|Medium|High) Threshold|Home Domain|Add Signer|Weight|Data Value|Account ID.*|Op Source.*|Merge Account.*|Inflation Dest.*|Signer Key.*|Sponsored ID.*|Balance ID.*|Clawback Balance|From.*|WARNING.*|Balance|Data Name.*|Offer ID|Asset|Trustor",
       "actions": [
         ["button", 2, true],
         ["button", 2, false]

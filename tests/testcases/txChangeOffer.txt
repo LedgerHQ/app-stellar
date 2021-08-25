@@ -1,3 +1,4 @@
+Operation Type; Manage Sell Offer
 Change Offer; 6849038322
 Buy; SLT@GAD..QN2I
 Price; 1.6666666 SLT

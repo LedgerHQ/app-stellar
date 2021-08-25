@@ -1,3 +1,4 @@
+Operation Type; Allow Trust
 Revoke Trust; JPY
 Account ID; GBMHY2EIEGFHW6G4OIC6QA7I7IUPUDD33PGCJLVC57THODEUQY62KNHD
 Memo Text; revoke trust

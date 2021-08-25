@@ -1,3 +1,4 @@
+Operation Type; Change Trust
 Remove Trust; SLT@GAD..QN2I
 Memo; [none]
 Fee; 0.00001 XLM

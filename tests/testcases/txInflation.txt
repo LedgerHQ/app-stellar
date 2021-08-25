@@ -1,4 +1,4 @@
-Run Inflation;  
+Operation Type; Inflation
 Memo Text; maximum memo length 28 chars
 Fee; 0.00001 XLM
 Network; Test

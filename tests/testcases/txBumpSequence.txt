@@ -1,4 +1,5 @@
-Bump Sequence; 2
+Operation Type; Bump Sequence
+Bump To; 2
 Memo; [none]
 Fee; 0.00001 XLM
 Network; Test

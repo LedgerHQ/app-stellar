@@ -1,3 +1,4 @@
+Operation Type; Manage Data
 Set Data; name
 Data Value; dmFsdWU=
 Memo Text; manage data

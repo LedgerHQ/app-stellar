@@ -1,3 +1,4 @@
+Operation Type; Change Trust
 Change Trust; DUPE@GBG..XESH
 Trust Limit; [maximum]
 Memo; [none]

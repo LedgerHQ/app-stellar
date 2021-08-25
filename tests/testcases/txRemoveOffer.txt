@@ -1,3 +1,4 @@
+Operation Type; Manage Sell Offer
 Remove Offer; 209583721
 Memo; [none]
 Fee; 0.00001 XLM

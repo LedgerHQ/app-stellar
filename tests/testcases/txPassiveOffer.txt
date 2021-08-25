@@ -1,4 +1,4 @@
-Create Offer; Type Passive
+Operation Type; Create Passive Sell Offer
 Buy; SLT@GAD..QN2I
 Price; 0.25 SLT
 Sell; 1000 XLM

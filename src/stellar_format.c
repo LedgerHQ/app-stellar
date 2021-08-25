@@ -109,15 +109,23 @@ static void format_operation_source(tx_context_t *txCtx) {
     }
 }
 
-static void format_bump_sequence(tx_context_t *txCtx) {
-    strcpy(detailCaption, "Bump Sequence");
+static void format_bump_sequence_bump_to(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Bump To");
     print_int(txCtx->opDetails.bumpSequenceOp.bumpTo, detailValue, DETAIL_VALUE_MAX_SIZE);
     push_to_formatter_stack(&format_operation_source);
 }
 
+static void format_bump_sequence(tx_context_t *txCtx) {
+    (void) txCtx;
+    strcpy(detailCaption, "Operation Type");
+    strcpy(detailValue, "Bump Sequence");
+    push_to_formatter_stack(&format_bump_sequence_bump_to);
+}
+
 static void format_inflation(tx_context_t *txCtx) {
     (void) txCtx;
-    strcpy(opCaption, "Run Inflation");
+    strcpy(detailCaption, "Operation Type");
+    strcpy(detailValue, "Inflation");
     push_to_formatter_stack(&format_operation_source);
 }
 
@@ -127,7 +135,7 @@ static void format_account_merge_destination(tx_context_t *txCtx) {
     push_to_formatter_stack(&format_operation_source);
 }
 
-static void format_account_merge(tx_context_t *txCtx) {
+static void format_account_merge_detail(tx_context_t *txCtx) {
     strcpy(detailCaption, "Merge Account");
     if (txCtx->opDetails.sourceAccountPresent) {
         print_muxed_account(&txCtx->opDetails.sourceAccount, detailValue, 0, 0);
@@ -135,6 +143,13 @@ static void format_account_merge(tx_context_t *txCtx) {
         print_muxed_account(&txCtx->txDetails.sourceAccount, detailValue, 0, 0);
     }
     push_to_formatter_stack(&format_account_merge_destination);
+}
+
+static void format_account_merge(tx_context_t *txCtx) {
+    (void) txCtx;
+    strcpy(detailCaption, "Operation Type");
+    strcpy(detailValue, "Account Merge");
+    push_to_formatter_stack(&format_account_merge_detail);
 }
 
 static void format_manage_data_value(tx_context_t *txCtx) {
@@ -147,7 +162,7 @@ static void format_manage_data_value(tx_context_t *txCtx) {
     push_to_formatter_stack(&format_operation_source);
 }
 
-static void format_manage_data(tx_context_t *txCtx) {
+static void format_manage_data_detail(tx_context_t *txCtx) {
     if (txCtx->opDetails.manageDataOp.dataValueSize) {
         strcpy(detailCaption, "Set Data");
         push_to_formatter_stack(&format_manage_data_value);
@@ -161,13 +176,20 @@ static void format_manage_data(tx_context_t *txCtx) {
     print_summary(tmp, detailValue, 12, 12);
 }
 
+static void format_manage_data(tx_context_t *txCtx) {
+    (void) txCtx;
+    strcpy(detailCaption, "Operation Type");
+    strcpy(detailValue, "Manage Data");
+    push_to_formatter_stack(&format_manage_data_detail);
+}
+
 static void format_allow_trust_trustor(tx_context_t *txCtx) {
     strcpy(detailCaption, "Account ID");
     print_public_key(txCtx->opDetails.allowTrustOp.trustor, detailValue, 0, 0);
     push_to_formatter_stack(&format_operation_source);
 }
 
-static void format_allow_trust(tx_context_t *txCtx) {
+static void format_allow_trust_detail(tx_context_t *txCtx) {
     // TODO: Add support for AUTHORIZED_TO_MAINTAIN_LIABILITIES_FLAG
     if (txCtx->opDetails.allowTrustOp.authorize) {
         strcpy(detailCaption, "Allow Trust");
@@ -176,6 +198,13 @@ static void format_allow_trust(tx_context_t *txCtx) {
     }
     strlcpy(detailValue, txCtx->opDetails.allowTrustOp.assetCode, DETAIL_VALUE_MAX_SIZE);
     push_to_formatter_stack(&format_allow_trust_trustor);
+}
+
+static void format_allow_trust(tx_context_t *txCtx) {
+    (void) txCtx;
+    strcpy(detailCaption, "Operation Type");
+    strcpy(detailValue, "Allow Trust");
+    push_to_formatter_stack(&format_allow_trust_detail);
 }
 
 static void format_set_option_signer_weight(tx_context_t *txCtx) {
@@ -328,7 +357,10 @@ static void format_set_option_inflation_destination(tx_context_t *txCtx) {
 }
 
 static void format_set_options(tx_context_t *txCtx) {
-    format_set_option_inflation_destination(txCtx);
+    (void) txCtx;
+    strcpy(detailCaption, "Operation Type");
+    strcpy(detailValue, "Set Options");
+    push_to_formatter_stack(&format_set_option_inflation_destination);
 }
 
 static void format_change_trust_limit(tx_context_t *txCtx) {
@@ -345,7 +377,7 @@ static void format_change_trust_limit(tx_context_t *txCtx) {
     push_to_formatter_stack(&format_operation_source);
 }
 
-static void format_change_trust(tx_context_t *txCtx) {
+static void format_change_trust_detail(tx_context_t *txCtx) {
     if (txCtx->opDetails.changeTrustOp.limit) {
         strcpy(detailCaption, "Change Trust");
         push_to_formatter_stack(&format_change_trust_limit);
@@ -361,6 +393,13 @@ static void format_change_trust(tx_context_t *txCtx) {
                   txCtx->network,
                   detailValue,
                   DETAIL_VALUE_MAX_SIZE);
+}
+
+static void format_change_trust(tx_context_t *txCtx) {
+    (void) txCtx;
+    strcpy(detailCaption, "Operation Type");
+    strcpy(detailValue, "Change Trust");
+    push_to_formatter_stack(&format_change_trust_detail);
 }
 
 static void format_manage_sell_offer_sell(tx_context_t *txCtx) {
@@ -398,7 +437,7 @@ static void format_manage_sell_offer_buy(tx_context_t *txCtx) {
     push_to_formatter_stack(&format_manage_sell_offer_price);
 }
 
-static void format_manage_sell_offer(tx_context_t *txCtx) {
+static void format_manage_sell_offer_detail(tx_context_t *txCtx) {
     if (!txCtx->opDetails.manageSellOfferOp.amount) {
         strcpy(detailCaption, "Remove Offer");
         print_uint(txCtx->opDetails.manageSellOfferOp.offerID, detailValue, DETAIL_VALUE_MAX_SIZE);
@@ -415,6 +454,13 @@ static void format_manage_sell_offer(tx_context_t *txCtx) {
         }
         push_to_formatter_stack(&format_manage_sell_offer_buy);
     }
+}
+
+static void format_manage_sell_offer(tx_context_t *txCtx) {
+    (void) txCtx;
+    strcpy(detailCaption, "Operation Type");
+    strcpy(detailValue, "Manage Sell Offer");
+    push_to_formatter_stack(&format_manage_sell_offer_detail);
 }
 
 static void format_manage_buy_offer_buy(tx_context_t *txCtx) {
@@ -446,7 +492,7 @@ static void format_manage_buy_offer_sell(tx_context_t *txCtx) {
     push_to_formatter_stack(&format_manage_buy_offer_price);
 }
 
-static void format_manage_buy_offer(tx_context_t *txCtx) {
+static void format_manage_buy_offer_detail(tx_context_t *txCtx) {
     ManageBuyOfferOp *op = &txCtx->opDetails.manageBuyOfferOp;
 
     if (op->buyAmount == 0) {
@@ -463,6 +509,13 @@ static void format_manage_buy_offer(tx_context_t *txCtx) {
         }
         push_to_formatter_stack(&format_manage_buy_offer_sell);
     }
+}
+
+static void format_manage_buy_offer(tx_context_t *txCtx) {
+    (void) txCtx;
+    strcpy(detailCaption, "Operation Type");
+    strcpy(detailValue, "Manage Buy Offer");
+    push_to_formatter_stack(&format_manage_buy_offer_detail);
 }
 
 static void format_create_passive_sell_offer_sell(tx_context_t *txCtx) {
@@ -499,8 +552,8 @@ static void format_create_passive_sell_offer_buy(tx_context_t *txCtx) {
 
 static void format_create_passive_sell_offer(tx_context_t *txCtx) {
     (void) txCtx;
-    strcpy(detailCaption, "Create Offer");
-    strcpy(detailValue, "Type Passive");
+    strcpy(detailCaption, "Operation Type");
+    strcpy(detailValue, "Create Passive Sell Offer");
     push_to_formatter_stack(&format_create_passive_sell_offer_buy);
 }
 
@@ -542,7 +595,7 @@ static void format_path_payment_strict_receive_destination(tx_context_t *txCtx) 
     push_to_formatter_stack(&format_path_payment_strict_receive_receive);
 }
 
-static void format_path_payment_strict_receive(tx_context_t *txCtx) {
+static void format_path_payment_strict_receive_send(tx_context_t *txCtx) {
     strcpy(detailCaption, "Send Max");
     print_amount(txCtx->opDetails.pathPaymentStrictReceiveOp.sendMax,
                  &txCtx->opDetails.pathPaymentStrictReceiveOp.sendAsset,
@@ -550,6 +603,13 @@ static void format_path_payment_strict_receive(tx_context_t *txCtx) {
                  detailValue,
                  DETAIL_VALUE_MAX_SIZE);
     push_to_formatter_stack(&format_path_payment_strict_receive_destination);
+}
+
+static void format_path_payment_strict_receive(tx_context_t *txCtx) {
+    (void) txCtx;
+    strcpy(detailCaption, "Operation Type");
+    strcpy(detailValue, "Path Payment Strict Receive");
+    push_to_formatter_stack(&format_path_payment_strict_receive_send);
 }
 
 static void format_path_payment_strict_send_receive(tx_context_t *txCtx) {
@@ -587,7 +647,7 @@ static void format_payment_destination(tx_context_t *txCtx) {
     push_to_formatter_stack(&format_operation_source);
 }
 
-static void format_payment(tx_context_t *txCtx) {
+static void format_payment_send(tx_context_t *txCtx) {
     strcpy(detailCaption, "Send");
     print_amount(txCtx->opDetails.payment.amount,
                  &txCtx->opDetails.payment.asset,
@@ -595,6 +655,13 @@ static void format_payment(tx_context_t *txCtx) {
                  detailValue,
                  DETAIL_VALUE_MAX_SIZE);
     push_to_formatter_stack(&format_payment_destination);
+}
+
+static void format_payment(tx_context_t *txCtx) {
+    (void) txCtx;
+    strcpy(detailCaption, "Operation Type");
+    strcpy(detailValue, "Payment");
+    push_to_formatter_stack(&format_payment_send);
 }
 
 static void format_create_account_amount(tx_context_t *txCtx) {
@@ -608,10 +675,17 @@ static void format_create_account_amount(tx_context_t *txCtx) {
     push_to_formatter_stack(&format_operation_source);
 }
 
-static void format_create_account(tx_context_t *txCtx) {
-    strcpy(detailCaption, "Create Account");
+static void format_create_account_destination(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Destination");
     print_public_key(txCtx->opDetails.createAccount.destination, detailValue, 0, 0);
     push_to_formatter_stack(&format_create_account_amount);
+}
+
+static void format_create_account(tx_context_t *txCtx) {
+    (void) txCtx;
+    strcpy(detailCaption, "Operation Type");
+    strcpy(detailValue, "Create Account");
+    push_to_formatter_stack(&format_create_account_destination);
 }
 
 void format_create_claimable_balance_warning(tx_context_t *txCtx) {

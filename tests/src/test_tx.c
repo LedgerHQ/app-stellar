@@ -24,7 +24,7 @@ static const char *testcases[] = {
     "../testcases/txOpSource.raw",
     "../testcases/txCreateAccount.raw",
     "../testcases/txAccountMerge.raw",
-    "../testcases/txPathPayment.raw",
+    "../testcases/txPathPaymentStrictReceive.raw",
     "../testcases/txSetData.raw",
     "../testcases/txRemoveData.raw",
     "../testcases/txChangeTrust.raw",
