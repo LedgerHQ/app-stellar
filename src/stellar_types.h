@@ -191,6 +191,17 @@ typedef enum {
     SIGNER_KEY_TYPE_HASH_X = KEY_TYPE_HASH_X
 } SignerKeyType;
 
+typedef enum {
+    // issuer has authorized account to perform transactions with its credit
+    AUTHORIZED_FLAG = 1,
+    // issuer has authorized account to maintain and reduce liabilities for its
+    // credit
+    AUTHORIZED_TO_MAINTAIN_LIABILITIES_FLAG = 2,
+    // issuer has specified that it may clawback its credit, and that claimable
+    // balances created with its credit may also be clawed back
+    TRUSTLINE_CLAWBACK_ENABLED_FLAG = 4
+} TrustLineFlags;
+
 typedef struct {
     uint64_t id;
     const uint8_t *ed25519;
@@ -290,6 +301,7 @@ typedef struct {
 typedef struct {
     AccountID trustor;
     char assetCode[13];
+    // One of 0, AUTHORIZED_FLAG, or AUTHORIZED_TO_MAINTAIN_LIABILITIES_FLAG.
     uint32_t authorize;
 } AllowTrustOp;
 
@@ -461,17 +473,6 @@ typedef struct {
 typedef struct {
     ClaimableBalanceID balanceID;
 } ClawbackClaimableBalanceOp;
-
-typedef enum {
-    // issuer has authorized account to perform transactions with its credit
-    AUTHORIZED_FLAG = 1,
-    // issuer has authorized account to maintain and reduce liabilities for its
-    // credit
-    AUTHORIZED_TO_MAINTAIN_LIABILITIES_FLAG = 2,
-    // issuer has specified that it may clawback its credit, and that claimable
-    // balances created with its credit may also be clawed back
-    TRUSTLINE_CLAWBACK_ENABLED_FLAG = 4
-} TrustLineFlags;
 
 typedef struct {
     AccountID trustor;

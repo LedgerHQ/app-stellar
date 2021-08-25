@@ -183,28 +183,35 @@ static void format_manage_data(tx_context_t *txCtx) {
     push_to_formatter_stack(&format_manage_data_detail);
 }
 
-static void format_allow_trust_trustor(tx_context_t *txCtx) {
-    strcpy(detailCaption, "Account ID");
-    print_public_key(txCtx->opDetails.allowTrustOp.trustor, detailValue, 0, 0);
+static void format_allow_trust_authorize(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Authorize Flag");
+    if (txCtx->opDetails.allowTrustOp.authorize == AUTHORIZED_FLAG) {
+        strlcpy(detailValue, "AUTHORIZED_FLAG", DETAIL_VALUE_MAX_SIZE);
+    } else if (txCtx->opDetails.allowTrustOp.authorize == AUTHORIZED_TO_MAINTAIN_LIABILITIES_FLAG) {
+        strlcpy(detailValue, "AUTHORIZED_TO_MAINTAIN_LIABILITIES_FLAG", DETAIL_VALUE_MAX_SIZE);
+    } else {
+        strlcpy(detailValue, "UNAUTHORIZED_FLAG", DETAIL_VALUE_MAX_SIZE);
+    }
     push_to_formatter_stack(&format_operation_source);
 }
 
-static void format_allow_trust_detail(tx_context_t *txCtx) {
-    // TODO: Add support for AUTHORIZED_TO_MAINTAIN_LIABILITIES_FLAG
-    if (txCtx->opDetails.allowTrustOp.authorize) {
-        strcpy(detailCaption, "Allow Trust");
-    } else {
-        strcpy(detailCaption, "Revoke Trust");
-    }
+static void format_allow_trust_asset_code(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Asset Code");
     strlcpy(detailValue, txCtx->opDetails.allowTrustOp.assetCode, DETAIL_VALUE_MAX_SIZE);
-    push_to_formatter_stack(&format_allow_trust_trustor);
+    push_to_formatter_stack(&format_allow_trust_authorize);
+}
+
+static void format_allow_trust_trustor(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Trustor");
+    print_public_key(txCtx->opDetails.allowTrustOp.trustor, detailValue, 0, 0);
+    push_to_formatter_stack(&format_allow_trust_asset_code);
 }
 
 static void format_allow_trust(tx_context_t *txCtx) {
     (void) txCtx;
     strcpy(detailCaption, "Operation Type");
     strcpy(detailValue, "Allow Trust");
-    push_to_formatter_stack(&format_allow_trust_detail);
+    push_to_formatter_stack(&format_allow_trust_trustor);
 }
 
 static void format_set_option_signer_weight(tx_context_t *txCtx) {
