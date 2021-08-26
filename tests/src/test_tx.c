@@ -41,6 +41,7 @@ static const char *testcases[] = {
     "../testcases/txInflation.raw",
     "../testcases/txBumpSequence.raw",
     "../testcases/txManageBuyOffer.raw",
+    "../testcases/txMultiOpWithSource.raw",
     NULL,
 };
 
