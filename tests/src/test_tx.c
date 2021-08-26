@@ -43,6 +43,7 @@ static const char *testcases[] = {
     "../testcases/txBumpSequence.raw",
     "../testcases/txManageBuyOffer.raw",
     "../testcases/txPathPaymentStrictSend.raw",
+    "../testcases/txMultiOpWithSource.raw",
     "../testcases/txCreateClaimableBalancePredicateAnd.raw",
     "../testcases/txCreateClaimableBalancePredicateBeforeAbs.raw",
     "../testcases/txCreateClaimableBalancePredicateBeforeRel.raw",

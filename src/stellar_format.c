@@ -92,19 +92,36 @@ static void format_confirm_transaction_details(tx_context_t *txCtx) {
     format_memo(txCtx);
 }
 
+static void format_next_operation(tx_context_t *txCtx) {
+    (void) txCtx;
+    formatter_stack[formatter_index] = NULL;
+    set_state_data(true);
+}
+
 static void format_operation_source(tx_context_t *txCtx) {
-    if (txCtx->opDetails.sourceAccountPresent) {
-        strcpy(detailCaption, "Op Source");
-        print_muxed_account(&txCtx->opDetails.sourceAccount, detailValue, 0, 0);
-        push_to_formatter_stack(&format_confirm_transaction_details);
-    } else {
-        if (txCtx->opIdx == txCtx->opCount) {
-            // last operation: show transaction details
-            format_confirm_transaction_details(txCtx);
+    if (txCtx->opIdx == txCtx->opCount) {
+        // last operation
+        if (txCtx->opDetails.sourceAccountPresent) {
+            // If there is a source account, wait for the user to
+            // enter the next step after displaying the source account
+            strcpy(detailCaption, "Op Source");
+            print_muxed_account(&txCtx->opDetails.sourceAccount, detailValue, 0, 0);
+            push_to_formatter_stack(&format_confirm_transaction_details);
         } else {
-            // more operations: show next operation
-            formatter_stack[formatter_index] = NULL;
-            set_state_data(true);
+            // Otherwise, go to the next step and display the transaction information.
+            format_confirm_transaction_details(txCtx);
+        }
+    } else {
+        // more operations
+        if (txCtx->opDetails.sourceAccountPresent) {
+            // If there is a source account, wait for the user to
+            // enter the next step after displaying the source account
+            strcpy(detailCaption, "Op Source");
+            print_muxed_account(&txCtx->opDetails.sourceAccount, detailValue, 0, 0);
+            push_to_formatter_stack(&format_next_operation);
+        } else {
+            // Otherwise, show the next operation.
+            format_next_operation(txCtx);
         }
     }
 }
