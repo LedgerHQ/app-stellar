@@ -82,6 +82,11 @@ typedef enum {
     MEMO_RETURN = 4,
 } MemoType;
 
+typedef enum {
+    ENVELOPE_TYPE_TX = 2,
+    ENVELOPE_TYPE_TX_FEE_BUMP = 5,
+} EnvelopeType;
+
 #define NETWORK_TYPE_PUBLIC  0
 #define NETWORK_TYPE_TEST    1
 #define NETWORK_TYPE_UNKNOWN 2
@@ -530,7 +535,16 @@ typedef struct {
     bool hasTimeBounds;
     TimeBounds timeBounds;  // validity range (inclusive) for the last ledger close time
     Memo memo;
-} tx_details_t;
+    Operation opDetails;
+    uint8_t opCount;
+    uint8_t opIdx;
+} TransactionDetails;
+
+typedef struct {
+    MuxedAccount feeSource;
+    int64_t fee;
+    TransactionDetails innerTx;
+} FeeBumpTransactionDetails;
 
 typedef struct {
     uint8_t publicKey[32];
@@ -546,12 +560,11 @@ typedef struct {
     uint32_t rawLength;
     uint8_t hash[HASH_SIZE];
     uint16_t offset;
-    uint8_t network;
-    Operation opDetails;
-    tx_details_t txDetails;
-    uint8_t opCount;
-    uint8_t opIdx;
     uint32_t tx;
+    uint8_t network;
+    EnvelopeType envelopeType;
+    FeeBumpTransactionDetails feeBumpTxDetails;
+    TransactionDetails txDetails;
 } tx_context_t;
 
 enum request_type_t { CONFIRM_ADDRESS, CONFIRM_TRANSACTION };
@@ -576,7 +589,7 @@ typedef struct {
 typedef struct {
     uint64_t amount;
     uint64_t fees;
-    char destination[57];
+    char destination[57];  // ed25519 address only
     char memo[20];
 } swap_values_t;
 

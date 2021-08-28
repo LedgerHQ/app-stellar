@@ -327,7 +327,7 @@ void ui_approve_tx_init(void) {
     ctx.req.tx.offset = 0;
     formatter_index = 0;
     MEMCLEAR(formatter_stack);
-    num_data = ctx.req.tx.opCount;
+    num_data = ctx.req.tx.txDetails.opCount;
     current_data_index = 0;
     current_state = OUT_OF_BORDERS;
     ux_flow_init(0, ux_confirm_flow, NULL);
@@ -336,7 +336,7 @@ void ui_approve_tx_init(void) {
 void ui_approve_tx_hash_init(void) {
     formatter_index = 0;
     MEMCLEAR(formatter_stack);
-    num_data = ctx.req.tx.opCount;
+    num_data = ctx.req.tx.txDetails.opCount;
     current_data_index = 0;
     current_state = OUT_OF_BORDERS;
     ux_flow_init(0, ux_confirm_flow, NULL);

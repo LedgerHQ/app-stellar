@@ -8,29 +8,34 @@ void swap_check() {
 
     tx_context_t *txCtx = &ctx.req.tx;
 
-    // A XLM swap consist of only one "send" operation
-    if (txCtx->opCount > 1) {
+    // tx type
+    if (txCtx->envelopeType != ENVELOPE_TYPE_TX) {
         io_seproxyhal_touch_tx_cancel(NULL);
     }
 
-    // tx type
-    if (txCtx->opDetails.type != XDR_OPERATION_TYPE_PAYMENT) {
+    // A XLM swap consist of only one "send" operation
+    if (txCtx->txDetails.opCount > 1) {
+        io_seproxyhal_touch_tx_cancel(NULL);
+    }
+
+    // op type
+    if (txCtx->txDetails.opDetails.type != XDR_OPERATION_TYPE_PAYMENT) {
         io_seproxyhal_touch_tx_cancel(NULL);
     }
 
     // amount
-    if (txCtx->opDetails.payment.asset.type != ASSET_TYPE_NATIVE ||
-        txCtx->opDetails.payment.amount != (int64_t) swap_values.amount) {
+    if (txCtx->txDetails.opDetails.payment.asset.type != ASSET_TYPE_NATIVE ||
+        txCtx->txDetails.opDetails.payment.amount != (int64_t) swap_values.amount) {
         io_seproxyhal_touch_tx_cancel(NULL);
     }
 
     // destination addr
-    print_muxed_account(&txCtx->opDetails.payment.destination, tmp_buf, 0, 0);
+    print_muxed_account(&txCtx->txDetails.opDetails.payment.destination, tmp_buf, 0, 0);
     if (strcmp(tmp_buf, swap_values.destination) != 0) {
         io_seproxyhal_touch_tx_cancel(NULL);
     }
 
-    if (txCtx->opDetails.sourceAccountPresent) {
+    if (txCtx->txDetails.opDetails.sourceAccountPresent) {
         io_seproxyhal_touch_tx_cancel(NULL);
     }
 

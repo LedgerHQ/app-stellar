@@ -193,26 +193,26 @@ static bool parse_string_ptr(buffer_t *buffer,
     return true;
 }
 
-static bool parse_memo(buffer_t *buffer, tx_details_t *txDetails) {
+static bool parse_memo(buffer_t *buffer, Memo *memo) {
     uint32_t type;
 
     if (!buffer_read32(buffer, &type)) {
         return 0;
     }
-    txDetails->memo.type = type;
-    switch (txDetails->memo.type) {
+    memo->type = type;
+    switch (memo->type) {
         case MEMO_NONE:
             return true;
         case MEMO_ID:
-            return buffer_read64(buffer, &txDetails->memo.id);
+            return buffer_read64(buffer, &memo->id);
         case MEMO_TEXT:
-            return parse_string_ptr(buffer, &txDetails->memo.text, NULL, MEMO_TEXT_MAX_SIZE);
+            return parse_string_ptr(buffer, &memo->text, NULL, MEMO_TEXT_MAX_SIZE);
         case MEMO_HASH:
         case MEMO_RETURN:
             if (buffer->size - buffer->offset < HASH_SIZE) {
                 return false;
             }
-            txDetails->memo.hash = buffer->ptr + buffer->offset;
+            memo->hash = buffer->ptr + buffer->offset;
             buffer->offset += HASH_SIZE;
             return true;
         default:
@@ -804,7 +804,39 @@ static bool parse_operation(buffer_t *buffer, Operation *opDetails) {
     }
 }
 
-#define ENVELOPE_TYPE_TX 2
+static bool parse_tx_details(buffer_t *buffer, TransactionDetails *transaction) {
+    // account used to run the (inner)transaction
+    PARSER_CHECK(parse_muxed_account(buffer, &transaction->sourceAccount));
+
+    // the fee the sourceAccount will pay
+    PARSER_CHECK(buffer_read32(buffer, &transaction->fee));
+
+    // sequence number to consume in the account
+    PARSER_CHECK(buffer_read64(buffer, (uint64_t *) &transaction->sequenceNumber));
+
+    // validity range (inclusive) for the last ledger close time
+    PARSER_CHECK(parse_optional_type(buffer,
+                                     (xdr_type_parser) parse_time_bounds,
+                                     &transaction->timeBounds,
+                                     &transaction->hasTimeBounds));
+
+    PARSER_CHECK(parse_memo(buffer, &transaction->memo));
+    uint32_t opCount;
+    PARSER_CHECK(buffer_read32(buffer, &opCount));
+    transaction->opCount = opCount;
+    if (transaction->opCount > MAX_OPS) {
+        return false;
+    }
+    transaction->opIdx = 0;
+    return true;
+}
+
+static bool parse_fee_bump_tx_details(buffer_t *buffer,
+                                      FeeBumpTransactionDetails *feeBumpTransaction) {
+    PARSER_CHECK(parse_muxed_account(buffer, &feeBumpTransaction->feeSource));
+    PARSER_CHECK(buffer_read64(buffer, (uint64_t *) &feeBumpTransaction->fee));
+    return true;
+}
 
 bool parse_tx_xdr(const uint8_t *data, size_t size, tx_context_t *txCtx) {
     buffer_t buffer = {data, size, 0};
@@ -815,60 +847,33 @@ bool parse_tx_xdr(const uint8_t *data, size_t size, tx_context_t *txCtx) {
 
     if (offset == 0) {
         MEMCLEAR(txCtx->txDetails);
-
-        if (!parse_network(&buffer, &txCtx->network)) {
-            return false;
+        MEMCLEAR(txCtx->feeBumpTxDetails);
+        PARSER_CHECK(parse_network(&buffer, &txCtx->network));
+        PARSER_CHECK(buffer_read32(&buffer, &envelopeType));
+        txCtx->envelopeType = envelopeType;
+        switch (envelopeType) {
+            case ENVELOPE_TYPE_TX:
+                PARSER_CHECK(parse_tx_details(&buffer, &txCtx->txDetails));
+                break;
+            case ENVELOPE_TYPE_TX_FEE_BUMP:
+                PARSER_CHECK(parse_fee_bump_tx_details(&buffer, &txCtx->feeBumpTxDetails));
+                uint32_t innerEnvelopeType;
+                PARSER_CHECK(buffer_read32(&buffer, &innerEnvelopeType));
+                if (innerEnvelopeType != ENVELOPE_TYPE_TX) {
+                    return false;
+                }
+                PARSER_CHECK(parse_tx_details(&buffer, &txCtx->txDetails));
+                break;
+            default:
+                return false;
         }
-        if (!buffer_read32(&buffer, &envelopeType) || envelopeType != ENVELOPE_TYPE_TX) {
-            return false;
-        }
-
-        // account used to run the transaction
-        if (!parse_muxed_account(&buffer, &txCtx->txDetails.sourceAccount)) {
-            return false;
-        }
-
-        // the fee the sourceAccount will pay
-        uint32_t fees;
-        if (!buffer_read32(&buffer, &fees)) {
-            return false;
-        }
-        txCtx->txDetails.fee = fees;
-
-        // sequence number to consume in the account
-        if (!buffer_read64(&buffer, (uint64_t *) &txCtx->txDetails.sequenceNumber)) {
-            return false;
-        }
-
-        // validity range (inclusive) for the last ledger close time
-        if (!parse_optional_type(&buffer,
-                                 (xdr_type_parser) parse_time_bounds,
-                                 &txCtx->txDetails.timeBounds,
-                                 &txCtx->txDetails.hasTimeBounds)) {
-            return false;
-        }
-
-        if (!parse_memo(&buffer, &txCtx->txDetails)) {
-            return false;
-        }
-
-        uint32_t opCount;
-        if (!buffer_read32(&buffer, &opCount)) {
-            return false;
-        }
-        txCtx->opCount = opCount;
-        if (txCtx->opCount > MAX_OPS) {
-            return false;
-        }
-        txCtx->opIdx = 0;
     }
 
-    if (!parse_operation(&buffer, &txCtx->opDetails)) {
+    if (!parse_operation(&buffer, &txCtx->txDetails.opDetails)) {
         return false;
     }
     offset = buffer.offset;
-
-    txCtx->opIdx += 1;
+    txCtx->txDetails.opIdx += 1;
     txCtx->offset = offset;
     return true;
 }
