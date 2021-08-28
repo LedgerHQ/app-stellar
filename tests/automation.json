@@ -18,6 +18,33 @@
       ]
     },
     {
+      "text": "Transaction",
+      "x": 34,
+      "y": 3,
+      "actions": [
+        ["button", 2, true],
+        ["button", 2, false]
+      ]
+    },
+    {
+      "text": "Fee Bump",
+      "x": 38,
+      "y": 3,
+      "actions": [
+        ["button", 2, true],
+        ["button", 2, false]
+      ]
+    },
+    {
+      "text": "InnerTx",
+      "x": 44,
+      "y": 3,
+      "actions": [
+        ["button", 2, true],
+        ["button", 2, false]
+      ]
+    },
+    {
       "text": "Finalize",
       "actions": [
         ["button", 1, true],

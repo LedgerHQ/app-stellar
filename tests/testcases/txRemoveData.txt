@@ -1,6 +1,8 @@
-Operation Type; Manage Data
-Remove Data; managedDataKey
+Network; Test
+Transaction; Details
 Memo Text; manage data
 Fee; 0.00001 XLM
-Network; Test
 Tx Source; GADFVW3UXVKDOU626XUPYDJU2BFCGFJHQ6SREYOZ6IJV4XSHOALEQN2I
+Operation Type; Manage Data
+Remove Data; managedDataKey
+Op Source; Not set, use Tx Source as Op Source

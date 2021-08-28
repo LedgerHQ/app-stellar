@@ -1,9 +1,11 @@
+Network; Test
+Transaction; Details
+Memo; [none]
+Fee; 0.00001 XLM
+Tx Source; GBGBTCCP7WG2E5XFYLQFJP2DYOQZPCCDCHK62K6TZD4BHMNYI5WSXESH
 Operation Type; Manage Sell Offer
 Create Offer; Type Active
 Buy; DUPE@GBG..XESH
 Price; 0.3333333 DUPE
 Sell; 300 XLM
-Memo; [none]
-Fee; 0.00001 XLM
-Network; Test
-Tx Source; GBGBTCCP7WG2E5XFYLQFJP2DYOQZPCCDCHK62K6TZD4BHMNYI5WSXESH
+Op Source; Not set, use Tx Source as Op Source

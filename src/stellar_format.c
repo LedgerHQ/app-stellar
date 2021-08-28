@@ -18,34 +18,45 @@ static void push_to_formatter_stack(format_function_t formatter) {
     formatter_stack[formatter_index + 1] = formatter;
 }
 
-static void format_fee_bump_transaction_source(tx_context_t *txCtx) {
-    strcpy(detailCaption, "Fee Source");
-    print_muxed_account(&txCtx->feeBumpTxDetails.feeSource, detailValue, 0, 0);
-    push_to_formatter_stack(NULL);
+static void format_next_step(tx_context_t *txCtx) {
+    (void) txCtx;
+    formatter_stack[formatter_index] = NULL;
+    set_state_data(true);
 }
 
-static void format_fee_bump_fee(tx_context_t *txCtx) {
-    strcpy(detailCaption, "FeeBumpTx Fee");
+static void format_network(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Network");
+    strlcpy(detailValue, (char *) PIC(NETWORK_NAMES[txCtx->network]), DETAIL_VALUE_MAX_SIZE);
+    push_to_formatter_stack(&format_next_step);
+}
+
+static void format_fee_bump_transaction_fee(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Fee");
     Asset asset = {.type = ASSET_TYPE_NATIVE};
     print_amount(txCtx->feeBumpTxDetails.fee,
                  &asset,
                  txCtx->network,
                  detailValue,
                  DETAIL_VALUE_MAX_SIZE);
+    push_to_formatter_stack(&format_next_step);
+}
+
+static void format_fee_bump_transaction_source(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Fee Source");
+    print_muxed_account(&txCtx->feeBumpTxDetails.feeSource, detailValue, 0, 0);
+    push_to_formatter_stack(&format_fee_bump_transaction_fee);
+}
+
+static void format_fee_bump_transaction_details(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Fee Bump");
+    strcpy(detailValue, "Transaction Details");
     push_to_formatter_stack(&format_fee_bump_transaction_source);
 }
 
 static void format_transaction_source(tx_context_t *txCtx) {
     strcpy(detailCaption, "Tx Source");
     print_muxed_account(&txCtx->txDetails.sourceAccount, detailValue, 0, 0);
-    switch (txCtx->envelopeType) {
-        case ENVELOPE_TYPE_TX_FEE_BUMP:
-            push_to_formatter_stack(&format_fee_bump_fee);
-            break;
-        case ENVELOPE_TYPE_TX:
-            push_to_formatter_stack(NULL);
-            break;
-    }
+    push_to_formatter_stack(format_next_step);
 }
 
 static void format_time_bounds_max_time(tx_context_t *txCtx) {
@@ -68,17 +79,11 @@ static void format_time_bounds(tx_context_t *txCtx) {
     }
 }
 
-static void format_network(tx_context_t *txCtx) {
-    strcpy(detailCaption, "Network");
-    strlcpy(detailValue, (char *) PIC(NETWORK_NAMES[txCtx->network]), DETAIL_VALUE_MAX_SIZE);
-    push_to_formatter_stack(&format_time_bounds);
-}
-
 static void format_fee(tx_context_t *txCtx) {
     strcpy(detailCaption, "Fee");
     Asset asset = {.type = ASSET_TYPE_NATIVE};
     print_amount(txCtx->txDetails.fee, &asset, txCtx->network, detailValue, DETAIL_VALUE_MAX_SIZE);
-    push_to_formatter_stack(&format_network);
+    push_to_formatter_stack(&format_time_bounds);
 }
 
 static void format_memo(tx_context_t *txCtx) {
@@ -112,41 +117,33 @@ static void format_memo(tx_context_t *txCtx) {
     push_to_formatter_stack(&format_fee);
 }
 
-static void format_confirm_transaction_details(tx_context_t *txCtx) {
-    format_memo(txCtx);
-}
-
-static void format_next_operation(tx_context_t *txCtx) {
-    (void) txCtx;
-    formatter_stack[formatter_index] = NULL;
-    set_state_data(true);
+static void format_transaction_details(tx_context_t *txCtx) {
+    switch (txCtx->envelopeType) {
+        case ENVELOPE_TYPE_TX_FEE_BUMP:
+            strcpy(detailCaption, "InnerTx");
+            break;
+        case ENVELOPE_TYPE_TX:
+            strcpy(detailCaption, "Transaction");
+            break;
+    }
+    strcpy(detailValue, "Details");
+    push_to_formatter_stack(&format_memo);
 }
 
 static void format_operation_source(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Op Source");
+    if (txCtx->txDetails.opDetails.sourceAccountPresent) {
+        print_muxed_account(&txCtx->txDetails.opDetails.sourceAccount, detailValue, 0, 0);
+    } else {
+        strcpy(detailValue, "Not set, use Tx Source as Op Source");
+    }
+
     if (txCtx->txDetails.opIdx == txCtx->txDetails.opCount) {
         // last operation
-        if (txCtx->txDetails.opDetails.sourceAccountPresent) {
-            // If there is a source account, wait for the user to
-            // enter the next step after displaying the source account
-            strcpy(detailCaption, "Op Source");
-            print_muxed_account(&txCtx->txDetails.opDetails.sourceAccount, detailValue, 0, 0);
-            push_to_formatter_stack(&format_confirm_transaction_details);
-        } else {
-            // Otherwise, go to the next step and display the txDetails information.
-            format_confirm_transaction_details(txCtx);
-        }
+        push_to_formatter_stack(NULL);
     } else {
         // more operations
-        if (txCtx->txDetails.opDetails.sourceAccountPresent) {
-            // If there is a source account, wait for the user to
-            // enter the next step after displaying the source account
-            strcpy(detailCaption, "Op Source");
-            print_muxed_account(&txCtx->txDetails.opDetails.sourceAccount, detailValue, 0, 0);
-            push_to_formatter_stack(&format_next_operation);
-        } else {
-            // Otherwise, show the next operation.
-            format_next_operation(txCtx);
-        }
+        push_to_formatter_stack(&format_next_step);
     }
 }
 
@@ -259,15 +256,11 @@ static void format_allow_trust(tx_context_t *txCtx) {
 }
 
 static void format_set_option_signer_weight(tx_context_t *txCtx) {
-    if (txCtx->txDetails.opDetails.setOptionsOp.signer.weight) {
-        strcpy(detailCaption, "Weight");
-        print_uint(txCtx->txDetails.opDetails.setOptionsOp.signer.weight,
-                   detailValue,
-                   DETAIL_VALUE_MAX_SIZE);
-        push_to_formatter_stack(&format_operation_source);
-    } else {
-        format_operation_source(txCtx);
-    }
+    strcpy(detailCaption, "Weight");
+    print_uint(txCtx->txDetails.opDetails.setOptionsOp.signer.weight,
+               detailValue,
+               DETAIL_VALUE_MAX_SIZE);
+    push_to_formatter_stack(&format_operation_source);
 }
 
 static void format_set_option_signer_detail(tx_context_t *txCtx) {
@@ -1129,7 +1122,34 @@ format_function_t get_formatter(tx_context_t *txCtx, bool forward) {
                 txCtx->txDetails.opIdx = 0;
             }
 
-            while (current_data_index > txCtx->txDetails.opIdx) {
+            uint8_t data_count_before_ops;
+            if (txCtx->envelopeType == ENVELOPE_TYPE_TX_FEE_BUMP) {
+                data_count_before_ops = 3;
+                switch (current_data_index) {
+                    case 1:
+                        return &format_network;
+                    case 2:
+                        return &format_fee_bump_transaction_details;
+                    case 3:
+                        return &format_transaction_details;
+                    default:
+                        break;
+                }
+            } else if (txCtx->envelopeType == ENVELOPE_TYPE_TX) {
+                data_count_before_ops = 2;
+                switch (current_data_index) {
+                    case 1:
+                        return &format_network;
+                    case 2:
+                        return &format_transaction_details;
+                    default:
+                        break;
+                }
+            } else {
+                THROW(0x6125);
+            }
+
+            while (current_data_index - data_count_before_ops > txCtx->txDetails.opIdx) {
                 if (!parse_tx_xdr(txCtx->raw, txCtx->rawLength, txCtx)) {
                     return NULL;
                 }
