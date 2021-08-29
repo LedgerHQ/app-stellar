@@ -302,12 +302,11 @@ void display_next_state(bool is_upper_border) {
             set_state_data(false);
             ux_flow_prev();
         } else {
-            formatter_index += 1;
             if ((num_data != 0 && current_data_index < num_data - 1) ||
-                formatter_stack[formatter_index] !=
+                formatter_stack[formatter_index + 1] !=
                     NULL) {  // -> from middle, more screens available
+                formatter_index += 1;
                 set_state_data(true);
-
                 /*dirty hack to have coherent behavior on bnnn_paging when there are multiple
                  * screens*/
                 G_ux.flow_stack[G_ux.stack_count - 1].prev_index =
