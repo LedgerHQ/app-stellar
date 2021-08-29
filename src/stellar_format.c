@@ -79,11 +79,17 @@ static void format_time_bounds(tx_context_t *txCtx) {
     }
 }
 
+static void format_sequence(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Sequence Number");
+    print_uint(txCtx->txDetails.sequenceNumber, detailValue, DETAIL_VALUE_MAX_SIZE);
+    push_to_formatter_stack(&format_time_bounds);
+}
+
 static void format_fee(tx_context_t *txCtx) {
     strcpy(detailCaption, "Fee");
     Asset asset = {.type = ASSET_TYPE_NATIVE};
     print_amount(txCtx->txDetails.fee, &asset, txCtx->network, detailValue, DETAIL_VALUE_MAX_SIZE);
-    push_to_formatter_stack(&format_time_bounds);
+    push_to_formatter_stack(&format_sequence);
 }
 
 static void format_memo(tx_context_t *txCtx) {
