@@ -1,5 +1,9 @@
-Remove Trust; SLT@GAD..QN2I
+Network; Test
+Transaction; Details
 Memo; [none]
 Fee; 0.00001 XLM
-Network; Test
+Sequence Number; 27888631402201089
 Tx Source; GADFVW3UXVKDOU626XUPYDJU2BFCGFJHQ6SREYOZ6IJV4XSHOALEQN2I
+Operation Type; Change Trust
+Remove Trust; SLT@GAD..QN2I
+Op Source; Not set, use Tx Source as Op Source

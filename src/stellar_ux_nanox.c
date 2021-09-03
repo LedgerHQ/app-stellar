@@ -302,12 +302,11 @@ void display_next_state(bool is_upper_border) {
             set_state_data(false);
             ux_flow_prev();
         } else {
-            formatter_index += 1;
             if ((num_data != 0 && current_data_index < num_data - 1) ||
-                formatter_stack[formatter_index] !=
+                formatter_stack[formatter_index + 1] !=
                     NULL) {  // -> from middle, more screens available
+                formatter_index += 1;
                 set_state_data(true);
-
                 /*dirty hack to have coherent behavior on bnnn_paging when there are multiple
                  * screens*/
                 G_ux.flow_stack[G_ux.stack_count - 1].prev_index =
@@ -327,7 +326,7 @@ void ui_approve_tx_init(void) {
     ctx.req.tx.offset = 0;
     formatter_index = 0;
     MEMCLEAR(formatter_stack);
-    num_data = ctx.req.tx.opCount;
+    num_data = ctx.req.tx.txDetails.opCount;
     current_data_index = 0;
     current_state = OUT_OF_BORDERS;
     ux_flow_init(0, ux_confirm_flow, NULL);
@@ -336,7 +335,7 @@ void ui_approve_tx_init(void) {
 void ui_approve_tx_hash_init(void) {
     formatter_index = 0;
     MEMCLEAR(formatter_stack);
-    num_data = ctx.req.tx.opCount;
+    num_data = ctx.req.tx.txDetails.opCount;
     current_data_index = 0;
     current_state = OUT_OF_BORDERS;
     ux_flow_init(0, ux_confirm_flow, NULL);

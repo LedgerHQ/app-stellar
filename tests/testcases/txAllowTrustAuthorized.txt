@@ -1,0 +1,11 @@
+Network; Test
+Transaction; Details
+Memo Text; allow trust
+Fee; 0.00001 XLM
+Sequence Number; 21728338334711809
+Tx Source; GBGBTCCP7WG2E5XFYLQFJP2DYOQZPCCDCHK62K6TZD4BHMNYI5WSXESH
+Operation Type; Allow Trust
+Trustor; GBMHY2EIEGFHW6G4OIC6QA7I7IUPUDD33PGCJLVC57THODEUQY62KNHD
+Asset Code; JPY
+Authorize Flag; AUTHORIZED_FLAG
+Op Source; Not set, use Tx Source as Op Source

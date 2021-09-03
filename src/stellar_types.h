@@ -82,6 +82,11 @@ typedef enum {
     MEMO_RETURN = 4,
 } MemoType;
 
+typedef enum {
+    ENVELOPE_TYPE_TX = 2,
+    ENVELOPE_TYPE_TX_FEE_BUMP = 5,
+} EnvelopeType;
+
 #define NETWORK_TYPE_PUBLIC  0
 #define NETWORK_TYPE_TEST    1
 #define NETWORK_TYPE_UNKNOWN 2
@@ -101,6 +106,14 @@ typedef enum {
     XDR_OPERATION_TYPE_BUMP_SEQUENCE = 11,
     XDR_OPERATION_TYPE_MANAGE_BUY_OFFER = 12,
     XDR_OPERATION_TYPE_PATH_PAYMENT_STRICT_SEND = 13,
+    XDR_OPERATION_TYPE_CREATE_CLAIMABLE_BALANCE = 14,
+    XDR_OPERATION_TYPE_CLAIM_CLAIMABLE_BALANCE = 15,
+    XDR_OPERATION_TYPE_BEGIN_SPONSORING_FUTURE_RESERVES = 16,
+    XDR_OPERATION_TYPE_END_SPONSORING_FUTURE_RESERVES = 17,
+    XDR_OPERATION_TYPE_REVOKE_SPONSORSHIP = 18,
+    XDR_OPERATION_TYPE_CLAWBACK = 19,
+    XDR_OPERATION_TYPE_CLAWBACK_CLAIMABLE_BALANCE = 20,
+    XDR_OPERATION_TYPE_SET_TRUST_LINE_FLAGS = 21,
 } xdr_operation_type_e;
 
 #define PUBLIC_KEY_TYPE_ED25519 0
@@ -170,7 +183,42 @@ typedef const uint8_t *AccountID;
 typedef int64_t SequenceNumber;
 typedef uint64_t TimePoint;
 
-typedef const uint8_t *MuxedAccount;
+typedef enum {
+    KEY_TYPE_ED25519 = 0,
+    KEY_TYPE_PRE_AUTH_TX = 1,
+    KEY_TYPE_HASH_X = 2,
+    KEY_TYPE_MUXED_ED25519 = 0x100
+} CryptoKeyType;
+
+typedef enum {
+    SIGNER_KEY_TYPE_ED25519 = KEY_TYPE_ED25519,
+    SIGNER_KEY_TYPE_PRE_AUTH_TX = KEY_TYPE_PRE_AUTH_TX,
+    SIGNER_KEY_TYPE_HASH_X = KEY_TYPE_HASH_X
+} SignerKeyType;
+
+typedef enum {
+    // issuer has authorized account to perform transactions with its credit
+    AUTHORIZED_FLAG = 1,
+    // issuer has authorized account to maintain and reduce liabilities for its
+    // credit
+    AUTHORIZED_TO_MAINTAIN_LIABILITIES_FLAG = 2,
+    // issuer has specified that it may clawback its credit, and that claimable
+    // balances created with its credit may also be clawed back
+    TRUSTLINE_CLAWBACK_ENABLED_FLAG = 4
+} TrustLineFlags;
+
+typedef struct {
+    uint64_t id;
+    const uint8_t *ed25519;
+} MuxedAccountMed25519;
+
+typedef struct {
+    CryptoKeyType type;
+    union {
+        const uint8_t *ed25519;
+        MuxedAccountMed25519 med25519;
+    };
+} MuxedAccount;
 
 typedef struct {
     AssetType type;
@@ -195,9 +243,9 @@ typedef struct {
 } PaymentOp;
 
 typedef struct {
-    Asset sendAsset;   // asset we pay with
-    uint64_t sendMax;  // the maximum amount of sendAsset to send (excluding fees).
-                       // The operation will fail if can't be met
+    Asset sendAsset;  // asset we pay with
+    int64_t sendMax;  // the maximum amount of sendAsset to send (excluding fees).
+                      // The operation will fail if can't be met
 
     MuxedAccount destination;  // recipient of the payment
     Asset destAsset;           // what they end up with
@@ -236,6 +284,20 @@ typedef struct {
 } ManageBuyOfferOp;
 
 typedef struct {
+    Asset sendAsset;     // asset we pay with
+    int64_t sendAmount;  // amount of sendAsset to send (excluding fees)
+                         // The operation will fail if can't be met
+
+    MuxedAccount destination;  // recipient of the payment
+    Asset destAsset;           // what they end up with
+    int64_t destMin;           // the minimum amount of dest asset to
+                               // be received
+                               // The operation will fail if it can't be met
+    uint8_t pathLen;
+    Asset path[5];  // additional hops it must go through to get there
+} PathPaymentStrictSendOp;
+
+typedef struct {
     Asset line;
 
     uint64_t limit;  // if limit is set to 0, deletes the trust line
@@ -244,6 +306,7 @@ typedef struct {
 typedef struct {
     AccountID trustor;
     char assetCode[13];
+    // One of 0, AUTHORIZED_FLAG, or AUTHORIZED_TO_MAINTAIN_LIABILITIES_FLAG.
     uint32_t authorize;
 } AllowTrustOp;
 
@@ -252,12 +315,6 @@ typedef MuxedAccount AccountMergeOp;
 typedef struct {
     SequenceNumber bumpTo;
 } BumpSequenceOp;
-
-typedef enum {
-    SIGNER_KEY_TYPE_ED25519 = 0,
-    SIGNER_KEY_TYPE_PRE_AUTH_TX = 1,
-    SIGNER_KEY_TYPE_HASH_X = 2,
-} SignerKeyType;
 
 typedef struct {
     SignerKeyType type;
@@ -295,6 +352,140 @@ typedef struct {
     const uint8_t *dataValue;
 } ManageDataOp;
 
+typedef enum {
+    CLAIM_PREDICATE_UNCONDITIONAL = 0,
+    CLAIM_PREDICATE_AND = 1,
+    CLAIM_PREDICATE_OR = 2,
+    CLAIM_PREDICATE_NOT = 3,
+    CLAIM_PREDICATE_BEFORE_ABSOLUTE_TIME = 4,
+    CLAIM_PREDICATE_BEFORE_RELATIVE_TIME = 5
+} ClaimPredicateType;
+
+typedef struct ClaimPredicate {
+    ClaimPredicateType type;
+    union {
+        struct ClaimPredicate *andPredicates[2];
+        struct ClaimPredicate *orPredicates[2];
+        struct {
+            bool notPredicatePresent;
+            struct ClaimPredicate *notPredicate;
+        } notPredicate;
+        int64_t absBefore;
+        int64_t relBefore;
+    };
+} ClaimPredicate;
+
+typedef enum {
+    CLAIMANT_TYPE_V0 = 0,
+} ClaimantType;
+
+typedef struct {
+    ClaimantType type;
+    union {
+        struct {
+            AccountID destination;     // The account that can use this condition
+            ClaimPredicate predicate;  // Claimable if predicate is true
+        } v0;
+    };
+
+} Claimant;
+
+typedef struct {
+    Asset asset;
+    int64_t amount;
+    uint8_t claimantLen;
+    Claimant claimants[10];
+} CreateClaimableBalanceOp;
+
+typedef enum {
+    CLAIMABLE_BALANCE_ID_TYPE_V0 = 0,
+} ClaimableBalanceIDType;
+
+typedef struct {
+    ClaimableBalanceIDType type;
+    uint8_t v0[32];
+} ClaimableBalanceID;
+
+typedef struct {
+    ClaimableBalanceID balanceID;
+} ClaimClaimableBalanceOp;
+
+typedef struct {
+    AccountID sponsoredID;
+} BeginSponsoringFutureReservesOp;
+
+typedef enum {
+    ACCOUNT = 0,
+    TRUSTLINE = 1,
+    OFFER = 2,
+    DATA = 3,
+    CLAIMABLE_BALANCE = 4
+} LedgerEntryType;
+
+typedef struct {
+    LedgerEntryType type;
+    union {
+        struct {
+            AccountID accountID;
+        } account;
+
+        struct {
+            AccountID accountID;
+            Asset asset;
+        } trustLine;
+
+        struct {
+            AccountID sellerID;
+            int64_t offerID;
+        } offer;
+
+        struct {
+            AccountID accountID;
+            uint8_t dataNameSize;
+            const uint8_t *dataName;
+        } data;
+
+        struct {
+            ClaimableBalanceID balanceId;
+        } claimableBalance;
+    };
+
+} LedgerKey;
+
+typedef enum {
+    REVOKE_SPONSORSHIP_LEDGER_ENTRY = 0,
+    REVOKE_SPONSORSHIP_SIGNER = 1
+} RevokeSponsorshipType;
+
+typedef struct {
+    RevokeSponsorshipType type;
+    union {
+        LedgerKey ledgerKey;
+        struct {
+            AccountID accountID;
+            SignerKey signerKey;
+        } signer;
+    };
+
+} RevokeSponsorshipOp;
+
+typedef struct {
+    Asset asset;
+    MuxedAccount from;
+    int64_t amount;
+} ClawbackOp;
+
+typedef struct {
+    ClaimableBalanceID balanceID;
+} ClawbackClaimableBalanceOp;
+
+typedef struct {
+    AccountID trustor;
+    Asset asset;
+    uint32_t clearFlags;  // which flags to clear
+    uint32_t setFlags;    // which flags to set
+} SetTrustLineFlagsOp;
+
 typedef struct {
     bool sourceAccountPresent;
     MuxedAccount sourceAccount;
@@ -312,6 +503,14 @@ typedef struct {
         ManageDataOp manageDataOp;
         BumpSequenceOp bumpSequenceOp;
         ManageBuyOfferOp manageBuyOfferOp;
+        PathPaymentStrictSendOp pathPaymentStrictSendOp;
+        CreateClaimableBalanceOp createClaimableBalanceOp;
+        ClaimClaimableBalanceOp claimClaimableBalanceOp;
+        BeginSponsoringFutureReservesOp beginSponsoringFutureReservesOp;
+        RevokeSponsorshipOp revokeSponsorshipOp;
+        ClawbackOp clawbackOp;
+        ClawbackClaimableBalanceOp clawbackClaimableBalanceOp;
+        SetTrustLineFlagsOp setTrustLineFlagsOp;
     };
 } Operation;
 
@@ -336,7 +535,16 @@ typedef struct {
     bool hasTimeBounds;
     TimeBounds timeBounds;  // validity range (inclusive) for the last ledger close time
     Memo memo;
-} tx_details_t;
+    Operation opDetails;
+    uint8_t opCount;
+    uint8_t opIdx;
+} TransactionDetails;
+
+typedef struct {
+    MuxedAccount feeSource;
+    int64_t fee;
+    TransactionDetails innerTx;
+} FeeBumpTransactionDetails;
 
 typedef struct {
     uint8_t publicKey[32];
@@ -352,12 +560,11 @@ typedef struct {
     uint32_t rawLength;
     uint8_t hash[HASH_SIZE];
     uint16_t offset;
-    uint8_t network;
-    Operation opDetails;
-    tx_details_t txDetails;
-    uint8_t opCount;
-    uint8_t opIdx;
     uint32_t tx;
+    uint8_t network;
+    EnvelopeType envelopeType;
+    FeeBumpTransactionDetails feeBumpTxDetails;
+    TransactionDetails txDetails;
 } tx_context_t;
 
 enum request_type_t { CONFIRM_ADDRESS, CONFIRM_TRANSACTION };
@@ -382,7 +589,7 @@ typedef struct {
 typedef struct {
     uint64_t amount;
     uint64_t fees;
-    char destination[57];
+    char destination[57];  // ed25519 address only
     char memo[20];
 } swap_values_t;
 

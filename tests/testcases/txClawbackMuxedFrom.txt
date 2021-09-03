@@ -1,0 +1,10 @@
+Network; Test
+Transaction; Details
+Memo; [none]
+Fee; 0.00001 XLM
+Sequence Number; 2
+Tx Source; GD2J5ZZTU4XM5LEX3XPKSCJIQ3UMXU7NLZMHOZEMELXKI4XLPHHKGVM5
+Operation Type; Clawback
+Clawback Balance; 123.456 Hello
+From; MDUGCRQWFXZM4MJ2VOEDNG5WZDJQKOP6CNMFHNL4Z4WFT2JMXOGLWAAAAAAAAAAAAFNJI
+Op Source; Not set, use Tx Source as Op Source

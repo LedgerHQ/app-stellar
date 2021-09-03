@@ -1,5 +1,8 @@
-Run Inflation;  
+Network; Test
+Transaction; Details
 Memo Text; maximum memo length 28 chars
 Fee; 0.00001 XLM
-Network; Test
+Sequence Number; 27888631402201089
 Tx Source; GADFVW3UXVKDOU626XUPYDJU2BFCGFJHQ6SREYOZ6IJV4XSHOALEQN2I
+Operation Type; Inflation
+Op Source; Not set, use Tx Source as Op Source

@@ -112,6 +112,12 @@ void encode_hash_x_key(const uint8_t *in, char *out);
 /** raw public key to base32 encoded (summarized) address */
 void print_public_key(const uint8_t *in, char *out, uint8_t numCharsL, uint8_t numCharsR);
 
+/**  base32 encode muxed account */
+void encode_muxed_account(const MuxedAccount *in, char *out);
+
+/** raw muxed account to base32 encoded muxed address */
+void print_muxed_account(const MuxedAccount *in, char *out, uint8_t numCharsL, uint8_t numCharsR);
+
 /** output first numCharsL of input + last numCharsR of input separated by ".." */
 void print_summary(const char *in, char *out, uint8_t numCharsL, uint8_t numCharsR);
 
@@ -145,6 +151,9 @@ void print_native_asset_code(uint8_t network, char *out, size_t out_len);
 /** string representation of flags present */
 void print_flags(uint32_t flags, char *out, size_t out_len);
 
+/** string representation of trust line flags present */
+void print_trust_line_flags(uint32_t flags, char *out, size_t out_len);
+
 /** integer to string for display of sequence number */
 int print_int(int64_t l, char *out, size_t out_len);
 
@@ -154,4 +163,6 @@ int print_uint(uint64_t l, char *out, size_t out_len);
 /** base64 encoding function used to display managed data values */
 void base64_encode(const uint8_t *data, int inLen, char *out);
 
+/** hex representation of flags claimable balance id */
+void print_claimable_balance_id(const ClaimableBalanceID *claimableBalanceID, char *out);
 #endif

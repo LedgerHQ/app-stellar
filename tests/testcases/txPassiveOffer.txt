@@ -1,8 +1,11 @@
-Create Offer; Type Passive
+Network; Test
+Transaction; Details
+Memo Text; create offer
+Fee; 0.00001 XLM
+Sequence Number; 27888631402201089
+Tx Source; GADFVW3UXVKDOU626XUPYDJU2BFCGFJHQ6SREYOZ6IJV4XSHOALEQN2I
+Operation Type; Create Passive Sell Offer
 Buy; SLT@GAD..QN2I
 Price; 0.25 SLT
 Sell; 1000 XLM
-Memo Text; create offer
-Fee; 0.00001 XLM
-Network; Test
-Tx Source; GADFVW3UXVKDOU626XUPYDJU2BFCGFJHQ6SREYOZ6IJV4XSHOALEQN2I
+Op Source; Not set, use Tx Source as Op Source

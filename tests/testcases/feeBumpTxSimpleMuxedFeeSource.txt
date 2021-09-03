@@ -1,0 +1,13 @@
+Network; Test
+Fee Bump; Transaction Details
+Fee Source; MAQNVGMLOXSCWH37QXIHLQJH6WZENXYSVWLPAEF4673W64VRNZLRGAAAAAAAAAPCIDE24
+Fee; 0.00004 XLM
+InnerTx; Details
+Memo Text; fee-bump-tx-simple-muxed
+Fee; 0.00001 XLM
+Sequence Number; 2
+Tx Source; GBZXN7PIRZGNMHGA7MUUUF4GWPY5AYPV6LY4UV2GL6VJGIQRXFDNMADI
+Operation Type; Payment
+Send; 100 XLM
+Destination; GBVKI23OQZCANDUZ2SI7XU7W6ICYKYT74JBXDD2CYRDAFZHZNRPASSQK
+Op Source; Not set, use Tx Source as Op Source

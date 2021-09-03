@@ -218,13 +218,44 @@ void print_binary_summary(const uint8_t *in, char *out, uint8_t len) {
     }
 }
 
-void print_public_key(MuxedAccount in, char *out, uint8_t numCharsL, uint8_t numCharsR) {
+void print_public_key(AccountID in, char *out, uint8_t numCharsL, uint8_t numCharsR) {
     if (numCharsL > 0) {
         char buffer[57];
         encode_public_key(in, buffer);
         print_summary(buffer, out, numCharsL, numCharsR);
     } else {
         encode_public_key(in, out);
+    }
+}
+
+void encode_muxed_account(const MuxedAccount *in, char *out) {
+    if (in->type == KEY_TYPE_ED25519) {
+        encode_public_key(in->ed25519, out);
+    } else {
+        uint8_t buffer[43];
+        buffer[0] = 12 << 3;
+        int i;
+        for (i = 0; i < 32; i++) {
+            buffer[i + 1] = in->med25519.ed25519[i];
+        }
+        for (i = 0; i < 8; i++) {
+            buffer[33 + i] = in->med25519.id >> 8 * (7 - i);
+        }
+        short crc = crc16((char *) buffer, 41);  // checksum
+        buffer[41] = crc;
+        buffer[42] = crc >> 8;
+        base32_encode(buffer, 43, out, 69);
+        out[69] = '\0';
+    }
+}
+
+void print_muxed_account(const MuxedAccount *in, char *out, uint8_t numCharsL, uint8_t numCharsR) {
+    if (numCharsL > 0) {
+        char buffer[70];
+        encode_muxed_account(in, buffer);
+        print_summary(buffer, out, numCharsL, numCharsR);
+    } else {
+        encode_muxed_account(in, out);
     }
 }
 
@@ -384,10 +415,30 @@ void print_flags(uint32_t flags, char *out, size_t out_len) {
     }
 }
 
+void print_trust_line_flags(uint32_t flags, char *out, size_t out_len) {
+    if (flags & AUTHORIZED_FLAG) {
+        print_flag("AUTHORIZED", out, out_len);
+    }
+    if (flags & AUTHORIZED_TO_MAINTAIN_LIABILITIES_FLAG) {
+        print_flag("AUTHORIZED_TO_MAINTAIN_LIABILITIES", out, out_len);
+    }
+    if (flags & TRUSTLINE_CLAWBACK_ENABLED_FLAG) {
+        print_flag("TRUSTLINE_CLAWBACK_ENABLED", out, out_len);
+    }
+}
+
 void print_native_asset_code(uint8_t network, char *out, size_t out_len) {
     if (network == NETWORK_TYPE_UNKNOWN) {
         strlcpy(out, "native", out_len);
     } else {
         strlcpy(out, "XLM", out_len);
     }
+}
+
+void print_claimable_balance_id(const ClaimableBalanceID *claimableBalanceID, char *out) {
+    size_t data_len = 36;
+    uint8_t data[data_len];
+    memcpy(data, &claimableBalanceID->type, 4);
+    memcpy(data + 4, claimableBalanceID->v0, 32);
+    print_binary(data, out, data_len);
 }

@@ -1,0 +1,12 @@
+Network; Test
+Transaction; Details
+Memo Text; dollar to naira
+Fee; 0.00001 XLM
+Sequence Number; 2
+Tx Source; GADFVW3UXVKDOU626XUPYDJU2BFCGFJHQ6SREYOZ6IJV4XSHOALEQN2I
+Operation Type; Path Payment Strict Receive
+Send Max; 50 USD
+Destination; MCKUD4BHIYSAYHU7HBB5FDSW6CSYH3GSOUBPWD2KE7KNBERP4BSKEAAAAAAAAAPCIBQZY
+Receive; 18000 NGN
+Via; YEN, CAD
+Op Source; Not set, use Tx Source as Op Source
