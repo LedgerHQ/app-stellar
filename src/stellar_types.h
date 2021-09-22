@@ -221,9 +221,21 @@ typedef struct {
 } MuxedAccount;
 
 typedef struct {
-    AssetType type;
     const char *assetCode;
     AccountID issuer;
+} AlphaNum4;
+
+typedef struct {
+    const char *assetCode;
+    AccountID issuer;
+} AlphaNum12;
+
+typedef struct {
+    AssetType type;
+    union {
+        AlphaNum4 alphaNum4;
+        AlphaNum12 alphaNum12;
+    };
 } Asset;
 
 typedef struct {

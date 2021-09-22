@@ -220,6 +220,22 @@ static bool parse_memo(buffer_t *buffer, Memo *memo) {
     }
 }
 
+static bool parse_alpha_num4_asset(buffer_t *buffer, AlphaNum4 *asset) {
+    PARSER_CHECK(buffer_can_read(buffer, 4));
+    asset->assetCode = (const char *) buffer->ptr + buffer->offset;
+    buffer_advance(buffer, 4);
+    PARSER_CHECK(parse_account_id(buffer, &asset->issuer));
+    return true;
+}
+
+static bool parse_alpha_num12_asset(buffer_t *buffer, AlphaNum12 *asset) {
+    PARSER_CHECK(buffer_can_read(buffer, 12));
+    asset->assetCode = (const char *) buffer->ptr + buffer->offset;
+    buffer_advance(buffer, 12);
+    PARSER_CHECK(parse_account_id(buffer, &asset->issuer));
+    return true;
+}
+
 static bool parse_asset(buffer_t *buffer, Asset *asset) {
     uint32_t assetType;
 
@@ -232,20 +248,10 @@ static bool parse_asset(buffer_t *buffer, Asset *asset) {
             return true;
         }
         case ASSET_TYPE_CREDIT_ALPHANUM4: {
-            if (!buffer_can_read(buffer, 4)) {
-                return false;
-            }
-            asset->assetCode = (const char *) buffer->ptr + buffer->offset;
-            buffer_advance(buffer, 4);
-            return parse_account_id(buffer, &asset->issuer);
+            return parse_alpha_num4_asset(buffer, &asset->alphaNum4);
         }
         case ASSET_TYPE_CREDIT_ALPHANUM12: {
-            if (!buffer_can_read(buffer, 12)) {
-                return false;
-            }
-            asset->assetCode = (const char *) buffer->ptr + buffer->offset;
-            buffer_advance(buffer, 12);
-            return parse_account_id(buffer, &asset->issuer);
+            return parse_alpha_num12_asset(buffer, &asset->alphaNum12);
         }
         default:
             return false;  // unknown asset type
