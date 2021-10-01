@@ -239,6 +239,66 @@ static bool parse_alpha_num12_asset(buffer_t *buffer, AlphaNum12 *asset) {
 static bool parse_asset(buffer_t *buffer, Asset *asset) {
     uint32_t assetType;
 
+    PARSER_CHECK(buffer_read32(buffer, &assetType));
+    asset->type = assetType;
+    switch (asset->type) {
+        case ASSET_TYPE_NATIVE: {
+            return true;
+        }
+        case ASSET_TYPE_CREDIT_ALPHANUM4: {
+            return parse_alpha_num4_asset(buffer, &asset->alphaNum4);
+        }
+        case ASSET_TYPE_CREDIT_ALPHANUM12: {
+            return parse_alpha_num12_asset(buffer, &asset->alphaNum12);
+        }
+        default:
+            return false;  // unknown asset type
+    }
+}
+
+static bool parse_trust_line_asset(buffer_t *buffer, TrustLineAsset *asset) {
+    uint32_t assetType;
+
+    PARSER_CHECK(buffer_read32(buffer, &assetType));
+    asset->type = assetType;
+    switch (asset->type) {
+        case ASSET_TYPE_NATIVE: {
+            return true;
+        }
+        case ASSET_TYPE_CREDIT_ALPHANUM4: {
+            return parse_alpha_num4_asset(buffer, &asset->alphaNum4);
+        }
+        case ASSET_TYPE_CREDIT_ALPHANUM12: {
+            return parse_alpha_num12_asset(buffer, &asset->alphaNum12);
+        }
+        case ASSET_TYPE_POOL_SHARE: {
+            return buffer_read_bytes(buffer, asset->liquidityPoolID, LIQUIDITY_POOL_ID_SIZE);
+        }
+        default:
+            return false;  // unknown asset type
+    }
+}
+
+static bool parse_liquidity_pool_parameters(buffer_t *buffer,
+                                            LiquidityPoolParameters *liquidityPoolParameters) {
+    uint32_t liquidityPoolType;
+    PARSER_CHECK(buffer_read32(buffer, &liquidityPoolType));
+    switch (liquidityPoolType) {
+        case LIQUIDITY_POOL_CONSTANT_PRODUCT: {
+            PARSER_CHECK(parse_asset(buffer, &liquidityPoolParameters->constantProduct.assetA));
+            PARSER_CHECK(parse_asset(buffer, &liquidityPoolParameters->constantProduct.assetB));
+            PARSER_CHECK(
+                buffer_read32(buffer, (uint32_t *) &liquidityPoolParameters->constantProduct.fee));
+            return true;
+        }
+        default:
+            return false;
+    }
+}
+
+static bool parse_change_trust_asset(buffer_t *buffer, ChangeTrustAsset *asset) {
+    uint32_t assetType;
+
     if (!buffer_read32(buffer, &assetType)) {
         return false;
     }
@@ -252,6 +312,9 @@ static bool parse_asset(buffer_t *buffer, Asset *asset) {
         }
         case ASSET_TYPE_CREDIT_ALPHANUM12: {
             return parse_alpha_num12_asset(buffer, &asset->alphaNum12);
+        }
+        case ASSET_TYPE_POOL_SHARE: {
+            return parse_liquidity_pool_parameters(buffer, &asset->liquidityPool);
         }
         default:
             return false;  // unknown asset type
@@ -396,7 +459,7 @@ static bool parse_create_passive_sell_offer(buffer_t *buffer, CreatePassiveSellO
 }
 
 static bool parse_change_trust(buffer_t *buffer, ChangeTrustOp *op) {
-    if (!parse_asset(buffer, &op->line)) {
+    if (!parse_change_trust_asset(buffer, &op->line)) {
         return false;
     }
     return buffer_read64(buffer, &op->limit);
@@ -661,7 +724,7 @@ static bool parse_ledger_key(buffer_t *buffer, LedgerKey *ledgerKey) {
             return true;
         case TRUSTLINE:
             PARSER_CHECK(parse_account_id(buffer, &ledgerKey->trustLine.accountID));
-            PARSER_CHECK(parse_asset(buffer, &ledgerKey->trustLine.asset));
+            PARSER_CHECK(parse_trust_line_asset(buffer, &ledgerKey->trustLine.asset));
             return true;
         case OFFER:
             PARSER_CHECK(parse_account_id(buffer, &ledgerKey->offer.sellerID));
@@ -677,6 +740,11 @@ static bool parse_ledger_key(buffer_t *buffer, LedgerKey *ledgerKey) {
         case CLAIMABLE_BALANCE:
             PARSER_CHECK(
                 parse_claimable_balance_id(buffer, &ledgerKey->claimableBalance.balanceId));
+            return true;
+        case LIQUIDITY_POOL:
+            PARSER_CHECK(buffer_read_bytes(buffer,
+                                           ledgerKey->liquidityPool.liquidityPoolID,
+                                           LIQUIDITY_POOL_ID_SIZE));
             return true;
         default:
             return false;
@@ -718,6 +786,23 @@ static bool parse_set_trust_line_flags(buffer_t *buffer, SetTrustLineFlagsOp *op
     PARSER_CHECK(parse_asset(buffer, &op->asset));
     PARSER_CHECK(buffer_read32(buffer, &op->clearFlags));
     PARSER_CHECK(buffer_read32(buffer, &op->setFlags));
+    return true;
+}
+
+static bool parse_liquidity_pool_deposit(buffer_t *buffer, LiquidityPoolDepositOp *op) {
+    PARSER_CHECK(buffer_read_bytes(buffer, op->liquidityPoolID, LIQUIDITY_POOL_ID_SIZE));
+    PARSER_CHECK(buffer_read64(buffer, (uint64_t *) &op->maxAmountA));
+    PARSER_CHECK(buffer_read64(buffer, (uint64_t *) &op->maxAmountB));
+    PARSER_CHECK(parse_price(buffer, &op->minPrice));
+    PARSER_CHECK(parse_price(buffer, &op->maxPrice));
+    return true;
+}
+
+static bool parse_liquidity_pool_withdraw(buffer_t *buffer, LiquidityPoolWithdrawOp *op) {
+    PARSER_CHECK(buffer_read_bytes(buffer, op->liquidityPoolID, LIQUIDITY_POOL_ID_SIZE));
+    PARSER_CHECK(buffer_read64(buffer, (uint64_t *) &op->amount));
+    PARSER_CHECK(buffer_read64(buffer, (uint64_t *) &op->minAmountA));
+    PARSER_CHECK(buffer_read64(buffer, (uint64_t *) &op->minAmountB));
     return true;
 }
 
@@ -805,6 +890,10 @@ static bool parse_operation(buffer_t *buffer, Operation *opDetails) {
         case XDR_OPERATION_TYPE_SET_TRUST_LINE_FLAGS: {
             return parse_set_trust_line_flags(buffer, &opDetails->setTrustLineFlagsOp);
         }
+        case XDR_OPERATION_TYPE_LIQUIDITY_POOL_DEPOSIT:
+            return parse_liquidity_pool_deposit(buffer, &opDetails->liquidityPoolDepositOp);
+        case XDR_OPERATION_TYPE_LIQUIDITY_POOL_WITHDRAW:
+            return parse_liquidity_pool_withdraw(buffer, &opDetails->liquidityPoolWithdrawOp);
         default:
             return false;  // Unknown operation
     }
