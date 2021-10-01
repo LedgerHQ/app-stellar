@@ -608,52 +608,39 @@ static bool parse_path_payment_strict_send(buffer_t *buffer, PathPaymentStrictSe
     return true;
 }
 
-static bool parse_claimant_predicate(buffer_t *buffer, ClaimPredicate *claimPredicate) {
+static bool parse_claimant_predicate(buffer_t *buffer) {
+    // Currently, does not support displaying claimant details.
+    // So here we will not store the parsed data, just to ensure that the data can be parsed
+    // correctly.
     uint32_t claimPredicateType;
     uint32_t predicatesLen;
-
+    bool notPredicatePresent;
+    int64_t absBefore;
+    int64_t relBefore;
     PARSER_CHECK(buffer_read32(buffer, &claimPredicateType));
-    claimPredicate->type = claimPredicateType;
-    switch (claimPredicate->type) {
+    switch (claimPredicateType) {
         case CLAIM_PREDICATE_UNCONDITIONAL:
             return true;
         case CLAIM_PREDICATE_AND:
-            PARSER_CHECK(buffer_read32(buffer, &predicatesLen));
-            if (predicatesLen != 2) {
-                return false;
-            }
-            ClaimPredicate andPredicatesLeft, andPredicatesRight;
-            claimPredicate->andPredicates[0] = &andPredicatesLeft;
-            claimPredicate->andPredicates[1] = &andPredicatesRight;
-            PARSER_CHECK(parse_claimant_predicate(buffer, claimPredicate->andPredicates[0]));
-            PARSER_CHECK(parse_claimant_predicate(buffer, claimPredicate->andPredicates[1]));
-            return true;
         case CLAIM_PREDICATE_OR:
             PARSER_CHECK(buffer_read32(buffer, &predicatesLen));
             if (predicatesLen != 2) {
                 return false;
             }
-            ClaimPredicate orPredicatesLeft, orPredicatesRight;
-            claimPredicate->orPredicates[0] = &orPredicatesLeft;
-            claimPredicate->orPredicates[1] = &orPredicatesRight;
-            PARSER_CHECK(parse_claimant_predicate(buffer, claimPredicate->orPredicates[0]));
-            PARSER_CHECK(parse_claimant_predicate(buffer, claimPredicate->orPredicates[1]));
+            PARSER_CHECK(parse_claimant_predicate(buffer));
+            PARSER_CHECK(parse_claimant_predicate(buffer));
             return true;
         case CLAIM_PREDICATE_NOT:
-            PARSER_CHECK(
-                buffer_read_bool(buffer, &claimPredicate->notPredicate.notPredicatePresent));
-            if (claimPredicate->notPredicate.notPredicatePresent) {
-                ClaimPredicate notPredicate;
-                claimPredicate->notPredicate.notPredicate = &notPredicate;
-                PARSER_CHECK(
-                    parse_claimant_predicate(buffer, claimPredicate->notPredicate.notPredicate));
+            PARSER_CHECK(buffer_read_bool(buffer, &notPredicatePresent));
+            if (notPredicatePresent) {
+                PARSER_CHECK(parse_claimant_predicate(buffer));
             }
             return true;
         case CLAIM_PREDICATE_BEFORE_ABSOLUTE_TIME:
-            PARSER_CHECK(buffer_read64(buffer, (uint64_t *) &claimPredicate->absBefore));
+            PARSER_CHECK(buffer_read64(buffer, (uint64_t *) &absBefore));
             return true;
         case CLAIM_PREDICATE_BEFORE_RELATIVE_TIME:
-            PARSER_CHECK(buffer_read64(buffer, (uint64_t *) &claimPredicate->relBefore));
+            PARSER_CHECK(buffer_read64(buffer, (uint64_t *) &relBefore));
             return true;
         default:
             return false;
@@ -668,7 +655,7 @@ static bool parse_claimant(buffer_t *buffer, Claimant *claimant) {
     switch (claimant->type) {
         case CLAIMANT_TYPE_V0:
             PARSER_CHECK(parse_account_id(buffer, &claimant->v0.destination));
-            PARSER_CHECK(parse_claimant_predicate(buffer, &claimant->v0.predicate));
+            PARSER_CHECK(parse_claimant_predicate(buffer));
             return true;
         default:
             return false;

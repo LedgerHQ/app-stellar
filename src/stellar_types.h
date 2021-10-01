@@ -411,20 +411,6 @@ typedef enum {
     CLAIM_PREDICATE_BEFORE_RELATIVE_TIME = 5
 } ClaimPredicateType;
 
-typedef struct ClaimPredicate {
-    ClaimPredicateType type;
-    union {
-        struct ClaimPredicate *andPredicates[2];
-        struct ClaimPredicate *orPredicates[2];
-        struct {
-            bool notPredicatePresent;
-            struct ClaimPredicate *notPredicate;
-        } notPredicate;
-        int64_t absBefore;
-        int64_t relBefore;
-    };
-} ClaimPredicate;
-
 typedef enum {
     CLAIMANT_TYPE_V0 = 0,
 } ClaimantType;
@@ -433,8 +419,7 @@ typedef struct {
     ClaimantType type;
     union {
         struct {
-            AccountID destination;     // The account that can use this condition
-            ClaimPredicate predicate;  // Claimable if predicate is true
+            AccountID destination;  // The account that can use this condition
         } v0;
     };
 
