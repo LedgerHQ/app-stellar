@@ -543,7 +543,6 @@ typedef struct {
 typedef struct {
     MuxedAccount feeSource;
     int64_t fee;
-    TransactionDetails innerTx;
 } FeeBumpTransactionDetails;
 
 typedef struct {
