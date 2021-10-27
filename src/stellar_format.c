@@ -939,12 +939,14 @@ static void format_revoke_sponsorship_offer_seller_id(tx_context_t *txCtx) {
 
 static void format_revoke_sponsorship_data_data_name(tx_context_t *txCtx) {
     strcpy(detailCaption, "Data Name");
-    char tmp[65];
-    memcpy(tmp,
+
+    _Static_assert(DATA_NAME_MAX_SIZE + 1 < DETAIL_VALUE_MAX_SIZE,
+                   "DATA_NAME_MAX_SIZE must be smaller than DETAIL_VALUE_MAX_SIZE");
+
+    memcpy(detailValue,
            txCtx->txDetails.opDetails.revokeSponsorshipOp.ledgerKey.data.dataName,
            txCtx->txDetails.opDetails.revokeSponsorshipOp.ledgerKey.data.dataNameSize);
-    tmp[txCtx->txDetails.opDetails.revokeSponsorshipOp.ledgerKey.data.dataNameSize] = '\0';
-    strcpy(detailValue, tmp);
+    detailValue[txCtx->txDetails.opDetails.revokeSponsorshipOp.ledgerKey.data.dataNameSize] = '\0';
     push_to_formatter_stack(&format_operation_source);
 }
 
