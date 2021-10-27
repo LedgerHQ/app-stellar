@@ -62,7 +62,8 @@
 /* max amount is max int64 scaled down: "922337203685.4775807" */
 #define AMOUNT_MAX_SIZE 21
 
-#define HASH_SIZE 32
+#define HASH_SIZE              32
+#define LIQUIDITY_POOL_ID_SIZE 32
 
 // ------------------------------------------------------------------------- //
 //                       TRANSACTION PARSING CONSTANTS                       //
@@ -72,6 +73,7 @@ typedef enum {
     ASSET_TYPE_NATIVE = 0,
     ASSET_TYPE_CREDIT_ALPHANUM4 = 1,
     ASSET_TYPE_CREDIT_ALPHANUM12 = 2,
+    ASSET_TYPE_POOL_SHARE = 3,
 } AssetType;
 
 typedef enum {
@@ -114,6 +116,8 @@ typedef enum {
     XDR_OPERATION_TYPE_CLAWBACK = 19,
     XDR_OPERATION_TYPE_CLAWBACK_CLAIMABLE_BALANCE = 20,
     XDR_OPERATION_TYPE_SET_TRUST_LINE_FLAGS = 21,
+    XDR_OPERATION_TYPE_LIQUIDITY_POOL_DEPOSIT = 22,
+    XDR_OPERATION_TYPE_LIQUIDITY_POOL_WITHDRAW = 23,
 } xdr_operation_type_e;
 
 #define PUBLIC_KEY_TYPE_ED25519 0
@@ -221,10 +225,56 @@ typedef struct {
 } MuxedAccount;
 
 typedef struct {
-    AssetType type;
     const char *assetCode;
     AccountID issuer;
+} AlphaNum4;
+
+typedef struct {
+    const char *assetCode;
+    AccountID issuer;
+} AlphaNum12;
+
+typedef struct {
+    AssetType type;
+    union {
+        AlphaNum4 alphaNum4;
+        AlphaNum12 alphaNum12;
+    };
 } Asset;
+
+typedef enum { LIQUIDITY_POOL_CONSTANT_PRODUCT = 0 } LiquidityPoolType;
+
+typedef struct {
+    Asset assetA;
+    Asset assetB;
+    int32_t fee;  // Fee is in basis points, so the actual rate is (fee/100)%
+} LiquidityPoolConstantProductParameters;
+
+typedef struct {
+    LiquidityPoolType type;
+    union {
+        LiquidityPoolConstantProductParameters
+            constantProduct;  // type == LIQUIDITY_POOL_CONSTANT_PRODUCT
+    };
+} LiquidityPoolParameters;
+
+typedef struct {
+    AssetType type;
+    union {
+        AlphaNum4 alphaNum4;
+        AlphaNum12 alphaNum12;
+        LiquidityPoolParameters liquidityPool;
+    };
+} ChangeTrustAsset;
+
+typedef struct {
+    AssetType type;
+    union {
+        AlphaNum4 alphaNum4;
+        AlphaNum12 alphaNum12;
+        uint8_t liquidityPoolID[LIQUIDITY_POOL_ID_SIZE];
+    };
+} TrustLineAsset;
 
 typedef struct {
     int32_t n;  // numerator
@@ -298,7 +348,7 @@ typedef struct {
 } PathPaymentStrictSendOp;
 
 typedef struct {
-    Asset line;
+    ChangeTrustAsset line;
 
     uint64_t limit;  // if limit is set to 0, deletes the trust line
 } ChangeTrustOp;
@@ -361,20 +411,6 @@ typedef enum {
     CLAIM_PREDICATE_BEFORE_RELATIVE_TIME = 5
 } ClaimPredicateType;
 
-typedef struct ClaimPredicate {
-    ClaimPredicateType type;
-    union {
-        struct ClaimPredicate *andPredicates[2];
-        struct ClaimPredicate *orPredicates[2];
-        struct {
-            bool notPredicatePresent;
-            struct ClaimPredicate *notPredicate;
-        } notPredicate;
-        int64_t absBefore;
-        int64_t relBefore;
-    };
-} ClaimPredicate;
-
 typedef enum {
     CLAIMANT_TYPE_V0 = 0,
 } ClaimantType;
@@ -383,8 +419,7 @@ typedef struct {
     ClaimantType type;
     union {
         struct {
-            AccountID destination;     // The account that can use this condition
-            ClaimPredicate predicate;  // Claimable if predicate is true
+            AccountID destination;  // The account that can use this condition
         } v0;
     };
 
@@ -419,7 +454,8 @@ typedef enum {
     TRUSTLINE = 1,
     OFFER = 2,
     DATA = 3,
-    CLAIMABLE_BALANCE = 4
+    CLAIMABLE_BALANCE = 4,
+    LIQUIDITY_POOL = 5
 } LedgerEntryType;
 
 typedef struct {
@@ -427,27 +463,31 @@ typedef struct {
     union {
         struct {
             AccountID accountID;
-        } account;
+        } account;  // type == ACCOUNT
 
         struct {
             AccountID accountID;
-            Asset asset;
-        } trustLine;
+            TrustLineAsset asset;
+        } trustLine;  // type == TRUSTLINE
 
         struct {
             AccountID sellerID;
             int64_t offerID;
-        } offer;
+        } offer;  // type == OFFER
 
         struct {
             AccountID accountID;
             uint8_t dataNameSize;
             const uint8_t *dataName;
-        } data;
+        } data;  // type == DATA
 
         struct {
             ClaimableBalanceID balanceId;
-        } claimableBalance;
+        } claimableBalance;  // type == CLAIMABLE_BALANCE
+
+        struct {
+            uint8_t liquidityPoolID[LIQUIDITY_POOL_ID_SIZE];
+        } liquidityPool;  // type == LIQUIDITY_POOL
     };
 
 } LedgerKey;
@@ -487,6 +527,21 @@ typedef struct {
 } SetTrustLineFlagsOp;
 
 typedef struct {
+    uint8_t liquidityPoolID[LIQUIDITY_POOL_ID_SIZE];
+    int64_t maxAmountA;  // maximum amount of first asset to deposit
+    int64_t maxAmountB;  // maximum amount of second asset to deposit
+    Price minPrice;      // minimum depositA/depositB
+    Price maxPrice;      // maximum depositA/depositB
+} LiquidityPoolDepositOp;
+
+typedef struct {
+    uint8_t liquidityPoolID[LIQUIDITY_POOL_ID_SIZE];
+    int64_t amount;      // amount of pool shares to withdraw
+    int64_t minAmountA;  // minimum amount of first asset to withdraw
+    int64_t minAmountB;  // minimum amount of second asset to withdraw
+} LiquidityPoolWithdrawOp;
+
+typedef struct {
     bool sourceAccountPresent;
     MuxedAccount sourceAccount;
     uint8_t type;
@@ -511,6 +566,8 @@ typedef struct {
         ClawbackOp clawbackOp;
         ClawbackClaimableBalanceOp clawbackClaimableBalanceOp;
         SetTrustLineFlagsOp setTrustLineFlagsOp;
+        LiquidityPoolDepositOp liquidityPoolDepositOp;
+        LiquidityPoolWithdrawOp liquidityPoolWithdrawOp;
     };
 } Operation;
 

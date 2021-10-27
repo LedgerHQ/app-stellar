@@ -1,0 +1,12 @@
+Network; Test
+Transaction; Details
+Memo; [none]
+Fee; 0.00001 XLM
+Sequence Number; 2
+Tx Source; GD2J5ZZTU4XM5LEX3XPKSCJIQ3UMXU7NLZMHOZEMELXKI4XLPHHKGVM5
+Operation Type; Liquidity Pool Withdraw
+Liquidity Pool ID; 0x889C2DCFE223B587DE360BE99A40ECF4D64C9B87A5F2BB35CBE42C91A4F3C254
+Amount; 15
+Min Amount A; 10
+Min Amount B; 20
+Op Source; Not set, use Tx Source as Op Source

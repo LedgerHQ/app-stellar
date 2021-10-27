@@ -1,0 +1,13 @@
+Network; Test
+Transaction; Details
+Memo; [none]
+Fee; 0.00001 XLM
+Sequence Number; 2
+Tx Source; GD2J5ZZTU4XM5LEX3XPKSCJIQ3UMXU7NLZMHOZEMELXKI4XLPHHKGVM5
+Operation Type; Change Trust
+Remove Trust; 
+Liquidity Pool; Asset
+Asset A; XLM
+Asset B; Hello@GD5..DB2Y
+Pool Fee Rate; 0.3%
+Op Source; Not set, use Tx Source as Op Source

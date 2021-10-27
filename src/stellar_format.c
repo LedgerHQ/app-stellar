@@ -48,6 +48,7 @@ static void format_fee_bump_transaction_source(tx_context_t *txCtx) {
 }
 
 static void format_fee_bump_transaction_details(tx_context_t *txCtx) {
+    (void) txCtx;
     strcpy(detailCaption, "Fee Bump");
     strcpy(detailValue, "Transaction Details");
     push_to_formatter_stack(&format_fee_bump_transaction_source);
@@ -442,22 +443,86 @@ static void format_change_trust_limit(tx_context_t *txCtx) {
     push_to_formatter_stack(&format_operation_source);
 }
 
+static void format_change_trust_detail_liquidity_pool_fee(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Pool Fee Rate");
+    uint64_t fee =
+        ((uint64_t)
+             txCtx->txDetails.opDetails.changeTrustOp.line.liquidityPool.constantProduct.fee *
+         10000000) /
+        100;
+    print_amount(fee, NULL, txCtx->network, detailValue, DETAIL_VALUE_MAX_SIZE);
+    strlcat(detailValue, "%", DETAIL_VALUE_MAX_SIZE);
+    if (txCtx->txDetails.opDetails.changeTrustOp.limit) {
+        push_to_formatter_stack(&format_change_trust_limit);
+    } else {
+        push_to_formatter_stack(&format_operation_source);
+    }
+}
+
+static void format_change_trust_detail_liquidity_pool_asset_b(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Asset B");
+    if (txCtx->txDetails.opDetails.changeTrustOp.line.liquidityPool.constantProduct.assetB.type ==
+        ASSET_TYPE_NATIVE) {
+        print_native_asset_code(txCtx->network, detailValue, DETAIL_VALUE_MAX_SIZE);
+    } else {
+        print_asset_t(
+            &txCtx->txDetails.opDetails.changeTrustOp.line.liquidityPool.constantProduct.assetB,
+            txCtx->network,
+            detailValue,
+            DETAIL_VALUE_MAX_SIZE);
+    }
+    push_to_formatter_stack(&format_change_trust_detail_liquidity_pool_fee);
+}
+
+static void format_change_trust_detail_liquidity_pool_asset_a(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Asset A");
+    if (txCtx->txDetails.opDetails.changeTrustOp.line.liquidityPool.constantProduct.assetA.type ==
+        ASSET_TYPE_NATIVE) {
+        print_native_asset_code(txCtx->network, detailValue, DETAIL_VALUE_MAX_SIZE);
+    } else {
+        print_asset_t(
+            &txCtx->txDetails.opDetails.changeTrustOp.line.liquidityPool.constantProduct.assetA,
+            txCtx->network,
+            detailValue,
+            DETAIL_VALUE_MAX_SIZE);
+    }
+    push_to_formatter_stack(&format_change_trust_detail_liquidity_pool_asset_b);
+}
+
+static void format_change_trust_detail_liquidity_pool_asset(tx_context_t *txCtx) {
+    (void) txCtx;
+
+    strcpy(detailCaption, "Liquidity Pool");
+    strcpy(detailValue, "Asset");
+    push_to_formatter_stack(&format_change_trust_detail_liquidity_pool_asset_a);
+}
+
 static void format_change_trust_detail(tx_context_t *txCtx) {
     if (txCtx->txDetails.opDetails.changeTrustOp.limit) {
         strcpy(detailCaption, "Change Trust");
-        push_to_formatter_stack(&format_change_trust_limit);
     } else {
         strcpy(detailCaption, "Remove Trust");
-        push_to_formatter_stack(&format_operation_source);
     }
     uint8_t asset_type = txCtx->txDetails.opDetails.changeTrustOp.line.type;
-    if (asset_type != ASSET_TYPE_CREDIT_ALPHANUM4 && asset_type != ASSET_TYPE_CREDIT_ALPHANUM12) {
-        return;
+    switch (asset_type) {
+        case ASSET_TYPE_CREDIT_ALPHANUM4:
+        case ASSET_TYPE_CREDIT_ALPHANUM12:
+            print_asset_t((Asset *) &txCtx->txDetails.opDetails.changeTrustOp.line,
+                          txCtx->network,
+                          detailValue,
+                          DETAIL_VALUE_MAX_SIZE);
+            if (txCtx->txDetails.opDetails.changeTrustOp.limit) {
+                push_to_formatter_stack(&format_change_trust_limit);
+            } else {
+                push_to_formatter_stack(&format_operation_source);
+            }
+            break;
+        case ASSET_TYPE_POOL_SHARE:
+            push_to_formatter_stack(&format_change_trust_detail_liquidity_pool_asset);
+            break;
+        default:
+            return;
     }
-    print_asset_t(&txCtx->txDetails.opDetails.changeTrustOp.line,
-                  txCtx->network,
-                  detailValue,
-                  DETAIL_VALUE_MAX_SIZE);
 }
 
 static void format_change_trust(tx_context_t *txCtx) {
@@ -828,11 +893,21 @@ static void format_revoke_sponsorship_account(tx_context_t *txCtx) {
 }
 
 static void format_revoke_sponsorship_trust_line_asset(tx_context_t *txCtx) {
-    strcpy(detailCaption, "Asset");
-    print_asset_t(&txCtx->txDetails.opDetails.revokeSponsorshipOp.ledgerKey.trustLine.asset,
-                  txCtx->network,
-                  detailValue,
-                  DETAIL_VALUE_MAX_SIZE);
+    if (txCtx->txDetails.opDetails.revokeSponsorshipOp.ledgerKey.trustLine.asset.type ==
+        ASSET_TYPE_POOL_SHARE) {
+        strcpy(detailCaption, "Liquidity Pool ID");
+        print_binary(txCtx->txDetails.opDetails.revokeSponsorshipOp.ledgerKey.trustLine.asset
+                         .liquidityPoolID,
+                     detailValue,
+                     LIQUIDITY_POOL_ID_SIZE);
+    } else {
+        strcpy(detailCaption, "Asset");
+        print_asset_t(
+            (Asset *) &txCtx->txDetails.opDetails.revokeSponsorshipOp.ledgerKey.trustLine.asset,
+            txCtx->network,
+            detailValue,
+            DETAIL_VALUE_MAX_SIZE);
+    }
     push_to_formatter_stack(&format_operation_source);
 }
 
@@ -887,6 +962,15 @@ static void format_revoke_sponsorship_claimable_balance(tx_context_t *txCtx) {
     print_claimable_balance_id(
         &txCtx->txDetails.opDetails.revokeSponsorshipOp.ledgerKey.claimableBalance.balanceId,
         detailValue);
+    push_to_formatter_stack(&format_operation_source);
+}
+
+static void format_revoke_sponsorship_liquidity_pool(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Liquidity Pool ID");
+    print_binary(
+        txCtx->txDetails.opDetails.revokeSponsorshipOp.ledgerKey.liquidityPool.liquidityPoolID,
+        detailValue,
+        LIQUIDITY_POOL_ID_SIZE);
     push_to_formatter_stack(&format_operation_source);
 }
 
@@ -971,6 +1055,10 @@ static void format_revoke_sponsorship(tx_context_t *txCtx) {
             case CLAIMABLE_BALANCE:
                 strcpy(detailValue, "Revoke Sponsorship (CLAIMABLE_BALANCE)");
                 push_to_formatter_stack(&format_revoke_sponsorship_claimable_balance);
+                break;
+            case LIQUIDITY_POOL:
+                strcpy(detailValue, "Revoke Sponsorship (LIQUIDITY_POOL)");
+                push_to_formatter_stack(&format_revoke_sponsorship_liquidity_pool);
                 break;
         }
     }
@@ -1059,30 +1147,128 @@ static void format_set_trust_line_flags(tx_context_t *txCtx) {
     push_to_formatter_stack(&format_set_trust_line_trustor);
 }
 
-static const format_function_t formatters[] = {
-    &format_create_account,
-    &format_payment,
-    &format_path_payment_strict_receive,
-    &format_manage_sell_offer,
-    &format_create_passive_sell_offer,
-    &format_set_options,
-    &format_change_trust,
-    &format_allow_trust,
-    &format_account_merge,
-    &format_inflation,
-    &format_manage_data,
-    &format_bump_sequence,
-    &format_manage_buy_offer,
-    &format_path_payment_strict_send,
-    &format_create_claimable_balance,
-    &format_claim_claimable_balance,
-    &format_begin_sponsoring_future_reserves,
-    &format_end_sponsoring_future_reserves,
-    &format_revoke_sponsorship,
-    &format_clawback,
-    &format_clawback_claimable_balance,
-    &format_set_trust_line_flags,
-};
+static void format_liquidity_pool_deposit_max_price(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Max Price");
+    uint64_t price =
+        ((uint64_t) txCtx->txDetails.opDetails.liquidityPoolDepositOp.maxPrice.n * 10000000) /
+        txCtx->txDetails.opDetails.liquidityPoolDepositOp.maxPrice.d;
+    print_amount(price, NULL, txCtx->network, detailValue, DETAIL_VALUE_MAX_SIZE);
+    push_to_formatter_stack(&format_operation_source);
+}
+
+static void format_liquidity_pool_deposit_min_price(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Min Price");
+    uint64_t price =
+        ((uint64_t) txCtx->txDetails.opDetails.liquidityPoolDepositOp.minPrice.n * 10000000) /
+        txCtx->txDetails.opDetails.liquidityPoolDepositOp.minPrice.d;
+    print_amount(price, NULL, txCtx->network, detailValue, DETAIL_VALUE_MAX_SIZE);
+    push_to_formatter_stack(&format_liquidity_pool_deposit_max_price);
+}
+
+static void format_liquidity_pool_deposit_max_amount_b(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Max Amount B");
+    print_amount(txCtx->txDetails.opDetails.liquidityPoolDepositOp.maxAmountB,
+                 NULL,
+                 txCtx->network,
+                 detailValue,
+                 DETAIL_VALUE_MAX_SIZE);
+    push_to_formatter_stack(&format_liquidity_pool_deposit_min_price);
+}
+
+static void format_liquidity_pool_deposit_max_amount_a(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Max Amount A");
+    print_amount(txCtx->txDetails.opDetails.liquidityPoolDepositOp.maxAmountA,
+                 NULL,
+                 txCtx->network,
+                 detailValue,
+                 DETAIL_VALUE_MAX_SIZE);
+    push_to_formatter_stack(&format_liquidity_pool_deposit_max_amount_b);
+}
+
+static void format_liquidity_pool_deposit_liquidity_pool_id(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Liquidity Pool ID");
+    print_binary(txCtx->txDetails.opDetails.liquidityPoolDepositOp.liquidityPoolID,
+                 detailValue,
+                 LIQUIDITY_POOL_ID_SIZE);
+    push_to_formatter_stack(&format_liquidity_pool_deposit_max_amount_a);
+}
+
+static void format_liquidity_pool_deposit(tx_context_t *txCtx) {
+    (void) txCtx;
+    strcpy(detailCaption, "Operation Type");
+    strcpy(detailValue, "Liquidity Pool Deposit");
+    push_to_formatter_stack(&format_liquidity_pool_deposit_liquidity_pool_id);
+}
+
+static void format_liquidity_pool_withdraw_min_amount_b(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Min Amount B");
+    print_amount(txCtx->txDetails.opDetails.liquidityPoolWithdrawOp.minAmountB,
+                 NULL,
+                 txCtx->network,
+                 detailValue,
+                 DETAIL_VALUE_MAX_SIZE);
+    push_to_formatter_stack(&format_operation_source);
+}
+
+static void format_liquidity_pool_withdraw_min_amount_a(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Min Amount A");
+    print_amount(txCtx->txDetails.opDetails.liquidityPoolWithdrawOp.minAmountA,
+                 NULL,
+                 txCtx->network,
+                 detailValue,
+                 DETAIL_VALUE_MAX_SIZE);
+    push_to_formatter_stack(&format_liquidity_pool_withdraw_min_amount_b);
+}
+
+static void format_liquidity_pool_withdraw_amount(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Amount");
+    print_amount(txCtx->txDetails.opDetails.liquidityPoolWithdrawOp.amount,
+                 NULL,
+                 txCtx->network,
+                 detailValue,
+                 DETAIL_VALUE_MAX_SIZE);
+    push_to_formatter_stack(&format_liquidity_pool_withdraw_min_amount_a);
+}
+
+static void format_liquidity_pool_withdraw_liquidity_pool_id(tx_context_t *txCtx) {
+    strcpy(detailCaption, "Liquidity Pool ID");
+    print_binary(txCtx->txDetails.opDetails.liquidityPoolWithdrawOp.liquidityPoolID,
+                 detailValue,
+                 LIQUIDITY_POOL_ID_SIZE);
+    push_to_formatter_stack(&format_liquidity_pool_withdraw_amount);
+}
+
+static void format_liquidity_pool_withdraw(tx_context_t *txCtx) {
+    (void) txCtx;
+    strcpy(detailCaption, "Operation Type");
+    strcpy(detailValue, "Liquidity Pool Withdraw");
+    push_to_formatter_stack(&format_liquidity_pool_withdraw_liquidity_pool_id);
+}
+
+static const format_function_t formatters[] = {&format_create_account,
+                                               &format_payment,
+                                               &format_path_payment_strict_receive,
+                                               &format_manage_sell_offer,
+                                               &format_create_passive_sell_offer,
+                                               &format_set_options,
+                                               &format_change_trust,
+                                               &format_allow_trust,
+                                               &format_account_merge,
+                                               &format_inflation,
+                                               &format_manage_data,
+                                               &format_bump_sequence,
+                                               &format_manage_buy_offer,
+                                               &format_path_payment_strict_send,
+                                               &format_create_claimable_balance,
+                                               &format_claim_claimable_balance,
+                                               &format_begin_sponsoring_future_reserves,
+                                               &format_end_sponsoring_future_reserves,
+                                               &format_revoke_sponsorship,
+                                               &format_clawback,
+                                               &format_clawback_claimable_balance,
+                                               &format_set_trust_line_flags,
+                                               &format_liquidity_pool_deposit,
+                                               &format_liquidity_pool_withdraw};
 
 void format_confirm_operation(tx_context_t *txCtx) {
     if (txCtx->txDetails.opCount > 1) {

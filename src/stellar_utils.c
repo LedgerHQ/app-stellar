@@ -266,7 +266,7 @@ int print_asset_name(const Asset *asset, uint8_t network_id, char *out, size_t o
             return 0;
         case ASSET_TYPE_CREDIT_ALPHANUM4:
             for (int i = 0; i < 4; i++) {
-                out[i] = asset->assetCode[i];
+                out[i] = asset->alphaNum4.assetCode[i];
                 if (out[i] == 0) {
                     break;
                 }
@@ -275,7 +275,7 @@ int print_asset_name(const Asset *asset, uint8_t network_id, char *out, size_t o
             return 0;
         case ASSET_TYPE_CREDIT_ALPHANUM12:
             for (int i = 0; i < 12; i++) {
-                out[i] = asset->assetCode[i];
+                out[i] = asset->alphaNum12.assetCode[i];
                 if (out[i] == 0) {
                     break;
                 }
@@ -386,7 +386,17 @@ void print_asset_t(const Asset *asset, uint8_t network_id, char *out, size_t out
     char asset_name[12 + 1];
 
     print_asset_name(asset, network_id, asset_name, sizeof(asset_name));
-    print_public_key(asset->issuer, issuer, 3, 4);
+
+    switch (asset->type) {
+        case ASSET_TYPE_CREDIT_ALPHANUM4:
+            print_public_key(asset->alphaNum4.issuer, issuer, 3, 4);
+            break;
+        case ASSET_TYPE_CREDIT_ALPHANUM12:
+            print_public_key(asset->alphaNum12.issuer, issuer, 3, 4);
+            break;
+        default:
+            break;
+    }
     print_asset(asset_name, issuer, out, out_len);
 }
 
