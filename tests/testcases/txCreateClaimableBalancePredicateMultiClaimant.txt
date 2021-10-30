@@ -7,4 +7,3 @@ Tx Source; GD2J5ZZTU4XM5LEX3XPKSCJIQ3UMXU7NLZMHOZEMELXKI4XLPHHKGVM5
 Operation Type; Create Claimable Balance
 Balance; 100 XLM
 WARNING; Currently does not support displaying claimant details
-Op Source; Not set, use Tx Source as Op Source

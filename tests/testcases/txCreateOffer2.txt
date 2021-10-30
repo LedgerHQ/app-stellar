@@ -9,4 +9,3 @@ Create Offer; Type Active
 Buy; XLM
 Price; 1.5644199 XLM
 Sell; 1000 RMT
-Op Source; Not set, use Tx Source as Op Source

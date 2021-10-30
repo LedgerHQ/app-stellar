@@ -9,4 +9,3 @@ Create Offer; Type Active
 Buy; DUPE@GBG..XESH
 Price; 0.3333333 DUPE
 Sell; 300 XLM
-Op Source; Not set, use Tx Source as Op Source

@@ -10,4 +10,3 @@ Max Amount A; 250
 Max Amount B; 500
 Min Price; 0.45
 Max Price; 0.55
-Op Source; Not set, use Tx Source as Op Source

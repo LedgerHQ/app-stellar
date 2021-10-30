@@ -8,4 +8,3 @@ Send; 60 USD
 Destination; GCKUD4BHIYSAYHU7HBB5FDSW6CSYH3GSOUBPWD2KE7KNBERP4BSKEJDV
 Receive Min; 20000 NGN
 Via; YEN, CAD
-Op Source; Not set, use Tx Source as Op Source

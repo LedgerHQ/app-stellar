@@ -11,4 +11,3 @@ Asset A; XLM
 Asset B; Hello@GD5..DB2Y
 Pool Fee Rate; 0.3%
 Trust Limit; [maximum]
-Op Source; Not set, use Tx Source as Op Source

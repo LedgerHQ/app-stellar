@@ -9,4 +9,3 @@ Liquidity Pool ID; 0x889C2DCFE223B587DE360BE99A40ECF4D64C9B87A5F2BB35CBE42C91A4F
 Amount; 15
 Min Amount A; 10
 Min Amount B; 20
-Op Source; Not set, use Tx Source as Op Source

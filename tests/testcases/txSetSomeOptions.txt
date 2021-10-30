@@ -13,4 +13,3 @@ Home Domain; www.example.com
 Add Signer; Type Public Key
 Signer Key; GDGU5OAPHNPU5UCLE5RDJHG7PXZFQYWKCFOEXSXNMR6KRQRI5T6XXCD7
 Weight; 1
-Op Source; Not set, use Tx Source as Op Source
