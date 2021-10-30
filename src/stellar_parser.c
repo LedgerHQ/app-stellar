@@ -794,6 +794,7 @@ static bool parse_liquidity_pool_withdraw(buffer_t *buffer, LiquidityPoolWithdra
 }
 
 static bool parse_operation(buffer_t *buffer, Operation *opDetails) {
+    MEMCLEAR(*opDetails);
     uint32_t opType;
 
     if (!parse_optional_type(buffer,
