@@ -343,15 +343,19 @@ static void format_set_option_signer_prepare(tx_context_t *txCtx) {
 
 static void format_set_option_home_domain(tx_context_t *txCtx) {
     strcpy(detailCaption, "Home Domain");
-    memcpy(detailValue,
-           txCtx->txDetails.opDetails.setOptionsOp.homeDomain,
-           txCtx->txDetails.opDetails.setOptionsOp.homeDomainSize);
-    detailValue[txCtx->txDetails.opDetails.setOptionsOp.homeDomainSize] = '\0';
+    if (txCtx->txDetails.opDetails.setOptionsOp.homeDomainSize) {
+        memcpy(detailValue,
+               txCtx->txDetails.opDetails.setOptionsOp.homeDomain,
+               txCtx->txDetails.opDetails.setOptionsOp.homeDomainSize);
+        detailValue[txCtx->txDetails.opDetails.setOptionsOp.homeDomainSize] = '\0';
+    } else {
+        strcpy(detailValue, "[remove home domain from account]");
+    }
     format_set_option_signer_prepare(txCtx);
 }
 
 static void format_set_option_home_domain_prepare(tx_context_t *txCtx) {
-    if (txCtx->txDetails.opDetails.setOptionsOp.homeDomainSize) {
+    if (txCtx->txDetails.opDetails.setOptionsOp.homeDomainPresent) {
         push_to_formatter_stack(&format_set_option_home_domain);
     } else {
         format_set_option_signer_prepare(txCtx);
@@ -486,7 +490,7 @@ static bool is_empty_set_options_body(tx_context_t *txCtx) {
              txCtx->txDetails.opDetails.setOptionsOp.lowThresholdPresent ||
              txCtx->txDetails.opDetails.setOptionsOp.mediumThresholdPresent ||
              txCtx->txDetails.opDetails.setOptionsOp.highThresholdPresent ||
-             txCtx->txDetails.opDetails.setOptionsOp.homeDomainSize ||
+             txCtx->txDetails.opDetails.setOptionsOp.homeDomainPresent ||
              txCtx->txDetails.opDetails.setOptionsOp.signerPresent);
 }
 

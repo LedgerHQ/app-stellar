@@ -511,8 +511,6 @@ static bool parse_signer(buffer_t *buffer, signer_t *signer) {
 }
 
 static bool parse_set_options(buffer_t *buffer, SetOptionsOp *setOptions) {
-    uint32_t tmp;
-
     if (!parse_optional_type(buffer,
                              (xdr_type_parser) parse_account_id,
                              &setOptions->inflationDestination,
@@ -556,11 +554,13 @@ static bool parse_set_options(buffer_t *buffer, SetOptionsOp *setOptions) {
                              &setOptions->highThresholdPresent)) {
         return false;
     }
-    if (!buffer_read32(buffer, &tmp)) {
+
+    uint32_t homeDomainPresent;
+    if (!buffer_read32(buffer, &homeDomainPresent)) {
         return false;
     }
-    bool homeDomainPresent = tmp ? true : false;
-    if (homeDomainPresent) {
+    setOptions->homeDomainPresent = homeDomainPresent ? true : false;
+    if (setOptions->homeDomainPresent) {
         if (!buffer_read32(buffer, &setOptions->homeDomainSize) ||
             setOptions->homeDomainSize > HOME_DOMAIN_MAX_SIZE) {
             return false;
