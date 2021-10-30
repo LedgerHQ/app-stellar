@@ -77,6 +77,7 @@ static const char *testcases[] = {
     "../testcases/txRevokeSponsorshipTrustLineLiquidityPoolID.raw",
     "../testcases/txSetAllOptions.raw",
     "../testcases/txSetData.raw",
+    "../testcases/txSetOptionsEmptyBody.raw",
     "../testcases/txSetOptionsNoSigner.raw",
     "../testcases/txSetSomeOptions.raw",
     "../testcases/txSetTrustLineFlags.raw",

@@ -471,11 +471,34 @@ static void format_set_option_inflation_destination_prepare(tx_context_t *txCtx)
     }
 }
 
+static void format_set_options_empty_body(tx_context_t *txCtx) {
+    (void) txCtx;
+    strcpy(detailCaption, "SET OPTIONS");
+    strcpy(detailValue, "BODY IS EMPTY");
+    format_operation_source_prepare(txCtx);
+}
+
+static bool is_empty_set_options_body(tx_context_t *txCtx) {
+    return !(txCtx->txDetails.opDetails.setOptionsOp.inflationDestinationPresent ||
+             txCtx->txDetails.opDetails.setOptionsOp.clearFlags ||
+             txCtx->txDetails.opDetails.setOptionsOp.setFlags ||
+             txCtx->txDetails.opDetails.setOptionsOp.masterWeightPresent ||
+             txCtx->txDetails.opDetails.setOptionsOp.lowThresholdPresent ||
+             txCtx->txDetails.opDetails.setOptionsOp.mediumThresholdPresent ||
+             txCtx->txDetails.opDetails.setOptionsOp.highThresholdPresent ||
+             txCtx->txDetails.opDetails.setOptionsOp.homeDomainSize ||
+             txCtx->txDetails.opDetails.setOptionsOp.signerPresent);
+}
+
 static void format_set_options(tx_context_t *txCtx) {
     // this operation is a special one among all operations, because all its fields are optional.
     strcpy(detailCaption, "Operation Type");
     strcpy(detailValue, "Set Options");
-    format_set_option_inflation_destination_prepare(txCtx);
+    if (is_empty_set_options_body(txCtx)) {
+        push_to_formatter_stack(format_set_options_empty_body);
+    } else {
+        format_set_option_inflation_destination_prepare(txCtx);
+    }
 }
 
 static void format_change_trust_limit(tx_context_t *txCtx) {
