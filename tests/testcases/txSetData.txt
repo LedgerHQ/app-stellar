@@ -7,4 +7,3 @@ Tx Source; GBGBTCCP7WG2E5XFYLQFJP2DYOQZPCCDCHK62K6TZD4BHMNYI5WSXESH
 Operation Type; Manage Data
 Set Data; name
 Data Value; dmFsdWU=
-Op Source; Not set, use Tx Source as Op Source

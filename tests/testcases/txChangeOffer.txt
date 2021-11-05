@@ -9,4 +9,3 @@ Change Offer; 6849038322
 Buy; SLT@GAD..QN2I
 Price; 1.6666666 SLT
 Sell; 200 XLM
-Op Source; Not set, use Tx Source as Op Source

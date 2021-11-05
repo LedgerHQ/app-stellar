@@ -389,6 +389,7 @@ typedef struct {
     uint32_t mediumThreshold;
     bool highThresholdPresent;
     uint32_t highThreshold;
+    bool homeDomainPresent;
     uint32_t homeDomainSize;
     const uint8_t *homeDomain;
     bool signerPresent;

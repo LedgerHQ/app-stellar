@@ -8,4 +8,3 @@ Operation Type; Allow Trust
 Trustor; GBMHY2EIEGFHW6G4OIC6QA7I7IUPUDD33PGCJLVC57THODEUQY62KNHD
 Asset Code; JPY
 Authorize Flag; UNAUTHORIZED_FLAG
-Op Source; Not set, use Tx Source as Op Source
