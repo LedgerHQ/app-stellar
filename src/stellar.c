@@ -65,26 +65,12 @@ int derive_private_key(cx_ecfp_private_key_t *privateKey, uint32_t *bip32, uint8
 int init_public_key(cx_ecfp_private_key_t *privateKey,
                     cx_ecfp_public_key_t *publicKey,
                     uint8_t *buffer) {
-    int error = 0;
-    BEGIN_TRY {
-        TRY {
-            cx_ecfp_generate_pair(CX_CURVE_Ed25519, publicKey, privateKey, 1);
-        }
-        CATCH_OTHER(e) {
-            explicit_bzero(privateKey, sizeof(cx_ecfp_private_key_t));
-            error = e;
-        }
-        FINALLY {
-        }
+    if (cx_ecfp_generate_pair_no_throw(CX_CURVE_Ed25519, publicKey, privateKey, true)) {
+        return -1;
     }
-    END_TRY;
 
-    if (error) {
-        return error;
-    }
     // copy public key little endian to big endian
-    uint8_t i;
-    for (i = 0; i < 32; i++) {
+    for (int i = 0; i < 32; i++) {
         buffer[i] = publicKey->W[64 - i];
     }
     if ((publicKey->W[32] & 1) != 0) {
@@ -162,36 +148,23 @@ void handle_get_public_key(uint8_t p1,
     cx_ecfp_private_key_t privateKey;
     cx_ecfp_public_key_t publicKey;
     derive_private_key(&privateKey, bip32, bip32Len);
-    init_public_key(&privateKey, &publicKey, ctx.req.pk.publicKey);
+    if (init_public_key(&privateKey, &publicKey, ctx.req.pk.publicKey)) {
+        explicit_bzero(&privateKey, sizeof(privateKey));
+        THROW(0x6F00);
+    }
 
-    int error = 0;
-    BEGIN_TRY {
-        TRY {
-            if (ctx.req.pk.returnSignature) {
-                cx_eddsa_sign(&privateKey,
-                              CX_LAST,
-                              CX_SHA512,
-                              msg,
-                              msgLength,
-                              NULL,
-                              0,
-                              ctx.req.pk.signature,
-                              64,
-                              NULL);
-            }
-        }
-        CATCH_OTHER(e) {
-            error = e;
-        }
-        FINALLY {
+    if (ctx.req.pk.returnSignature) {
+        if (cx_eddsa_sign_no_throw(&privateKey,
+                                   CX_SHA512,
+                                   msg,
+                                   msgLength,
+                                   ctx.req.pk.signature,
+                                   64)) {
             explicit_bzero(&privateKey, sizeof(privateKey));
+            THROW(0x6F00);
         }
     }
-    END_TRY;
-
-    if (error) {
-        THROW(error);
-    }
+    explicit_bzero(&privateKey, sizeof(privateKey));
 
     uint32_t pk_tx = set_result_get_public_key();
     if (p2 & P2_CONFIRM) {
