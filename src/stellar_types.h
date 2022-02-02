@@ -49,11 +49,7 @@
 #define OFFSET_CDATA 5
 
 /* Max transaction size */
-#ifdef TARGET_NANOX
 #define MAX_RAW_TX 1120
-#else  // Nano S has less ram available
-#define MAX_RAW_TX 1120
-#endif
 /* For sure not more than 35 operations will fit in that */
 #define MAX_OPS 35
 /* Although SEP-0005 only allows 3 bip32 path elements we support more */
