@@ -1,0 +1,9 @@
+Network; Test
+Transaction; Details
+Memo; [none]
+Fee; 0.00001 XLM
+Sequence Number; 2
+Tx Source; GDJYDB..AIP2GC
+Operation Type; Payment
+Send; 1 XLM
+Destination; GAQNVGMLOXSCWH37QXIHLQJH6WZENXYSVWLPAEF4673W64VRNZLRHMFM

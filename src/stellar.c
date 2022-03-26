@@ -262,7 +262,10 @@ void handle_sign_tx(uint8_t p1,
     }
 
     cx_ecfp_private_key_t privateKey;
+    cx_ecfp_public_key_t publicKey;
     derive_private_key(&privateKey, ctx.req.tx.bip32, ctx.req.tx.bip32Len);
+    derive_private_key(&privateKey, ctx.req.tx.bip32, ctx.req.tx.bip32Len);
+    init_public_key(&privateKey, &publicKey, ctx.req.tx.publicKey);
 
     int error = 0;
     BEGIN_TRY {

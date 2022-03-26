@@ -132,7 +132,7 @@ jobs:
 
       - name: Run test
         run: |
-          nohup bash -c "python /speculos/speculos.py bin/app.elf --log-level automation:DEBUG --automation file:tests/automation.json --display headless" > speculos.log 2<&1 &
+          nohup bash -c "python /speculos/speculos.py bin/app.elf -s 'limit spray kitten level assume ridge zone police defy devote drop music family civil chaos hollow beyond robust swing access thing bid cabbage armor' --log-level automation:DEBUG --automation file:tests/automation.json --display headless" > speculos.log 2<&1 &
           sleep 4
           cd tests && pip install -r requirements.txt && LEDGER_PROXY_ADDRESS=127.0.0.1 LEDGER_PROXY_PORT=9999 pytest -v -s
 

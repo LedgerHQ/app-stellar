@@ -13,6 +13,9 @@ stellar_context_t ctx;
 tx_context_t tx_ctx;
 
 static const char *testcases[] = {
+    "../testcases/feeBumpTxFeeSourceEqualSigner.raw",
+    "../testcases/feeBumpTxFeeSourceMuxedAccountEqualSigner.raw",
+    "../testcases/feeBumpTxInnerSourceEqualSigner.raw",
     "../testcases/feeBumpTxSimple.raw",
     "../testcases/feeBumpTxSimpleMuxedFeeSource.raw",
     "../testcases/txAccountMergeMuxedDestination.raw",
@@ -82,6 +85,8 @@ static const char *testcases[] = {
     "../testcases/txSetOptionsRemoveHomeDomain.raw",
     "../testcases/txSetSomeOptions.raw",
     "../testcases/txSetTrustLineFlags.raw",
+    "../testcases/txSourceEqualSigner.raw",
+    "../testcases/txSourceMuxedAccountEqualSigner.raw",
     "../testcases/txSimpleMuxedSource.raw",
     "../testcases/txSimple.raw",
     "../testcases/txTimeBounds.raw",
@@ -94,7 +99,13 @@ static void load_transaction_data(const char *filename, tx_context_t *txCtx) {
     FILE *f = fopen(filename, "rb");
     assert_non_null(f);
 
+    // GDJYDBIA3WHL4IGI4PHQBBOLPXTR5A6U5SAPYMIPIGYXB37GSOAIP2GC
+    uint8_t publicKey[] = {0xd3, 0x81, 0x85, 0x0,  0xdd, 0x8e, 0xbe, 0x20, 0xc8, 0xe3, 0xcf,
+                           0x0,  0x85, 0xcb, 0x7d, 0xe7, 0x1e, 0x83, 0xd4, 0xec, 0x80, 0xfc,
+                           0x31, 0xf,  0x41, 0xb1, 0x70, 0xef, 0xe6, 0x93, 0x80, 0x87};
+
     txCtx->rawLength = fread(txCtx->raw, 1, MAX_RAW_TX, f);
+    memcpy(txCtx->publicKey, publicKey, sizeof(publicKey));
     assert_int_not_equal(txCtx->rawLength, 0);
     fclose(f);
 }

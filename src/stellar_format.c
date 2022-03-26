@@ -44,7 +44,15 @@ static void format_fee_bump_transaction_fee(tx_context_t *txCtx) {
 
 static void format_fee_bump_transaction_source(tx_context_t *txCtx) {
     strcpy(detailCaption, "Fee Source");
-    print_muxed_account(&txCtx->feeBumpTxDetails.feeSource, detailValue, 0, 0);
+    if (txCtx->envelopeType == ENVELOPE_TYPE_TX_FEE_BUMP &&
+        txCtx->feeBumpTxDetails.feeSource.type == KEY_TYPE_ED25519 &&
+        memcmp(txCtx->feeBumpTxDetails.feeSource.ed25519,
+               txCtx->publicKey,
+               ED25519_PUBLIC_KEY_LEN) == 0) {
+        print_muxed_account(&txCtx->feeBumpTxDetails.feeSource, detailValue, 6, 6);
+    } else {
+        print_muxed_account(&txCtx->feeBumpTxDetails.feeSource, detailValue, 0, 0);
+    }
     push_to_formatter_stack(&format_fee_bump_transaction_fee);
 }
 
@@ -57,7 +65,14 @@ static void format_fee_bump_transaction_details(tx_context_t *txCtx) {
 
 static void format_transaction_source(tx_context_t *txCtx) {
     strcpy(detailCaption, "Tx Source");
-    print_muxed_account(&txCtx->txDetails.sourceAccount, detailValue, 0, 0);
+    if (txCtx->envelopeType == ENVELOPE_TYPE_TX &&
+        txCtx->txDetails.sourceAccount.type == KEY_TYPE_ED25519 &&
+        memcmp(txCtx->txDetails.sourceAccount.ed25519, txCtx->publicKey, ED25519_PUBLIC_KEY_LEN) ==
+            0) {
+        print_muxed_account(&txCtx->txDetails.sourceAccount, detailValue, 6, 6);
+    } else {
+        print_muxed_account(&txCtx->txDetails.sourceAccount, detailValue, 0, 0);
+    }
     push_to_formatter_stack(format_next_step);
 }
 
@@ -87,6 +102,7 @@ static void format_time_bounds_min_time(tx_context_t *txCtx) {
 }
 
 static void format_time_bounds(tx_context_t *txCtx) {
+    // TODO: should we add a page to remind the user that this is UTC time?
     if (txCtx->txDetails.hasTimeBounds == false ||
         (txCtx->txDetails.timeBounds.minTime == 0 && txCtx->txDetails.timeBounds.maxTime == 0)) {
         format_transaction_source(txCtx);

@@ -58,8 +58,11 @@
 /* max amount is max int64 scaled down: "922337203685.4775807" */
 #define AMOUNT_MAX_SIZE 21
 
-#define HASH_SIZE              32
-#define LIQUIDITY_POOL_ID_SIZE 32
+#define HASH_SIZE                 32
+#define LIQUIDITY_POOL_ID_SIZE    32
+#define ED25519_PUBLIC_KEY_LEN    32
+#define ED25519_PUBLIC_STRKEY_LEN 56
+#define MUXED_ACCOUNT_STRKEY_LEN  69
 
 // ------------------------------------------------------------------------- //
 //                       TRANSACTION PARSING CONSTANTS                       //
@@ -600,7 +603,7 @@ typedef struct {
 } FeeBumpTransactionDetails;
 
 typedef struct {
-    uint8_t publicKey[32];
+    uint8_t publicKey[ED25519_PUBLIC_KEY_LEN];
     uint8_t signature[64];
     bool returnSignature;
     uint32_t tx;
@@ -609,6 +612,7 @@ typedef struct {
 typedef struct {
     uint8_t bip32Len;
     uint32_t bip32[MAX_BIP32_LEN];
+    uint8_t publicKey[ED25519_PUBLIC_KEY_LEN];
     uint8_t raw[MAX_RAW_TX];
     uint32_t rawLength;
     uint8_t hash[HASH_SIZE];
@@ -642,7 +646,7 @@ typedef struct {
 typedef struct {
     uint64_t amount;
     uint64_t fees;
-    char destination[57];  // ed25519 address only
+    char destination[ED25519_PUBLIC_STRKEY_LEN + 1];  // ed25519 address only
     char memo[20];
 } swap_values_t;
 
