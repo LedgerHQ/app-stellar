@@ -165,4 +165,7 @@ void base64_encode(const uint8_t *data, int inLen, char *out);
 
 /** hex representation of flags claimable balance id */
 void print_claimable_balance_id(const ClaimableBalanceID *claimableBalanceID, char *out);
+
+/** converts the timestamp in seconds to a readable utc time string */
+bool print_time(uint64_t timestamp_in_seconds, char *out, size_t out_len);
 #endif

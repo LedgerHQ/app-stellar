@@ -1,3 +1,4 @@
+#include <time.h>
 #include "bolos_target.h"
 
 #include "stellar_format.h"
@@ -62,13 +63,14 @@ static void format_transaction_source(tx_context_t *txCtx) {
 
 static void format_time_bounds_max_time(tx_context_t *txCtx) {
     strcpy(detailCaption, "Time Bounds To");
-    print_uint(txCtx->txDetails.timeBounds.maxTime, detailValue, DETAIL_VALUE_MAX_SIZE);
+    // TODO: Define new error codes to express unknown errors.
+    print_time((time_t) txCtx->txDetails.timeBounds.maxTime, detailValue, DETAIL_VALUE_MAX_SIZE);
     push_to_formatter_stack(&format_transaction_source);
 }
 
 static void format_time_bounds_min_time(tx_context_t *txCtx) {
     strcpy(detailCaption, "Time Bounds From");
-    print_uint(txCtx->txDetails.timeBounds.minTime, detailValue, DETAIL_VALUE_MAX_SIZE);
+    print_time((time_t) txCtx->txDetails.timeBounds.minTime, detailValue, DETAIL_VALUE_MAX_SIZE);
     push_to_formatter_stack(&format_time_bounds_max_time);
 }
 

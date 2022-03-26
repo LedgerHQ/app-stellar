@@ -18,6 +18,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
+#include <time.h>
 
 #include "stellar_types.h"
 #include "stellar_api.h"
@@ -451,4 +452,30 @@ void print_claimable_balance_id(const ClaimableBalanceID *claimableBalanceID, ch
     memcpy(data, &claimableBalanceID->type, 4);
     memcpy(data + 4, claimableBalanceID->v0, 32);
     print_binary(data, out, data_len);
+}
+
+bool print_time(uint64_t timestamp_in_seconds, char *out, size_t out_len) {
+    if (timestamp_in_seconds > 253402300799) {
+        // valid range 1970-01-01 00:00:00 - 9999-12-31 23:59:59
+        return false;
+    }
+    char strTime[20] = {0};  // 1970-01-01 00:00:00
+    struct tm tm;
+    if (!gmtime_r(&timestamp_in_seconds, &tm)) {
+        return false;
+    };
+
+    if (snprintf(strTime,
+                 sizeof(strTime),
+                 "%04d-%02d-%02d %02d:%02d:%02d",
+                 tm.tm_year + 1900,
+                 tm.tm_mon + 1,
+                 tm.tm_mday,
+                 tm.tm_hour,
+                 tm.tm_min,
+                 tm.tm_sec) < 0) {
+        return false;
+    };
+    strlcpy(out, strTime, out_len);
+    return true;
 }
