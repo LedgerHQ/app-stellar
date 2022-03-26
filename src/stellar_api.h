@@ -143,7 +143,7 @@ void print_asset_t(const Asset *asset, uint8_t network_id, char *out, size_t out
 int print_asset_name(const Asset *asset, uint8_t network_id, char *out, size_t out_len);
 
 /** concatenate code and issuer */
-void print_asset(const char *code, char *issuer, char *out, size_t out_len);
+void print_asset(const char *code, char *issuer, bool isNative, char *out, size_t out_len);
 
 /** "XLM" or "native" depending on the network id */
 void print_native_asset_code(uint8_t network, char *out, size_t out_len);

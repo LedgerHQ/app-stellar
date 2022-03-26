@@ -330,11 +330,13 @@ int print_amount(uint64_t amount,
     if (buffer[i] == '.') buffer[i] = 0;
     strlcpy(out, buffer, out_len);
 
+    char assetInfo[23];  // BANANANANANA@GBD..KHK4, 12 + 1 + 3 + 2 + 4 = 22
+
     if (asset) {
         // qualify amount
-        print_asset_name(asset, network_id, buffer, AMOUNT_MAX_SIZE);
+        print_asset_t(asset, network_id, assetInfo, 23);
         strlcat(out, " ", out_len);
-        strlcat(out, buffer, out_len);
+        strlcat(out, assetInfo, out_len);
     }
     return 0;
 }
@@ -398,13 +400,17 @@ void print_asset_t(const Asset *asset, uint8_t network_id, char *out, size_t out
         default:
             break;
     }
-    print_asset(asset_name, issuer, out, out_len);
+
+    bool isNative = asset->type == ASSET_TYPE_NATIVE ? true : false;
+    print_asset(asset_name, issuer, isNative, out, out_len);
 }
 
-void print_asset(const char *code, char *issuer, char *out, size_t out_len) {
+void print_asset(const char *code, char *issuer, bool isNative, char *out, size_t out_len) {
     strlcpy(out, code, out_len);
-    strlcat(out, "@", out_len);
-    strlcat(out, issuer, out_len);
+    if (!isNative) {
+        strlcat(out, "@", out_len);
+        strlcat(out, issuer, out_len);
+    }
 }
 
 static void print_flag(char *flag, char *out, size_t out_len) {

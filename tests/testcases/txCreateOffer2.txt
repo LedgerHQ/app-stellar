@@ -8,4 +8,4 @@ Operation Type; Manage Sell Offer
 Create Offer; Type Active
 Buy; XLM
 Price; 1.5644199 XLM
-Sell; 1000 RMT
+Sell; 1000 RMT@GDE..ZE3N
