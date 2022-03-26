@@ -85,6 +85,8 @@ static const char *testcases[] = {
     "../testcases/txSimpleMuxedSource.raw",
     "../testcases/txSimple.raw",
     "../testcases/txTimeBounds.raw",
+    "../testcases/txTimeBoundsMaxIsZero.raw",
+    "../testcases/txTimeBoundsMinIsZero.raw",
     NULL,
 };
 

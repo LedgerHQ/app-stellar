@@ -3,8 +3,6 @@ Transaction; Details
 Memo; [none]
 Fee; 0.00001 XLM
 Sequence Number; 123456
-Time Bounds From; 1970-01-01 00:00:00
-Time Bounds To; 1970-01-01 00:00:00
 Tx Source; GADFVW3UXVKDOU626XUPYDJU2BFCGFJHQ6SREYOZ6IJV4XSHOALEQN2I
 Operation Type; Manage Buy Offer
 Change Offer; 987654

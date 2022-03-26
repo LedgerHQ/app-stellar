@@ -63,22 +63,35 @@ static void format_transaction_source(tx_context_t *txCtx) {
 
 static void format_time_bounds_max_time(tx_context_t *txCtx) {
     strcpy(detailCaption, "Time Bounds To");
-    // TODO: Define new error codes to express unknown errors.
-    print_time((time_t) txCtx->txDetails.timeBounds.maxTime, detailValue, DETAIL_VALUE_MAX_SIZE);
+    if (txCtx->txDetails.timeBounds.maxTime == 0) {
+        strcpy(detailValue, "[no restriction]");
+    } else {
+        // TODO: Define new error codes to express unknown errors.
+        print_time((time_t) txCtx->txDetails.timeBounds.maxTime,
+                   detailValue,
+                   DETAIL_VALUE_MAX_SIZE);
+    }
     push_to_formatter_stack(&format_transaction_source);
 }
 
 static void format_time_bounds_min_time(tx_context_t *txCtx) {
     strcpy(detailCaption, "Time Bounds From");
-    print_time((time_t) txCtx->txDetails.timeBounds.minTime, detailValue, DETAIL_VALUE_MAX_SIZE);
+    if (txCtx->txDetails.timeBounds.minTime == 0) {
+        strcpy(detailValue, "[no restriction]");
+    } else {
+        print_time((time_t) txCtx->txDetails.timeBounds.minTime,
+                   detailValue,
+                   DETAIL_VALUE_MAX_SIZE);
+    }
     push_to_formatter_stack(&format_time_bounds_max_time);
 }
 
 static void format_time_bounds(tx_context_t *txCtx) {
-    if (txCtx->txDetails.hasTimeBounds) {
-        format_time_bounds_min_time(txCtx);
-    } else {
+    if (txCtx->txDetails.hasTimeBounds == false ||
+        (txCtx->txDetails.timeBounds.minTime == 0 && txCtx->txDetails.timeBounds.maxTime == 0)) {
         format_transaction_source(txCtx);
+    } else {
+        format_time_bounds_min_time(txCtx);
     }
 }
 

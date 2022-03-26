@@ -1,0 +1,11 @@
+Network; Test
+Transaction; Details
+Memo; [none]
+Fee; 0.00001 XLM
+Sequence Number; 2
+Time Bounds From; [no restriction]
+Time Bounds To; 2022-03-26 03:55:00
+Tx Source; GD2J5ZZTU4XM5LEX3XPKSCJIQ3UMXU7NLZMHOZEMELXKI4XLPHHKGVM5
+Operation Type; Payment
+Send; 1 XLM
+Destination; GAQNVGMLOXSCWH37QXIHLQJH6WZENXYSVWLPAEF4673W64VRNZLRHMFM
