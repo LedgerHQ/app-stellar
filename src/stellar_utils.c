@@ -467,7 +467,7 @@ bool print_time(uint64_t timestamp_in_seconds, char *out, size_t out_len) {
     }
     char strTime[20] = {0};  // 1970-01-01 00:00:00
     struct tm tm;
-    if (!gmtime_r(&timestamp_in_seconds, &tm)) {
+    if (!gmtime_r((time_t *) &timestamp_in_seconds, &tm)) {
         return false;
     };
 
