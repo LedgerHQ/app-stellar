@@ -292,16 +292,14 @@ typedef struct {
 } PaymentOp;
 
 typedef struct {
-    Asset sendAsset;  // asset we pay with
-    int64_t sendMax;  // the maximum amount of sendAsset to send (excluding fees).
-                      // The operation will fail if can't be met
-
     MuxedAccount destination;  // recipient of the payment
-    Asset destAsset;           // what they end up with
+    int64_t sendMax;           // the maximum amount of sendAsset to send (excluding fees).
+                               // The operation will fail if can't be met
     int64_t destAmount;        // amount they end up with
-
+    Asset sendAsset;           // asset we pay with
+    Asset destAsset;           // what they end up with
+    Asset path[5];             // additional hops it must go through to get there
     uint8_t pathLen;
-    Asset path[5];  // additional hops it must go through to get there
 } PathPaymentStrictReceiveOp;
 
 typedef struct {
@@ -333,17 +331,16 @@ typedef struct {
 } ManageBuyOfferOp;
 
 typedef struct {
-    Asset sendAsset;     // asset we pay with
-    int64_t sendAmount;  // amount of sendAsset to send (excluding fees)
-                         // The operation will fail if can't be met
-
     MuxedAccount destination;  // recipient of the payment
-    Asset destAsset;           // what they end up with
+    int64_t sendAmount;        // amount of sendAsset to send (excluding fees)
+                               // The operation will fail if can't be met
     int64_t destMin;           // the minimum amount of dest asset to
                                // be received
                                // The operation will fail if it can't be met
+    Asset sendAsset;           // asset we pay with
+    Asset destAsset;           // what they end up with
+    Asset path[5];             // additional hops it must go through to get there
     uint8_t pathLen;
-    Asset path[5];  // additional hops it must go through to get there
 } PathPaymentStrictSendOp;
 
 typedef struct {
@@ -542,9 +539,9 @@ typedef struct {
 } LiquidityPoolWithdrawOp;
 
 typedef struct {
-    bool sourceAccountPresent;
     MuxedAccount sourceAccount;
     uint8_t type;
+    bool sourceAccountPresent;
     union {
         CreateAccountOp createAccount;
         PaymentOp payment;
@@ -587,14 +584,14 @@ typedef struct {
 
 typedef struct {
     MuxedAccount sourceAccount;     // account used to run the transaction
-    uint32_t fee;                   // the fee the sourceAccount will pay
     SequenceNumber sequenceNumber;  // sequence number to consume in the account
-    bool hasTimeBounds;
-    TimeBounds timeBounds;  // validity range (inclusive) for the last ledger close time
+    TimeBounds timeBounds;          // validity range (inclusive) for the last ledger close time
     Memo memo;
     Operation opDetails;
+    uint32_t fee;  // the fee the sourceAccount will pay
     uint8_t opCount;
     uint8_t opIdx;
+    bool hasTimeBounds;
 } TransactionDetails;
 
 typedef struct {
@@ -610,15 +607,15 @@ typedef struct {
 } pk_context_t;
 
 typedef struct {
-    uint8_t bip32Len;
     uint32_t bip32[MAX_BIP32_LEN];
     uint8_t publicKey[ED25519_PUBLIC_KEY_LEN];
     uint8_t raw[MAX_RAW_TX];
     uint32_t rawLength;
-    uint8_t hash[HASH_SIZE];
-    uint16_t offset;
     uint32_t tx;
+    uint16_t offset;
+    uint8_t hash[HASH_SIZE];
     uint8_t network;
+    uint8_t bip32Len;
     EnvelopeType envelopeType;
     FeeBumpTransactionDetails feeBumpTxDetails;
     TransactionDetails txDetails;
@@ -629,11 +626,11 @@ enum request_type_t { CONFIRM_ADDRESS, CONFIRM_TRANSACTION };
 enum app_state_t { STATE_NONE, STATE_PARSE_TX, STATE_APPROVE_TX, STATE_APPROVE_TX_HASH };
 
 typedef struct {
-    enum app_state_t state;
     union {
         pk_context_t pk;
         tx_context_t tx;
     } req;
+    enum app_state_t state;
     enum request_type_t reqType;
     int16_t u2fTimer;
 } stellar_context_t;
