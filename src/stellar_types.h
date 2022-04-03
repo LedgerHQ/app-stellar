@@ -185,18 +185,21 @@ static const char *NETWORK_NAMES[3] = {"Public", "Test", "Unknown"};
 typedef const uint8_t *AccountID;
 typedef int64_t SequenceNumber;
 typedef uint64_t TimePoint;
+typedef int64_t Duration;
 
 typedef enum {
     KEY_TYPE_ED25519 = 0,
     KEY_TYPE_PRE_AUTH_TX = 1,
     KEY_TYPE_HASH_X = 2,
+    KEY_TYPE_ED25519_SIGNED_PAYLOAD = 3,
     KEY_TYPE_MUXED_ED25519 = 0x100
 } CryptoKeyType;
 
 typedef enum {
     SIGNER_KEY_TYPE_ED25519 = KEY_TYPE_ED25519,
     SIGNER_KEY_TYPE_PRE_AUTH_TX = KEY_TYPE_PRE_AUTH_TX,
-    SIGNER_KEY_TYPE_HASH_X = KEY_TYPE_HASH_X
+    SIGNER_KEY_TYPE_HASH_X = KEY_TYPE_HASH_X,
+    SIGNER_KEY_TYPE_ED25519_SIGNED_PAYLOAD = KEY_TYPE_ED25519_SIGNED_PAYLOAD
 } SignerKeyType;
 
 typedef enum {
@@ -583,15 +586,31 @@ typedef struct {
 } TimeBounds;
 
 typedef struct {
+    uint32_t minLedger;
+    uint32_t maxLedger;
+} LedgerBounds;
+
+typedef enum { PRECOND_NONE = 0, PRECOND_TIME = 1, PRECOND_V2 = 2 } PreconditionType;
+typedef struct {
+    TimeBounds timeBounds;
+    LedgerBounds ledgerBounds;
+    SequenceNumber minSeqNum;
+    Duration minSeqAge;
+    uint32_t minSeqLedgerGap;
+    bool hasTimeBounds;
+    bool hasLedgerBounds;
+    bool hasMinSeqNum;
+} Preconditions;
+
+typedef struct {
     MuxedAccount sourceAccount;     // account used to run the transaction
     SequenceNumber sequenceNumber;  // sequence number to consume in the account
-    TimeBounds timeBounds;          // validity range (inclusive) for the last ledger close time
+    Preconditions cond;             // validity conditions
     Memo memo;
     Operation opDetails;
     uint32_t fee;  // the fee the sourceAccount will pay
     uint8_t opCount;
     uint8_t opIdx;
-    bool hasTimeBounds;
 } TransactionDetails;
 
 typedef struct {

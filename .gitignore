@@ -6,5 +6,7 @@ src/glyphs.c
 src/glyphs.h
 .idea
 nano-sdk
-test/build
-test/__pycache__
+tests/build
+tests/__pycache__
+# Python virtual environment
+.venv
