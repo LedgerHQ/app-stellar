@@ -2,7 +2,7 @@ Network; Test
 Transaction; Details
 Memo; [none]
 Fee; 0.00001 XLM
-Sequence Number; 2
+Sequence Num; 2
 Time Bounds From; 2022-03-31 06:43:20
 Time Bounds To; 2022-03-31 07:33:20
 Min Ledger Bounds; 40267300

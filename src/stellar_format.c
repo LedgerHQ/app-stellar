@@ -191,7 +191,7 @@ static void format_time_bounds(tx_context_t *txCtx) {
 }
 
 static void format_sequence(tx_context_t *txCtx) {
-    strcpy(detailCaption, "Sequence Number");
+    strcpy(detailCaption, "Sequence Num");
     print_uint(txCtx->txDetails.sequenceNumber, detailValue, DETAIL_VALUE_MAX_SIZE);
     push_to_formatter_stack(&format_time_bounds);
 }

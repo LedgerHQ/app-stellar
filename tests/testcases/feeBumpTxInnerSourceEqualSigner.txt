@@ -5,7 +5,7 @@ Fee; 0.00004 XLM
 InnerTx; Details
 Memo Text; fee-bump-tx-simple
 Fee; 0.00001 XLM
-Sequence Number; 2
+Sequence Num; 2
 Tx Source; GDJYDBIA3WHL4IGI4PHQBBOLPXTR5A6U5SAPYMIPIGYXB37GSOAIP2GC
 Operation Type; Payment
 Send; 100 XLM
