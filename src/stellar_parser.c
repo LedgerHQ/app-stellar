@@ -151,6 +151,10 @@ static bool parse_signer_key(buffer_t *buffer, SignerKey *key) {
             buffer_advance(buffer, 32);
             uint32_t payloadLength;
             PARSER_CHECK(buffer_read32(buffer, &payloadLength));
+            // valid length [1, 64]
+            if (payloadLength == 0 || payloadLength > 64) {
+                return false;
+            }
             payloadLength += (4 - payloadLength % 4) % 4;
             PARSER_CHECK(buffer_can_read(buffer, payloadLength));
             buffer_advance(buffer, payloadLength);
