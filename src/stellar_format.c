@@ -120,26 +120,18 @@ static void format_min_seq_num_prepare(tx_context_t *txCtx) {
 
 static void format_ledger_bounds_max_ledger(tx_context_t *txCtx) {
     strcpy(detailCaption, "Max Ledger Bounds");
-    if (txCtx->txDetails.cond.ledgerBounds.maxLedger == 0) {
-        strcpy(detailValue, "[no restriction]");
-    } else {
-        print_uint(txCtx->txDetails.cond.ledgerBounds.maxLedger,
-                   detailValue,
-                   DETAIL_VALUE_MAX_SIZE);
-    }
+    print_uint(txCtx->txDetails.cond.ledgerBounds.maxLedger, detailValue, DETAIL_VALUE_MAX_SIZE);
     push_to_formatter_stack(&format_min_seq_num_prepare);
 }
 
 static void format_ledger_bounds_min_ledger(tx_context_t *txCtx) {
     strcpy(detailCaption, "Min Ledger Bounds");
-    if (txCtx->txDetails.cond.ledgerBounds.minLedger == 0) {
-        strcpy(detailValue, "[no restriction]");
+    print_uint(txCtx->txDetails.cond.ledgerBounds.minLedger, detailValue, DETAIL_VALUE_MAX_SIZE);
+    if (txCtx->txDetails.cond.ledgerBounds.maxLedger != 0) {
+        push_to_formatter_stack(&format_ledger_bounds_max_ledger);
     } else {
-        print_uint(txCtx->txDetails.cond.ledgerBounds.minLedger,
-                   detailValue,
-                   DETAIL_VALUE_MAX_SIZE);
+        push_to_formatter_stack(&format_min_seq_num_prepare);
     }
-    push_to_formatter_stack(&format_ledger_bounds_max_ledger);
 }
 
 static void format_ledger_bounds(tx_context_t *txCtx) {
@@ -147,45 +139,42 @@ static void format_ledger_bounds(tx_context_t *txCtx) {
         (txCtx->txDetails.cond.ledgerBounds.minLedger == 0 &&
          txCtx->txDetails.cond.ledgerBounds.maxLedger == 0)) {
         format_min_seq_num_prepare(txCtx);
-    } else {
+    } else if (txCtx->txDetails.cond.ledgerBounds.minLedger != 0) {
         format_ledger_bounds_min_ledger(txCtx);
+    } else {
+        format_ledger_bounds_max_ledger(txCtx);
     }
 }
 
 static void format_time_bounds_max_time(tx_context_t *txCtx) {
     strcpy(detailCaption, "Time Bounds To");
-    if (txCtx->txDetails.cond.timeBounds.maxTime == 0) {
-        strcpy(detailValue, "[no restriction]");
-    } else {
-        if (!print_time(txCtx->txDetails.cond.timeBounds.maxTime,
-                        detailValue,
-                        DETAIL_VALUE_MAX_SIZE)) {
-            THROW(0x6126);
-        };
-    }
+    if (!print_time(txCtx->txDetails.cond.timeBounds.maxTime, detailValue, DETAIL_VALUE_MAX_SIZE)) {
+        THROW(0x6126);
+    };
     push_to_formatter_stack(&format_ledger_bounds);
 }
 
 static void format_time_bounds_min_time(tx_context_t *txCtx) {
     strcpy(detailCaption, "Time Bounds From");
-    if (txCtx->txDetails.cond.timeBounds.minTime == 0) {
-        strcpy(detailValue, "[no restriction]");
+    if (!print_time(txCtx->txDetails.cond.timeBounds.minTime, detailValue, DETAIL_VALUE_MAX_SIZE)) {
+        THROW(0x6126);
+    };
+
+    if (txCtx->txDetails.cond.timeBounds.maxTime != 0) {
+        push_to_formatter_stack(&format_time_bounds_max_time);
     } else {
-        if (!print_time(txCtx->txDetails.cond.timeBounds.minTime,
-                        detailValue,
-                        DETAIL_VALUE_MAX_SIZE)) {
-            THROW(0x6126);
-        };
+        push_to_formatter_stack(&format_ledger_bounds);
     }
-    push_to_formatter_stack(&format_time_bounds_max_time);
 }
 
 static void format_time_bounds(tx_context_t *txCtx) {
     if (!txCtx->txDetails.cond.hasTimeBounds || (txCtx->txDetails.cond.timeBounds.minTime == 0 &&
                                                  txCtx->txDetails.cond.timeBounds.maxTime == 0)) {
         format_ledger_bounds(txCtx);
-    } else {
+    } else if (txCtx->txDetails.cond.timeBounds.minTime != 0) {
         format_time_bounds_min_time(txCtx);
+    } else {
+        format_time_bounds_max_time(txCtx);
     }
 }
 
