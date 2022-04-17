@@ -181,7 +181,6 @@ static void format_time_bounds_min_time(tx_context_t *txCtx) {
 }
 
 static void format_time_bounds(tx_context_t *txCtx) {
-    // TODO: should we add a page to remind the user that this is UTC time?
     if (!txCtx->txDetails.cond.hasTimeBounds || (txCtx->txDetails.cond.timeBounds.minTime == 0 &&
                                                  txCtx->txDetails.cond.timeBounds.maxTime == 0)) {
         format_ledger_bounds(txCtx);
