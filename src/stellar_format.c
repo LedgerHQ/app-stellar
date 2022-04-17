@@ -119,13 +119,13 @@ static void format_min_seq_num_prepare(tx_context_t *txCtx) {
 }
 
 static void format_ledger_bounds_max_ledger(tx_context_t *txCtx) {
-    strcpy(detailCaption, "Max Ledger Bounds");
+    strcpy(detailCaption, "Ledger Bounds Max");
     print_uint(txCtx->txDetails.cond.ledgerBounds.maxLedger, detailValue, DETAIL_VALUE_MAX_SIZE);
     push_to_formatter_stack(&format_min_seq_num_prepare);
 }
 
 static void format_ledger_bounds_min_ledger(tx_context_t *txCtx) {
-    strcpy(detailCaption, "Min Ledger Bounds");
+    strcpy(detailCaption, "Ledger Bounds Min");
     print_uint(txCtx->txDetails.cond.ledgerBounds.minLedger, detailValue, DETAIL_VALUE_MAX_SIZE);
     if (txCtx->txDetails.cond.ledgerBounds.maxLedger != 0) {
         push_to_formatter_stack(&format_ledger_bounds_max_ledger);
@@ -147,7 +147,7 @@ static void format_ledger_bounds(tx_context_t *txCtx) {
 }
 
 static void format_time_bounds_max_time(tx_context_t *txCtx) {
-    strcpy(detailCaption, "Time Bounds To");
+    strcpy(detailCaption, "TimeBounds Max");
     if (!print_time(txCtx->txDetails.cond.timeBounds.maxTime, detailValue, DETAIL_VALUE_MAX_SIZE)) {
         THROW(0x6126);
     };
@@ -155,7 +155,7 @@ static void format_time_bounds_max_time(tx_context_t *txCtx) {
 }
 
 static void format_time_bounds_min_time(tx_context_t *txCtx) {
-    strcpy(detailCaption, "Time Bounds From");
+    strcpy(detailCaption, "TimeBounds Min");
     if (!print_time(txCtx->txDetails.cond.timeBounds.minTime, detailValue, DETAIL_VALUE_MAX_SIZE)) {
         THROW(0x6126);
     };

@@ -3,7 +3,7 @@ Transaction; Details
 Memo; [none]
 Fee; 0.00001 XLM
 Sequence Num; 2
-Min Ledger Bounds; 40267300
+Ledger Bounds Min; 40267300
 Tx Source; GD2J5ZZTU4XM5LEX3XPKSCJIQ3UMXU7NLZMHOZEMELXKI4XLPHHKGVM5
 Operation Type; Payment
 Send; 1 XLM

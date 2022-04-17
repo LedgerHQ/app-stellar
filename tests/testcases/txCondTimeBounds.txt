@@ -3,8 +3,8 @@ Transaction; Details
 Memo; [none]
 Fee; 0.00001 XLM
 Sequence Num; 2
-Time Bounds From; 1970-01-01T00:00:01Z
-Time Bounds To; 9999-12-31T23:59:59Z
+TimeBounds Min; 1970-01-01T00:00:01Z
+TimeBounds Max; 9999-12-31T23:59:59Z
 Tx Source; GD2J5ZZTU4XM5LEX3XPKSCJIQ3UMXU7NLZMHOZEMELXKI4XLPHHKGVM5
 Operation Type; Payment
 Send; 1 XLM

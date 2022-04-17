@@ -3,8 +3,8 @@ Transaction; Details
 Memo; [none]
 Fee; 0.00001 XLM
 Sequence Num; 2
-Time Bounds From; 2022-03-31T06:43:20Z
-Time Bounds To; 2022-03-31T07:33:20Z
+TimeBounds Min; 2022-03-31T06:43:20Z
+TimeBounds Max; 2022-03-31T07:33:20Z
 Min Seq Num; 40260007
 Min Seq Age; 180
 Min Seq Ledger Gap; 30
