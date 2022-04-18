@@ -147,7 +147,7 @@ typedef enum {
  */
 #define DETAIL_VALUE_MAX_SIZE 89
 
-static const char *NETWORK_NAMES[3] = {"Public", "Test", "Unknown"};
+static const char *NETWORK_NAMES[3] = {"Public", "Testnet", "Unknown"};
 
 // ------------------------------------------------------------------------- //
 //                              UTILITIES                                    //

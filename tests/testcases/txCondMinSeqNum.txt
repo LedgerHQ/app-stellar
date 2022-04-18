@@ -1,7 +1,5 @@
-Network; Test
-Transaction; Details
-Memo; [none]
-Fee; 0.00001 XLM
+Network; Testnet
+Max Fee; 0.00001 XLM
 Sequence Num; 2
 Min Seq Num; 40260007
 Tx Source; GD2J5ZZTU4XM5LEX3XPKSCJIQ3UMXU7NLZMHOZEMELXKI4XLPHHKGVM5

@@ -1,10 +1,8 @@
-Network; Test
-Transaction; Details
-Memo; [none]
-Fee; 0.00001 XLM
+Network; Testnet
+Max Fee; 0.00001 XLM
 Sequence Num; 2
-TimeBounds Min; 2022-03-31T06:43:20Z
-TimeBounds Max; 2022-03-31T07:33:20Z
+Valid After (UTC); 2022-03-31 06:43:20
+Valid Before (UTC); 2022-03-31 07:33:20
 Ledger Bounds Min; 40267300
 Ledger Bounds Max; 40267500
 Min Seq Num; 40260007

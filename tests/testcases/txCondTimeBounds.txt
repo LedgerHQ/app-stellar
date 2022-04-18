@@ -1,10 +1,8 @@
-Network; Test
-Transaction; Details
-Memo; [none]
-Fee; 0.00001 XLM
+Network; Testnet
+Max Fee; 0.00001 XLM
 Sequence Num; 2
-TimeBounds Min; 1970-01-01T00:00:01Z
-TimeBounds Max; 9999-12-31T23:59:59Z
+Valid After (UTC); 1970-01-01 00:00:01
+Valid Before (UTC); 9999-12-31 23:59:59
 Tx Source; GD2J5ZZTU4XM5LEX3XPKSCJIQ3UMXU7NLZMHOZEMELXKI4XLPHHKGVM5
 Operation Type; Payment
 Send; 1 XLM

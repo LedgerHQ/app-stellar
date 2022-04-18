@@ -1,7 +1,6 @@
-Network; Test
-Transaction; Details
+Network; Testnet
 Memo Text; merge account
-Fee; 0.00001 XLM
+Max Fee; 0.00001 XLM
 Sequence Num; 21728338334711809
 Tx Source; GBGBTCCP7WG2E5XFYLQFJP2DYOQZPCCDCHK62K6TZD4BHMNYI5WSXESH
 Operation Type; Account Merge

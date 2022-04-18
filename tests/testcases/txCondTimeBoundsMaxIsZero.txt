@@ -1,9 +1,7 @@
-Network; Test
-Transaction; Details
-Memo; [none]
-Fee; 0.00001 XLM
+Network; Testnet
+Max Fee; 0.00001 XLM
 Sequence Num; 2
-TimeBounds Min; 2022-03-26T03:49:59Z
+Valid After (UTC); 2022-03-26 03:49:59
 Tx Source; GD2J5ZZTU4XM5LEX3XPKSCJIQ3UMXU7NLZMHOZEMELXKI4XLPHHKGVM5
 Operation Type; Payment
 Send; 1 XLM

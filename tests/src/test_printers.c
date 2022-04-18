@@ -211,15 +211,15 @@ void test_print_time(void **state) {
     (void) state;
     char printed[89];
     assert_true(print_time(0, printed, 89));
-    assert_string_equal(printed, "1970-01-01T00:00:00Z");
+    assert_string_equal(printed, "1970-01-01 00:00:00");
     assert_true(print_time(1648263853, printed, 89));
-    assert_string_equal(printed, "2022-03-26T03:04:13Z");
+    assert_string_equal(printed, "2022-03-26 03:04:13");
     assert_true(print_time(2147483647, printed, 89));
-    assert_string_equal(printed, "2038-01-19T03:14:07Z");
+    assert_string_equal(printed, "2038-01-19 03:14:07");
     assert_true(print_time(4294967295, printed, 89));
-    assert_string_equal(printed, "2106-02-07T06:28:15Z");
+    assert_string_equal(printed, "2106-02-07 06:28:15");
     assert_true(print_time(253402300799, printed, 89));
-    assert_string_equal(printed, "9999-12-31T23:59:59Z");
+    assert_string_equal(printed, "9999-12-31 23:59:59");
     assert_false(print_time(253402300800, printed, 89));
     assert_false(print_time(18446744073709551615, printed, 89));
 }

@@ -1,7 +1,4 @@
-Network; Public
-Transaction; Details
-Memo; [none]
-Fee; 0.00001 XLM
+Max Fee; 0.00001 XLM
 Sequence Num; 2
 Tx Source; MAQNVGMLOXSCWH37QXIHLQJH6WZENXYSVWLPAEF4673W64VRNZLRGAAAAAAAAAPCIDE24
 Operation Type; Payment

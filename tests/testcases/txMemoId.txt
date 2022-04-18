@@ -1,7 +1,5 @@
-Network; Public
-Transaction; Details
 Memo ID; 16
-Fee; 0.00001 XLM
+Max Fee; 0.00001 XLM
 Sequence Num; 55649191174602781
 Tx Source; GAQNVGMLOXSCWH37QXIHLQJH6WZENXYSVWLPAEF4673W64VRNZLRHMFM
 Operation Type; Payment

@@ -1,10 +1,10 @@
-Network; Test
+Network; Testnet
 Fee Bump; Transaction Details
 Fee Source; MAQNVGMLOXSCWH37QXIHLQJH6WZENXYSVWLPAEF4673W64VRNZLRGAAAAAAAAAPCIDE24
-Fee; 0.00004 XLM
+Max Fee; 0.00004 XLM
 InnerTx; Details
 Memo Text; fee-bump-tx-simple-muxed
-Fee; 0.00001 XLM
+Max Fee; 0.00001 XLM
 Sequence Num; 2
 Tx Source; GBZXN7PIRZGNMHGA7MUUUF4GWPY5AYPV6LY4UV2GL6VJGIQRXFDNMADI
 Operation Type; Payment

@@ -1,7 +1,5 @@
-Network; Public
-Transaction; Details
 Memo Hash; 0x42A084..204D3B
-Fee; 0.00001 XLM
+Max Fee; 0.00001 XLM
 Sequence Num; 55649191174602782
 Tx Source; GAQNVGMLOXSCWH37QXIHLQJH6WZENXYSVWLPAEF4673W64VRNZLRHMFM
 Operation Type; Payment

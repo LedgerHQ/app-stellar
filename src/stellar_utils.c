@@ -462,10 +462,10 @@ void print_claimable_balance_id(const ClaimableBalanceID *claimableBalanceID, ch
 
 bool print_time(uint64_t timestamp_in_seconds, char *out, size_t out_len) {
     if (timestamp_in_seconds > 253402300799) {
-        // valid range 1970-01-01T00:00:00Z - 9999-12-31T23:59:59Z
+        // valid range 1970-01-01 00:00:00 - 9999-12-31 23:59:59
         return false;
     }
-    char strTime[21] = {0};  // 1970-01-01T00:00:00Z
+    char strTime[20] = {0};  // 1970-01-01 00:00:00
     struct tm tm;
     if (!gmtime_r((time_t *) &timestamp_in_seconds, &tm)) {
         return false;
@@ -473,7 +473,7 @@ bool print_time(uint64_t timestamp_in_seconds, char *out, size_t out_len) {
 
     if (snprintf(strTime,
                  sizeof(strTime),
-                 "%04d-%02d-%02dT%02d:%02d:%02dZ",
+                 "%04d-%02d-%02d %02d:%02d:%02d",
                  tm.tm_year + 1900,
                  tm.tm_mon + 1,
                  tm.tm_mday,

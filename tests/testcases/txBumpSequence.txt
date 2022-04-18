@@ -1,7 +1,5 @@
-Network; Test
-Transaction; Details
-Memo; [none]
-Fee; 0.00001 XLM
+Network; Testnet
+Max Fee; 0.00001 XLM
 Sequence Num; 1234567891
 Tx Source; GCGNXZ5G6FWCNDB7H7G27WYSQDWYW3IBKMZOUXM7K6UPNMDAQDMONKJ2
 Operation Type; Bump Sequence

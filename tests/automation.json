@@ -2,7 +2,7 @@
   "version": 1,
   "rules": [
     {
-      "regexp": "Review|Send|Destination|Memo( ID| Text){0,1}|Fee|Network|TimeBounds (Min|Max)|Tx Source.*|Receive|Via|Remove.*|Buy|Price|Sell|Operation.*|Trust Limit|Bump To|Create Offer|Change Offer|Starting Balance|Set (Flags|Data)|Clear Flags|Master Weight|(Low|Medium|High) Threshold|Home Domain|Add Signer|Weight|Data Value|Account ID.*|Op Source.*|Merge Account.*|Inflation Dest.*|Signer Key.*|Sponsored ID.*|Balance ID.*|Clawback Balance|From.*|WARNING.*|Balance|Data Name.*|Offer ID|Asset|Trustor|Authorize Flag|Sequence Num|Liquidity Pool ID|Pool Fee Rate|(Max|Min) Amount (A|B)|(Max|Min) Price|Amount|SET OPTIONS|Min Seq Age|Min Seq Ledger Gap|Ledger Bounds (Max|Min)|Min Seq Num",
+      "regexp": "Review|Send|Destination|Memo( ID| Text){0,1}|Max Fee|Network|Valid (Before|After)|Tx Source.*|Receive|Via|Remove.*|Buy|Price|Sell|Operation.*|Trust Limit|Bump To|Create Offer|Change Offer|Starting Balance|Set (Flags|Data)|Clear Flags|Master Weight|(Low|Medium|High) Threshold|Home Domain|Add Signer|Weight|Data Value|Account ID.*|Op Source.*|Merge Account.*|Inflation Dest.*|Signer Key.*|Sponsored ID.*|Balance ID.*|Clawback Balance|From.*|WARNING.*|Balance|Data Name.*|Offer ID|Asset|Trustor|Authorize Flag|Sequence Num|Liquidity Pool ID|Pool Fee Rate|(Max|Min) Amount (A|B)|(Max|Min) Price|Amount|SET OPTIONS|Min Seq Age|Min Seq Ledger Gap|Ledger Bounds (Max|Min)|Min Seq Num|Fee Source",
       "actions": [
         [
           "button",

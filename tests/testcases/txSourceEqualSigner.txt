@@ -1,7 +1,5 @@
-Network; Test
-Transaction; Details
-Memo; [none]
-Fee; 0.00001 XLM
+Network; Testnet
+Max Fee; 0.00001 XLM
 Sequence Num; 2
 Tx Source; GDJYDB..AIP2GC
 Operation Type; Payment
