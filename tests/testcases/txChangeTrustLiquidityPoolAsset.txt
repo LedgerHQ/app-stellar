@@ -8,4 +8,3 @@ Liquidity Pool; Asset
 Asset A; XLM
 Asset B; Hello@GD5..DB2Y
 Pool Fee Rate; 0.3%
-Trust Limit; [maximum]

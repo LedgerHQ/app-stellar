@@ -576,15 +576,11 @@ static void format_set_options(tx_context_t *txCtx) {
 
 static void format_change_trust_limit(tx_context_t *txCtx) {
     strcpy(detailCaption, "Trust Limit");
-    if (txCtx->txDetails.opDetails.changeTrustOp.limit == INT64_MAX) {
-        strcpy(detailValue, "[maximum]");
-    } else {
-        print_amount(txCtx->txDetails.opDetails.changeTrustOp.limit,
-                     NULL,
-                     txCtx->network,
-                     detailValue,
-                     DETAIL_VALUE_MAX_SIZE);
-    }
+    print_amount(txCtx->txDetails.opDetails.changeTrustOp.limit,
+                 NULL,
+                 txCtx->network,
+                 detailValue,
+                 DETAIL_VALUE_MAX_SIZE);
     format_operation_source_prepare(txCtx);
 }
 
@@ -597,7 +593,8 @@ static void format_change_trust_detail_liquidity_pool_fee(tx_context_t *txCtx) {
         100;
     print_amount(fee, NULL, txCtx->network, detailValue, DETAIL_VALUE_MAX_SIZE);
     strlcat(detailValue, "%", DETAIL_VALUE_MAX_SIZE);
-    if (txCtx->txDetails.opDetails.changeTrustOp.limit) {
+    if (txCtx->txDetails.opDetails.changeTrustOp.limit &&
+        txCtx->txDetails.opDetails.changeTrustOp.limit != INT64_MAX) {
         push_to_formatter_stack(&format_change_trust_limit);
     } else {
         format_operation_source_prepare(txCtx);
@@ -656,7 +653,8 @@ static void format_change_trust_detail(tx_context_t *txCtx) {
                           txCtx->network,
                           detailValue,
                           DETAIL_VALUE_MAX_SIZE);
-            if (txCtx->txDetails.opDetails.changeTrustOp.limit) {
+            if (txCtx->txDetails.opDetails.changeTrustOp.limit &&
+                txCtx->txDetails.opDetails.changeTrustOp.limit != INT64_MAX) {
                 push_to_formatter_stack(&format_change_trust_limit);
             } else {
                 format_operation_source_prepare(txCtx);

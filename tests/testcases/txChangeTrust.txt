@@ -4,4 +4,3 @@ Sequence Num; 21728338334711809
 Tx Source; GBGBTCCP7WG2E5XFYLQFJP2DYOQZPCCDCHK62K6TZD4BHMNYI5WSXESH
 Operation Type; Change Trust
 Change Trust; DUPE@GBG..XESH
-Trust Limit; [maximum]
