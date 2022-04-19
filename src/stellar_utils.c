@@ -401,13 +401,13 @@ void print_asset_t(const Asset *asset, uint8_t network_id, char *out, size_t out
             break;
     }
 
-    bool isNative = asset->type == ASSET_TYPE_NATIVE ? true : false;
-    print_asset(asset_name, issuer, isNative, out, out_len);
+    bool is_native = asset->type == ASSET_TYPE_NATIVE ? true : false;
+    print_asset(asset_name, issuer, is_native, out, out_len);
 }
 
-void print_asset(const char *code, char *issuer, bool isNative, char *out, size_t out_len) {
+void print_asset(const char *code, char *issuer, bool is_native, char *out, size_t out_len) {
     strlcpy(out, code, out_len);
-    if (!isNative) {
+    if (!is_native) {
         strlcat(out, "@", out_len);
         strlcat(out, issuer, out_len);
     }
