@@ -85,6 +85,7 @@ static const char *testcases[] = {
     "../testcases/txSetOptionsRemoveHomeDomain.raw",
     "../testcases/txSetSomeOptions.raw",
     "../testcases/txSetTrustLineFlags.raw",
+    "../testcases/txSourceEqualOpSourceEqualSigner.raw",
     "../testcases/txSourceEqualSigner.raw",
     "../testcases/txSourceMuxedAccountEqualSigner.raw",
     "../testcases/txSimpleMuxedSource.raw",

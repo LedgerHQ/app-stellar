@@ -204,7 +204,18 @@ static void format_transaction_details(tx_context_t *txCtx) {
 
 static void format_operation_source(tx_context_t *txCtx) {
     strcpy(detailCaption, "Op Source");
-    print_muxed_account(&txCtx->txDetails.opDetails.sourceAccount, detailValue, 0, 0);
+    if (txCtx->envelopeType == ENVELOPE_TYPE_TX &&
+        txCtx->txDetails.sourceAccount.type == KEY_TYPE_ED25519 &&
+        txCtx->txDetails.opDetails.sourceAccount.type == KEY_TYPE_ED25519 &&
+        memcmp(txCtx->txDetails.sourceAccount.ed25519, txCtx->publicKey, ED25519_PUBLIC_KEY_LEN) ==
+            0 &&
+        memcmp(txCtx->txDetails.opDetails.sourceAccount.ed25519,
+               txCtx->publicKey,
+               ED25519_PUBLIC_KEY_LEN) == 0) {
+        print_muxed_account(&txCtx->txDetails.opDetails.sourceAccount, detailValue, 6, 6);
+    } else {
+        print_muxed_account(&txCtx->txDetails.opDetails.sourceAccount, detailValue, 0, 0);
+    }
 
     if (txCtx->txDetails.opIdx == txCtx->txDetails.opCount) {
         // last operation
