@@ -327,6 +327,36 @@ void handle_sign_tx_hash(uint8_t *dataBuffer, uint16_t dataLength, volatile unsi
     }
     memcpy(ctx.req.tx.hash, dataBuffer, dataLength);
 
+    cx_ecfp_private_key_t privateKey;
+    derive_private_key(&privateKey, ctx.req.tx.bip32, ctx.req.tx.bip32Len);
+    int error = 0;
+    BEGIN_TRY {
+        TRY {
+            // sign hash
+            ctx.req.tx.tx = cx_eddsa_sign(&privateKey,
+                                          CX_LAST,
+                                          CX_SHA512,
+                                          ctx.req.tx.hash,
+                                          HASH_SIZE,
+                                          NULL,
+                                          0,
+                                          G_io_apdu_buffer,
+                                          64,
+                                          NULL);
+        }
+        CATCH_OTHER(e) {
+            error = e;
+        }
+        FINALLY {
+            explicit_bzero(&privateKey, sizeof(privateKey));
+        }
+    }
+    END_TRY;
+
+    if (error) {
+        THROW(error);
+    }
+
     ui_approve_tx_hash_init();
 
     *flags |= IO_ASYNCH_REPLY;
