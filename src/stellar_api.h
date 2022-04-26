@@ -143,7 +143,7 @@ void print_asset_t(const Asset *asset, uint8_t network_id, char *out, size_t out
 int print_asset_name(const Asset *asset, uint8_t network_id, char *out, size_t out_len);
 
 /** concatenate code and issuer */
-void print_asset(const char *code, char *issuer, char *out, size_t out_len);
+void print_asset(const char *code, char *issuer, bool is_native, char *out, size_t out_len);
 
 /** "XLM" or "native" depending on the network id */
 void print_native_asset_code(uint8_t network, char *out, size_t out_len);
@@ -165,4 +165,7 @@ void base64_encode(const uint8_t *data, int inLen, char *out);
 
 /** hex representation of flags claimable balance id */
 void print_claimable_balance_id(const ClaimableBalanceID *claimableBalanceID, char *out);
+
+/** converts the timestamp in seconds to a readable utc time string */
+bool print_time(uint64_t timestamp_in_seconds, char *out, size_t out_len);
 #endif

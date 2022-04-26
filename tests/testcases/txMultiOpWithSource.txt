@@ -1,8 +1,7 @@
-Network; Test
-Transaction; Details
+Network; Testnet
 Memo Text; multi-op-with-source
-Fee; 0.00002 XLM
-Sequence Number; 2
+Max Fee; 0.00002 XLM
+Sequence Num; 2
 Tx Source; GADFVW3UXVKDOU626XUPYDJU2BFCGFJHQ6SREYOZ6IJV4XSHOALEQN2I
 Operation 1 of 2;  
 Operation Type; Account Merge
