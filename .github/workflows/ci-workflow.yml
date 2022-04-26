@@ -1,45 +1,87 @@
 name: Compilation & tests
 
-on: [push, pull_request]
+on:
+  workflow_dispatch:
+  push:
+    branches:
+    - master
+    - develop
+  pull_request:
+    branches:
+    - master
+    - develop
 
 jobs:
-  job_build_debug:
-    name: Build debug
+  nanos_build_debug:
+    name: Build NanoS debug
     runs-on: ubuntu-latest
-
     container:
       image: ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder:latest
-
     steps:
       - name: Clone
         uses: actions/checkout@v2
-
       - name: Install dependancies
         run: |
           apt-get install libbsd-dev
-
       - name: Build Stellar
         run: |
           make clean
           make DEBUG=1
-
       - name: Upload app binary
         uses: actions/upload-artifact@v2
         with:
-          name: stellar-app-debug
+          name: stellar-nanos-debug
+          path: bin
+
+  nanox_build_debug:
+    name: Build NanoX debug
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder:latest
+    steps:
+      - name: Clone
+        uses: actions/checkout@v2
+      - name: Install dependancies
+        run: |
+          apt-get install libbsd-dev
+      - name: Build Stellar
+        run: |
+          make clean
+          make DEBUG=1 BOLOS_SDK=$NANOX_SDK
+      - name: Upload app binary
+        uses: actions/upload-artifact@v2
+        with:
+          name: stellar-nanox-debug
+          path: bin
+
+  nanosp_build_debug:
+    name: Build NanoS+ debug
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder:latest
+    steps:
+      - name: Clone
+        uses: actions/checkout@v2
+      - name: Install dependancies
+        run: |
+          apt-get install libbsd-dev
+      - name: Build Stellar
+        run: |
+          make clean
+          make DEBUG=1 BOLOS_SDK=$NANOSP_SDK
+      - name: Upload app binary
+        uses: actions/upload-artifact@v2
+        with:
+          name: stellar-nanosp-debug
           path: bin
 
   job_scan_build:
     name: Clang Static Analyzer
-    needs: job_build_debug
     runs-on: ubuntu-latest
-
     container:
       image: ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder:latest
-
     steps:
       - uses: actions/checkout@v2
-
       - name: Build with Clang Static Analyzer
         run: |
           make clean
@@ -52,15 +94,11 @@ jobs:
 
   job_coverity_scan:
     name: Coverity Scan
-    needs: job_build_debug
     runs-on: ubuntu-latest
-
     container:
       image: ghcr.io/ledgerhq/ledger-app-builder/ledger-app-scanner:latest
-
     steps:
       - uses: actions/checkout@v2
-
       - name: Build with cov-build
         run: |
           make clean
@@ -81,30 +119,24 @@ jobs:
 
   job_unit_test:
     name: Unit tests
-    needs: job_build_debug
     runs-on: ubuntu-latest
-
     container:
       image: ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder:latest
-
     steps:
       - name: Clone
         uses: actions/checkout@v2
-
       - name: Install dependancies
         run: |
           apt-get update -y
           apt-get install libssl-dev libbsd-dev -y
-
       - name: Build unit tests
         run: |
           cmake -Btests/build -Htests/ && make -C tests/build/ && make -C tests/build test
 
   job_test:
     name: Functional tests
-    needs: job_build_debug
+    needs: nanos_build_debug
     runs-on: ubuntu-latest
-
     container:
       image: ghcr.io/ledgerhq/speculos:latest
       ports:
@@ -115,27 +147,22 @@ jobs:
         - 42000:42000
         - 43000:43000
       options: --entrypoint /bin/bash
-
     steps:
       - name: Clone
         uses: actions/checkout@v2
-
       - name: Install dependancies
         run: |
           apt-get update && apt-get install build-essential -y libudev-dev libusb-1.0-0-dev libfox-1.6-dev
-
       - name: Download app binary
         uses: actions/download-artifact@v2
         with:
-          name: stellar-app-debug
+          name: stellar-nanos-debug
           path: bin
-
       - name: Run test
         run: |
           nohup bash -c "python /speculos/speculos.py bin/app.elf --log-level automation:DEBUG --automation file:tests/automation.json --display headless" > speculos.log 2<&1 &
           sleep 4
           cd tests && pip install -r requirements.txt && LEDGER_PROXY_ADDRESS=127.0.0.1 LEDGER_PROXY_PORT=9999 pytest -v -s
-
       - name: Upload Speculos log
         uses: actions/upload-artifact@v2
         with:
