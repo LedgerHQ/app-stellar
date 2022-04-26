@@ -54,6 +54,27 @@ jobs:
           name: stellar-nanox-debug
           path: bin
 
+  nanosp_build_debug:
+    name: Build NanoS+ debug
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder:latest
+    steps:
+      - name: Clone
+        uses: actions/checkout@v2
+      - name: Install dependancies
+        run: |
+          apt-get install libbsd-dev
+      - name: Build Stellar
+        run: |
+          make clean
+          make DEBUG=1 BOLOS_SDK=$NANOSP_SDK
+      - name: Upload app binary
+        uses: actions/upload-artifact@v2
+        with:
+          name: stellar-nanosp-debug
+          path: bin
+
   job_scan_build:
     name: Clang Static Analyzer
     runs-on: ubuntu-latest
