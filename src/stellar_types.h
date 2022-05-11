@@ -58,8 +58,11 @@
 /* max amount is max int64 scaled down: "922337203685.4775807" */
 #define AMOUNT_MAX_SIZE 21
 
-#define HASH_SIZE              32
-#define LIQUIDITY_POOL_ID_SIZE 32
+#define HASH_SIZE                 32
+#define LIQUIDITY_POOL_ID_SIZE    32
+#define ED25519_PUBLIC_KEY_LEN    32
+#define ED25519_PUBLIC_STRKEY_LEN 56
+#define MUXED_ACCOUNT_STRKEY_LEN  69
 
 // ------------------------------------------------------------------------- //
 //                       TRANSACTION PARSING CONSTANTS                       //
@@ -144,7 +147,7 @@ typedef enum {
  */
 #define DETAIL_VALUE_MAX_SIZE 89
 
-static const char *NETWORK_NAMES[3] = {"Public", "Test", "Unknown"};
+static const char *NETWORK_NAMES[3] = {"Public", "Testnet", "Unknown"};
 
 // ------------------------------------------------------------------------- //
 //                              UTILITIES                                    //
@@ -182,18 +185,21 @@ static const char *NETWORK_NAMES[3] = {"Public", "Test", "Unknown"};
 typedef const uint8_t *AccountID;
 typedef int64_t SequenceNumber;
 typedef uint64_t TimePoint;
+typedef int64_t Duration;
 
 typedef enum {
     KEY_TYPE_ED25519 = 0,
     KEY_TYPE_PRE_AUTH_TX = 1,
     KEY_TYPE_HASH_X = 2,
+    KEY_TYPE_ED25519_SIGNED_PAYLOAD = 3,
     KEY_TYPE_MUXED_ED25519 = 0x100
 } CryptoKeyType;
 
 typedef enum {
     SIGNER_KEY_TYPE_ED25519 = KEY_TYPE_ED25519,
     SIGNER_KEY_TYPE_PRE_AUTH_TX = KEY_TYPE_PRE_AUTH_TX,
-    SIGNER_KEY_TYPE_HASH_X = KEY_TYPE_HASH_X
+    SIGNER_KEY_TYPE_HASH_X = KEY_TYPE_HASH_X,
+    SIGNER_KEY_TYPE_ED25519_SIGNED_PAYLOAD = KEY_TYPE_ED25519_SIGNED_PAYLOAD
 } SignerKeyType;
 
 typedef enum {
@@ -289,16 +295,14 @@ typedef struct {
 } PaymentOp;
 
 typedef struct {
-    Asset sendAsset;  // asset we pay with
-    int64_t sendMax;  // the maximum amount of sendAsset to send (excluding fees).
-                      // The operation will fail if can't be met
-
     MuxedAccount destination;  // recipient of the payment
-    Asset destAsset;           // what they end up with
+    int64_t sendMax;           // the maximum amount of sendAsset to send (excluding fees).
+                               // The operation will fail if can't be met
     int64_t destAmount;        // amount they end up with
-
+    Asset sendAsset;           // asset we pay with
+    Asset destAsset;           // what they end up with
+    Asset path[5];             // additional hops it must go through to get there
     uint8_t pathLen;
-    Asset path[5];  // additional hops it must go through to get there
 } PathPaymentStrictReceiveOp;
 
 typedef struct {
@@ -330,17 +334,16 @@ typedef struct {
 } ManageBuyOfferOp;
 
 typedef struct {
-    Asset sendAsset;     // asset we pay with
-    int64_t sendAmount;  // amount of sendAsset to send (excluding fees)
-                         // The operation will fail if can't be met
-
     MuxedAccount destination;  // recipient of the payment
-    Asset destAsset;           // what they end up with
+    int64_t sendAmount;        // amount of sendAsset to send (excluding fees)
+                               // The operation will fail if can't be met
     int64_t destMin;           // the minimum amount of dest asset to
                                // be received
                                // The operation will fail if it can't be met
+    Asset sendAsset;           // asset we pay with
+    Asset destAsset;           // what they end up with
+    Asset path[5];             // additional hops it must go through to get there
     uint8_t pathLen;
-    Asset path[5];  // additional hops it must go through to get there
 } PathPaymentStrictSendOp;
 
 typedef struct {
@@ -539,9 +542,9 @@ typedef struct {
 } LiquidityPoolWithdrawOp;
 
 typedef struct {
-    bool sourceAccountPresent;
     MuxedAccount sourceAccount;
     uint8_t type;
+    bool sourceAccountPresent;
     union {
         CreateAccountOp createAccount;
         PaymentOp payment;
@@ -583,13 +586,29 @@ typedef struct {
 } TimeBounds;
 
 typedef struct {
-    MuxedAccount sourceAccount;     // account used to run the transaction
-    uint32_t fee;                   // the fee the sourceAccount will pay
-    SequenceNumber sequenceNumber;  // sequence number to consume in the account
+    uint32_t minLedger;
+    uint32_t maxLedger;
+} LedgerBounds;
+
+typedef enum { PRECOND_NONE = 0, PRECOND_TIME = 1, PRECOND_V2 = 2 } PreconditionType;
+typedef struct {
+    TimeBounds timeBounds;
+    LedgerBounds ledgerBounds;
+    SequenceNumber minSeqNum;
+    Duration minSeqAge;
+    uint32_t minSeqLedgerGap;
     bool hasTimeBounds;
-    TimeBounds timeBounds;  // validity range (inclusive) for the last ledger close time
+    bool hasLedgerBounds;
+    bool hasMinSeqNum;
+} Preconditions;
+
+typedef struct {
+    MuxedAccount sourceAccount;     // account used to run the transaction
+    SequenceNumber sequenceNumber;  // sequence number to consume in the account
+    Preconditions cond;             // validity conditions
     Memo memo;
     Operation opDetails;
+    uint32_t fee;  // the fee the sourceAccount will pay
     uint8_t opCount;
     uint8_t opIdx;
 } TransactionDetails;
@@ -600,21 +619,22 @@ typedef struct {
 } FeeBumpTransactionDetails;
 
 typedef struct {
-    uint8_t publicKey[32];
+    uint8_t publicKey[ED25519_PUBLIC_KEY_LEN];
     uint8_t signature[64];
     bool returnSignature;
     uint32_t tx;
 } pk_context_t;
 
 typedef struct {
-    uint8_t bip32Len;
     uint32_t bip32[MAX_BIP32_LEN];
+    uint8_t publicKey[ED25519_PUBLIC_KEY_LEN];
     uint8_t raw[MAX_RAW_TX];
     uint32_t rawLength;
-    uint8_t hash[HASH_SIZE];
-    uint16_t offset;
     uint32_t tx;
+    uint16_t offset;
+    uint8_t hash[HASH_SIZE];
     uint8_t network;
+    uint8_t bip32Len;
     EnvelopeType envelopeType;
     FeeBumpTransactionDetails feeBumpTxDetails;
     TransactionDetails txDetails;
@@ -625,11 +645,11 @@ enum request_type_t { CONFIRM_ADDRESS, CONFIRM_TRANSACTION };
 enum app_state_t { STATE_NONE, STATE_PARSE_TX, STATE_APPROVE_TX, STATE_APPROVE_TX_HASH };
 
 typedef struct {
-    enum app_state_t state;
     union {
         pk_context_t pk;
         tx_context_t tx;
     } req;
+    enum app_state_t state;
     enum request_type_t reqType;
     int16_t u2fTimer;
 } stellar_context_t;
@@ -642,7 +662,7 @@ typedef struct {
 typedef struct {
     uint64_t amount;
     uint64_t fees;
-    char destination[57];  // ed25519 address only
+    char destination[ED25519_PUBLIC_STRKEY_LEN + 1];  // ed25519 address only
     char memo[20];
 } swap_values_t;
 

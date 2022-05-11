@@ -22,12 +22,11 @@
 
 #include "stellar_api.h"
 
-void test_print_amount(void **state) {
+void test_print_amount_asset_native(void **state) {
     (void) state;
 
     char printed[24];
     const Asset asset = {.type = ASSET_TYPE_NATIVE};
-
     print_amount(1, &asset, NETWORK_TYPE_PUBLIC, printed, sizeof(printed));
     assert_string_equal(printed, "0.0000001 XLM");
     print_amount(10000000, &asset, NETWORK_TYPE_PUBLIC, printed, sizeof(printed));
@@ -38,6 +37,48 @@ void test_print_amount(void **state) {
     assert_string_equal(printed, "10.0000001 XLM");
     print_amount(100000001000000, &asset, NETWORK_TYPE_PUBLIC, printed, sizeof(printed));
     assert_string_equal(printed, "10000000.1 XLM");
+}
+
+void test_print_amount_asset_alphanum4(void **state) {
+    (void) state;
+
+    char printed[35];
+    const Asset asset = {
+        .type = ASSET_TYPE_CREDIT_ALPHANUM4,
+        .alphaNum4 = {.assetCode = "USDC",
+                      .issuer = "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN"}};
+
+    print_amount(1, &asset, NETWORK_TYPE_PUBLIC, printed, sizeof(printed));
+    assert_string_equal(printed, "0.0000001 USDC@GBD..KHK4");
+    print_amount(10000000, &asset, NETWORK_TYPE_PUBLIC, printed, sizeof(printed));
+    assert_string_equal(printed, "1 USDC@GBD..KHK4");
+    print_amount(100000000000001, &asset, NETWORK_TYPE_PUBLIC, printed, sizeof(printed));
+    assert_string_equal(printed, "10000000.0000001 USDC@GBD..KHK4");
+    print_amount(100000001, &asset, NETWORK_TYPE_PUBLIC, printed, sizeof(printed));
+    assert_string_equal(printed, "10.0000001 USDC@GBD..KHK4");
+    print_amount(100000001000000, &asset, NETWORK_TYPE_PUBLIC, printed, sizeof(printed));
+    assert_string_equal(printed, "10000000.1 USDC@GBD..KHK4");
+}
+
+void test_print_amount_asset_alphanum12(void **state) {
+    (void) state;
+
+    char printed[43];
+    const Asset asset = {
+        .type = ASSET_TYPE_CREDIT_ALPHANUM12,
+        .alphaNum12 = {.assetCode = "BANANANANANA",
+                       .issuer = "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN"}};
+
+    print_amount(1, &asset, NETWORK_TYPE_PUBLIC, printed, sizeof(printed));
+    assert_string_equal(printed, "0.0000001 BANANANANANA@GBD..KHK4");
+    print_amount(10000000, &asset, NETWORK_TYPE_PUBLIC, printed, sizeof(printed));
+    assert_string_equal(printed, "1 BANANANANANA@GBD..KHK4");
+    print_amount(100000000000001, &asset, NETWORK_TYPE_PUBLIC, printed, sizeof(printed));
+    assert_string_equal(printed, "10000000.0000001 BANANANANANA@GBD..KHK4");
+    print_amount(100000001, &asset, NETWORK_TYPE_PUBLIC, printed, sizeof(printed));
+    assert_string_equal(printed, "10.0000001 BANANANANANA@GBD..KHK4");
+    print_amount(100000001000000, &asset, NETWORK_TYPE_PUBLIC, printed, sizeof(printed));
+    assert_string_equal(printed, "10000000.1 BANANANANANA@GBD..KHK4");
 }
 
 void test_print_uint(void **state) {
@@ -166,9 +207,49 @@ void test_print_claimable_balance_id(void **state) {
         "0x00000000C9C4A9E3A46891A36015C317B3DF17B42B0F2AD8A2EEA6C934C9F7C8425DA7AD");
 }
 
+void test_print_time(void **state) {
+    (void) state;
+    char printed[89];
+    assert_true(print_time(0, printed, 89));
+    assert_string_equal(printed, "1970-01-01 00:00:00");
+    assert_true(print_time(1648263853, printed, 89));
+    assert_string_equal(printed, "2022-03-26 03:04:13");
+    assert_true(print_time(2147483647, printed, 89));
+    assert_string_equal(printed, "2038-01-19 03:14:07");
+    assert_true(print_time(4294967295, printed, 89));
+    assert_string_equal(printed, "2106-02-07 06:28:15");
+    assert_true(print_time(253402300799, printed, 89));
+    assert_string_equal(printed, "9999-12-31 23:59:59");
+    assert_false(print_time(253402300800, printed, 89));
+    assert_false(print_time(18446744073709551615, printed, 89));
+}
+
+void test_print_asset_t(void **state) {
+    (void) state;
+    char printed[89];
+    const Asset nativeAsset = {.type = ASSET_TYPE_NATIVE};
+    print_asset_t(&nativeAsset, NETWORK_TYPE_PUBLIC, printed, sizeof(printed));
+    assert_string_equal(printed, "XLM");
+    const Asset assetAlphaNum4 = {
+        .type = ASSET_TYPE_CREDIT_ALPHANUM4,
+        .alphaNum4 = {.assetCode = "USDC",
+                      .issuer = "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN"}};
+    print_asset_t(&assetAlphaNum4, NETWORK_TYPE_PUBLIC, printed, sizeof(printed));
+    assert_string_equal(printed, "USDC@GBD..KHK4");
+
+    const Asset assetAlphaNum12 = {
+        .type = ASSET_TYPE_CREDIT_ALPHANUM12,
+        .alphaNum12 = {.assetCode = "Banana",
+                       .issuer = "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN"}};
+    print_asset_t(&assetAlphaNum12, NETWORK_TYPE_PUBLIC, printed, sizeof(printed));
+    assert_string_equal(printed, "Banana@GBD..KHK4");
+}
+
 int main() {
     const struct CMUnitTest tests[] = {
-        cmocka_unit_test(test_print_amount),
+        cmocka_unit_test(test_print_amount_asset_native),
+        cmocka_unit_test(test_print_amount_asset_alphanum4),
+        cmocka_unit_test(test_print_amount_asset_alphanum12),
         cmocka_unit_test(test_print_uint),
         cmocka_unit_test(test_print_int),
         cmocka_unit_test(test_print_summary),
@@ -176,6 +257,8 @@ int main() {
         cmocka_unit_test(test_base64_encode),
         cmocka_unit_test(test_print_muxed_account),
         cmocka_unit_test(test_print_claimable_balance_id),
+        cmocka_unit_test(test_print_time),
+        cmocka_unit_test(test_print_asset_t),
     };
     return cmocka_run_group_tests(tests, NULL, NULL);
 }

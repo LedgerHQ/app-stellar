@@ -2,10 +2,18 @@
   "version": 1,
   "rules": [
     {
-      "regexp": "Review|Send|Destination|Memo( ID| Text){0,1}|Fee|Network|Time Bounds (To|From)|Tx Source.*|Receive|Via|Remove.*|Buy|Price|Sell|Operation.*|Trust Limit|Bump To|Create Offer|Change Offer|Starting Balance|Set (Flags|Data)|Clear Flags|Master Weight|(Low|Medium|High) Threshold|Home Domain|Add Signer|Weight|Data Value|Account ID.*|Op Source.*|Merge Account.*|Inflation Dest.*|Signer Key.*|Sponsored ID.*|Balance ID.*|Clawback Balance|From.*|WARNING.*|Balance|Data Name.*|Offer ID|Asset|Trustor|Authorize Flag|Sequence Number|Liquidity Pool ID|Pool Fee Rate|(Max|Min) Amount (A|B)|(Max|Min) Price|Amount|SET OPTIONS",
+      "regexp": "Review|Send|Destination|Memo( ID| Text){0,1}|Max Fee|Network|Valid (Before|After)|Tx Source.*|Receive|Via|Remove.*|Buy|Price|Sell|Operation.*|Trust Limit|Bump To|Create Offer|Change Offer|Starting Balance|Set (Flags|Data)|Clear Flags|Master Weight|(Low|Medium|High) Threshold|Home Domain|Add Signer|Weight|Data Value|Account ID.*|Op Source.*|Merge Account.*|Inflation Dest.*|Signer Key.*|Sponsored ID.*|Balance ID.*|Clawback Balance|From.*|WARNING.*|Balance|Data Name.*|Offer ID|Asset|Trustor|Authorize Flag|Sequence Num|Liquidity Pool ID|Pool Fee Rate|(Max|Min) Amount (A|B)|(Max|Min) Price|Amount|SET OPTIONS|Min Seq Age|Min Seq Ledger Gap|Ledger Bounds (Max|Min)|Min Seq Num|Fee Source",
       "actions": [
-        ["button", 2, true],
-        ["button", 2, false]
+        [
+          "button",
+          2,
+          true
+        ],
+        [
+          "button",
+          2,
+          false
+        ]
       ]
     },
     {
@@ -13,8 +21,16 @@
       "x": 30,
       "y": 3,
       "actions": [
-        ["button", 2, true],
-        ["button", 2, false]
+        [
+          "button",
+          2,
+          true
+        ],
+        [
+          "button",
+          2,
+          false
+        ]
       ]
     },
     {
@@ -22,8 +38,16 @@
       "x": 34,
       "y": 3,
       "actions": [
-        ["button", 2, true],
-        ["button", 2, false]
+        [
+          "button",
+          2,
+          true
+        ],
+        [
+          "button",
+          2,
+          false
+        ]
       ]
     },
     {
@@ -31,8 +55,16 @@
       "x": 38,
       "y": 3,
       "actions": [
-        ["button", 2, true],
-        ["button", 2, false]
+        [
+          "button",
+          2,
+          true
+        ],
+        [
+          "button",
+          2,
+          false
+        ]
       ]
     },
     {
@@ -40,17 +72,41 @@
       "x": 44,
       "y": 3,
       "actions": [
-        ["button", 2, true],
-        ["button", 2, false]
+        [
+          "button",
+          2,
+          true
+        ],
+        [
+          "button",
+          2,
+          false
+        ]
       ]
     },
     {
       "text": "Finalize",
       "actions": [
-        ["button", 1, true],
-        ["button", 2, true],
-        ["button", 2, false],
-        ["button", 1, false]
+        [
+          "button",
+          1,
+          true
+        ],
+        [
+          "button",
+          2,
+          true
+        ],
+        [
+          "button",
+          2,
+          false
+        ],
+        [
+          "button",
+          1,
+          false
+        ]
       ]
     }
   ]

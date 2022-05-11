@@ -18,6 +18,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
+#include <time.h>
 
 #include "stellar_types.h"
 #include "stellar_api.h"
@@ -329,11 +330,13 @@ int print_amount(uint64_t amount,
     if (buffer[i] == '.') buffer[i] = 0;
     strlcpy(out, buffer, out_len);
 
+    char assetInfo[23];  // BANANANANANA@GBD..KHK4, 12 + 1 + 3 + 2 + 4 = 22
+
     if (asset) {
         // qualify amount
-        print_asset_name(asset, network_id, buffer, AMOUNT_MAX_SIZE);
+        print_asset_t(asset, network_id, assetInfo, 23);
         strlcat(out, " ", out_len);
-        strlcat(out, buffer, out_len);
+        strlcat(out, assetInfo, out_len);
     }
     return 0;
 }
@@ -397,13 +400,17 @@ void print_asset_t(const Asset *asset, uint8_t network_id, char *out, size_t out
         default:
             break;
     }
-    print_asset(asset_name, issuer, out, out_len);
+
+    bool is_native = asset->type == ASSET_TYPE_NATIVE ? true : false;
+    print_asset(asset_name, issuer, is_native, out, out_len);
 }
 
-void print_asset(const char *code, char *issuer, char *out, size_t out_len) {
+void print_asset(const char *code, char *issuer, bool is_native, char *out, size_t out_len) {
     strlcpy(out, code, out_len);
-    strlcat(out, "@", out_len);
-    strlcat(out, issuer, out_len);
+    if (!is_native) {
+        strlcat(out, "@", out_len);
+        strlcat(out, issuer, out_len);
+    }
 }
 
 static void print_flag(char *flag, char *out, size_t out_len) {
@@ -451,4 +458,30 @@ void print_claimable_balance_id(const ClaimableBalanceID *claimableBalanceID, ch
     memcpy(data, &claimableBalanceID->type, 4);
     memcpy(data + 4, claimableBalanceID->v0, 32);
     print_binary(data, out, data_len);
+}
+
+bool print_time(uint64_t timestamp_in_seconds, char *out, size_t out_len) {
+    if (timestamp_in_seconds > 253402300799) {
+        // valid range 1970-01-01 00:00:00 - 9999-12-31 23:59:59
+        return false;
+    }
+    char strTime[20] = {0};  // 1970-01-01 00:00:00
+    struct tm tm;
+    if (!gmtime_r((time_t *) &timestamp_in_seconds, &tm)) {
+        return false;
+    };
+
+    if (snprintf(strTime,
+                 sizeof(strTime),
+                 "%04d-%02d-%02d %02d:%02d:%02d",
+                 tm.tm_year + 1900,
+                 tm.tm_mon + 1,
+                 tm.tm_mday,
+                 tm.tm_hour,
+                 tm.tm_min,
+                 tm.tm_sec) < 0) {
+        return false;
+    };
+    strlcpy(out, strTime, out_len);
+    return true;
 }
