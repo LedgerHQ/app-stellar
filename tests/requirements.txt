@@ -1,3 +1,4 @@
 construct==2.10.61
+protobuf~=3.19.0
 pytest>=6.1.1,<7.0.0
 ledgerwallet>=0.1.2
