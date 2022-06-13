@@ -40,7 +40,7 @@ bool parse_bip32_path(uint8_t *path,
     }
 
     for (size_t i = 0; i < path_length; i++) {
-        path_parsed[i] = 
+        path_parsed[i] =
             ((uint32_t)(path[0]) << 24u) | (path[1] << 16u) | (path[2] << 8u) | (path[3]);
         path += 4;
     }
@@ -351,8 +351,8 @@ int print_int(int64_t l, char *out, size_t out_len) {
 
         out[0] = '-';
         if (l == INT64_MIN) {
-            n = (uint64_t)l;
-        }  else {
+            n = (uint64_t) l;
+        } else {
             n = -l;
         }
         return print_uint(n, out + 1, out_len - 1);
