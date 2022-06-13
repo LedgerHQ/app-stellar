@@ -17,6 +17,13 @@ add_library(stellar
     ../src/stellar_parser.c
 )
 
+if (FUZZ)
+	add_library(bsd STATIC IMPORTED)
+	set_property(TARGET bsd PROPERTY IMPORTED_LOCATION /lib/x86_64-linux-gnu/libbsd.a)
+else()
+	add_library(bsd)
+endif()
+
 target_include_directories(stellar PUBLIC ../src include)
 target_link_libraries(stellar PRIVATE bsd)
 
@@ -41,8 +48,18 @@ if (FUZZ)
         message(FATAL_ERROR "Fuzzer needs to be built with Clang")
     endif()
 
+    # compatible with ClusterFuzzLite
+    if (NOT DEFINED ENV{LIB_FUZZING_ENGINE})
+	set(COMPILATION_FLAGS_ "-fsanitize=address,fuzzer -g")
+    else()
+	    set(COMPILATION_FLAGS_ "$ENV{LIB_FUZZING_ENGINE} $ENV{CXXFLAGS}")
+    endif()
+
+    string(REPLACE " " ";" COMPILATION_FLAGS ${COMPILATION_FLAGS_})
+    message(${COMPILATION_FLAGS})
+
     add_executable(fuzz_tx src/fuzz_tx.c)
-    target_compile_options(fuzz_tx PRIVATE -fsanitize=address,fuzzer -g -ggdb2)
-    target_link_options(fuzz_tx PRIVATE -fsanitize=address,fuzzer)
+    target_compile_options(fuzz_tx PRIVATE ${COMPILATION_FLAGS})
+    target_link_options(fuzz_tx PRIVATE ${COMPILATION_FLAGS})
     target_link_libraries(fuzz_tx PRIVATE stellar bsd crypto)
 endif()
