@@ -40,7 +40,8 @@ bool parse_bip32_path(uint8_t *path,
     }
 
     for (size_t i = 0; i < path_length; i++) {
-        path_parsed[i] = ((uint32_t)(path[0]) << 24u) | (path[1] << 16u) | (path[2] << 8u) | (path[3]);
+        path_parsed[i] = 
+            ((uint32_t)(path[0]) << 24u) | (path[1] << 16u) | (path[2] << 8u) | (path[3]);
         path += 4;
     }
 
