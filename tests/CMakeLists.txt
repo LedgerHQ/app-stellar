@@ -20,8 +20,6 @@ add_library(stellar
 if (FUZZ)
 	add_library(bsd STATIC IMPORTED)
 	set_property(TARGET bsd PROPERTY IMPORTED_LOCATION /lib/x86_64-linux-gnu/libbsd.a)
-else()
-	add_library(bsd)
 endif()
 
 target_include_directories(stellar PUBLIC ../src include)
