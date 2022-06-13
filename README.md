@@ -1,6 +1,6 @@
 # Stellar app for the Ledger Nano S and Ledger Blue
 
-## Introduction
+### Introduction
 
 This is the wallet app for the [Ledger Nano S](https://www.ledgerwallet.com/products/ledger-nano-s) and [Ledger Nano X](https://www.ledgerwallet.com/products/ledger-nano-x) that makes it possible to store [Stellar](https://www.stellar.org/)-based assets on those devices and generally sign any transaction for the Stellar network.
 
