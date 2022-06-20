@@ -40,7 +40,8 @@ bool parse_bip32_path(uint8_t *path,
     }
 
     for (size_t i = 0; i < path_length; i++) {
-        path_parsed[i] = (path[0] << 24u) | (path[1] << 16u) | (path[2] << 8u) | (path[3]);
+        path_parsed[i] =
+            ((uint32_t)(path[0]) << 24u) | (path[1] << 16u) | (path[2] << 8u) | (path[3]);
         path += 4;
     }
 
@@ -48,10 +49,10 @@ bool parse_bip32_path(uint8_t *path,
 }
 
 unsigned short crc16(char *ptr, int count) {
-    int crc;
+    uint32_t crc;
     crc = 0;
     while (--count >= 0) {
-        crc = crc ^ (int) *ptr++ << 8;
+        crc = crc ^ (uint32_t) *ptr++ << 8;
         int i = 8;
         do {
             if (crc & 0x8000)
@@ -75,7 +76,7 @@ int base32_encode(const uint8_t *data, int length, char *result, int bufSize) {
     }
 
     if (length > 0) {
-        int buffer = data[0];
+        uint32_t buffer = data[0];
         int next = 1;
         int bitsLeft = 8;
         int quantum = 8;
@@ -346,8 +347,15 @@ int print_int(int64_t l, char *out, size_t out_len) {
         return -1;
     }
     if (l < 0) {
+        uint64_t n;
+
         out[0] = '-';
-        return print_uint(-l, out + 1, out_len - 1);
+        if (l == INT64_MIN) {
+            n = (uint64_t) l;
+        } else {
+            n = -l;
+        }
+        return print_uint(n, out + 1, out_len - 1);
     }
     return print_uint(l, out, out_len);
 }

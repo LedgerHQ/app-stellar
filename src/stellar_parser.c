@@ -46,7 +46,7 @@ static bool buffer_read32(buffer_t *buffer, uint32_t *n) {
     }
 
     const uint8_t *ptr = buffer->ptr + buffer->offset;
-    *n = ptr[3] + (ptr[2] << 8u) + (ptr[1] << 16u) + (ptr[0] << 24u);
+    *n = ptr[3] + (ptr[2] << 8u) + (ptr[1] << 16u) + ((uint32_t)(ptr[0]) << 24u);
     buffer_advance(buffer, 4);
     return true;
 }
@@ -58,8 +58,8 @@ bool buffer_read64(buffer_t *buffer, uint64_t *n) {
     }
 
     const uint8_t *ptr = buffer->ptr + buffer->offset;
-    uint32_t i1 = ptr[3] + (ptr[2] << 8u) + (ptr[1] << 16u) + (ptr[0] << 24u);
-    uint32_t i2 = ptr[7] + (ptr[6] << 8u) + (ptr[5] << 16u) + (ptr[4] << 24u);
+    uint32_t i1 = ptr[3] + (ptr[2] << 8u) + (ptr[1] << 16u) + ((uint32_t)(ptr[0]) << 24u);
+    uint32_t i2 = ptr[7] + (ptr[6] << 8u) + (ptr[5] << 16u) + ((uint32_t)(ptr[4]) << 24u);
     *n = i2 | ((uint64_t) i1 << 32u);
     buffer->offset += 8;
     return true;
