@@ -1,0 +1,9 @@
+Memo Text; hello world
+Max Fee; 0.00001 XLM
+Sequence Num; 103720918407102568
+Valid Before (UTC); 2022-12-12 04:12:12
+Tx Source; GDUTHC..XM2FN7
+Operation Type; Revoke Sponsorship (OFFER)
+Seller ID; GDRMNAIPTNIJWJSL6JOF76CJORN47TDVMWERTXO2G2WKOMXGNHUFL5QX
+Offer ID; 123456
+Op Source; GDUTHC..XM2FN7

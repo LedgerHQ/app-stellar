@@ -3,7 +3,7 @@
 # build fuzzers
 
 pushd fuzz
-./build.sh
-mv ./cmake-build-fuzz/fuzz_tx $OUT/app-stellar-fuzz-tx
+cmake -DCMAKE_C_COMPILER=clang -Bbuild -H.
+make -C build
+mv ./build/fuzz_tx $OUT/app-stellar-fuzz-tx
 popd
-

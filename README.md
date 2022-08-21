@@ -1,74 +1,85 @@
-# Stellar app for the Ledger Nano S and Ledger Blue
+# Ledger Stellar App
+
+[![Compilation & tests](https://github.com/LedgerHQ/app-stellar/actions/workflows/ci-workflow.yml/badge.svg?branch=develop)](https://github.com/LedgerHQ/app-stellar/actions/workflows/ci-workflow.yml)
+[![Swap function tests](https://github.com/LedgerHQ/app-stellar/actions/workflows/swap-ci-workflow.yml/badge.svg?branch=develop)](https://github.com/LedgerHQ/app-stellar/actions/workflows/swap-ci-workflow.yml)
 
 ## Introduction
 
-This is the wallet app for the [Ledger Nano S](https://www.ledgerwallet.com/products/ledger-nano-s) and [Ledger Nano X](https://www.ledgerwallet.com/products/ledger-nano-x) that makes it possible to store [Stellar](https://www.stellar.org/)-based assets on those devices and generally sign any transaction for the Stellar network.
+This is the wallet app for the [Ledger Nano S](https://shop.ledger.com/products/ledger-nano-s), [Ledger Nano S Plus](https://shop.ledger.com/pages/ledger-nano-s-plus) and [Ledger Nano X](https://shop.ledger.com/pages/ledger-nano-x) that makes it possible to store [Stellar](https://www.stellar.org/)-based assets on those devices and generally sign any transaction for the Stellar network.
 
-A companion [Javascript library](https://github.com/LedgerHQ/ledgerjs) is available to communicate with this app. To learn how to use this library and generate a browserified version of it you can take look at the [demo project](https://github.com/lenondupe/ledgerjs-stellar).
+## Documentation
+
+This app follows the specification available in the [`./docs`](./docs/) folder.
+
+## SDK
+
+You can communicate with the app through the following libraries:
+
+- [JavaScript library](https://github.com/LedgerHQ/ledger-live/blob/develop/libs/ledgerjs/packages/hw-app-str/README.md)
+- [Python library](https://github.com/overcat/strledger)
 
 ## Building and installing
 
-To build and install the app on your Nano S or X you must set up the Ledger Nano S or X build environments. Please follow the Getting Started instructions at the [Ledger Nano S github repository](https://github.com/LedgerHQ/ledger-nano-s).
+If not for development purposes, you should install this app via [Ledger Live](https://www.ledger.com/ledger-live).
 
-Additionaly, install this dependancy:
+To build and install the app on your Nano S or Nano S Plus you must set up the Ledger build environments. Please follow [the load the application instructions](https://developers.ledger.com/docs/nano-app/load/) at the Ledger developer portal.
 
-```shell script
+Additionaly, install this dependency:
+
+```shell
 sudo apt install libbsd-dev
 ```
 
-Alternatively, you can set up the Vagrant Virtualbox Ledger environment maintained [here](https://github.com/fix/ledger-vagrant). This sets up an Ubuntu virtual machine with the Ledger build environment already set up.
-
 The command to compile and load the app onto the device is:
 
-```shell script
+```shell
 make load
 ```
 
 To remove the app from the device do:
 
-```shell script
+```shell
 make delete
 ```
 
 ## Testing
 
-The `./test` directory contains files for testing the xdr transaction parser and the screen formatter.
+This project provides unit tests, integration tests and end-to-end tests, unit tests are located under the [`./tests_unit`](./tests_unit) folder, and the integration tests and end-to-end tests are located under the [`./tests_zemu`](./tests_zemu) folder. 
 
-They require the [cmocka](https://cmocka.org/) unit testing framework, [CMake](https://cmake.org/) and [libbsd](https://libbsd.freedesktop.org/wiki/) to be installed:
+During development, we recommend that you run the unit test first, as it takes less time to run, and then run the other tests after the unit test has run successfully.
 
-```shell script
-sudo apt install libcmocka-dev cmake
+### Unit testing
+
+The `./tests_unit` directory contains files for testing the utils, the xdr transaction parser, the screen formatter and the swap function.
+
+They require the [Node.js](https://nodejs.org/), [cmocka](https://cmocka.org/) unit testing framework, [CMake](https://cmake.org/) and [libbsd](https://libbsd.freedesktop.org/wiki/) to be installed:
+
+```shell
+sudo apt install libcmocka-dev cmake libbsd-dev
 ```
+
+It is recommended to use [nvm](https://github.com/nvm-sh/nvm) to install the latest LTS version of Node.js
+
+To build and execute the tests, run the following command:
+
+```shell
+make tests-unit
+```
+
+### Integration testing and end-to-end testing
+Testing is done via the open-source framework [zemu](https://github.com/Zondax/zemu).
+
+In order to run these tests, you need to install [Docker](https://www.docker.com/) in addition to the dependencies mentioned in *Unit testing*.
 
 To build and execute the tests, run the following commands:
 
-```shell script
-mkdir test/build
-cd test/build
-cmake ..
-make && make test
+```shell
+make tests-zemu
 ```
 
-### XDR parsing
+To run a specific test first, please run the following commands:
 
-When a transaction is to be signed it is sent to the device as an [XDR](https://tools.ietf.org/html/rfc1832) serialized binary object. To show the transaction details to the user on the device this binary object must be read. This is done by a purpose-built parser shipped with this app.
-
-Due to memory limitations the transaction maximum size is set to 1kb. This should be sufficient for most usages, including multi-operation transactions up to 15 operations depending on the size of the operations.
-
-Alternatively the user can enable hash signing. In this mode the transaction XDR is not sent to the device but only the hash of the transaction, which is the basis for a valid signature. In this case details for the transaction cannot be displayed and verified which is why this is not the preferred mode of operation. In fact, setting hash signing mode is not persistent and needs be set again whenever the user needs it.
-
-## Key pair validation
-
-The operation to retrieve the public key implements an optional keypair verification method. Along with the request to retrieve the public key a small message is sent that is to be signed by the device. Back on the host the returned signature can be checked against the returned public key. This is to guard against incompatibility between the keypairs generated by the Ledger device and the ones expected by the Stellar network, whatever the reason for this might be. The extra precaution prevents users from sending funds to an address they are not able to sign transactions for.
-
-## Building on Mac OS
-
-Currently there are some tweaks that need to be made to the Makefile in order to be able to build and load the app on Mac OS. I added the following before the line `include $(BOLOS_SDK)/Makefile.rules`:
-
-```
-GLYPH_SRC_DIR = /Users/lenondupe/Code/ledger/ledger-app-stellar/src
-SOURCE_PATH += $(BOLOS_SDK)/lib_stusb
-SOURCE_PATH += $(BOLOS_SDK)/lib_u2f
-INCLUDES_PATH += $(BOLOS_ENV)/gcc-arm-none-eabi-5_3-2016q1/lib/gcc/arm-none-eabi/5.3.1/include-fixed
-INCLUDES_PATH += $(BOLOS_ENV)/gcc-arm-none-eabi-5_3-2016q1/arm-none-eabi/include
+```shell
+cd tests_zemu
+npm run test -- -t "{testCaseName}"
 ```

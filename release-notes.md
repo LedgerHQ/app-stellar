@@ -1,5 +1,23 @@
 # Release Notes
 
+## v4.0.0
+
+### Updated
+- Added a `Sequence Number` setting: `Displayed` or `NOT Displayed`, default to `NOT Displayed`.
+- Optimized the display of amount. (ex. `10000000 XLM` -> `10,000,000 XLM`)
+- Optimized the display of offer price.
+- Optimize the display of `Memo Text` and `Manage Data Value`, if they are printable ASCII characters, they will be printed directly, otherwise display the base64 encoded summary.
+- In some common operations, the prompt for the operation type was removed.
+- Other UX improvements.
+- Other bugfixes.
+- Refactored this app based on [app-boilerplate](https://github.com/ledgerhq/app-boilerplate).
+- Refactored unit tests and added full e2e tests.
+- Added APDU documentation.
+
+### Breaking Changes
+- Removed keypair validation in `GET_PUBLIC_KEY` command. If necessary, we recommend that you ask the user to confirm the address on the device.
+- Removed support for the `KEEP_ALIVE` command at the app layer.
+
 ## v3.0 Multi-operation details support and U2F connection keep-alive
 
 Support for showing details of multi-operation transactions has been added. Previously, multi-operation transactions could only be signed using the hash-signing method. Transaction envelopes of up to 1.5kb in size are supported*, covering most Stellar usage scenarios.
@@ -15,6 +33,7 @@ The native asset is no longer assumed to be XLM when showing amounts. Instead, a
 This release also uses the new SDK built-in U2F support which means that the user no longer needs to set the browser mode when switching between host applications that use different transport protocols.
 
 \*To give an idea: this allows for 25 XLM payment, 23 change trust operations, 17 manage offer operations where one of the assets is native, 15 set options operations where the master weight, a threshold and a signer are specified, 9 set options operations where all the options are specified, or 5 path payment operations where both send and receive assets are non-native and two hops are specified.
+
 ## v2.1 Hash signing support
 
 This release adds a mode to sign the hash of the transaction. Transaction details are not shown in this mode.
