@@ -100,10 +100,11 @@ jobs:
 
     steps:
       - name: Clone
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: "LedgerHQ/app-exchange"
           ref: "b3bf722138c19453bc9bef59e1b421cf0f5e8328"
+          submodules: true
 
       - name: Build Exchange
         run: |
