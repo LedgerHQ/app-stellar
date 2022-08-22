@@ -113,6 +113,37 @@ bool encode_pre_auth_x_key(const uint8_t raw_pre_auth_tx[static RAW_PRE_AUTH_TX_
     return encode_key(raw_pre_auth_tx, VERSION_BYTE_PRE_AUTH_TX_KEY, out, out_len);
 }
 
+bool encode_ed25519_signed_payload(const ed25519_signed_payload_t *signed_payload,
+                                   char *out,
+                                   size_t out_len) {
+    if (out_len < 166) {  // (103 * 8 + 4) / 5
+        return false;
+    }
+    if (signed_payload->payload_len > 64 || signed_payload->payload_len <= 0) {
+        return false;
+    }
+    uint8_t data_len = RAW_ED25519_PUBLIC_KEY_SIZE + 4 + signed_payload->payload_len +
+                       ((4 - signed_payload->payload_len % 4) % 4);
+    uint8_t buffer[1 + 32 + 4 + 64 + 2] = {0};
+    buffer[0] = VERSION_BYTE_ED25519_SIGNED_PAYLOAD;
+    for (uint8_t i = 0; i < 32; i++) {
+        buffer[i + 1] = signed_payload->ed25519[i];
+    }
+    buffer[36] = signed_payload->payload_len;
+    for (uint8_t i = 0; i < signed_payload->payload_len; i++) {
+        buffer[i + 37] = signed_payload->payload[i];
+    }
+    uint16_t crc = crc16(buffer, data_len + 1);  // checksum
+    buffer[1 + data_len] = crc;
+    buffer[1 + data_len + 1] = crc >> 8;
+    int ret = base32_encode(buffer, data_len + 3, (uint8_t *) out, out_len);
+    if (ret == -1) {
+        return false;
+    }
+    out[ret] = '\0';
+    return true;
+}
+
 bool encode_muxed_account(const muxed_account_t *raw_muxed_account, char *out, size_t out_len) {
     if (raw_muxed_account->type == KEY_TYPE_ED25519) {
         return encode_ed25519_public_key(raw_muxed_account->ed25519, out, out_len);
@@ -192,6 +223,50 @@ bool print_account_id(const account_id_t account_id,
         return print_summary(buffer, out, out_len, num_chars_l, num_chars_r);
     }
     return encode_ed25519_public_key(account_id, out, out_len);
+}
+
+bool print_hash_x_key(const uint8_t raw_hash_x[static RAW_HASH_X_KEY_SIZE],
+                      char *out,
+                      size_t out_len,
+                      uint8_t num_chars_l,
+                      uint8_t num_chars_r) {
+    if (num_chars_l > 0) {
+        char buffer[ENCODED_HASH_X_KEY_LENGTH];
+        if (!encode_hash_x_key(raw_hash_x, buffer, sizeof(buffer))) {
+            return false;
+        }
+        return print_summary(buffer, out, out_len, num_chars_l, num_chars_r);
+    }
+    return encode_hash_x_key(raw_hash_x, out, out_len);
+}
+
+bool print_pre_auth_x_key(const uint8_t raw_pre_auth_tx[static RAW_PRE_AUTH_TX_KEY_SIZE],
+                          char *out,
+                          size_t out_len,
+                          uint8_t num_chars_l,
+                          uint8_t num_chars_r) {
+    if (num_chars_l > 0) {
+        char buffer[ENCODED_PRE_AUTH_TX_KEY_LENGTH];
+        if (!encode_pre_auth_x_key(raw_pre_auth_tx, buffer, sizeof(buffer))) {
+            return false;
+        }
+        return print_summary(buffer, out, out_len, num_chars_l, num_chars_r);
+    }
+    return encode_pre_auth_x_key(raw_pre_auth_tx, out, out_len);
+}
+bool print_ed25519_signed_payload(const ed25519_signed_payload_t *signed_payload,
+                                  char *out,
+                                  size_t out_len,
+                                  uint8_t num_chars_l,
+                                  uint8_t num_chars_r) {
+    if (num_chars_l + num_chars_r + 2 + 1 > out_len) {
+        return false;
+    }
+    char tmp[166];
+    if (!encode_ed25519_signed_payload(signed_payload, tmp, sizeof(tmp))) {
+        return false;
+    };
+    return print_summary(tmp, out, out_len, num_chars_l, num_chars_r);
 }
 
 bool print_muxed_account(const muxed_account_t *muxed_account,

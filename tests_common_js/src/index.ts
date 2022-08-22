@@ -321,6 +321,20 @@ export function opSetOptionsAddPublicKeySigner() {
     .build();
 }
 
+export function opSetOptionsRemovePublicKeySigner() {
+  return getCommonTransactionBuilder()
+    .addOperation(
+      Operation.setOptions({
+        signer: {
+          ed25519PublicKey: kp1.publicKey(),
+          weight: 0,
+        },
+        source: kp0.publicKey(),
+      })
+    )
+    .build();
+}
+
 export function opSetOptionsAddHashXSigner() {
   return getCommonTransactionBuilder()
     .addOperation(
@@ -330,6 +344,23 @@ export function opSetOptionsAddHashXSigner() {
             "XDNA2V62PVEFBZ74CDJKTUHLY4Y7PL5UAV2MAM4VWF6USFE3SH235FXL"
           ),
           weight: 10,
+        },
+        source: kp0.publicKey(),
+      })
+    )
+    .build();
+}
+
+
+export function opSetOptionsRemoveHashXSigner() {
+  return getCommonTransactionBuilder()
+    .addOperation(
+      Operation.setOptions({
+        signer: {
+          sha256Hash: StrKey.decodeSha256Hash(
+            "XDNA2V62PVEFBZ74CDJKTUHLY4Y7PL5UAV2MAM4VWF6USFE3SH235FXL"
+          ),
+          weight: 0,
         },
         source: kp0.publicKey(),
       })
@@ -352,6 +383,71 @@ export function opSetOptionsAddPreAuthTxSigner() {
     )
     .build();
 }
+
+
+export function opSetOptionsRemovePreAuthTxSigner() {
+  return getCommonTransactionBuilder()
+    .addOperation(
+      Operation.setOptions({
+        signer: {
+          preAuthTx: StrKey.decodePreAuthTx(
+            "TDNA2V62PVEFBZ74CDJKTUHLY4Y7PL5UAV2MAM4VWF6USFE3SH234BSS"
+          ),
+          weight: 0,
+        },
+        source: kp0.publicKey(),
+      })
+    )
+    .build();
+}
+
+export function opSetOptionsAddEd25519SignerPayloadSigner() {
+  // We cannot build such a transaction directly through the js-stellar-base
+  // from stellar_sdk import *
+
+  // kp0 = Keypair.from_secret("SAIYWGGWU2WMXYDSK33UBQBMBDKU4TTJVY3ZIFF24H2KQDR7RQW5KAEK")
+  // kp1 = Keypair.from_secret("SAE52G23WPAS7MIR2OFGILLICLXXR4K6HSXZHMKD6C33JCAVVILIWYAA")
+
+  // account = Account(kp0.public_key, 103720918407102567)
+  // tx = (
+  //     TransactionBuilder(account, Network.PUBLIC_NETWORK_PASSPHRASE, 100)
+  //     .add_text_memo("hello world")
+  //     .add_time_bounds(0, 1670818332)
+  //     .append_set_options_op(signer=Signer(signer_key=SignerKey.ed25519_signed_payload(
+  //         SignedPayloadSigner(kp1.public_key, b'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ000123456789')),
+  //         weight=10
+  //     ), source=kp0.public_key).build()
+  // )
+  // xdr = tx.to_xdr()
+  // PDRMNAIPTNIJWJSL6JOF76CJORN47TDVMWERTXO2G2WKOMXGNHUFKAAAABAGCYTDMRSWMZ3INFVGW3DNNZXXA4LSON2HK5TXPB4XUQKCINCEKRSHJBEUUS2MJVHE6UCRKJJVIVKWK5MFSWRQGAYDCMRTGQ2TMNZYHF52U
+  const xdr = "AAAAAgAAAADpM4i7/S+9EYBt0L1ZzqkHnnzHDOex4VTxFM3+TkZuzQAAAGQBcH2gMW7AaAAAAAEAAAAAAAAAAAAAAABjlqocAAAAAQAAAAtoZWxsbyB3b3JsZAAAAAABAAAAAQAAAADpM4i7/S+9EYBt0L1ZzqkHnnzHDOex4VTxFM3+TkZuzQAAAAUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAD4saBD5tQmyZL8lxf+El0W8/MdWWJGd3aNqynMuZp6FUAAABAYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXpBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWjAwMDEyMzQ1Njc4OQAAAAoAAAAAAAAAAA==";
+  return TransactionBuilder.fromXDR(xdr, Networks.PUBLIC);
+}
+
+
+export function opSetOptionsRemoveEd25519SignerPayloadSigner() {
+  // We cannot build such a transaction directly through the js-stellar-base
+  // from stellar_sdk import *
+
+  // kp0 = Keypair.from_secret("SAIYWGGWU2WMXYDSK33UBQBMBDKU4TTJVY3ZIFF24H2KQDR7RQW5KAEK")
+  // kp1 = Keypair.from_secret("SAE52G23WPAS7MIR2OFGILLICLXXR4K6HSXZHMKD6C33JCAVVILIWYAA")
+
+  // account = Account(kp0.public_key, 103720918407102567)
+  // tx = (
+  //     TransactionBuilder(account, Network.PUBLIC_NETWORK_PASSPHRASE, 100)
+  //     .add_text_memo("hello world")
+  //     .add_time_bounds(0, 1670818332)
+  //     .append_set_options_op(signer=Signer(signer_key=SignerKey.ed25519_signed_payload(
+  //         SignedPayloadSigner(kp1.public_key, b'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ000123456789')),
+  //         weight=0
+  //     ), source=kp0.public_key).build()
+  // )
+  // xdr = tx.to_xdr()
+  // PDRMNAIPTNIJWJSL6JOF76CJORN47TDVMWERTXO2G2WKOMXGNHUFKAAAABAGCYTDMRSWMZ3INFVGW3DNNZXXA4LSON2HK5TXPB4XUQKCINCEKRSHJBEUUS2MJVHE6UCRKJJVIVKWK5MFSWRQGAYDCMRTGQ2TMNZYHF52U
+  const xdr = "AAAAAgAAAADpM4i7/S+9EYBt0L1ZzqkHnnzHDOex4VTxFM3+TkZuzQAAAGQBcH2gMW7AaAAAAAEAAAAAAAAAAAAAAABjlqocAAAAAQAAAAtoZWxsbyB3b3JsZAAAAAABAAAAAQAAAADpM4i7/S+9EYBt0L1ZzqkHnnzHDOex4VTxFM3+TkZuzQAAAAUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAD4saBD5tQmyZL8lxf+El0W8/MdWWJGd3aNqynMuZp6FUAAABAYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXpBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWjAwMDEyMzQ1Njc4OQAAAAAAAAAAAAAAAA==";
+  return TransactionBuilder.fromXDR(xdr, Networks.PUBLIC);
+}
+
 
 export function opChangeTrustAddTrustLine() {
   return getCommonTransactionBuilder()
@@ -893,6 +989,42 @@ export function opRevokeSponsorshipPreAuthTxSigner() {
     )
     .build();
 }
+
+
+// TODO: We need to add the corresponding support in the SDK.
+// export function opRevokeSponsorshipEd25519SignedPayloadSigner() {
+//   // We cannot build such a transaction directly through the js-stellar-base
+//   // from stellar_sdk import *
+//   // from stellar_sdk.operation.revoke_sponsorship import RevokeSponsorshipType, Signer
+//   // tx = (
+//   //   TransactionBuilder(account, Network.PUBLIC_NETWORK_PASSPHRASE, 100)
+//   //   .add_text_memo("hello world")
+//   //   .add_time_bounds(0, 1670818332)
+//   //   .append_operation(
+//   //       RevokeSponsorship(
+//   //           RevokeSponsorshipType.SIGNER,
+//   //           account_id=None,
+//   //           trustline=None,
+//   //           offer=None,
+//   //           data=None,
+//   //           claimable_balance_id=None,
+//   //           liquidity_pool_id=None,
+//   //           signer=Signer(
+//   //               kp1.public_key,
+//   //               SignerKey.ed25519_signed_payload(
+//   //                   SignedPayloadSigner(
+//   //                       kp1.public_key,
+//   //                       b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ000123456789",
+//   //                   )
+//   //               ),
+//   //           ),
+//   //           source=kp0.public_key,
+//   //       )
+//   //   )
+//   //   .build()
+//   // )
+//   // xdr = tx.to_xdr()
+// }
 
 export function opClawback() {
   return getCommonTransactionBuilder()

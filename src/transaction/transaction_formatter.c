@@ -497,20 +497,35 @@ static void format_set_option_signer_detail(tx_ctx_t *tx_ctx) {
         }
         case SIGNER_KEY_TYPE_HASH_X: {
             FORMATTER_CHECK(
-                encode_hash_x_key(key->hash_x, G_ui_detail_value, DETAIL_VALUE_MAX_LENGTH))
+                print_hash_x_key(key->hash_x, G_ui_detail_value, DETAIL_VALUE_MAX_LENGTH, 0, 0))
             break;
         }
 
         case SIGNER_KEY_TYPE_PRE_AUTH_TX: {
-            FORMATTER_CHECK(
-                encode_pre_auth_x_key(key->pre_auth_tx, G_ui_detail_value, DETAIL_VALUE_MAX_LENGTH))
+            FORMATTER_CHECK(print_pre_auth_x_key(key->pre_auth_tx,
+                                                 G_ui_detail_value,
+                                                 DETAIL_VALUE_MAX_LENGTH,
+                                                 0,
+                                                 0))
+            break;
+        }
+        case SIGNER_KEY_TYPE_ED25519_SIGNED_PAYLOAD: {
+            FORMATTER_CHECK(print_ed25519_signed_payload(&key->ed25519_signed_payload,
+                                                         G_ui_detail_value,
+                                                         DETAIL_VALUE_MAX_LENGTH,
+                                                         12,
+                                                         12))
             break;
         }
         default:
             THROW(SW_TX_FORMATTING_FAIL);
             return;
     }
-    push_to_formatter_stack(&format_set_option_signer_weight);
+    if (tx_ctx->tx_details.op_details.set_options_op.signer.weight != 0) {
+        push_to_formatter_stack(&format_set_option_signer_weight);
+    } else {
+        format_operation_source_prepare(tx_ctx);
+    }
 }
 
 static void format_set_option_signer(tx_ctx_t *tx_ctx) {
@@ -531,6 +546,10 @@ static void format_set_option_signer(tx_ctx_t *tx_ctx) {
         }
         case SIGNER_KEY_TYPE_PRE_AUTH_TX: {
             STRLCPY(G_ui_detail_value, "Type Pre-Auth", DETAIL_VALUE_MAX_LENGTH);
+            break;
+        }
+        case SIGNER_KEY_TYPE_ED25519_SIGNED_PAYLOAD: {
+            STRLCPY(G_ui_detail_value, "Type Ed25519 Signed Payload", DETAIL_VALUE_MAX_LENGTH);
             break;
         }
         default:
@@ -1281,12 +1300,23 @@ static void format_revoke_sponsorship_claimable_signer_signer_key_detail(tx_ctx_
         }
         case SIGNER_KEY_TYPE_HASH_X: {
             FORMATTER_CHECK(
-                encode_hash_x_key(key->hash_x, G_ui_detail_value, DETAIL_VALUE_MAX_LENGTH))
+                print_hash_x_key(key->hash_x, G_ui_detail_value, DETAIL_VALUE_MAX_LENGTH, 0, 0))
             break;
         }
         case SIGNER_KEY_TYPE_PRE_AUTH_TX: {
-            FORMATTER_CHECK(
-                encode_pre_auth_x_key(key->pre_auth_tx, G_ui_detail_value, DETAIL_VALUE_MAX_LENGTH))
+            FORMATTER_CHECK(print_pre_auth_x_key(key->pre_auth_tx,
+                                                 G_ui_detail_value,
+                                                 DETAIL_VALUE_MAX_LENGTH,
+                                                 0,
+                                                 0))
+            break;
+        }
+        case SIGNER_KEY_TYPE_ED25519_SIGNED_PAYLOAD: {
+            FORMATTER_CHECK(print_ed25519_signed_payload(&key->ed25519_signed_payload,
+                                                         G_ui_detail_value,
+                                                         DETAIL_VALUE_MAX_LENGTH,
+                                                         12,
+                                                         12))
             break;
         }
         default:
@@ -1309,6 +1339,10 @@ static void format_revoke_sponsorship_claimable_signer_signer_key_type(tx_ctx_t 
         }
         case SIGNER_KEY_TYPE_PRE_AUTH_TX: {
             STRLCPY(G_ui_detail_value, "Pre-Auth", DETAIL_VALUE_MAX_LENGTH);
+            break;
+        }
+        case SIGNER_KEY_TYPE_ED25519_SIGNED_PAYLOAD: {
+            STRLCPY(G_ui_detail_value, "Ed25519 Signed Payload", DETAIL_VALUE_MAX_LENGTH);
             break;
         }
         default:

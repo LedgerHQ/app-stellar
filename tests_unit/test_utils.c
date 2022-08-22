@@ -43,6 +43,85 @@ static void test_encode_pre_auth_x_key() {
     assert_string_equal(out, encoded_key);
 }
 
+static void test_encode_ed25519_signed_payload() {
+    char out[166];
+    uint8_t raw_key[] = {0x3f, 0xc,  0x34, 0xbf, 0x93, 0xad, 0xd,  0x99, 0x71, 0xd0, 0x4c,
+                         0xcc, 0x90, 0xf7, 0x5,  0x51, 0x1c, 0x83, 0x8a, 0xad, 0x97, 0x34,
+                         0xa4, 0xa2, 0xfb, 0xd,  0x7a, 0x3,  0xfc, 0x7f, 0xe8, 0x9a};
+    uint8_t payload1[] = {0x1,  0x2,  0x3,  0x4,  0x5,  0x6,  0x7,  0x8,  0x9,  0xa,  0xb,
+                          0xc,  0xd,  0xe,  0xf,  0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16,
+                          0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20};
+    ed25519_signed_payload_t ed25519_signed_payload1 = {.ed25519 = raw_key,
+                                                        .payload_len = 32,
+                                                        .payload = payload1};
+    assert_true(encode_ed25519_signed_payload(&ed25519_signed_payload1, out, sizeof(out)));
+    assert_string_equal(out,
+                        "PA7QYNF7SOWQ3GLR2BGMZEHXAVIRZA4KVWLTJJFC7MGXUA74P7UJUAAAAAQACAQDAQCQMBYIBE"
+                        "FAWDANBYHRAEISCMKBKFQXDAMRUGY4DUPB6IBZGM");
+
+    uint8_t payload2[] = {0x1,  0x2,  0x3,  0x4,  0x5,  0x6,  0x7,  0x8,  0x9,  0xa,
+                          0xb,  0xc,  0xd,  0xe,  0xf,  0x10, 0x11, 0x12, 0x13, 0x14,
+                          0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d};
+    ed25519_signed_payload_t ed25519_signed_payload2 = {.ed25519 = raw_key,
+                                                        .payload_len = 29,
+                                                        .payload = payload2};
+    assert_true(encode_ed25519_signed_payload(&ed25519_signed_payload2, out, sizeof(out)));
+    assert_string_equal(out,
+                        "PA7QYNF7SOWQ3GLR2BGMZEHXAVIRZA4KVWLTJJFC7MGXUA74P7UJUAAAAAOQCAQDAQCQMBYIBE"
+                        "FAWDANBYHRAEISCMKBKFQXDAMRUGY4DUAAAAFGBU");
+
+    uint8_t payload3[] = {0x1a, 0xc9, 0x18, 0xbd, 0x8b, 0x1b, 0x7,  0x93, 0x56, 0x32, 0x6f,
+                          0x6b, 0x3,  0xe2, 0x85, 0x79, 0xa4, 0xdd, 0xa2, 0x9c, 0xc2, 0x7a,
+                          0x67, 0xf4, 0x2c, 0x26, 0x75, 0x6f, 0x6e, 0xe5, 0x23, 0x79, 0xbc,
+                          0x19, 0x7c, 0x47, 0x6f, 0xa6, 0x5a, 0x6c, 0xc7, 0x73, 0xdc, 0x14,
+                          0xbc, 0x6e, 0x9d, 0xfa, 0x1b, 0x70, 0x78, 0x6c, 0xaf, 0xe4, 0x89,
+                          0x7d, 0xa6, 0xad, 0x3,  0x2b, 0x78, 0x6e, 0xda, 0xfa};
+    ed25519_signed_payload_t ed25519_signed_payload3 = {.ed25519 = raw_key,
+                                                        .payload_len = 64,
+                                                        .payload = payload3};
+    assert_true(encode_ed25519_signed_payload(&ed25519_signed_payload3, out, sizeof(out)));
+    assert_string_equal(
+        out,
+        "PA7QYNF7SOWQ3GLR2BGMZEHXAVIRZA4KVWLTJJFC7MGXUA74P7UJUAAAABABVSIYXWFRWB4TKYZG62YD4KCXTJG5UK"
+        "OME6TH6QWCM5LPN3SSG6N4DF6EO35GLJWMO464CS6G5HP2DNYHQ3FP4SEX3JVNAMVXQ3W27JBW2");
+}
+
+static void test_print_ed25519_signed_payload() {
+    char out[89];
+    uint8_t raw_key[] = {0x3f, 0xc,  0x34, 0xbf, 0x93, 0xad, 0xd,  0x99, 0x71, 0xd0, 0x4c,
+                         0xcc, 0x90, 0xf7, 0x5,  0x51, 0x1c, 0x83, 0x8a, 0xad, 0x97, 0x34,
+                         0xa4, 0xa2, 0xfb, 0xd,  0x7a, 0x3,  0xfc, 0x7f, 0xe8, 0x9a};
+    uint8_t payload1[] = {0x1,  0x2,  0x3,  0x4,  0x5,  0x6,  0x7,  0x8,  0x9,  0xa,  0xb,
+                          0xc,  0xd,  0xe,  0xf,  0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16,
+                          0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20};
+    ed25519_signed_payload_t ed25519_signed_payload1 = {.ed25519 = raw_key,
+                                                        .payload_len = 32,
+                                                        .payload = payload1};
+    assert_true(print_ed25519_signed_payload(&ed25519_signed_payload1, out, sizeof(out), 12, 12));
+    assert_string_equal(out, "PA7QYNF7SOWQ..Y4DUPB6IBZGM");
+
+    uint8_t payload2[] = {0x1,  0x2,  0x3,  0x4,  0x5,  0x6,  0x7,  0x8,  0x9,  0xa,
+                          0xb,  0xc,  0xd,  0xe,  0xf,  0x10, 0x11, 0x12, 0x13, 0x14,
+                          0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d};
+    ed25519_signed_payload_t ed25519_signed_payload2 = {.ed25519 = raw_key,
+                                                        .payload_len = 29,
+                                                        .payload = payload2};
+    assert_true(print_ed25519_signed_payload(&ed25519_signed_payload2, out, sizeof(out), 12, 12));
+    assert_string_equal(out, "PA7QYNF7SOWQ..Y4DUAAAAFGBU");
+
+    uint8_t payload3[] = {0x1a, 0xc9, 0x18, 0xbd, 0x8b, 0x1b, 0x7,  0x93, 0x56, 0x32, 0x6f,
+                          0x6b, 0x3,  0xe2, 0x85, 0x79, 0xa4, 0xdd, 0xa2, 0x9c, 0xc2, 0x7a,
+                          0x67, 0xf4, 0x2c, 0x26, 0x75, 0x6f, 0x6e, 0xe5, 0x23, 0x79, 0xbc,
+                          0x19, 0x7c, 0x47, 0x6f, 0xa6, 0x5a, 0x6c, 0xc7, 0x73, 0xdc, 0x14,
+                          0xbc, 0x6e, 0x9d, 0xfa, 0x1b, 0x70, 0x78, 0x6c, 0xaf, 0xe4, 0x89,
+                          0x7d, 0xa6, 0xad, 0x3,  0x2b, 0x78, 0x6e, 0xda, 0xfa};
+    ed25519_signed_payload_t ed25519_signed_payload3 = {.ed25519 = raw_key,
+                                                        .payload_len = 64,
+                                                        .payload = payload3};
+    assert_true(print_ed25519_signed_payload(&ed25519_signed_payload3, out, sizeof(out), 12, 12));
+    assert_string_equal(out, "PA7QYNF7SOWQ..MVXQ3W27JBW2");
+}
+
 static void test_encode_muxed_account() {
     // https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0023.md#valid-test-cases
     char out[89];
@@ -367,6 +446,8 @@ int main() {
         cmocka_unit_test(test_encode_hash_x_key),
         cmocka_unit_test(test_encode_pre_auth_x_key),
         cmocka_unit_test(test_encode_muxed_account),
+        cmocka_unit_test(test_encode_ed25519_signed_payload),
+        cmocka_unit_test(test_print_ed25519_signed_payload),
         cmocka_unit_test(test_print_binary),
         cmocka_unit_test(test_print_claimable_balance_id),
         cmocka_unit_test(test_print_time),

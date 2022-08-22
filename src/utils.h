@@ -16,6 +16,10 @@ bool encode_pre_auth_x_key(const uint8_t raw_pre_auth_tx[static RAW_PRE_AUTH_TX_
 
 bool encode_muxed_account(const muxed_account_t *raw_muxed_account, char *out, size_t out_len);
 
+bool encode_ed25519_signed_payload(const ed25519_signed_payload_t *signed_payload,
+                                   char *out,
+                                   size_t out_len);
+
 bool print_claimable_balance_id(const claimable_balance_id *claimable_balance_id,
                                 char *out,
                                 size_t out_len,
@@ -52,6 +56,24 @@ bool print_account_id(account_id_t account_id,
                       size_t out_len,
                       uint8_t num_chars_l,
                       uint8_t num_chars_r);
+
+bool print_hash_x_key(const uint8_t raw_hash_x[static RAW_HASH_X_KEY_SIZE],
+                      char *out,
+                      size_t out_len,
+                      uint8_t num_chars_l,
+                      uint8_t num_chars_r);
+
+bool print_pre_auth_x_key(const uint8_t raw_pre_auth_tx[static RAW_PRE_AUTH_TX_KEY_SIZE],
+                          char *out,
+                          size_t out_len,
+                          uint8_t num_chars_l,
+                          uint8_t num_chars_r);
+
+bool print_ed25519_signed_payload(const ed25519_signed_payload_t *signed_payload,
+                                  char *out,
+                                  size_t out_len,
+                                  uint8_t num_chars_l,
+                                  uint8_t num_chars_r);
 
 bool print_muxed_account(const muxed_account_t *muxed_account,
                          char *out,
