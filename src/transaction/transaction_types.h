@@ -365,10 +365,10 @@ typedef enum {
 typedef struct {
     claimable_balance_id_type_t type;
     const uint8_t *v0;
-} claimable_balance_id;
+} claimable_balance_id_t;
 
 typedef struct {
-    claimable_balance_id balance_id;
+    claimable_balance_id_t balance_id;
 } claim_claimable_balance_op_t;
 
 typedef struct {
@@ -408,7 +408,7 @@ typedef struct {
         } data;  // type == DATA
 
         struct {
-            claimable_balance_id balance_id;
+            claimable_balance_id_t balance_id;
         } claimable_balance;  // type == CLAIMABLE_BALANCE
 
         struct {
@@ -442,7 +442,7 @@ typedef struct {
 } clawback_op_t;
 
 typedef struct {
-    claimable_balance_id balance_id;
+    claimable_balance_id_t balance_id;
 } clawback_claimable_balance_op_t;
 
 typedef struct {

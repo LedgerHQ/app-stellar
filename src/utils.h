@@ -20,7 +20,7 @@ bool encode_ed25519_signed_payload(const ed25519_signed_payload_t *signed_payloa
                                    char *out,
                                    size_t out_len);
 
-bool print_claimable_balance_id(const claimable_balance_id *claimable_balance_id,
+bool print_claimable_balance_id(const claimable_balance_id_t *claimable_balance_id_t,
                                 char *out,
                                 size_t out_len,
                                 uint8_t num_chars_l,

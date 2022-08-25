@@ -292,8 +292,10 @@ bool parse_memo(buffer_t *buffer, memo_t *memo) {
             return buffer_read64(buffer, &memo->id);
         case MEMO_TEXT: {
             size_t size;
-            PARSER_CHECK(
-                parse_binary_string_ptr(buffer, (const uint8_t **) &memo->text.text, &size, 28))
+            PARSER_CHECK(parse_binary_string_ptr(buffer,
+                                                 (const uint8_t **) &memo->text.text,
+                                                 &size,
+                                                 MEMO_TEXT_MAX_SIZE))
             memo->text.text_size = size;
             return true;
         }
@@ -682,15 +684,15 @@ bool parse_create_claimable_balance(buffer_t *buffer, create_claimable_balance_o
     }
     return true;
 }
-bool parse_claimable_balance_id(buffer_t *buffer, claimable_balance_id *claimable_balance_id) {
+bool parse_claimable_balance_id(buffer_t *buffer, claimable_balance_id_t *claimable_balance_id_t) {
     uint32_t claimable_balance_id_type;
     PARSER_CHECK(buffer_read32(buffer, &claimable_balance_id_type))
-    claimable_balance_id->type = claimable_balance_id_type;
+    claimable_balance_id_t->type = claimable_balance_id_type;
 
-    switch (claimable_balance_id->type) {
+    switch (claimable_balance_id_t->type) {
         case CLAIMABLE_BALANCE_ID_TYPE_V0:
             PARSER_CHECK(buffer_can_read(buffer, CLAIMABLE_BALANCE_ID_SIZE))
-            claimable_balance_id->v0 = buffer->ptr + buffer->offset;
+            claimable_balance_id_t->v0 = buffer->ptr + buffer->offset;
             PARSER_CHECK(buffer_advance(buffer, CLAIMABLE_BALANCE_ID_SIZE))
             return true;
         default:
