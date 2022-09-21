@@ -208,21 +208,21 @@ to the terms and conditions of the following licenses.
 
 ------------------------------------------------------------------------------------------------------------------------
 
-src/stellar_utils.c
+src/common/base32.h
+src/common/base32.c
 
-The base32 encoding algorithm was adapted from:
-https://stash.forgerock.org/projects/OPENAM/repos/forgerock-authenticator-ios/browse/ForgeRock-Authenticator/base32.h
-https://stash.forgerock.org/projects/OPENAM/repos/forgerock-authenticator-ios/browse/ForgeRock-Authenticator/base32.c
+The base32 algorithm was adapted from:
+https://github.com/heapsource/google-authenticator/blob/master/libpam/base32.h
+https://github.com/heapsource/google-authenticator/blob/master/libpam/base32.c
 
-
-   Copyright 2015-2016 ForgeRock AS.
-   Portions Copyright 2010 Markus Gutschke, Google Inc.
+   Copyright 2010 Google Inc.
+   Author: Markus Gutschke
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+        http://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,

@@ -1,0 +1,22 @@
+{
+  "name": "tests_generate_binary",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "generate": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LedgerHQ/app-stellar.git"
+  },
+  "author": "overcat",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/LedgerHQ/app-stellar/issues"
+  },
+  "homepage": "https://github.com/LedgerHQ/app-stellar#readme",
+  "devDependencies": {
+    "tests-common": "file:../tests_common_js"
+  }
+}

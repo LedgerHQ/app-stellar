@@ -1,13 +1,15 @@
 #include <string.h>
 #include <stdint.h>
 
-#include "swap_lib_calls.h"
-#include "stellar_api.h"
+#include "os.h"
+
+#include "./swap_lib_calls.h"
+#include "../utils.h"
 
 /* return 0 on error, 1 otherwise */
 int handle_get_printable_amount(get_printable_amount_parameters_t* params) {
     uint64_t amount;
-    Asset asset = {.type = ASSET_TYPE_NATIVE};
+    asset_t asset = {.type = ASSET_TYPE_NATIVE};
 
     params->printable_amount[0] = '\0';
 

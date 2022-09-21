@@ -1,0 +1,23 @@
+{
+  "name": "stellar-app-integration-tests",
+  "version": "1.0.0",
+  "description": "Ledger Stellar App Zemu Test",
+  "main": "index.js",
+  "repository": "https://github.com/LedgerHQ/app-stellar",
+  "author": "overcat",
+  "license": "Apache-2.0",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "test": "jest"
+  },
+  "devDependencies": {
+    "@ledgerhq/hw-app-str": "^6.27.1",
+    "@types/jest": "^27.4.1",
+    "@zondax/zemu": "0.33.1",
+    "jest": "^27.5.1",
+    "stellar-base": "^8.1.0",
+    "tests-common": "file:../tests_common_js",
+    "ts-jest": "^27.1.4",
+    "typescript": "^4.6.3"
+  }
+}

@@ -42,4 +42,3 @@ jobs:
         #storage-repo: https://${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/LedgerHQ/fuzzers-corpus.git
         #storage-repo-branch: main   # Optional. Defaults to "main"
         #storage-repo-branch-coverage: gh-pages  # Optional. Defaults to "gh-pages".
-

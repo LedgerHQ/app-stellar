@@ -1,0 +1,9 @@
+Memo Text; hello world
+Max Fee; 0.00001 XLM
+Sequence Num; 103720918407102568
+Valid Before (UTC); 2022-12-12 04:12:12
+Tx Source; GDUTHC..XM2FN7
+Operation Type; Set Options
+Remove Signer; Type Pre-Auth
+Signer Key; TDNA2V62PVEFBZ74CDJKTUHLY4Y7PL5UAV2MAM4VWF6USFE3SH234BSS
+Op Source; GDUTHC..XM2FN7

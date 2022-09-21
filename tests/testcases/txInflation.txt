@@ -1,6 +1,0 @@
-Network; Testnet
-Memo Text; maximum memo length 28 chars
-Max Fee; 0.00001 XLM
-Sequence Num; 27888631402201089
-Tx Source; GADFVW3UXVKDOU626XUPYDJU2BFCGFJHQ6SREYOZ6IJV4XSHOALEQN2I
-Operation Type; Inflation

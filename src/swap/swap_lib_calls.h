@@ -1,5 +1,4 @@
-#ifndef SWAP_LIB_CALLS
-#define SWAP_LIB_CALLS
+#pragma once
 
 #include <stddef.h>
 #include <stdbool.h>
@@ -8,8 +7,6 @@
 #define SIGN_TRANSACTION     2
 #define CHECK_ADDRESS        3
 #define GET_PRINTABLE_AMOUNT 4
-
-void stellar_main(void);
 
 // structure that should be send to specific coin application to get address
 typedef struct check_address_parameters_s {
@@ -49,11 +46,20 @@ typedef struct create_transaction_parameters_s {
     char* destination_address_extra_id;
 } create_transaction_parameters_t;
 
+typedef struct libargs_s {
+    unsigned int id;
+    unsigned int command;
+    unsigned int unused;
+    union {
+        check_address_parameters_t* check_address;
+        create_transaction_parameters_t* create_transaction;
+        get_printable_amount_parameters_t* get_printable_amount;
+    };
+} libargs_t;
+
 int handle_check_address(const check_address_parameters_t* params);
 int handle_get_printable_amount(get_printable_amount_parameters_t* params);
 bool copy_transaction_parameters(const create_transaction_parameters_t* params);
 void handle_swap_sign_transaction(void);
-void swap_check();
+bool swap_check();
 bool swap_str_to_u64(const uint8_t* src, size_t length, uint64_t* result);
-
-#endif
