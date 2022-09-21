@@ -25,14 +25,22 @@ jobs:
         coin:
         - name: tezos
           repo: LedgerHQ/app-tezos
+          branch: develop
         - name: xrp
           repo: LedgerHQ/app-xrp
+          branch: develop
         - name: ethereum
           repo: LedgerHQ/app-ethereum
+          branch: develop
         - name: litecoin
-          repo: LedgerHQ/app-bitcoin-new
+          repo: LedgerHQ/app-bitcoin
+          branch: master
+        - name: bitcoin_legacy
+          repo: LedgerHQ/app-bitcoin
+          branch: master
         - name: bitcoin
           repo: LedgerHQ/app-bitcoin-new
+          branch: develop
 
     name: Build App
     runs-on: ubuntu-latest
@@ -44,7 +52,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: ${{ matrix.coin.repo }}
-          ref: develop
+          ref: ${{ matrix.coin.branch }}
 
       - name: Build in ${{ matrix.coin.repo }} coin ${{ matrix.coin.name }} for SDK ${{ matrix.sdk.name }}
         run: |
@@ -103,7 +111,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: "LedgerHQ/app-exchange"
-          ref: "b3bf722138c19453bc9bef59e1b421cf0f5e8328"
+          ref: "develop"
           submodules: true
 
       - name: Build Exchange
@@ -118,7 +126,7 @@ jobs:
           if-no-files-found: error
 
   e2e_tests:
-    name: e2e tests
+    name: Swap e2e tests
     strategy:
       matrix:
         device: ["Nano S", "Nano X", "Nano SP"]
@@ -133,7 +141,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           repository: "LedgerHQ/app-exchange"
-          ref: "b3bf722138c19453bc9bef59e1b421cf0f5e8328"
+          ref: "develop"
 
       - name: Install APT dependencies
         run: sudo apt-get update -y && sudo apt-get install -y libusb-1.0.0 libudev-dev
