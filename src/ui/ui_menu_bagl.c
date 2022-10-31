@@ -14,7 +14,7 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  *****************************************************************************/
-
+#ifdef HAVE_BAGL
 #include "./ui.h"
 #include "../globals.h"
 #include "../settings.h"
@@ -124,3 +124,4 @@ void switch_settings_sequence_number() {
     SETTING_TOGGLE(S_SEQUENCE_NUMBER_ENABLED);
     display_settings(&ux_settings_sequence_number_step);
 }
+#endif // HAVE_BAGL

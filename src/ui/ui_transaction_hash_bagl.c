@@ -14,7 +14,7 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  *****************************************************************************/
-
+#ifdef HAVE_BAGL
 #include <stdbool.h>  // bool
 #include <string.h>   // memset
 
@@ -199,3 +199,4 @@ int ui_approve_tx_hash_init() {
     ux_flow_init(0, ux_tx_hash_signing_flow, NULL);
     return 0;
 }
+#endif // HAVE_BAGL

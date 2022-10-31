@@ -24,15 +24,27 @@
 #include "./common/buffer.h"
 #include "./common/write.h"
 
+#ifdef HAVE_BAGL
 void io_seproxyhal_display(const bagl_element_t *element) {
     io_seproxyhal_display_default((bagl_element_t *) element);
 }
+#endif // HAVE_BAGL
 
 uint8_t io_event(uint8_t channel __attribute__((unused))) {
     switch (G_io_seproxyhal_spi_buffer[0]) {
+
+#ifdef HAVE_NBGL
+        case SEPROXYHAL_TAG_FINGER_EVENT:
+            UX_FINGER_EVENT(G_io_seproxyhal_spi_buffer);
+            break;
+#endif // HAVE_NBGL
+
+#ifdef HAVE_BAGL
         case SEPROXYHAL_TAG_BUTTON_PUSH_EVENT:
             UX_BUTTON_PUSH_EVENT(G_io_seproxyhal_spi_buffer);
             break;
+#endif // HAVE_BAGL
+
         case SEPROXYHAL_TAG_STATUS_EVENT:
             if (G_io_apdu_media == IO_APDU_MEDIA_USB_HID &&  //
                 !(U4BE(G_io_seproxyhal_spi_buffer, 3) &      //
@@ -41,7 +53,9 @@ uint8_t io_event(uint8_t channel __attribute__((unused))) {
             }
             /* fallthrough */
         case SEPROXYHAL_TAG_DISPLAY_PROCESSED_EVENT:
+#ifdef HAVE_BAGL
             UX_DISPLAYED_EVENT({});
+#endif // HAVE_BAGL
             break;
         case SEPROXYHAL_TAG_TICKER_EVENT:
             UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer, {});
