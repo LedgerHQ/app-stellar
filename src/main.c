@@ -83,6 +83,7 @@ void app_main() {
                 THROW(EXCEPTION_IO_RESET);
             }
             CATCH_OTHER(e) {
+                PRINTF(" ----- we catch a error %d", e);
                 io_send_sw(e);
             }
             FINALLY {

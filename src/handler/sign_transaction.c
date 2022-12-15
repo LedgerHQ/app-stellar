@@ -80,8 +80,10 @@ int handler_sign_tx(buffer_t *cdata, bool is_first_chunk, bool more) {
             return io_send_sw(SW_SWAP_CHECKING_FAIL);
         }
         uint8_t signature[SIGNATURE_SIZE];
-        if (crypto_sign_message(G_context.hash, sizeof(G_context.hash), signature, SIGNATURE_SIZE) <
-            0) {
+        if (crypto_sign_message(G_context.hash,
+                                sizeof(G_context.hash),
+                                signature,
+                                SIGNATURE_SIZE) != 0) {
             G_context.state = STATE_NONE;
             return io_send_sw(SW_SIGNATURE_FAIL);
         } else {
@@ -93,7 +95,11 @@ int handler_sign_tx(buffer_t *cdata, bool is_first_chunk, bool more) {
     cx_ecfp_public_key_t public_key = {0};
 
     // derive private key according to BIP32 path
-    crypto_derive_private_key(&private_key, G_context.bip32_path, G_context.bip32_path_len);
+    int error =
+        crypto_derive_private_key(&private_key, G_context.bip32_path, G_context.bip32_path_len);
+    if (error != 0) {
+        return io_send_sw(error);
+    }
     // generate corresponding public key
     crypto_init_public_key(&private_key, &public_key, G_context.raw_public_key);
     // reset private key
