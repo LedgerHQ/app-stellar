@@ -23,7 +23,7 @@ jobs:
         - path: $NANOSP_SDK
           name: nanosp
     container:
-      image: ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder:latest
+      image: ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder:sha-d864950
     steps:
       - name: Clone
         uses: actions/checkout@v2
@@ -44,7 +44,7 @@ jobs:
     needs: build_debug_app
 
     container:
-      image: ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder:latest
+      image: ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder:sha-d864950
 
     steps:
       - uses: actions/checkout@v2
@@ -64,7 +64,7 @@ jobs:
     runs-on: ubuntu-latest
 
     container:
-      image: ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder:latest
+      image: ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder:sha-d864950
 
     steps:
       - name: Clone
