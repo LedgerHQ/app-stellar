@@ -27,6 +27,7 @@ int crypto_derive_private_key(cx_ecfp_private_key_t *private_key,
                               const uint32_t *bip32_path,
                               uint8_t bip32_path_len) {
     uint8_t raw_private_key[RAW_ED25519_PRIVATE_KEY_SIZE] = {0};
+    int error = 0;
 
     BEGIN_TRY {
         TRY {
@@ -46,7 +47,7 @@ int crypto_derive_private_key(cx_ecfp_private_key_t *private_key,
                                      private_key);
         }
         CATCH_OTHER(e) {
-            THROW(e);
+            error = e;
         }
         FINALLY {
             explicit_bzero(&raw_private_key, sizeof(raw_private_key));
@@ -54,7 +55,7 @@ int crypto_derive_private_key(cx_ecfp_private_key_t *private_key,
     }
     END_TRY;
 
-    return 0;
+    return error;
 }
 
 // converts little endian 32 byte public key to big endian 32 byte public key
@@ -70,13 +71,12 @@ void raw_public_key_le_to_be(cx_ecfp_public_key_t *public_key,
     }
 }
 
-int crypto_init_public_key(cx_ecfp_private_key_t *private_key,
-                           cx_ecfp_public_key_t *public_key,
-                           uint8_t raw_public_key[static RAW_ED25519_PUBLIC_KEY_SIZE]) {
+void crypto_init_public_key(cx_ecfp_private_key_t *private_key,
+                            cx_ecfp_public_key_t *public_key,
+                            uint8_t raw_public_key[static RAW_ED25519_PUBLIC_KEY_SIZE]) {
     // generate corresponding public key
     cx_ecfp_generate_pair(CX_CURVE_Ed25519, public_key, private_key, 1);
     raw_public_key_le_to_be(public_key, raw_public_key);
-    return 0;
 }
 
 int crypto_sign_message(const uint8_t *message,
@@ -87,33 +87,33 @@ int crypto_sign_message(const uint8_t *message,
     int sig_len = 0;
 
     // derive private key according to BIP32 path
-    crypto_derive_private_key(&private_key, G_context.bip32_path, G_context.bip32_path_len);
+    int error =
+        crypto_derive_private_key(&private_key, G_context.bip32_path, G_context.bip32_path_len);
+    if (error != 0) {
+        return error;
+    }
 
     BEGIN_TRY {
         TRY {
-            sig_len = cx_eddsa_sign(&private_key,
-                                    CX_LAST,
-                                    CX_SHA512,
-                                    message,
-                                    message_len,
-                                    NULL,
-                                    0,
-                                    (unsigned char *) signature,
-                                    signature_len,
-                                    NULL);
+            cx_eddsa_sign(&private_key,
+                          CX_LAST,
+                          CX_SHA512,
+                          message,
+                          message_len,
+                          NULL,
+                          0,
+                          (unsigned char *) signature,
+                          signature_len,
+                          NULL);
             PRINTF("Signature: %.*H\n", sig_len, signature);
         }
         CATCH_OTHER(e) {
-            THROW(e);
+            error = e;
         }
         FINALLY {
             explicit_bzero(&private_key, sizeof(private_key));
         }
     }
     END_TRY;
-
-    if (sig_len < 0) {
-        return -1;
-    }
-    return 0;
+    return error;
 }
