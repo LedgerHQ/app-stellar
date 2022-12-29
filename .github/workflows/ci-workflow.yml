@@ -23,10 +23,10 @@ jobs:
         - path: $NANOSP_SDK
           name: nanosp
     container:
-      image: ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder:sha-d864950
+      image: ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder
     steps:
       - name: Clone
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Build for ${{ matrix.device.name }}
         run: |
@@ -44,10 +44,10 @@ jobs:
     needs: build_debug_app
 
     container:
-      image: ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder:sha-d864950
+      image: ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Build with Clang Static Analyzer
         run: |
@@ -64,16 +64,15 @@ jobs:
     runs-on: ubuntu-latest
 
     container:
-      image: ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder:sha-d864950
+      image: ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder
 
     steps:
       - name: Clone
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
-      - name: Install node
-        uses: actions/setup-node@v2
-        with:
-          node-version: "16"
+      - name: Install deps
+        run: |
+          apk add --update nodejs npm libbsd-dev
 
       - name: Build unit tests
         run: |
@@ -114,10 +113,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Install node
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
           node-version: "16"
 

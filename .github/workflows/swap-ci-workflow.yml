@@ -45,7 +45,7 @@ jobs:
     name: Build App
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder:sha-d864950
+      image: ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder
 
     steps:
       - name: Clone ${{ matrix.coin.repo }} for coin ${{ matrix.coin.name }}
@@ -79,7 +79,7 @@ jobs:
     name: Build Stellar App
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder:sha-d864950
+      image: ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder
 
     steps:
       - name: Clone
@@ -104,7 +104,7 @@ jobs:
         sdk: [{path: $NANOS_SDK, name: nanos}, {path: $NANOX_SDK, name: nanox}, {path: $NANOSP_SDK, name: nanosp}]
 
     container:
-      image: ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder:sha-d864950
+      image: ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder
 
     steps:
       - name: Clone
@@ -138,7 +138,7 @@ jobs:
 
     steps:
       - name: Clone
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: "LedgerHQ/app-exchange"
           ref: "develop"
@@ -147,7 +147,7 @@ jobs:
         run: sudo apt-get update -y && sudo apt-get install -y libusb-1.0.0 libudev-dev
 
       - name: Install Node
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
           node-version: 16
 
