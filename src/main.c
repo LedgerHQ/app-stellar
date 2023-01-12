@@ -214,6 +214,7 @@ __attribute__((section(".boot"))) int main(int arg0) {
         libargs_t *args = (libargs_t *) arg0;
         if (args->id == 0x100) {
             G_called_from_swap = true;
+            G_swap_response_ready = false;
             library_main(args);
         } else {
             app_exit();
