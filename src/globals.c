@@ -9,6 +9,7 @@ uint32_t G_output_len;
 global_ctx_t G_context;
 swap_values_t G_swap_values;
 bool G_called_from_swap;
+bool G_swap_response_ready;
 
 // We define these variables as global variables to reduce memory usage.
 char G_ui_detail_caption[DETAIL_CAPTION_MAX_LENGTH];

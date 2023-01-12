@@ -42,6 +42,11 @@ extern swap_values_t G_swap_values;
 extern bool G_called_from_swap;
 
 /**
+ * The response to the swap is ready
+ */
+extern bool G_swap_response_ready;
+
+/**
  * Global variable with the caption of the current UI detail.
  */
 extern char G_ui_detail_caption[DETAIL_CAPTION_MAX_LENGTH];
