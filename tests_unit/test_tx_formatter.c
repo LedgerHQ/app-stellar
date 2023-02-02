@@ -144,7 +144,7 @@ static void check_transaction_results(const char *filename) {
     char path[1024];
     char line[4096];
     uint8_t op_cnt = G_context.tx_info.tx_details.operations_count;
-    G_ui_current_data_index = 0;
+    G.ui.current_data_index = 0;
     get_result_filename(filename, path, sizeof(path));
 
     FILE *fp = fopen(path, "r");
@@ -152,7 +152,7 @@ static void check_transaction_results(const char *filename) {
 
     set_state_data(true);
 
-    while ((op_cnt != 0 && G_ui_current_data_index < op_cnt) ||
+    while ((op_cnt != 0 && G.ui.current_data_index < op_cnt) ||
            formatter_stack[formatter_index] != NULL) {
         assert_non_null(fgets(line, sizeof(line), fp));
 
@@ -161,15 +161,15 @@ static void check_transaction_results(const char *filename) {
         assert_non_null(expected_value);
 
         *expected_value = '\x00';
-        assert_string_equal(expected_title, G_ui_detail_caption);
+        assert_string_equal(expected_title, G.ui.detail_caption);
 
         expected_value += 2;
         char *p = strchr(expected_value, '\n');
         if (p != NULL) {
             *p = '\x00';
         }
-        assert_string_equal(expected_title, G_ui_detail_caption);
-        assert_string_equal(expected_value, G_ui_detail_value);
+        assert_string_equal(expected_title, G.ui.detail_caption);
+        assert_string_equal(expected_value, G.ui.detail_value);
 
         formatter_index++;
 

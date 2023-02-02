@@ -51,8 +51,8 @@ UX_STEP_NOCB(
     ux_variable_display,
     bnnn_paging,
     {
-      .title = G_ui_detail_caption,
-      .text = G_ui_detail_value,
+      .title = G.ui.detail_caption,
+      .text = G.ui.detail_value,
     });
 UX_STEP_INIT(
     ux_init_lower_border,
@@ -65,7 +65,7 @@ UX_STEP_INIT(
 UX_STEP_CB(
     ux_confirm_tx_finalize_step,
     pnn,
-    G_ui_validate_callback(true),
+    G.ui.validate_callback(true),
     {
       &C_icon_validate_14,
       "Finalize",
@@ -75,7 +75,7 @@ UX_STEP_CB(
 UX_STEP_CB(
     ux_reject_tx_flow_step,
     pb,
-    G_ui_validate_callback(false),
+    G.ui.validate_callback(false),
     {
       &C_icon_crossmark,
       "Cancel",
@@ -95,42 +95,42 @@ UX_FLOW(ux_confirm_flow,
 
 static void display_next_state(bool is_upper_border) {
     PRINTF(
-        "display_next_state invoked. is_upper_border = %d, G_ui_current_state = %d, formatter_index = "
-        "%d, G_ui_current_data_index = %d\n",
+        "display_next_state invoked. is_upper_border = %d, G.ui.current_state = %d, formatter_index = "
+        "%d, G.ui.current_data_index = %d\n",
         is_upper_border,
-        G_ui_current_state,
+        G.ui.current_state,
         formatter_index,
-        G_ui_current_data_index);
+        G.ui.current_data_index);
     if (is_upper_border) {  // -> from first screen
-        if (G_ui_current_state == OUT_OF_BORDERS) {
-            G_ui_current_state = INSIDE_BORDERS;
+        if (G.ui.current_state == OUT_OF_BORDERS) {
+            G.ui.current_state = INSIDE_BORDERS;
             set_state_data(true);
             ux_flow_next();
         } else {
             formatter_index -= 1;
-            if (G_ui_current_data_index > 0) {  // <- from middle, more screens available
+            if (G.ui.current_data_index > 0) {  // <- from middle, more screens available
                 set_state_data(false);
                 if (formatter_stack[formatter_index] != NULL) {
                     ux_flow_next();
                 } else {
-                    G_ui_current_state = OUT_OF_BORDERS;
-                    G_ui_current_data_index = 0;
+                    G.ui.current_state = OUT_OF_BORDERS;
+                    G.ui.current_data_index = 0;
                     ux_flow_prev();
                 }
             } else {  // <- from middle, no more screens available
-                G_ui_current_state = OUT_OF_BORDERS;
-                G_ui_current_data_index = 0;
+                G.ui.current_state = OUT_OF_BORDERS;
+                G.ui.current_data_index = 0;
                 ux_flow_prev();
             }
         }
     } else  // walking over the second border
     {
-        if (G_ui_current_state == OUT_OF_BORDERS) {  // <- from last screen
-            G_ui_current_state = INSIDE_BORDERS;
+        if (G.ui.current_state == OUT_OF_BORDERS) {  // <- from last screen
+            G.ui.current_state = INSIDE_BORDERS;
             set_state_data(false);
             ux_flow_prev();
         } else {
-            if ((num_data != 0 && G_ui_current_data_index < num_data - 1) ||
+            if ((num_data != 0 && G.ui.current_data_index < num_data - 1) ||
                 formatter_stack[formatter_index + 1] !=
                     NULL) {  // -> from middle, more screens available
                 formatter_index += 1;
@@ -143,7 +143,7 @@ static void display_next_state(bool is_upper_border) {
                 ux_flow_relayout();
                 /*end of dirty hack*/
             } else {  // -> from middle, no more screens available
-                G_ui_current_state = OUT_OF_BORDERS;
+                G.ui.current_state = OUT_OF_BORDERS;
                 ux_flow_next();
             }
         }
@@ -156,14 +156,14 @@ int ui_approve_tx_init(void) {
         G_context.state = STATE_NONE;
         return io_send_sw(SW_BAD_STATE);
     }
-    G_ui_current_data_index = 0;
-    G_ui_current_state = OUT_OF_BORDERS;
+    G.ui.current_data_index = 0;
+    G.ui.current_state = OUT_OF_BORDERS;
     G_context.tx_info.offset = 0;
     formatter_index = 0;
 
     explicit_bzero(formatter_stack, sizeof(formatter_stack));
     num_data = G_context.tx_info.tx_details.operations_count;
-    G_ui_validate_callback = &ui_action_validate_transaction;
+    G.ui.validate_callback = &ui_action_validate_transaction;
     ux_flow_init(0, ux_confirm_flow, NULL);
     return 0;
 }

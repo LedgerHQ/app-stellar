@@ -4,10 +4,9 @@ on:
   workflow_dispatch:
   push:
     branches:
+    - master
     - develop
   pull_request:
-    branches:
-    - develop
 
 jobs:
   build_debug_app:
@@ -33,7 +32,7 @@ jobs:
           make BOLOS_SDK=${{ matrix.device.path }} DEBUG=1
 
       - name: Upload app binary
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: stellar-app-${{ matrix.device.name }}-debug
           path: bin
@@ -53,7 +52,7 @@ jobs:
         run: |
           make clean
           scan-build --use-cc=clang -analyze-headers -enable-checker security -enable-checker unix -enable-checker valist -o scan-build --status-bugs make default
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: failure()
         with:
           name: scan-build
@@ -87,7 +86,7 @@ jobs:
           lcov --directory . -b "$(realpath build/)" --remove coverage.info '*/tests_unit/*' -o coverage.info && \
           genhtml coverage.info -o coverage
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: code-coverage
           path: tests_unit/coverage
@@ -109,7 +108,6 @@ jobs:
       fail-fast: false
     needs:
       - build_debug_app
-      - unit_tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -127,7 +125,7 @@ jobs:
         run: cd tests_zemu && npm install
 
       - name: Download app binaries
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: stellar-app-${{ matrix.device }}-debug
           path: stellar-app-${{ matrix.device }}-debug
@@ -141,7 +139,7 @@ jobs:
 
       - name: Upload snapshots
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: zemu-snapshots
           path: tests_zemu/snapshots-tmp/

@@ -5,11 +5,9 @@ on:
   workflow_dispatch:
   push:
     branches:
+    - main
     - develop
   pull_request:
-    branches:
-    - develop
-
 
 jobs:
   build_sideloaded_apps:
@@ -56,6 +54,7 @@ jobs:
 
       - name: Build in ${{ matrix.coin.repo }} coin ${{ matrix.coin.name }} for SDK ${{ matrix.sdk.name }}
         run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
           make clean ; make COIN=${{ matrix.coin.name }} BOLOS_SDK=${{ matrix.sdk.path }}
           cp bin/app.elf ${{ matrix.coin.name }}_${{ matrix.sdk.name }}.elf
       - name: Upload ${{ matrix.coin.name }} binaries
@@ -112,12 +111,15 @@ jobs:
         with:
           repository: "LedgerHQ/app-exchange"
           ref: "develop"
-          submodules: true
+          submodules: recursive
 
       - name: Build Exchange
         run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          make -C ledger-nanopb/generator/proto
           make clean ; make BOLOS_SDK=${{ matrix.sdk.path }} TESTING=1 TEST_PUBLIC_KEY=1
           cp bin/app.elf exchange_${{ matrix.sdk.name }}.elf
+
       - name: Upload Exchange binaries
         uses: actions/upload-artifact@v2
         with:

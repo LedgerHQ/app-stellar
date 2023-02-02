@@ -33,7 +33,7 @@ bool copy_transaction_parameters(const create_transaction_parameters_t* params) 
         return false;
     }
 
-    memcpy(&G_swap_values, &stack_data, sizeof(stack_data));
+    memcpy(&G.swap.values, &stack_data, sizeof(stack_data));
     return true;
 }
 
