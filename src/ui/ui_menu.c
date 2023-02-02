@@ -32,14 +32,14 @@ UX_STEP_CB(ux_settings_hash_signing_step,
            switch_settings_hash_signing(),
            {
                .title = "Hash signing",
-               .text = G_ui_detail_value,
+               .text = G.ui.detail_value,
            });
 UX_STEP_CB(ux_settings_sequence_number_step,
            bnnn_paging,
            switch_settings_sequence_number(),
            {
                .title = "Sequence Number",
-               .text = G_ui_detail_value + 12,
+               .text = G.ui.detail_value + 12,
            });
 #else
 UX_STEP_CB(ux_settings_hash_signing_step,
@@ -49,7 +49,7 @@ UX_STEP_CB(ux_settings_hash_signing_step,
                "Hash signing",
                "Enable transaction",
                "hash signing",
-               G_ui_detail_value,
+               G.ui.detail_value,
            });
 UX_STEP_CB(ux_settings_sequence_number_step,
            bnnn,
@@ -58,7 +58,7 @@ UX_STEP_CB(ux_settings_sequence_number_step,
                "Sequence Number",
                "Display sequence",
                "in transactions",
-               G_ui_detail_value + 12,
+               G.ui.detail_value + 12,
            });
 #endif
 UX_STEP_CB(ux_settings_exit_step,
@@ -106,10 +106,10 @@ void ui_idle(void) {
 }
 
 void display_settings(const ux_flow_step_t* const start_step) {
-    strlcpy(G_ui_detail_value,
+    strlcpy(G.ui.detail_value,
             (HAS_SETTING(S_HASH_SIGNING_ENABLED) ? "Enabled" : "NOT Enabled"),
             12);
-    strlcpy(G_ui_detail_value + 12,
+    strlcpy(G.ui.detail_value + 12,
             (HAS_SETTING(S_SEQUENCE_NUMBER_ENABLED) ? "Displayed" : "NOT Displayed"),
             14);
     ux_flow_init(0, ux_settings_flow, start_step);
