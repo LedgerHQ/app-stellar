@@ -5,11 +5,9 @@ on:
   workflow_dispatch:
   push:
     branches:
+    - main
     - develop
   pull_request:
-    branches:
-    - develop
-
 
 jobs:
   build_sideloaded_apps:
