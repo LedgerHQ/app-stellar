@@ -48,14 +48,14 @@ UX_STEP_INIT(ux_tx_init_upper_border, NULL, NULL, { display_next_state(true); })
 UX_STEP_NOCB(ux_tx_variable_display,
              bnnn_paging,
              {
-                 .title = G_ui_detail_caption,
-                 .text = G_ui_detail_value,
+                 .title = G.ui.detail_caption,
+                 .text = G.ui.detail_value,
              });
 UX_STEP_INIT(ux_tx_init_lower_border, NULL, NULL, { display_next_state(false); });
 // Step with approve button
 UX_STEP_CB(ux_tx_hash_display_approve_step,
            pb,
-           (*G_ui_validate_callback)(true),
+           (*G.ui.validate_callback)(true),
            {
                &C_icon_validate_14,
                "Approve",
@@ -63,7 +63,7 @@ UX_STEP_CB(ux_tx_hash_display_approve_step,
 // Step with reject button
 UX_STEP_CB(ux_tx_hash_display_reject_step,
            pb,
-           (*G_ui_validate_callback)(false),
+           (*G.ui.validate_callback)(false),
            {
                &C_icon_crossmark,
                "Reject",
@@ -86,11 +86,11 @@ UX_FLOW(ux_tx_hash_signing_flow,
 
 static bool get_next_data(char *caption, char *value, bool forward) {
     if (forward) {
-        G_ui_current_data_index++;
+        G.ui.current_data_index++;
     } else {
-        G_ui_current_data_index--;
+        G.ui.current_data_index--;
     }
-    switch (G_ui_current_data_index) {
+    switch (G.ui.current_data_index) {
         case 1:
             strlcpy(caption, "Address", DETAIL_CAPTION_MAX_LENGTH);
             if (!encode_ed25519_public_key(G_context.raw_public_key,
@@ -124,13 +124,13 @@ static void bnnn_paging_edgecase() {
 // Main function that handles all the business logic for our new display architecture.
 static void display_next_state(bool is_upper_delimiter) {
     if (is_upper_delimiter) {  // We're called from the upper delimiter.
-        if (G_ui_current_state == OUT_OF_BORDERS) {
+        if (G.ui.current_state == OUT_OF_BORDERS) {
             // Fetch new data.
-            bool dynamic_data = get_next_data(G_ui_detail_caption, G_ui_detail_value, true);
+            bool dynamic_data = get_next_data(G.ui.detail_caption, G.ui.detail_value, true);
 
             if (dynamic_data) {
                 // We found some data to display so we now enter in dynamic mode.
-                G_ui_current_state = INSIDE_BORDERS;
+                G.ui.current_state = INSIDE_BORDERS;
             }
 
             // Move to the next step, which will display the screen.
@@ -139,14 +139,14 @@ static void display_next_state(bool is_upper_delimiter) {
             // The previous screen was NOT a static screen, so we were already in a dynamic screen.
 
             // Fetch new data.
-            bool dynamic_data = get_next_data(G_ui_detail_caption, G_ui_detail_value, false);
+            bool dynamic_data = get_next_data(G.ui.detail_caption, G.ui.detail_value, false);
             if (dynamic_data) {
                 // We found some data so simply display it.
                 ux_flow_next();
             } else {
                 // There's no more dynamic data to display, so
                 // update the current state accordingly.
-                G_ui_current_state = OUT_OF_BORDERS;
+                G.ui.current_state = OUT_OF_BORDERS;
 
                 // Display the previous screen which should be a static one.
                 ux_flow_prev();
@@ -155,13 +155,13 @@ static void display_next_state(bool is_upper_delimiter) {
     } else {
         // We're called from the lower delimiter.
 
-        if (G_ui_current_state == OUT_OF_BORDERS) {
+        if (G.ui.current_state == OUT_OF_BORDERS) {
             // Fetch new data.
-            bool dynamic_data = get_next_data(G_ui_detail_caption, G_ui_detail_value, false);
+            bool dynamic_data = get_next_data(G.ui.detail_caption, G.ui.detail_value, false);
 
             if (dynamic_data) {
                 // We found some data to display so enter in dynamic mode.
-                G_ui_current_state = INSIDE_BORDERS;
+                G.ui.current_state = INSIDE_BORDERS;
             }
 
             // Display the data.
@@ -171,7 +171,7 @@ static void display_next_state(bool is_upper_delimiter) {
             // array.
 
             // Fetch new data.
-            bool dynamic_data = get_next_data(G_ui_detail_caption, G_ui_detail_value, true);
+            bool dynamic_data = get_next_data(G.ui.detail_caption, G.ui.detail_value, true);
             if (dynamic_data) {
                 // We found some data, so display it.
                 // Similar to `ux_flow_prev()` but updates layout to account for `bnnn_paging`'s
@@ -179,7 +179,7 @@ static void display_next_state(bool is_upper_delimiter) {
                 bnnn_paging_edgecase();
             } else {
                 // We found no data so make sure we update the state accordingly.
-                G_ui_current_state = OUT_OF_BORDERS;
+                G.ui.current_state = OUT_OF_BORDERS;
 
                 // Display the next screen
                 ux_flow_next();
@@ -193,9 +193,9 @@ int ui_approve_tx_hash_init() {
         G_context.state = STATE_NONE;
         return io_send_sw(SW_BAD_STATE);
     }
-    G_ui_current_state = OUT_OF_BORDERS;
-    G_ui_current_data_index = 0;
-    G_ui_validate_callback = &ui_action_validate_transaction;
+    G.ui.current_state = OUT_OF_BORDERS;
+    G.ui.current_data_index = 0;
+    G.ui.validate_callback = &ui_action_validate_transaction;
     ux_flow_init(0, ux_tx_hash_signing_flow, NULL);
     return 0;
 }

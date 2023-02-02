@@ -76,12 +76,12 @@ int handler_sign_tx(buffer_t *cdata, bool is_first_chunk, bool more) {
     PRINTF("tx parsed.\n");
 
     if (G_called_from_swap) {
-        if (G_swap_response_ready) {
+        if (G.swap.response_ready) {
             // Safety against trying to make the app sign multiple TX
             os_sched_exit(-1);
         } else {
             // We will quit the app after this transaction, whether it succeeds or fails
-            G_swap_response_ready = true;
+            G.swap.response_ready = true;
         }
         if (!swap_check()) {
             return io_send_sw(SW_SWAP_CHECKING_FAIL);

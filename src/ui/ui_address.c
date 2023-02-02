@@ -32,12 +32,12 @@ UX_STEP_NOCB(ux_display_address_step,
              bnnn_paging,
              {
                  .title = "Address",
-                 .text = G_ui_detail_value,
+                 .text = G.ui.detail_value,
              });
 // Step with approve button
 UX_STEP_CB(ux_display_approve_step,
            pb,
-           (*G_ui_validate_callback)(true),
+           (*G.ui.validate_callback)(true),
            {
                &C_icon_validate_14,
                "Approve",
@@ -45,7 +45,7 @@ UX_STEP_CB(ux_display_approve_step,
 // Step with reject button
 UX_STEP_CB(ux_display_reject_step,
            pb,
-           (*G_ui_validate_callback)(false),
+           (*G.ui.validate_callback)(false),
            {
                &C_icon_crossmark,
                "Reject",
@@ -68,13 +68,13 @@ int ui_display_address() {
         return io_send_sw(SW_BAD_STATE);
     }
 
-    memset(G_ui_detail_value, 0, sizeof(G_ui_detail_value));
+    memset(G.ui.detail_value, 0, sizeof(G.ui.detail_value));
     if (!encode_ed25519_public_key(G_context.raw_public_key,
-                                   G_ui_detail_value,
-                                   sizeof(G_ui_detail_value))) {
+                                   G.ui.detail_value,
+                                   sizeof(G.ui.detail_value))) {
         return io_send_sw(SW_DISPLAY_ADDRESS_FAIL);
     }
-    G_ui_validate_callback = &ui_action_validate_pubkey;
+    G.ui.validate_callback = &ui_action_validate_pubkey;
     ux_flow_init(0, ux_display_pubkey_flow, NULL);
     return 0;
 }

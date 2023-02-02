@@ -88,7 +88,7 @@ int io_recv_command() {
         case READY:
             G_io_state = RECEIVED;
             // If we are in swap mode and have validated a TX, we send it and immediatly quit
-            if (G_called_from_swap && G_swap_response_ready) {
+            if (G_called_from_swap && G.swap.response_ready) {
                 ret = io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, G_output_len);
                 PRINTF("Swap answer is processed and sent. The app will quit\n");
                 os_sched_exit(0);
