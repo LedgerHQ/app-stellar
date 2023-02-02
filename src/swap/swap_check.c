@@ -26,7 +26,8 @@ bool swap_check() {
 
     // amount
     if (G_context.tx_info.tx_details.op_details.payment_op.asset.type != ASSET_TYPE_NATIVE ||
-        G_context.tx_info.tx_details.op_details.payment_op.amount != (int64_t) G.swap.values.amount) {
+        G_context.tx_info.tx_details.op_details.payment_op.amount !=
+            (int64_t) G.swap.values.amount) {
         return false;
     }
 
@@ -54,7 +55,8 @@ bool swap_check() {
     }
 
     // fees
-    if (G_context.tx_info.network != NETWORK_TYPE_PUBLIC || G_context.tx_info.tx_details.fee != G.swap.values.fees) {
+    if (G_context.tx_info.network != NETWORK_TYPE_PUBLIC ||
+        G_context.tx_info.tx_details.fee != G.swap.values.fees) {
         return false;
     }
 

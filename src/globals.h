@@ -40,7 +40,6 @@ extern bool G_called_from_swap;
  * Use an union to avoid the UI variable footprints for the swap flow and vice versa
  */
 typedef union swap_or_ui_u {
-
     struct {
         /**
          * The response to the swap is ready
@@ -72,4 +71,3 @@ typedef union swap_or_ui_u {
 } swap_or_ui_t;
 
 extern swap_or_ui_t G;
-
