@@ -71,6 +71,8 @@ static page_infos_t pagesInfos[20];
 
 static void reviewContinue(void);
 static void reviewStart(void);
+static void rejectConfirmation(void);
+static void rejectChoice(void);
 
 // Functions definitions
 static void prepareTxPagesInfos(void) {
@@ -222,28 +224,17 @@ static bool displayTransactionPage(uint8_t page, nbgl_pageContent_t *content) {
   return true;
 }
 
-static void rejectChoice(bool confirm) {
-  if (confirm)
-  {
+static void rejectConfirmation(void) {
     ui_action_validate_transaction(false);
-    nbgl_useCaseStatus("TRANSACTION\nCANCELLED",false,ui_menu_main);
-  }
-  else
-  {
-    if(reviewStarted)
-    {
-      reviewContinue();
-    }
-    else
-    {
-      reviewStart();
-    }
-  }
+    nbgl_useCaseStatus("TRANSACTION\nREJECTED",false,ui_menu_main);
 }
 
-static void rejectUseCaseChoice(void)
-{
-    nbgl_useCaseChoice("Cancel transaction?",NULL,"Yes, cancel","Go back to transaction",rejectChoice);
+static void rejectChoice(void) {
+    nbgl_useCaseConfirm("Reject transaction?",
+                        NULL,
+                        "Yes, Reject",
+                        "Go back to transaction",
+                        rejectConfirmation);
 }
 
 static void reviewChoice(bool confirm) {
@@ -252,12 +243,11 @@ static void reviewChoice(bool confirm) {
     nbgl_useCaseStatus("TRANSACTION\nSIGNED",true,ui_menu_main);
   }
   else {
-    rejectUseCaseChoice();
+    rejectChoice();
   }
 }
 
 static void reviewContinue(void) {
-  reviewStarted = true;
   nbgl_useCaseRegularReview(currentPage, nbPages+1, "Cancel transaction",
                             NULL,
                             displayTransactionPage, reviewChoice);
@@ -265,7 +255,7 @@ static void reviewContinue(void) {
 
 static void reviewStart(void) {
   nbgl_useCaseReviewStart(&C_icon_stellar_64px, "Review transaction", NULL,
-                          "Cancel transaction", reviewContinue, rejectUseCaseChoice);
+                          "Cancel transaction", reviewContinue, rejectChoice);
 }
  
 int ui_approve_tx_init(void) { 
@@ -275,7 +265,6 @@ int ui_approve_tx_init(void) {
     }
 
     currentPage = 0;
-    reviewStarted = false;
     prepareTxPagesInfos();
     reviewStart();
 

@@ -27,17 +27,21 @@ APPVERSION_P=2
 APPVERSION=$(APPVERSION_M).$(APPVERSION_N).$(APPVERSION_P)
 
 ifeq ($(TARGET_NAME), TARGET_NANOS)
-APP_LOAD_FLAGS=--appFlags 0x800  # APPLICATION_FLAG_LIBRARY
+APP_LOAD_PARAMS = --appFlags 0x800  # APPLICATION_FLAG_LIBRARY
 else
-APP_LOAD_FLAGS=--appFlags 0xa00  # APPLICATION_FLAG_LIBRARY + APPLICATION_FLAG_BOLOS_SETTINGS
+APP_LOAD_PARAMS = --appFlags 0xa00  # APPLICATION_FLAG_LIBRARY + APPLICATION_FLAG_BOLOS_SETTINGS
 endif
-APP_LOAD_PARAMS=$(APP_LOAD_FLAGS) --path "44'/148'" --curve ed25519 $(COMMON_LOAD_PARAMS)
+APP_LOAD_PARAMS += --curve ed25519
+APP_LOAD_PARAMS += --path "44'/148'"
+APP_LOAD_PARAMS +=  $(COMMON_LOAD_PARAMS)
 
 #prepare hsm generation
 ifeq ($(TARGET_NAME),TARGET_NANOS)
 	ICONNAME=icons/nanos_app_stellar.gif
-else
+else ifeq ($(TARGET_NAME),TARGET_NANOX)
 	ICONNAME=icons/nanox_app_stellar.gif
+else ifeq($(TARGET_NAME),TARGET_STAX)
+	ICONNAME=icons/stax_app_stellar.gif
 endif
 
 ################
@@ -48,7 +52,7 @@ all: default
 ############
 # Platform #
 ############
-ifneq ($(TARGET_NAME),TARGET_FATSTACKS)
+ifneq ($(TARGET_NAME),TARGET_STAX)
     DEFINES   += HAVE_BAGL HAVE_UX_FLOW
 endif
 
@@ -64,23 +68,27 @@ DEFINES   += APPVERSION=\"$(APPVERSION)\"
 
 DEFINES   += HAVE_WEBUSB WEBUSB_URL_SIZE_B=0 WEBUSB_URL=""
 
+# BLE
 ifeq ($(TARGET_NAME),TARGET_NANOX)
-	DEFINES       += HAVE_BLE BLE_COMMAND_TIMEOUT_MS=2000
-	DEFINES       += HAVE_BLE_APDU # basic ledger apdu transport over BLE
+DEFINES   += HAVE_BLE BLE_COMMAND_TIMEOUT_MS=2000 HAVE_BLE_APDU
+else ifeq ($(TARGET_NAME),TARGET_STAX)
+DEFINES   += HAVE_BLE BLE_COMMAND_TIMEOUT_MS=2000 HAVE_BLE_APDU
 endif
+
 
 ifeq ($(TARGET_NAME),TARGET_NANOS)
 	DEFINES       += IO_SEPROXYHAL_BUFFER_SIZE_B=128
+else ifeq ($(TARGET_NAME),TARGET_STAX)
+	DEFINES       += IO_SEPROXYHAL_BUFFER_SIZE_B=300
+	DEFINES       += NBGL_QRCODE
 else
 	DEFINES       += IO_SEPROXYHAL_BUFFER_SIZE_B=300
 	DEFINES       += HAVE_GLO096
-ifneq ($(TARGET_NAME),TARGET_FATSTACKS)
 	DEFINES       += HAVE_BAGL BAGL_WIDTH=128 BAGL_HEIGHT=64
 	DEFINES       += HAVE_BAGL_ELLIPSIS # long label truncation feature
 	DEFINES       += HAVE_BAGL_FONT_OPEN_SANS_REGULAR_11PX
 	DEFINES       += HAVE_BAGL_FONT_OPEN_SANS_EXTRABOLD_11PX
 	DEFINES       += HAVE_BAGL_FONT_OPEN_SANS_LIGHT_16PX
-endif
 endif
 
 ifneq ($(NOCONSENT),)
@@ -117,12 +125,8 @@ $(info GCCPATH is not set: arm-none-eabi-* will be used from PATH)
 endif
 
 CC       := $(CLANGPATH)clang
-
-#CFLAGS   += -O0
-CFLAGS   += -O3 -Os
 AS       := $(GCCPATH)arm-none-eabi-gcc
 LD       := $(GCCPATH)arm-none-eabi-gcc
-LDFLAGS  += -O3 -Os
 LDLIBS   += -lm -lgcc -lc
 
 # import rules to compile glyphs(/pone)
@@ -133,15 +137,14 @@ APP_SOURCE_PATH  += src
 SDK_SOURCE_PATH  += lib_stusb
 SDK_SOURCE_PATH  += lib_stusb_impl
 
-ifeq ($(TARGET_NAME),TARGET_FATSTACKS)
-SDK_SOURCE_PATH += lib_nbgl/src
-SDK_SOURCE_PATH += lib_nbgl/src
-else
+ifneq ($(TARGET_NAME),TARGET_STAX)
 SDK_SOURCE_PATH += lib_ux
 endif
 
 ifeq ($(TARGET_NAME),TARGET_NANOX)
-	SDK_SOURCE_PATH  += lib_blewbxx lib_blewbxx_impl
+SDK_SOURCE_PATH  += lib_blewbxx lib_blewbxx_impl
+else ifeq ($(TARGET_NAME),TARGET_STAX)
+SDK_SOURCE_PATH  += lib_blewbxx lib_blewbxx_impl
 endif
 
 

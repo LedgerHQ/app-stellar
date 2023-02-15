@@ -20,16 +20,18 @@ jobs:
         - path: $NANOX_SDK
           name: nanox
         - path: $NANOSP_SDK
-          name: nanosp
+          name: nanos2
+        - path: $STAX_SDK
+          name: stax
     container:
-      image: ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder
+      image: ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder-lite:latest
     steps:
       - name: Clone
         uses: actions/checkout@v3
 
       - name: Build for ${{ matrix.device.name }}
         run: |
-          make BOLOS_SDK=${{ matrix.device.path }} DEBUG=1
+          make BOLOS_SDK=${{ matrix.device.path }} TARGET=${{ matrix.device.name }} DEBUG=1
 
       - name: Upload app binary
         uses: actions/upload-artifact@v3
@@ -43,7 +45,7 @@ jobs:
     needs: build_debug_app
 
     container:
-      image: ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder
+      image: ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder-lite:latest
 
     steps:
       - uses: actions/checkout@v3
@@ -104,7 +106,7 @@ jobs:
     name: Stellar e2e tests
     strategy:
       matrix:
-        device: ["nanos", "nanox", "nanosp"]
+        device: ["nanos", "nanox", "nanosp", "stax"]
       fail-fast: false
     needs:
       - build_debug_app

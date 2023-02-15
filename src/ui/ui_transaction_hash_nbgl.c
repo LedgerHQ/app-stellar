@@ -32,25 +32,20 @@
 // Macros
 #define TAG_VAL_LST_PAIR_NB 2
 
-// Enums and Structs
-typedef enum {
-  REVIEW_START=0,
-  REVIEW_WARNING,
-  REVIEW_CONTINUE,
-} hash_review_state_t;
-
 // Globals
 static char str_values[TAG_VAL_LST_PAIR_NB][DETAIL_VALUE_MAX_LENGTH];
 static nbgl_pageInfoLongPress_t infoLongPress;
 static nbgl_layoutTagValue_t caption_value_pairs[TAG_VAL_LST_PAIR_NB];
 static nbgl_layoutTagValueList_t pairList;
-static hash_review_state_t review_state;
 
 
 // Static functions declarations
 static void reviewStart(void);
 static void reviewWarning(void);
 static void reviewContinue(void);
+static void rejectConfirmation(void);
+static void rejectChoice(void);
+
 
 // Functions definitions
 static void preparePage(void) {
@@ -76,33 +71,17 @@ static void preparePage(void) {
     caption_value_pairs[1].value = str_values[1];
 }
 
-static void rejectChoice(bool confirm) {
-  if (confirm)
-  {
+static void rejectConfirmation(void) {
     ui_action_validate_transaction(false);
     nbgl_useCaseStatus("TRANSACTION\nREJECTED",false,ui_menu_main);
-  }
-  else
-  {
-    switch(review_state){
-      case REVIEW_START:
-        reviewStart();
-        break;
-      case REVIEW_WARNING:
-        reviewWarning();
-        break;
-      case REVIEW_CONTINUE:
-        reviewContinue();
-        break;
-      default:
-        PRINTF("This should not happen !\n");
-    }
-  }
 }
 
-static void rejectUseCaseChoice(void)
-{
-    nbgl_useCaseChoice("Reject transaction?",NULL,"Yes, reject","Go back to transaction",rejectChoice);
+static void rejectChoice(void) {
+    nbgl_useCaseConfirm("Reject transaction?",
+                        NULL,
+                        "Yes, Reject",
+                        "Go back to transaction",
+                        rejectConfirmation);
 }
 
 static void reviewChoice(bool confirm) {
@@ -111,18 +90,16 @@ static void reviewChoice(bool confirm) {
     nbgl_useCaseStatus("TRANSACTION\nSIGNED",true,ui_menu_main);
   }
   else {
-    rejectUseCaseChoice();
+    rejectChoice();
   }
 }
 
 static void reviewStart(void) {
-   review_state = REVIEW_START;
-   nbgl_useCaseReviewStart(NULL, "Review transaction", "", "Reject", reviewWarning, rejectUseCaseChoice);
+   nbgl_useCaseReviewStart(NULL, "Review transaction", "", "Reject", reviewWarning, rejectChoice);
 }
 
 static void reviewWarning(void) {
-    review_state = REVIEW_WARNING;
-    nbgl_useCaseReviewStart(NULL, "WARNING", "Hash signing", "Reject", reviewContinue, rejectUseCaseChoice);
+    nbgl_useCaseReviewStart(NULL, "WARNING", "Hash signing", "Reject", reviewContinue, rejectChoice);
 }
 
 static void reviewContinue(void) {
@@ -135,7 +112,6 @@ static void reviewContinue(void) {
     infoLongPress.longPressToken = 0;
     infoLongPress.tuneId = TUNE_TAP_CASUAL;
 
-    review_state = REVIEW_CONTINUE;
     nbgl_useCaseStaticReview(&pairList, &infoLongPress, "Reject", reviewChoice);
 }
 
