@@ -4,7 +4,10 @@
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
-  transformIgnorePatterns: ['^.+\\.js$'],
+  transformIgnorePatterns: ['^.+\\.js$', '/node_modules/(?!axios/)'],
+  moduleNameMapper: {
+    '^axios$': require.resolve('axios'), // https://github.com/axios/axios/issues/5101
+  },
   // globalSetup: "<rootDir>/tests/globalsetup.ts",
   // Stop immediatly when a test fail
   bail: false,

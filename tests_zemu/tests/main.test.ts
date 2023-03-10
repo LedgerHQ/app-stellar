@@ -1,9 +1,8 @@
-import { DEFAULT_START_OPTIONS } from "@zondax/zemu";
+import Zemu, { DEFAULT_START_OPTIONS } from "@zondax/zemu";
 import { APP_SEED, models } from "./common";
-import * as testCasesFunction from 'tests-common'
+import * as testCasesFunction from "tests-common"
 import { Keypair } from 'stellar-base'
 import Str from '@ledgerhq/hw-app-str'
-import Zemu from './zemu'
 
 beforeAll(async () => {
   await Zemu.checkAndPullImage();
@@ -69,7 +68,7 @@ describe('get public key', () => {
       const result = str.getPublicKey("44'/148'/0'", false, true);
       const kp = Keypair.fromSecret("SAIYWGGWU2WMXYDSK33UBQBMBDKU4TTJVY3ZIFF24H2KQDR7RQW5KAEK")
 
-      await sim.waitScreenChange()
+      await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
       await sim.navigateAndCompareUntilText(".", `${m.prefix.toLowerCase()}-public-key-approve`, 'Approve')
 
       expect(result).resolves.toStrictEqual({
@@ -91,7 +90,7 @@ describe('get public key', () => {
       // TODO: Maybe we should throw a more specific exception in @ledgerhq/hw-app-str
       expect(() => str.getPublicKey("44'/148'/0'", false, true)).rejects.toThrow("Ledger device: Condition of use not satisfied (denied by the user?) (0x6985)");
 
-      await sim.waitScreenChange()
+      await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
       await sim.navigateAndCompareUntilText(".", `${m.prefix.toLowerCase()}-public-key-reject`, 'Reject')
     } finally {
       await sim.close();
@@ -122,12 +121,15 @@ describe('hash signing', () => {
 
       // enable hash signing
       await sim.clickRight()
-      await sim.clickBoth(undefined, false, 0)
-      await sim.clickBoth(undefined, false, 0)
+      await sim.clickBoth(undefined, false)
+      await sim.clickBoth(undefined, false)
+      await sim.clickRight()
+      await sim.clickRight()
+      await sim.clickBoth(undefined, false)
 
       const hash = Buffer.from("3389e9f0f1a65f19736cacf544c2e825313e8447f569233bb8db39aa607c8889", "hex")
       const result = str.signHash("44'/148'/0'", hash)
-      await sim.waitScreenChange()
+      await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
       await sim.navigateAndCompareUntilText(".", `${m.prefix.toLowerCase()}-hash-signing-approve`, 'Approve')
       const kp = Keypair.fromSecret("SAIYWGGWU2WMXYDSK33UBQBMBDKU4TTJVY3ZIFF24H2KQDR7RQW5KAEK")
       expect((await result).signature).toStrictEqual(kp.sign(hash));
@@ -145,13 +147,16 @@ describe('hash signing', () => {
 
       // enable hash signing
       await sim.clickRight()
-      await sim.clickBoth(undefined, false, 0)
-      await sim.clickBoth(undefined, false, 0)
+      await sim.clickBoth(undefined, false)
+      await sim.clickBoth(undefined, false)
+      await sim.clickRight()
+      await sim.clickRight()
+      await sim.clickBoth(undefined, false)
 
       const hash = Buffer.from("3389e9f0f1a65f19736cacf544c2e825313e8447f569233bb8db39aa607c8889", "hex")
       expect(() => str.signHash("44'/148'/0'", hash)).rejects.toThrow(new Error("Transaction approval request was rejected"));
 
-      await sim.waitScreenChange()
+      await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
       await sim.navigateAndCompareUntilText(".", `${m.prefix.toLowerCase()}-hash-signing-reject`, 'Reject')
     } finally {
       await sim.close();
@@ -161,7 +166,7 @@ describe('hash signing', () => {
 
 describe('transactions', () => {
   describe.each(getTestCases())('$caseName', (c) => {
-    test.each(models)("device ($name)", async (m) => {
+    test.concurrent.each(models)("device ($name)", async (m) => {
       const tx = c.txFunction();
       const sim = new Zemu(m.path);
       try {
@@ -171,12 +176,14 @@ describe('transactions', () => {
 
         // display sequence
         await sim.clickRight()
-        await sim.clickBoth(undefined, false, 0)
+        await sim.clickBoth(undefined, false)
         await sim.clickRight()
-        await sim.clickBoth(undefined, false, 0)
+        await sim.clickBoth(undefined, false)
+        await sim.clickRight()
+        await sim.clickBoth(undefined, false)
 
         const result = str.signTransaction("44'/148'/0'", tx.signatureBase())
-        await sim.waitScreenChange(1000 * 60 * 60)
+        await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot(), 1000 * 60 * 3)
         await sim.navigateAndCompareUntilText(".", `${m.prefix.toLowerCase()}-${c.filePath}`, 'Finalize', true, undefined, 1000 * 60 * 60)
         const kp = Keypair.fromSecret("SAIYWGGWU2WMXYDSK33UBQBMBDKU4TTJVY3ZIFF24H2KQDR7RQW5KAEK")
         tx.sign(kp)
@@ -197,13 +204,15 @@ describe('transactions', () => {
 
       // display sequence
       await sim.clickRight()
-      await sim.clickBoth(undefined, false, 0)
+      await sim.clickBoth(undefined, false)
       await sim.clickRight()
-      await sim.clickBoth(undefined, false, 0)
+      await sim.clickBoth(undefined, false)
+      await sim.clickRight()
+      await sim.clickBoth(undefined, false)
 
       expect(() => str.signTransaction("44'/148'/0'", tx.signatureBase())).rejects.toThrow(new Error("Transaction approval request was rejected"));
 
-      await sim.waitScreenChange(1000 * 60 * 60)
+      await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot(), 1000 * 60 * 3)
       await sim.navigateAndCompareUntilText(".", `${m.prefix.toLowerCase()}-tx-reject`, 'Cancel', true, undefined, 1000 * 60 * 60)
     } finally {
       await sim.close();
@@ -220,13 +229,15 @@ describe('transactions', () => {
 
       // display sequence
       await sim.clickRight()
-      await sim.clickBoth(undefined, false, 0)
+      await sim.clickBoth(undefined, false)
       await sim.clickRight()
-      await sim.clickBoth(undefined, false, 0)
+      await sim.clickBoth(undefined, false)
+      await sim.clickRight()
+      await sim.clickBoth(undefined, false)
 
       expect(() => str.signTransaction("44'/148'/0'", tx.signatureBase())).rejects.toThrow(new Error("Transaction approval request was rejected"));
 
-      await sim.waitScreenChange(1000 * 60 * 60)
+      await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot(), 1000 * 60 * 3)
       await sim.navigateAndCompareUntilText(".", `${m.prefix.toLowerCase()}-fee-bump-tx-reject`, 'Cancel', true, undefined, 1000 * 60 * 60)
     } finally {
       await sim.close();
@@ -242,7 +253,7 @@ describe('transactions', () => {
       const str = new Str(transport);
 
       const result = str.signTransaction("44'/148'/0'", tx.signatureBase())
-      await sim.waitScreenChange(1000 * 60 * 60)
+      await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot(), 1000 * 60 * 3)
       await sim.navigateAndCompareUntilText(".", `${m.prefix.toLowerCase()}-tx-hide-sequence`, 'Finalize', true, undefined, 1000 * 60 * 60)
 
       const kp = Keypair.fromSecret("SAIYWGGWU2WMXYDSK33UBQBMBDKU4TTJVY3ZIFF24H2KQDR7RQW5KAEK")
@@ -262,7 +273,7 @@ describe('transactions', () => {
       const str = new Str(transport);
 
       const result = str.signTransaction("44'/148'/0'", tx.signatureBase())
-      await sim.waitScreenChange(1000 * 60 * 60)
+      await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot(), 1000 * 60 * 3)
       await sim.navigateAndCompareUntilText(".", `${m.prefix.toLowerCase()}-fee-bump-tx-hide-sequence`, 'Finalize', true, undefined, 1000 * 60 * 60)
 
       const kp = Keypair.fromSecret("SAIYWGGWU2WMXYDSK33UBQBMBDKU4TTJVY3ZIFF24H2KQDR7RQW5KAEK")
