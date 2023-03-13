@@ -9,40 +9,16 @@ on:
   pull_request:
 
 jobs:
-  build_debug_app:
-    name: Build debug app
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        device:
-        - path: $NANOS_SDK
-          name: nanos
-        - path: $NANOX_SDK
-          name: nanox
-        - path: $NANOSP_SDK
-          name: nanos2
-        - path: $STAX_SDK
-          name: stax
-    container:
-      image: ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder-lite:latest
-    steps:
-      - name: Clone
-        uses: actions/checkout@v3
-
-      - name: Build for ${{ matrix.device.name }}
-        run: |
-          make BOLOS_SDK=${{ matrix.device.path }} TARGET=${{ matrix.device.name }} DEBUG=1
-
-      - name: Upload app binary
-        uses: actions/upload-artifact@v3
-        with:
-          name: stellar-app-${{ matrix.device.name }}-debug
-          path: bin
+  build_application:
+    name: Build application
+    uses: LedgerHQ/ledger-app-workflows/.github/workflows/reusable_build.yml@v1
+    with:
+      upload_app_binaries_artifact: compiled_app_binaries
 
   scan_build:
     name: Clang Static Analyzer
     runs-on: ubuntu-latest
-    needs: build_debug_app
+    needs: build_application
 
     container:
       image: ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder-lite:latest
@@ -109,7 +85,7 @@ jobs:
         device: ["nanos", "nanox", "nanosp", "stax"]
       fail-fast: false
     needs:
-      - build_debug_app
+      - build_application
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -129,12 +105,8 @@ jobs:
       - name: Download app binaries
         uses: actions/download-artifact@v3
         with:
-          name: stellar-app-${{ matrix.device }}-debug
-          path: stellar-app-${{ matrix.device }}-debug
-
-      - name: Gather elf
-        run: |
-          cp ./stellar-app-${{ matrix.device }}-debug/app.elf ./tests_zemu/elfs/stellar_${{ matrix.device }}.elf
+          name: compiled_app_binaries
+          path: build
 
       - name: Run zemu tests
         run: cd tests_zemu && npm run test -- -t "\(${{ matrix.device }}\)"
@@ -143,5 +115,5 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v3
         with:
-          name: zemu-snapshots
+          name: ${{ matrix.device }}-zemu-snapshots
           path: tests_zemu/snapshots-tmp/

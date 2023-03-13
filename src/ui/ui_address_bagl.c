@@ -78,4 +78,4 @@ int ui_display_address() {
     ux_flow_init(0, ux_display_pubkey_flow, NULL);
     return 0;
 }
-#endif // HAVE_BAGL
+#endif  // HAVE_BAGL

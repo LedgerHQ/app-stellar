@@ -4,13 +4,13 @@ const Resolve = require('path').resolve
 
 export const APP_SEED = 'other base behind follow wet put glad muscle unlock sell income october'
 
-const APP_PATH_S = Resolve('./elfs/stellar_nanos.elf')
-const APP_PATH_X = Resolve('./elfs/stellar_nanox.elf')
-const APP_PATH_SP = Resolve('./elfs/stellar_nanosp.elf')
-const APP_PATH_STAX = Resolve('./elfs/stellar_stax.elf')
+const APP_PATH_S = Resolve('../build/nanos/bin/app.elf')
+const APP_PATH_X = Resolve('../build/nanox/bin/app.elf')
+const APP_PATH_SP = Resolve('../build/nanos2/bin/app.elf')
+const APP_PATH_STAX = Resolve('../build/stax/bin/app.elf')
 
 const NANO_START_TEXT = "is ready"
-const STAX_START_TEXT = "Go to Ledger Live"
+const STAX_START_TEXT = "This app confirms"
 
 export const models: {dev:IDeviceModel,startText:string}[] = [
     {dev:{ name : 'stax', prefix: 'stax' , path: APP_PATH_STAX}, startText: STAX_START_TEXT},

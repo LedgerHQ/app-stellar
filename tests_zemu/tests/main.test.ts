@@ -18,19 +18,19 @@ let defaultOptions = {
   X11: false,
 };
 
-test.each(models)("can start and stop container ($name)", async (m) => {
-  const sim = new Zemu(m.dev.path);
+test.each(models)("can start and stop container ($dev.name)", async ({dev,startText}) => {
+  const sim = new Zemu(dev.path);
   try {
-    await sim.start({ ...defaultOptions, model: m.dev.name, startText : m.startText });
+    await sim.start({ ...defaultOptions, model: dev.name, startText : startText });
   } finally {
     await sim.close();
   }
 });
 
-test.each(models)("app version ($name)", async (m) => {
-  const sim = new Zemu(m.dev.path);
+test.each(models)("app version ($dev.name)", async ({dev,startText}) => {
+  const sim = new Zemu(dev.path);
   try {
-    await sim.start({ ...defaultOptions, model: m.dev.name, startText : m.startText });
+    await sim.start({ ...defaultOptions, model: dev.name, startText : startText });
     const transport = await sim.getTransport();
     const str = new Str(transport);
     const result = await str.getAppConfiguration();
@@ -41,10 +41,10 @@ test.each(models)("app version ($name)", async (m) => {
 });
 
 describe('get public key', () => {
-  test.each(models)("get public key without confirmation ($name)", async (m) => {
-    const sim = new Zemu(m.dev.path);
+  test.each(models)("get public key without confirmation ($dev.name)", async ({dev,startText}) => {
+    const sim = new Zemu(dev.path);
     try {
-      await sim.start({ ...defaultOptions, model: m.dev.name, startText : m.startText });
+      await sim.start({ ...defaultOptions, model: dev.name, startText : startText });
       const transport = await sim.getTransport();
       const str = new Str(transport);
       const result = await str.getPublicKey("44'/148'/0'", false, false);
@@ -59,21 +59,21 @@ describe('get public key', () => {
     }
   });
 
-  test.each(models)("get public key with confirmation - approve ($name)", async (m) => {
-    const sim = new Zemu(m.dev.path);
+  test.each(models)("get public key with confirmation - approve ($dev.name)", async ({dev,startText}) => {
+    const sim = new Zemu(dev.path);
     try {
       let confirmText = "Approve"
-      if(m.dev.name == "stax") {
+      if(dev.name == "stax") {
         confirmText = "Address"
       }
-      await sim.start({ ...defaultOptions, model: m.dev.name, startText : m.startText , approveAction: ButtonKind.ApproveTapButton});
+      await sim.start({ ...defaultOptions, model: dev.name, startText : startText , approveAction: ButtonKind.ApproveTapButton});
       const transport = await sim.getTransport();
       const str = new Str(transport);
       const result = str.getPublicKey("44'/148'/0'", false, true);
       const kp = Keypair.fromSecret("SAIYWGGWU2WMXYDSK33UBQBMBDKU4TTJVY3ZIFF24H2KQDR7RQW5KAEK")
       const events = await sim.getEvents()
       await sim.waitForScreenChanges(events)
-      await sim.navigateAndCompareUntilText(".", `${m.dev.prefix.toLowerCase()}-public-key-approve`, confirmText, true)
+      await sim.navigateAndCompareUntilText(".", `${dev.prefix.toLowerCase()}-public-key-approve`, confirmText, true)
       expect(result).resolves.toStrictEqual({
         publicKey: kp.publicKey(),
         raw: kp.rawPublicKey()
@@ -83,14 +83,14 @@ describe('get public key', () => {
     }
   });
 
-  test.each(models)("get public key with confirmation - reject ($name)", async (m) => {
-    const sim = new Zemu(m.dev.path);
+  test.each(models)("get public key with confirmation - reject ($dev.name)", async ({dev,startText}) => {
+    const sim = new Zemu(dev.path);
     try {
       let confirmText = "Reject"
-      if(m.dev.name == "stax") {
+      if(dev.name == "stax") {
         confirmText = "Address"
       }
-      await sim.start({ ...defaultOptions, model: m.dev.name, startText : m.startText,  approveAction: ButtonKind.RejectButton });
+      await sim.start({ ...defaultOptions, model: dev.name, startText : startText,  approveAction: ButtonKind.RejectButton });
       const transport = await sim.getTransport();
       const str = new Str(transport);
 
@@ -99,7 +99,7 @@ describe('get public key', () => {
 
       const events = await sim.getEvents()
       await sim.waitForScreenChanges(events)
-      await sim.navigateAndCompareUntilText(".", `${m.dev.prefix.toLowerCase()}-public-key-reject`, confirmText, true)
+      await sim.navigateAndCompareUntilText(".", `${dev.prefix.toLowerCase()}-public-key-reject`, confirmText, true)
     } finally {
       await sim.close();
     }
@@ -107,10 +107,10 @@ describe('get public key', () => {
 })
 
 describe('hash signing', () => {
-  test.each(models)("hash signing mode is not enabled ($name)", async (m) => {
-    const sim = new Zemu(m.dev.path);
+  test.each(models)("hash signing mode is not enabled ($dev.name)", async ({dev,startText}) => {
+    const sim = new Zemu(dev.path);
     try {
-      await sim.start({ ...defaultOptions, model: m.dev.name, startText : m.startText });
+      await sim.start({ ...defaultOptions, model: dev.name, startText : startText });
       const transport = await sim.getTransport();
       const str = new Str(transport);
       const hash = Buffer.from("3389e9f0f1a65f19736cacf544c2e825313e8447f569233bb8db39aa607c8889", "hex")
@@ -120,19 +120,19 @@ describe('hash signing', () => {
     }
   });
 
-  test.each(models)("approve ($name)", async (m) => {
-    const sim = new Zemu(m.dev.path);
+  test.each(models)("approve ($dev.name)", async ({dev,startText}) => {
+    const sim = new Zemu(dev.path);
     try {    
-      await sim.start({ ...defaultOptions, model: m.dev.name, startText : m.startText });
+      await sim.start({ ...defaultOptions, model: dev.name, startText : startText });
       const transport = await sim.getTransport();
       const str = new Str(transport);
 
       // enable hash signing
-      if(m.dev.name == "stax") {
+      if(dev.name == "stax") {
         const settingNav = new TouchNavigation([ButtonKind.InfoButton,ButtonKind.ToggleSettingButton1]);
         await sim.navigate(
           ".",
-          `${m.dev.prefix.toLowerCase()}-hash-signing-approve`,
+          `${dev.prefix.toLowerCase()}-hash-signing-approve`,
           settingNav.schedule,
           true,
           false,
@@ -147,7 +147,7 @@ describe('hash signing', () => {
       const result = str.signHash("44'/148'/0'", hash)
       const events = await sim.getEvents()
       await sim.waitForScreenChanges(events)
-      await sim.navigateAndCompareUntilText(".", `${m.dev.prefix.toLowerCase()}-hash-signing-approve`, 'Approve',true)
+      await sim.navigateAndCompareUntilText(".", `${dev.prefix.toLowerCase()}-hash-signing-approve`, 'Approve',true)
       const kp = Keypair.fromSecret("SAIYWGGWU2WMXYDSK33UBQBMBDKU4TTJVY3ZIFF24H2KQDR7RQW5KAEK")
       expect((await result).signature).toStrictEqual(kp.sign(hash));
     } finally {
@@ -155,21 +155,21 @@ describe('hash signing', () => {
     }
   });
 
-  test.each(models)("reject ($name)", async (m) => {
-    const sim = new Zemu(m.dev.path);
+  test.each(models)("reject ($dev.name)", async ({dev,startText}) => {
+    const sim = new Zemu(dev.path);
     try {
-      await sim.start({ ...defaultOptions, model: m.dev.name, startText : m.startText, approveAction: ButtonKind.RejectButton });
+      await sim.start({ ...defaultOptions, model: dev.name, startText : startText, approveAction: ButtonKind.RejectButton });
       const transport = await sim.getTransport();
       const str = new Str(transport);
 
       let textToFind = "Reject"
       // enable hash signing
-      if(m.dev.name == "stax") {
+      if(dev.name == "stax") {
         textToFind = "Approve"
         const settingNav = new TouchNavigation([ButtonKind.InfoButton,ButtonKind.ToggleSettingButton1]);
         await sim.navigate(
           ".",
-          `${m.dev.prefix.toLowerCase()}-hash-signing-reject`,
+          `${dev.prefix.toLowerCase()}-hash-signing-reject`,
           settingNav.schedule,
           true,
           false,
@@ -186,12 +186,12 @@ describe('hash signing', () => {
 
       const events = await sim.getEvents()
       await sim.waitForScreenChanges(events)
-      await sim.navigateAndCompareUntilText(".", `${m.dev.prefix.toLowerCase()}-hash-signing-reject`, textToFind,true)
-      if(m.dev.name == "stax") {
+      await sim.navigateAndCompareUntilText(".", `${dev.prefix.toLowerCase()}-hash-signing-reject`, textToFind,true)
+      if(dev.name == "stax") {
         const settingNav = new TouchNavigation([ButtonKind.ApproveTapButton]);
         await sim.navigate(
           ".",
-          `${m.dev.prefix.toLowerCase()}-hash-signing-reject`,
+          `${dev.prefix.toLowerCase()}-hash-signing-reject`,
           settingNav.schedule,
           true,
           false
@@ -205,14 +205,14 @@ describe('hash signing', () => {
 
 describe('transactions', () => {
   describe.each(getTestCases())('$caseName', (c) => {
-    test.each(models)("device ($name)", async (m) => {
+    test.each(models)("device ($dev.name)", async ({dev,startText}) => {
       const tx = c.txFunction();
-      const sim = new Zemu(m.dev.path);
+      const sim = new Zemu(dev.path);
       try {
-        await sim.start({ ...defaultOptions, model: m.dev.name, startText : m.startText });
+        await sim.start({ ...defaultOptions, model: dev.name, startText : startText });
         const transport = await sim.getTransport();
         const str = new Str(transport);
-        if(m.dev.name == "stax") {
+        if(dev.name == "stax") {
           const settingNav = new TouchNavigation([ButtonKind.InfoButton,ButtonKind.ToggleSettingButton2]);
           await sim.navigate(
               ".",
@@ -231,7 +231,7 @@ describe('transactions', () => {
         const result = str.signTransaction("44'/148'/0'", tx.signatureBase())
         const events = await sim.getEvents()
         await sim.waitForScreenChanges(events)
-        await sim.navigateAndCompareUntilText(".", `${m.dev.prefix.toLowerCase()}-${c.filePath}`, 'Finalize', true, undefined, 1000 * 60 * 60)
+        await sim.navigateAndCompareUntilText(".", `${dev.prefix.toLowerCase()}-${c.filePath}`, 'Finalize', true, undefined, 1000 * 60 * 60)
         const kp = Keypair.fromSecret("SAIYWGGWU2WMXYDSK33UBQBMBDKU4TTJVY3ZIFF24H2KQDR7RQW5KAEK")
         tx.sign(kp)
         expect((await result).signature).toStrictEqual(tx.signatures[0].signature());
@@ -241,16 +241,16 @@ describe('transactions', () => {
     });
   })
 
-  test.each(models)("reject tx ($name)", async (m) => {
+  test.each(models)("reject tx ($dev.name)", async ({dev,startText}) => {
     const tx = testCasesFunction.txNetworkPublic()
-    const sim = new Zemu(m.dev.path);
+    const sim = new Zemu(dev.path);
     try {
-      await sim.start({ ...defaultOptions, model: m.dev.name, startText : m.startText, approveAction: ButtonKind.RejectButton });
+      await sim.start({ ...defaultOptions, model: dev.name, startText : startText, approveAction: ButtonKind.RejectButton });
       const transport = await sim.getTransport();
       const str = new Str(transport);
       let textToFind = "Cancel"
       // display sequence
-      if(m.dev.name == "stax") {
+      if(dev.name == "stax") {
         textToFind = "Finalize"
         const settingNav = new TouchNavigation([ButtonKind.InfoButton,ButtonKind.ToggleSettingButton2]);
         await sim.navigate(
@@ -272,8 +272,8 @@ describe('transactions', () => {
 
       const events = await sim.getEvents()
       await sim.waitForScreenChanges(events)
-      await sim.navigateAndCompareUntilText(".", `${m.dev.prefix.toLowerCase()}-tx-reject`, textToFind, true, undefined, 1000 * 60 * 60)
-      if(m.dev.name == "stax") {
+      await sim.navigateAndCompareUntilText(".", `${dev.prefix.toLowerCase()}-tx-reject`, textToFind, true, undefined, 1000 * 60 * 60)
+      if(dev.name == "stax") {
         const settingNav = new TouchNavigation([ButtonKind.ApproveTapButton]);
         await sim.navigate(
           ".",
@@ -288,17 +288,17 @@ describe('transactions', () => {
     }
   })
 
-  test.each(models)("reject fee bump tx ($name)", async (m) => {
+  test.each(models)("reject fee bump tx ($dev.name)", async ({dev,startText}) => {
     const tx = testCasesFunction.feeBumpTx()
-    const sim = new Zemu(m.dev.path);
+    const sim = new Zemu(dev.path);
     try {
-      await sim.start({ ...defaultOptions, model: m.dev.name, startText : m.startText, approveAction: ButtonKind.RejectButton });
+      await sim.start({ ...defaultOptions, model: dev.name, startText : startText, approveAction: ButtonKind.RejectButton });
       const transport = await sim.getTransport();
       const str = new Str(transport);
 
       let textToFind = "Cancel"
       // display sequence
-      if(m.dev.name == "stax") {
+      if(dev.name == "stax") {
         textToFind = "Finalize"
         const settingNav = new TouchNavigation([ButtonKind.InfoButton,ButtonKind.ToggleSettingButton2]);
         await sim.navigate(
@@ -320,8 +320,8 @@ describe('transactions', () => {
 
       const events = await sim.getEvents()
       await sim.waitForScreenChanges(events)
-      await sim.navigateAndCompareUntilText(".", `${m.dev.prefix.toLowerCase()}-fee-bump-tx-reject`, textToFind, true, undefined, 1000 * 60 * 60)
-      if(m.dev.name == "stax") {
+      await sim.navigateAndCompareUntilText(".", `${dev.prefix.toLowerCase()}-fee-bump-tx-reject`, textToFind, true, undefined, 1000 * 60 * 60)
+      if(dev.name == "stax") {
         const settingNav = new TouchNavigation([ButtonKind.ApproveTapButton]);
         await sim.navigate(
           ".",
@@ -336,18 +336,18 @@ describe('transactions', () => {
     }
   })
 
-  test.each(models)("hide sequence tx ($name)", async (m) => {
+  test.each(models)("hide sequence tx ($dev.name)", async ({dev,startText}) => {
     const tx = testCasesFunction.txNetworkPublic()
-    const sim = new Zemu(m.dev.path);
+    const sim = new Zemu(dev.path);
     try {
-      await sim.start({ ...defaultOptions, model: m.dev.name, startText : m.startText });
+      await sim.start({ ...defaultOptions, model: dev.name, startText : startText });
       const transport = await sim.getTransport();
       const str = new Str(transport);
 
       const result = str.signTransaction("44'/148'/0'", tx.signatureBase())
       const events = await sim.getEvents()
       await sim.waitForScreenChanges(events)
-      await sim.navigateAndCompareUntilText(".", `${m.dev.prefix.toLowerCase()}-tx-hide-sequence`, 'Finalize', true, undefined, 1000 * 60 * 60)
+      await sim.navigateAndCompareUntilText(".", `${dev.prefix.toLowerCase()}-tx-hide-sequence`, 'Finalize', true, undefined, 1000 * 60 * 60)
 
       const kp = Keypair.fromSecret("SAIYWGGWU2WMXYDSK33UBQBMBDKU4TTJVY3ZIFF24H2KQDR7RQW5KAEK")
       tx.sign(kp)
@@ -357,18 +357,18 @@ describe('transactions', () => {
     }
   })
 
-  test.each(models)("hide sequence fee bump tx ($name)", async (m) => {
+  test.each(models)("hide sequence fee bump tx ($dev.name)", async ({dev,startText}) => {
     const tx = testCasesFunction.feeBumpTx()
-    const sim = new Zemu(m.dev.path);
+    const sim = new Zemu(dev.path);
     try {
-      await sim.start({ ...defaultOptions, model: m.dev.name, startText : m.startText });
+      await sim.start({ ...defaultOptions, model: dev.name, startText : startText });
       const transport = await sim.getTransport();
       const str = new Str(transport);
 
       const result = str.signTransaction("44'/148'/0'", tx.signatureBase())
       const events = await sim.getEvents()
       await sim.waitForScreenChanges(events)
-      await sim.navigateAndCompareUntilText(".", `${m.dev.prefix.toLowerCase()}-fee-bump-tx-hide-sequence`, 'Finalize', true, undefined, 1000 * 60 * 60)
+      await sim.navigateAndCompareUntilText(".", `${dev.prefix.toLowerCase()}-fee-bump-tx-hide-sequence`, 'Finalize', true, undefined, 1000 * 60 * 60)
 
       const kp = Keypair.fromSecret("SAIYWGGWU2WMXYDSK33UBQBMBDKU4TTJVY3ZIFF24H2KQDR7RQW5KAEK")
       tx.sign(kp)

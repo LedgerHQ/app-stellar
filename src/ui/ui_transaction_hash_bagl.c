@@ -199,4 +199,4 @@ int ui_approve_tx_hash_init() {
     ux_flow_init(0, ux_tx_hash_signing_flow, NULL);
     return 0;
 }
-#endif // HAVE_BAGL
+#endif  // HAVE_BAGL

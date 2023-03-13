@@ -18,15 +18,13 @@
 #include <stdbool.h>  // bool
 #include <string.h>   // memset
 
-#include "./ui.h"
-#include "./action/validate.h"
-#include "../globals.h"
-#include "../sw.h"
-#include "../utils.h"
-#include "../io.h"
-#include "../common/format.h"
-
-#include "nbgl_page.h"
+#include "ui.h"
+#include "validate.h"
+#include "globals.h"
+#include "sw.h"
+#include "utils.h"
+#include "io.h"
+#include "format.h"
 #include "nbgl_use_case.h"
 
 // Macros
@@ -38,14 +36,12 @@ static nbgl_pageInfoLongPress_t infoLongPress;
 static nbgl_layoutTagValue_t caption_value_pairs[TAG_VAL_LST_PAIR_NB];
 static nbgl_layoutTagValueList_t pairList;
 
-
 // Static functions declarations
 static void reviewStart(void);
 static void reviewWarning(void);
 static void reviewContinue(void);
 static void rejectConfirmation(void);
 static void rejectChoice(void);
-
 
 // Functions definitions
 static void preparePage(void) {
@@ -73,7 +69,7 @@ static void preparePage(void) {
 
 static void rejectConfirmation(void) {
     ui_action_validate_transaction(false);
-    nbgl_useCaseStatus("TRANSACTION\nREJECTED",false,ui_menu_main);
+    nbgl_useCaseStatus("TRANSACTION\nREJECTED", false, ui_menu_main);
 }
 
 static void rejectChoice(void) {
@@ -85,21 +81,30 @@ static void rejectChoice(void) {
 }
 
 static void reviewChoice(bool confirm) {
-  if (confirm) {
-    ui_action_validate_transaction(true);
-    nbgl_useCaseStatus("TRANSACTION\nSIGNED",true,ui_menu_main);
-  }
-  else {
-    rejectChoice();
-  }
+    if (confirm) {
+        ui_action_validate_transaction(true);
+        nbgl_useCaseStatus("TRANSACTION\nSIGNED", true, ui_menu_main);
+    } else {
+        rejectChoice();
+    }
 }
 
 static void reviewStart(void) {
-   nbgl_useCaseReviewStart(NULL, "Review transaction", "", "Reject", reviewWarning, rejectChoice);
+    nbgl_useCaseReviewStart(&C_icon_stellar_64px,
+                            "Review transaction",
+                            "",
+                            "Reject",
+                            reviewWarning,
+                            rejectChoice);
 }
 
 static void reviewWarning(void) {
-    nbgl_useCaseReviewStart(NULL, "WARNING", "Hash signing", "Reject", reviewContinue, rejectChoice);
+    nbgl_useCaseReviewStart(NULL,
+                            "WARNING",
+                            "Hash signing",
+                            "Reject",
+                            reviewContinue,
+                            rejectChoice);
 }
 
 static void reviewContinue(void) {
@@ -107,14 +112,13 @@ static void reviewContinue(void) {
     pairList.nbPairs = TAG_VAL_LST_PAIR_NB;
 
     infoLongPress.text = "Approve transaction";
-    infoLongPress.icon =  &C_icon_stellar_64px;
+    infoLongPress.icon = &C_icon_stellar_64px;
     infoLongPress.longPressText = "Hold to approve";
     infoLongPress.longPressToken = 0;
     infoLongPress.tuneId = TUNE_TAP_CASUAL;
 
     nbgl_useCaseStaticReview(&pairList, &infoLongPress, "Reject", reviewChoice);
 }
-
 
 int ui_approve_tx_hash_init() {
     if (G_context.req_type != CONFIRM_TRANSACTION_HASH || G_context.state != STATE_NONE) {
@@ -125,4 +129,4 @@ int ui_approve_tx_hash_init() {
     reviewStart();
     return 0;
 }
-#endif // HAVE_NBGL
+#endif  // HAVE_NBGL

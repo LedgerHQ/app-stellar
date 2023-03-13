@@ -124,4 +124,4 @@ void switch_settings_sequence_number() {
     SETTING_TOGGLE(S_SEQUENCE_NUMBER_ENABLED);
     display_settings(&ux_settings_sequence_number_step);
 }
-#endif // HAVE_BAGL
+#endif  // HAVE_BAGL

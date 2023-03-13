@@ -27,27 +27,26 @@
 #include "nbgl_use_case.h"
 
 static void confirmationChoice(bool confirm) {
-  ui_action_validate_pubkey(confirm);
-  if (confirm) {
-    nbgl_useCaseStatus("ADDRESS\nAPPROVED",true,ui_menu_main);
-  }
-  else {
-    nbgl_useCaseStatus("Address rejected",false,ui_menu_main);
-  }
+    ui_action_validate_pubkey(confirm);
+    if (confirm) {
+        nbgl_useCaseStatus("ADDRESS\nAPPROVED", true, ui_menu_main);
+    } else {
+        nbgl_useCaseStatus("Address rejected", false, ui_menu_main);
+    }
 }
 
 int ui_display_address(void) {
-  if (G_context.req_type != CONFIRM_ADDRESS || G_context.state != STATE_NONE) {
-    G_context.state = STATE_NONE;
-    return io_send_sw(SW_BAD_STATE);
-  }
-  memset(G.ui.detail_value, 0, sizeof(G.ui.detail_value));
-  if (!encode_ed25519_public_key(G_context.raw_public_key,
-                                 G.ui.detail_value,
-                                 sizeof(G.ui.detail_value))) {
-    return io_send_sw(SW_DISPLAY_ADDRESS_FAIL);
-  }
-  nbgl_useCaseAddressConfirmation(G.ui.detail_value,confirmationChoice);
-  return 0;
+    if (G_context.req_type != CONFIRM_ADDRESS || G_context.state != STATE_NONE) {
+        G_context.state = STATE_NONE;
+        return io_send_sw(SW_BAD_STATE);
+    }
+    memset(G.ui.detail_value, 0, sizeof(G.ui.detail_value));
+    if (!encode_ed25519_public_key(G_context.raw_public_key,
+                                   G.ui.detail_value,
+                                   sizeof(G.ui.detail_value))) {
+        return io_send_sw(SW_DISPLAY_ADDRESS_FAIL);
+    }
+    nbgl_useCaseAddressConfirmation(G.ui.detail_value, confirmationChoice);
+    return 0;
 }
-#endif // HAVE_NBGL
+#endif  // HAVE_NBGL

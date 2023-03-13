@@ -32,7 +32,7 @@ void ui_action_validate_pubkey(bool choice) {
     }
 #ifndef HAVE_NBGL
     ui_menu_main();
-#endif // HAVE_NBGL
+#endif  // HAVE_NBGL
 }
 
 void ui_action_validate_transaction(bool choice) {
@@ -54,5 +54,5 @@ void ui_action_validate_transaction(bool choice) {
     }
 #ifndef HAVE_NBGL
     ui_menu_main();
-#endif // HAVE_NBGL
+#endif  // HAVE_NBGL
 };
