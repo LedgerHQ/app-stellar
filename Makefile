@@ -38,10 +38,10 @@ APP_LOAD_PARAMS +=  $(COMMON_LOAD_PARAMS)
 #prepare hsm generation
 ifeq ($(TARGET_NAME),TARGET_NANOS)
 	ICONNAME=icons/nanos_app_stellar.gif
-else ifeq ($(TARGET_NAME),TARGET_NANOX)
-	ICONNAME=icons/nanox_app_stellar.gif
-else ifeq($(TARGET_NAME),TARGET_STAX)
+else ifeq ($(TARGET_NAME),TARGET_STAX)
 	ICONNAME=icons/stax_app_stellar.gif
+else
+	ICONNAME=icons/nanox_app_stellar.gif
 endif
 
 ################

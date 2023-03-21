@@ -38,6 +38,7 @@
 #define TAG_VAL_LST_VAL_MAX_LEN_PER_PAGE                                 \
     TAG_VAL_LST_VAL_MAX_CHAR_PER_LINE *(TAG_VAL_LST_MAX_LINES_PER_PAGE - \
                                         1)  // -1 because at least one line is used by a tag item.
+#define MAX_NUMBER_OF_PAGES 40
 // Enums and Structs
 typedef struct {
     uint8_t pagePairNb;
@@ -52,7 +53,7 @@ static int16_t currentPage;
 nbgl_layoutTagValue_t caption_value_pairs[TAG_VAL_LST_MAX_PAIR_NB];
 static char str_values[TAG_VAL_LST_MAX_PAIR_NB][DETAIL_VALUE_MAX_LENGTH];
 static char str_captions[TAG_VAL_LST_MAX_PAIR_NB][DETAIL_CAPTION_MAX_LENGTH];
-static page_infos_t pagesInfos[20];
+static page_infos_t pagesInfos[MAX_NUMBER_OF_PAGES];
 
 static void reviewContinue(void);
 static void reviewStart(void);
@@ -60,6 +61,13 @@ static void rejectConfirmation(void);
 static void rejectChoice(void);
 
 // Functions definitions
+static inline void INCR_AND_CHECK_PAGE_NB(void) {
+    nbPages++;
+    if (nbPages >= MAX_NUMBER_OF_PAGES) {
+        THROW(SW_TX_FORMATTING_FAIL);
+    }
+}
+
 static void prepareTxPagesInfos(void) {
     uint8_t tagLineNb = 0;
     uint8_t tagItemLineNb = 0;
@@ -109,12 +117,12 @@ static void prepareTxPagesInfos(void) {
         // special page with only one caption/value pair to display operation number.
         if (G.ui.current_data_index > previous_data &&
             G_context.tx_info.tx_details.operations_count > 1) {
-            nbPages++;
+            INCR_AND_CHECK_PAGE_NB();
             pagesInfos[nbPages].pagePairNb = 1;
             pagesInfos[nbPages].formatter_index = previous_idx;
             pagesInfos[nbPages].data_idx = previous_data;
             pagesInfos[nbPages].centered_info = true;
-            nbPages++;
+            INCR_AND_CHECK_PAGE_NB();
             pageLineNb = 0;
             pagesInfos[nbPages].pagePairNb = 0;
             pagesInfos[nbPages].formatter_index = formatter_index + 1;
@@ -123,7 +131,7 @@ static void prepareTxPagesInfos(void) {
         // Else if number of lines occupied on page > allowed max number of lines per page,
         // go to next page.
         else if (pageLineNb > TAG_VAL_LST_MAX_LINES_PER_PAGE) {
-            nbPages++;
+            INCR_AND_CHECK_PAGE_NB();
             pageLineNb = tagLineNb;
             pagesInfos[nbPages].pagePairNb = 1;
             pagesInfos[nbPages].formatter_index = formatter_index;
@@ -137,7 +145,7 @@ static void prepareTxPagesInfos(void) {
         continue_loop = (formatter_stack[formatter_index] != NULL) ? true : false;
     }
 
-    nbPages++;
+    INCR_AND_CHECK_PAGE_NB();
 }
 
 static void preparePage(uint8_t page) {
@@ -207,7 +215,7 @@ static bool displayTransactionPage(uint8_t page, nbgl_pageContent_t *content) {
 
 static void rejectConfirmation(void) {
     ui_action_validate_transaction(false);
-    nbgl_useCaseStatus("TRANSACTION\nREJECTED", false, ui_menu_main);
+    nbgl_useCaseStatus("Transaction\nRejected", false, ui_menu_main);
 }
 
 static void rejectChoice(void) {

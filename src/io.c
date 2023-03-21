@@ -95,14 +95,14 @@ uint16_t io_exchange_al(uint8_t channel, uint16_t tx_len) {
 }
 
 int io_recv_command() {
-    int ret;
+    int ret = -1;
 
     switch (G_io_state) {
         case READY:
             G_io_state = RECEIVED;
             // If we are in swap mode and have validated a TX, we send it and immediatly quit
             if (G_called_from_swap && G.swap.response_ready) {
-                ret = io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, G_output_len);
+                io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, G_output_len);
                 PRINTF("Swap answer is processed and sent. The app will quit\n");
                 os_sched_exit(0);
             } else {

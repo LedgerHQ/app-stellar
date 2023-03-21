@@ -37,8 +37,9 @@ static const char* const infoTypes[] = {"Version", "Stellar App"};
 static const char* const infoContents[] = {APPVERSION, "(c) 2022 Ledger"};
 
 #define NB_SETTINGS_SWITCHES 2
-#define SWITCH_IDX(token)    (token - SWITCH_HASH_SET_TOKEN)
-static uint8_t settings[NB_SETTINGS_SWITCHES] = {S_HASH_SIGNING_ENABLED, S_SEQUENCE_NUMBER_ENABLED};
+#define SETTINGS_INIT_PAGE   0
+#define SETTINGS_NB_PAGES    2
+#define SETTINGS_TOUCHABLE   true
 static nbgl_layoutSwitch_t switches[NB_SETTINGS_SWITCHES];
 
 void onQuitCallback(void) {
@@ -51,10 +52,12 @@ static bool settingsNavCallback(uint8_t page, nbgl_pageContent_t* content) {
         switches[0].subText = "Enable transaction hash signing";
         switches[0].token = SWITCH_HASH_SET_TOKEN;
         switches[0].tuneId = TUNE_TAP_CASUAL;
+        switches[0].initState = (HAS_SETTING(S_HASH_SIGNING_ENABLED)) ? ON_STATE : OFF_STATE;
         switches[1].text = "Sequence number";
         switches[1].subText = "Display sequence in transactions";
         switches[1].token = SWITCH_SEQUENCE_SET_TOKEN;
         switches[1].tuneId = TUNE_TAP_CASUAL;
+        switches[1].initState = (HAS_SETTING(S_SEQUENCE_NUMBER_ENABLED)) ? ON_STATE : OFF_STATE;
 
         content->type = SWITCHES_LIST;
         content->switchesList.nbSwitches = NB_SETTINGS_SWITCHES;
@@ -74,10 +77,10 @@ static void settingsControlsCallback(int token, uint8_t index) {
     UNUSED(index);
     switch (token) {
         case SWITCH_HASH_SET_TOKEN:
+            SETTING_TOGGLE(S_HASH_SIGNING_ENABLED);
+            break;
         case SWITCH_SEQUENCE_SET_TOKEN:
-            switches[SWITCH_IDX(token)].initState = !(switches[SWITCH_IDX(token)].initState);
-            SETTING_TOGGLE(settings[SWITCH_IDX(token)]);
-            displaySettingsMenu();
+            SETTING_TOGGLE(S_SEQUENCE_NUMBER_ENABLED);
             break;
         default:
             PRINTF("Should not happen !");
@@ -87,19 +90,15 @@ static void settingsControlsCallback(int token, uint8_t index) {
 
 static void displaySettingsMenu(void) {
     nbgl_useCaseSettings("Stellar settings",
-                         0,
-                         2,
-                         true,
+                         SETTINGS_INIT_PAGE,
+                         SETTINGS_NB_PAGES,
+                         SETTINGS_TOUCHABLE,
                          ui_menu_main,
                          settingsNavCallback,
                          settingsControlsCallback);
 }
 
 void ui_menu_main(void) {
-    switches[SWITCH_IDX(SWITCH_HASH_SET_TOKEN)].initState =
-        (HAS_SETTING(S_HASH_SIGNING_ENABLED)) ? ON_STATE : OFF_STATE;
-    switches[SWITCH_IDX(SWITCH_SEQUENCE_SET_TOKEN)].initState =
-        (HAS_SETTING(S_SEQUENCE_NUMBER_ENABLED)) ? ON_STATE : OFF_STATE;
     nbgl_useCaseHome("Stellar",
                      &C_icon_stellar_64px,
                      "This app confirms actions on\nthe Stellar network.",

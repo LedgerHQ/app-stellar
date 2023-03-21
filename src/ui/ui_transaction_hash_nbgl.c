@@ -69,7 +69,7 @@ static void preparePage(void) {
 
 static void rejectConfirmation(void) {
     ui_action_validate_transaction(false);
-    nbgl_useCaseStatus("TRANSACTION\nREJECTED", false, ui_menu_main);
+    nbgl_useCaseStatus("Transaction\nRejected", false, ui_menu_main);
 }
 
 static void rejectChoice(void) {
