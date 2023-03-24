@@ -25,3 +25,4 @@ extern char op_caption[OPERATION_CAPTION_MAX_LENGTH];
 extern int8_t formatter_index;
 
 void set_state_data(bool forward);
+format_function_t get_formatter(tx_ctx_t *tx_ctx, bool forward);
