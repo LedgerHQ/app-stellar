@@ -29,9 +29,9 @@
 static void confirmationChoice(bool confirm) {
     ui_action_validate_pubkey(confirm);
     if (confirm) {
-        nbgl_useCaseStatus("ADDRESS\nAPPROVED", true, ui_menu_main);
+        nbgl_useCaseStatus("ADDRESS\nVERIFIED", true, ui_menu_main);
     } else {
-        nbgl_useCaseStatus("Address rejected", false, ui_menu_main);
+        nbgl_useCaseStatus("Address verification\ncancelled", false, ui_menu_main);
     }
 }
 

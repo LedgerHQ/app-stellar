@@ -101,7 +101,7 @@ static void displaySettingsMenu(void) {
 void ui_menu_main(void) {
     nbgl_useCaseHome("Stellar",
                      &C_icon_stellar_64px,
-                     "This app confirms actions on\nthe Stellar network.",
+                     "This app enables signing transactions\n on the Stellar network",
                      true,
                      displaySettingsMenu,
                      onQuitCallback);

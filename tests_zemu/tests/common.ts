@@ -10,7 +10,7 @@ const APP_PATH_SP = Resolve('../build/nanos2/bin/app.elf')
 const APP_PATH_STAX = Resolve('../build/stax/bin/app.elf')
 
 const NANO_START_TEXT = "is ready"
-const STAX_START_TEXT = "This app confirms"
+const STAX_START_TEXT = "This app enables"
 
 export const models: {dev:IDeviceModel,startText:string}[] = [
     {dev:{ name : 'stax', prefix: 'stax' , path: APP_PATH_STAX}, startText: STAX_START_TEXT},

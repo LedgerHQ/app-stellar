@@ -34,7 +34,7 @@ test.each(models)("app version ($dev.name)", async ({dev,startText}) => {
     const transport = await sim.getTransport();
     const str = new Str(transport);
     const result = await str.getAppConfiguration();
-    expect(result.version).toBe('5.0.0');
+    expect(result.version).toBe('5.0.1');
   } finally {
     await sim.close();
   }

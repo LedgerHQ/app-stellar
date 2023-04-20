@@ -113,7 +113,7 @@ static void reviewContinue(void) {
 
     infoLongPress.text = "Approve transaction";
     infoLongPress.icon = &C_icon_stellar_64px;
-    infoLongPress.longPressText = "Hold to approve";
+    infoLongPress.longPressText = "Hold to sign";
     infoLongPress.longPressToken = 0;
     infoLongPress.tuneId = TUNE_TAP_CASUAL;
 

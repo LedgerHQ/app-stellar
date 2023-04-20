@@ -208,7 +208,7 @@ static bool displayTransactionPage(uint8_t page, nbgl_pageContent_t *content) {
     } else {
         content->type = INFO_LONG_PRESS, content->infoLongPress.icon = &C_icon_stellar_64px;
         content->infoLongPress.text = "Finalize transaction";
-        content->infoLongPress.longPressText = "Hold to confirm";
+        content->infoLongPress.longPressText = "Hold to sign";
     }
     return true;
 }
@@ -238,7 +238,7 @@ static void reviewChoice(bool confirm) {
 static void reviewContinue(void) {
     nbgl_useCaseRegularReview(currentPage,
                               nbPages + 1,
-                              "Cancel transaction",
+                              "Reject transaction",
                               NULL,
                               displayTransactionPage,
                               reviewChoice);
@@ -248,7 +248,7 @@ static void reviewStart(void) {
     nbgl_useCaseReviewStart(&C_icon_stellar_64px,
                             "Review transaction",
                             NULL,
-                            "Cancel transaction",
+                            "Reject transaction",
                             reviewContinue,
                             rejectChoice);
 }
