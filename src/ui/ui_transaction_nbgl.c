@@ -198,17 +198,20 @@ static bool displayTransactionPage(uint8_t page, nbgl_pageContent_t *content) {
             content->centeredInfo.text2 = caption_value_pairs[0].item;
             content->centeredInfo.text3 = NULL;
             content->centeredInfo.icon = &C_icon_stellar_64px;
-            content->centeredInfo.offsetY = 85;
+            content->centeredInfo.offsetY = 35;
+            content->centeredInfo.onTop = false;
         } else {
             content->type = TAG_VALUE_LIST;
             content->tagValueList.nbPairs = pagesInfos[page].pagePairNb;
             content->tagValueList.pairs = (nbgl_layoutTagValue_t *) &caption_value_pairs;
             content->tagValueList.smallCaseForValue = false;
+            content->tagValueList.wrapping = true;
+            content->tagValueList.nbMaxLinesForValue = 0;
         }
     } else {
         content->type = INFO_LONG_PRESS, content->infoLongPress.icon = &C_icon_stellar_64px;
         content->infoLongPress.text = "Finalize transaction";
-        content->infoLongPress.longPressText = "Hold to confirm";
+        content->infoLongPress.longPressText = "Hold to sign";
     }
     return true;
 }
@@ -238,7 +241,7 @@ static void reviewChoice(bool confirm) {
 static void reviewContinue(void) {
     nbgl_useCaseRegularReview(currentPage,
                               nbPages + 1,
-                              "Cancel transaction",
+                              "Reject transaction",
                               NULL,
                               displayTransactionPage,
                               reviewChoice);
@@ -248,7 +251,7 @@ static void reviewStart(void) {
     nbgl_useCaseReviewStart(&C_icon_stellar_64px,
                             "Review transaction",
                             NULL,
-                            "Cancel transaction",
+                            "Reject transaction",
                             reviewContinue,
                             rejectChoice);
 }
