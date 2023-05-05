@@ -23,6 +23,7 @@
 #include "./globals.h"
 #include "./common/buffer.h"
 #include "./common/write.h"
+#include "handle_swap_commands.h"
 
 #ifdef HAVE_BAGL
 void io_seproxyhal_display(const bagl_element_t *element) {
@@ -103,14 +104,7 @@ int io_recv_command() {
     switch (G_io_state) {
         case READY:
             G_io_state = RECEIVED;
-            // If we are in swap mode and have validated a TX, we send it and immediatly quit
-            if (G_called_from_swap && G.swap.response_ready) {
-                io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, G_output_len);
-                PRINTF("Swap answer is processed and sent. The app will quit\n");
-                os_sched_exit(0);
-            } else {
-                ret = io_exchange(CHANNEL_APDU, G_output_len);
-            }
+            ret = io_exchange(CHANNEL_APDU, G_output_len);
             break;
         case RECEIVED:
             G_io_state = WAITING;
@@ -144,8 +138,19 @@ int io_send_response(const buffer_t *rdata, uint16_t sw) {
     write_u16_be(G_io_apdu_buffer, G_output_len, sw);
     G_output_len += 2;
 
+    // If we are in swap mode and have validated a TX, we send it and immediately quit
+    if (G_called_from_swap && G.swap.response_ready) {
+        if (io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, G_output_len) == 0) {
+            finalize_exchange_sign_transaction(sw == SW_OK);
+        } else {
+            PRINTF("Unrecoverable\n");
+            os_sched_exit(-1);
+        }
+    }
+
     switch (G_io_state) {
         case READY:
+            PRINTF("G_io_state error\n");
             ret = -1;
             break;
         case RECEIVED:

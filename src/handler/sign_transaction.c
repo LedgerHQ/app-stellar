@@ -23,6 +23,7 @@
 #include "../crypto.h"
 #include "../ui/ui.h"
 #include "../swap/swap_lib_calls.h"
+#include "../swap/handle_swap_commands.h"
 #include "../transaction/transaction_parser.h"
 
 int handler_sign_tx(buffer_t *cdata, bool is_first_chunk, bool more) {
