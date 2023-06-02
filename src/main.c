@@ -25,6 +25,7 @@
 #include "./settings.h"
 #include "./apdu/apdu_parser.h"
 #include "./apdu/dispatcher.h"
+#include "./swap/handle_swap_commands.h"
 #include "./swap/swap_lib_calls.h"
 #include "./ui/ui.h"
 
