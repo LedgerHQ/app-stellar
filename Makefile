@@ -1,6 +1,6 @@
 #*******************************************************************************
 #   Ledger Stellar App
-#   (c) 2017-2018 Ledger
+#   (c) 2017-2022 Ledger
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -21,6 +21,10 @@ endif
 include $(BOLOS_SDK)/Makefile.defines
 
 APPNAME = Stellar
+APPVERSION_M=4
+APPVERSION_N=0
+APPVERSION_P=1
+APPVERSION=$(APPVERSION_M).$(APPVERSION_N).$(APPVERSION_P)
 
 ifeq ($(TARGET_NAME), TARGET_NANOS)
 APP_LOAD_FLAGS=--appFlags 0x800  # APPLICATION_FLAG_LIBRARY
@@ -29,16 +33,11 @@ APP_LOAD_FLAGS=--appFlags 0xa00  # APPLICATION_FLAG_LIBRARY + APPLICATION_FLAG_B
 endif
 APP_LOAD_PARAMS=$(APP_LOAD_FLAGS) --path "44'/148'" --curve ed25519 $(COMMON_LOAD_PARAMS)
 
-APPVERSION_M=3
-APPVERSION_N=4
-APPVERSION_P=0
-APPVERSION=$(APPVERSION_M).$(APPVERSION_N).$(APPVERSION_P)
-
 #prepare hsm generation
 ifeq ($(TARGET_NAME),TARGET_NANOS)
-	ICONNAME=nanos_app_stellar.gif
+	ICONNAME=icons/nanos_app_stellar.gif
 else
-	ICONNAME=nanox_app_stellar.gif
+	ICONNAME=icons/nanox_app_stellar.gif
 endif
 
 ################
@@ -53,7 +52,7 @@ all: default
 DEFINES   += OS_IO_SEPROXYHAL
 DEFINES   += HAVE_BAGL HAVE_SPRINTF
 DEFINES   += HAVE_IO_USB HAVE_L4_USBLIB IO_USB_MAX_ENDPOINTS=4 IO_HID_EP_LENGTH=64 HAVE_USB_APDU
-DEFINES   +=  LEDGER_MAJOR_VERSION=$(APPVERSION_M) LEDGER_MINOR_VERSION=$(APPVERSION_N) LEDGER_PATCH_VERSION=$(APPVERSION_P)
+DEFINES   += MAJOR_VERSION=$(APPVERSION_M) MINOR_VERSION=$(APPVERSION_N) PATCH_VERSION=$(APPVERSION_P)
 
 DEFINES   += USB_SEGMENT_SIZE=64
 DEFINES   += BLE_SEGMENT_SIZE=32 #max MTU, min 20
@@ -85,16 +84,16 @@ ifneq ($(NOCONSENT),)
 	DEFINES   += NO_CONSENT
 endif
 
-# Enabling debug PRINTF
 DEBUG = 0
 ifneq ($(DEBUG),0)
-	ifeq ($(TARGET_NAME),TARGET_NANOS)
-		DEFINES   += HAVE_PRINTF PRINTF=screen_printf
-	else
-		DEFINES   += HAVE_PRINTF PRINTF=mcu_usb_printf
-	endif
+    DEFINES += HAVE_PRINTF
+    ifeq ($(TARGET_NAME),TARGET_NANOS)
+        DEFINES += PRINTF=screen_printf
+    else
+        DEFINES += PRINTF=mcu_usb_printf
+    endif
 else
-	DEFINES   += PRINTF\(...\)=
+        DEFINES += PRINTF\(...\)=
 endif
 
 ##############
@@ -118,9 +117,7 @@ CC       := $(CLANGPATH)clang
 
 #CFLAGS   += -O0
 CFLAGS   += -O3 -Os
-
-AS     := $(GCCPATH)arm-none-eabi-gcc
-
+AS       := $(GCCPATH)arm-none-eabi-gcc
 LD       := $(GCCPATH)arm-none-eabi-gcc
 LDFLAGS  += -O3 -Os
 LDLIBS   += -lm -lgcc -lc
@@ -154,3 +151,18 @@ dep/%.d: %.c Makefile.genericwallet
 
 listvariants:
 	@echo VARIANTS COIN stellar
+
+tests-unit:
+	cd tests_common_js && npm install && npm run build
+	cd tests_generate_binary && npm install && npm run generate unit
+	rm -rf tests_unit/build && cmake -Btests_unit/build -Htests_unit/ && make -C tests_unit/build/ && make -C tests_unit/build test
+
+tests-zemu:
+	./build_elfs.sh && rm -rf ./tests_zemu/elfs/stellar_nano*.elf && cp ./elfs/stellar_nano*.elf ./tests_zemu/elfs
+	cd tests_common_js && npm install && npm run build
+	cd tests_zemu && npm install && rm -rf snapshots-tmp && npm run test
+
+fuzzing:
+	cd tests_common_js && npm install && npm run build
+	rm -rf fuzz/testcases && mkdir -p fuzz/testcases && cd tests_generate_binary && npm install && npm run generate fuzz
+	cd fuzz && rm -rf build && cmake -DCMAKE_C_COMPILER=clang -Bbuild -H. && make -C build && ./build/fuzz_tx testcases

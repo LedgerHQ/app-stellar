@@ -1,10 +1,7 @@
 {
     "files.associations": {
         "*.h": "c",
-        "vector": "c",
-        "memory": "c",
-        "thread": "c",
-        "string": "c"
+        "random": "c"
     },
     "C_Cpp.clang_format_path": "/usr/bin/clang-format",
     "editor.formatOnSave": true

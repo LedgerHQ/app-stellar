@@ -1,0 +1,12 @@
+Memo Text; hello world
+Max Fee; 0.00001 XLM
+Sequence Num; 103720918407102568
+Valid Before (UTC); 2022-12-12 04:12:12
+Tx Source; GDUTHC..XM2FN7
+Operation Type; Liquidity Pool Deposit
+Liquidity Pool ID; 3aab0ed6d0b6f570c5b32b0339cc5930be36c4ae2c07697b70f11f9387e3f831
+Max Amount A; 1,000,000
+Max Amount B; 0.2321
+Min Price; 14,324,232.23
+Max Price; 10,000,000
+Op Source; GDUTHC..XM2FN7

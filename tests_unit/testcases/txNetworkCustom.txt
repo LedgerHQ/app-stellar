@@ -1,0 +1,9 @@
+Network; Unknown
+Memo Text; hello world
+Max Fee; 0.00001 native
+Sequence Num; 103720918407102568
+Valid Before (UTC); 2022-12-12 04:12:12
+Tx Source; GDUTHC..XM2FN7
+Operation Type; Bump Sequence
+Bump To; 1232134324234
+Op Source; GDUTHC..XM2FN7

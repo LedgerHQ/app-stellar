@@ -1,16 +1,14 @@
 {
     "env": {
-        "BOLOS_SDK": "/opt/nanos-secure-sdk",
-        "BOLOS_ENV": "/opt/bolos-devenv"
+        "ARM_EMBEDDED_TOOLCHAIN": "/opt/gcc-arm-none-eabi-10.3-2021.10"
     },
     "configurations": [
         {
             "name": "Nano S",
             "includePath": [
-                "/usr/include",
-                "${workspaceFolder}/src",
-                "${env:BOLOS_SDK}/include/*",
-                "${env:BOLOS_SDK}/lib_ux/include/*"
+                "/usr/include/**",
+                "${workspaceFolder}/src/**",
+                "${env:BOLOS_SDK}/**"
             ],
             "defines": [
                 "TARGET_NANOS",
@@ -25,7 +23,7 @@
                 "USB_SEGMENT_SIZE=64",
                 "UNUSED(x)=(void)x",
                 "APPVERSION=\"1.0.0\"",
-                "APPNAME=\"Boilerplate\"",
+                "APPNAME=\"Stellar\"",
                 "MAJOR_VERSION=1",
                 "MINOR_VERSION=0",
                 "PATCH_VERSION=0",
@@ -33,9 +31,13 @@
                 "HAVE_UX_FLOW",
                 "DEBUG=1",
                 "HAVE_PRINTF",
-                "PRINTF=screen_printf"
+                "PRINTF=screen_printf",
+                "HAVE_ECC=1",
+                "HAVE_ECC_TWISTED_EDWARDS=1",
+                "HAVE_ED25519_CURVE=1",
+                "HAVE_HASH=1"
             ],
-            "compilerPath": "${env:BOLOS_ENV}/gcc-arm-none-eabi-5_3-2016q1/bin/arm-none-eabi-gcc",
+            "compilerPath": "${env:ARM_EMBEDDED_TOOLCHAIN}/bin/arm-none-eabi-gcc",
             "cStandard": "c11",
             "cppStandard": "c++17",
             "intelliSenseMode": "gcc-arm",

@@ -1,9 +1,0 @@
-Network; Testnet
-Max Fee; 0.00001 XLM
-Sequence Num; 123456
-Tx Source; GADFVW3UXVKDOU626XUPYDJU2BFCGFJHQ6SREYOZ6IJV4XSHOALEQN2I
-Operation Type; Manage Buy Offer
-Change Offer; 987654
-Sell; SLT@GAD..QN2I
-Price; 200 SLT@GAD..QN2I
-Buy; 300 XLM

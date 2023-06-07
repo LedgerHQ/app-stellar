@@ -1,12 +1,19 @@
-bin
-debug
-dep
-obj
+# Compilation of Ledger's app
 src/glyphs.c
 src/glyphs.h
-.idea
-nano-sdk
-tests/build
-tests/__pycache__
-# Python virtual environment
-.venv
+bin/
+elfs/
+debug/
+dep/
+obj/
+tests_unit/build/
+tests_unit/testcases/*.raw
+tests_zemu/node_modules/
+tests_zemu/snapshots-tmp/
+tests_zemu/elfs/stellar_*.elf
+tests_common_js/dist/
+tests_common_js/node_modules/
+fuzz/build
+fuzz/testcases/
+tests_generate_binary/node_modules/
+.DS_Store

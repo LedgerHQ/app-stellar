@@ -1,9 +1,0 @@
-Network; Testnet
-Memo Text; create offer
-Max Fee; 0.00001 XLM
-Sequence Num; 27888631402201089
-Tx Source; GADFVW3UXVKDOU626XUPYDJU2BFCGFJHQ6SREYOZ6IJV4XSHOALEQN2I
-Operation Type; Create Passive Sell Offer
-Buy; SLT@GAD..QN2I
-Price; 0.25 SLT@GAD..QN2I
-Sell; 1000 XLM

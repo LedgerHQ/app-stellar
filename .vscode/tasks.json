@@ -50,21 +50,9 @@
             ]
         },
         {
-            "label": "run unit tests",
-            "type": "shell",
-            "command": "cd unit-tests && rm -rf  build && cmake -Bbuild -H. && make -C build && CTEST_OUTPUT_ON_FAILURE=1 make -C build test",
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "problemMatcher": [
-                "$gcc"
-            ]
-        },
-        {
             "label": "run Speculos",
             "type": "shell",
-            "command": "python /path/to/speculos/speculos.py ${workspaceFolder}/bin/app.elf --ontop --sdk 1.6 --apdu-port 9999 --button-port 42000 --automation-port 43000",
+            "command": "speculos -m nanos -s $MNEMONIC --apdu-port 9999 --display headless ${workspaceFolder}/bin/app.elf",
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -77,7 +65,7 @@
         {
             "label": "[debug] run Speculos",
             "type": "shell",
-            "command": "python /path/to/speculos/speculos.py -d ${workspaceFolder}/bin/app.elf --ontop --sdk 1.6 --apdu-port 9999 --button-port 42000 --automation-port 43000",
+            "command": "speculos -m nanos -s $MNEMONIC --apdu-port 9999 --display headless -d ${workspaceFolder}/bin/app.elf",
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -88,19 +76,21 @@
             "problemMatcher": []
         },
         {
-            "label": "run tests",
+            "label": "run unit tests",
             "type": "shell",
-            "command": "cd tests && pytest",
+            "command": "make tests-unit",
             "group": {
                 "kind": "build",
                 "isDefault": true
             },
-            "problemMatcher": []
+            "problemMatcher": [
+                "$gcc"
+            ]
         },
         {
             "label": "kill Speculos",
             "type": "shell",
-            "command": "pkill -f speculos.py",
+            "command": "pkill -f speculos",
             "group": {
                 "kind": "build",
                 "isDefault": true
