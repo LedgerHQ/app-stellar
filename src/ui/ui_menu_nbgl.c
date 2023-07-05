@@ -39,7 +39,7 @@ static const char* const infoContents[] = {APPVERSION, "(c) 2022 Ledger"};
 #define NB_SETTINGS_SWITCHES 2
 #define SETTINGS_INIT_PAGE   0
 #define SETTINGS_NB_PAGES    2
-#define SETTINGS_TOUCHABLE   true
+#define SETTINGS_TOUCHABLE   false
 static nbgl_layoutSwitch_t switches[NB_SETTINGS_SWITCHES];
 
 void onQuitCallback(void) {
@@ -49,12 +49,12 @@ void onQuitCallback(void) {
 static bool settingsNavCallback(uint8_t page, nbgl_pageContent_t* content) {
     if (page == 0) {
         switches[0].text = "Hash signing";
-        switches[0].subText = "Enable transaction hash signing";
+        switches[0].subText = "Enable transaction hash\nsigning";
         switches[0].token = SWITCH_HASH_SET_TOKEN;
         switches[0].tuneId = TUNE_TAP_CASUAL;
         switches[0].initState = (HAS_SETTING(S_HASH_SIGNING_ENABLED)) ? ON_STATE : OFF_STATE;
         switches[1].text = "Sequence number";
-        switches[1].subText = "Display sequence in transactions";
+        switches[1].subText = "Display sequence in\ntransactions";
         switches[1].token = SWITCH_SEQUENCE_SET_TOKEN;
         switches[1].tuneId = TUNE_TAP_CASUAL;
         switches[1].initState = (HAS_SETTING(S_SEQUENCE_NUMBER_ENABLED)) ? ON_STATE : OFF_STATE;
@@ -101,7 +101,7 @@ static void displaySettingsMenu(void) {
 void ui_menu_main(void) {
     nbgl_useCaseHome("Stellar",
                      &C_icon_stellar_64px,
-                     "This app enables signing transactions\n on the Stellar network",
+                     NULL,
                      true,
                      displaySettingsMenu,
                      onQuitCallback);

@@ -93,7 +93,7 @@ static void reviewStart(void) {
     nbgl_useCaseReviewStart(&C_icon_stellar_64px,
                             "Review transaction",
                             "",
-                            "Reject",
+                            "Reject transaction",
                             reviewWarning,
                             rejectChoice);
 }
@@ -102,7 +102,7 @@ static void reviewWarning(void) {
     nbgl_useCaseReviewStart(NULL,
                             "WARNING",
                             "Hash signing",
-                            "Reject",
+                            "Reject transaction",
                             reviewContinue,
                             rejectChoice);
 }
@@ -111,13 +111,13 @@ static void reviewContinue(void) {
     pairList.pairs = caption_value_pairs;
     pairList.nbPairs = TAG_VAL_LST_PAIR_NB;
 
-    infoLongPress.text = "Approve transaction";
+    infoLongPress.text = "Sign transaction?";
     infoLongPress.icon = &C_icon_stellar_64px;
     infoLongPress.longPressText = "Hold to sign";
     infoLongPress.longPressToken = 0;
     infoLongPress.tuneId = TUNE_TAP_CASUAL;
 
-    nbgl_useCaseStaticReview(&pairList, &infoLongPress, "Reject", reviewChoice);
+    nbgl_useCaseStaticReview(&pairList, &infoLongPress, "Reject transaction", reviewChoice);
 }
 
 int ui_approve_tx_hash_init() {

@@ -147,7 +147,11 @@ describe('hash signing', () => {
       const result = str.signHash("44'/148'/0'", hash)
       const events = await sim.getEvents()
       await sim.waitForScreenChanges(events)
-      await sim.navigateAndCompareUntilText(".", `${dev.prefix.toLowerCase()}-hash-signing-approve`, 'Approve',true)
+      let textToFind = "Approve"
+      if(dev.name == "stax") {
+        textToFind = "Hold to"
+      }
+      await sim.navigateAndCompareUntilText(".", `${dev.prefix.toLowerCase()}-hash-signing-approve`, textToFind, true)
       const kp = Keypair.fromSecret("SAIYWGGWU2WMXYDSK33UBQBMBDKU4TTJVY3ZIFF24H2KQDR7RQW5KAEK")
       expect((await result).signature).toStrictEqual(kp.sign(hash));
     } finally {
@@ -165,7 +169,7 @@ describe('hash signing', () => {
       let textToFind = "Reject"
       // enable hash signing
       if(dev.name == "stax") {
-        textToFind = "Approve"
+        textToFind = "Hold to"
         const settingNav = new TouchNavigation([ButtonKind.InfoButton,ButtonKind.ToggleSettingButton1]);
         await sim.navigate(
           ".",
@@ -231,7 +235,11 @@ describe('transactions', () => {
         const result = str.signTransaction("44'/148'/0'", tx.signatureBase())
         const events = await sim.getEvents()
         await sim.waitForScreenChanges(events)
-        await sim.navigateAndCompareUntilText(".", `${dev.prefix.toLowerCase()}-${c.filePath}`, 'Finalize', true, undefined, 1000 * 60 * 60)
+        let textToFind = "Finalize"
+        if(dev.name == "stax") {
+          textToFind = "Hold to"
+        }
+        await sim.navigateAndCompareUntilText(".", `${dev.prefix.toLowerCase()}-${c.filePath}`, textToFind, true, undefined, 1000 * 60 * 60)
         const kp = Keypair.fromSecret("SAIYWGGWU2WMXYDSK33UBQBMBDKU4TTJVY3ZIFF24H2KQDR7RQW5KAEK")
         tx.sign(kp)
         expect((await result).signature).toStrictEqual(tx.signatures[0].signature());
@@ -251,7 +259,7 @@ describe('transactions', () => {
       let textToFind = "Cancel"
       // display sequence
       if(dev.name == "stax") {
-        textToFind = "Finalize"
+        textToFind = "Hold to"
         const settingNav = new TouchNavigation([ButtonKind.InfoButton,ButtonKind.ToggleSettingButton2]);
         await sim.navigate(
             ".",
@@ -299,7 +307,7 @@ describe('transactions', () => {
       let textToFind = "Cancel"
       // display sequence
       if(dev.name == "stax") {
-        textToFind = "Finalize"
+        textToFind = "Hold to"
         const settingNav = new TouchNavigation([ButtonKind.InfoButton,ButtonKind.ToggleSettingButton2]);
         await sim.navigate(
             ".",
@@ -347,8 +355,11 @@ describe('transactions', () => {
       const result = str.signTransaction("44'/148'/0'", tx.signatureBase())
       const events = await sim.getEvents()
       await sim.waitForScreenChanges(events)
-      await sim.navigateAndCompareUntilText(".", `${dev.prefix.toLowerCase()}-tx-hide-sequence`, 'Finalize', true, undefined, 1000 * 60 * 60)
-
+      let textToFind = "Finalize"
+      if(dev.name == "stax") {
+        textToFind = "Hold to"
+      }
+      await sim.navigateAndCompareUntilText(".", `${dev.prefix.toLowerCase()}-tx-hide-sequence`, textToFind, true, undefined, 1000 * 60 * 60)
       const kp = Keypair.fromSecret("SAIYWGGWU2WMXYDSK33UBQBMBDKU4TTJVY3ZIFF24H2KQDR7RQW5KAEK")
       tx.sign(kp)
       expect((await result).signature).toStrictEqual(tx.signatures[0].signature());
@@ -368,7 +379,11 @@ describe('transactions', () => {
       const result = str.signTransaction("44'/148'/0'", tx.signatureBase())
       const events = await sim.getEvents()
       await sim.waitForScreenChanges(events)
-      await sim.navigateAndCompareUntilText(".", `${dev.prefix.toLowerCase()}-fee-bump-tx-hide-sequence`, 'Finalize', true, undefined, 1000 * 60 * 60)
+      let textToFind = "Finalize"
+      if(dev.name == "stax") {
+        textToFind = "Hold to"
+      }
+      await sim.navigateAndCompareUntilText(".", `${dev.prefix.toLowerCase()}-fee-bump-tx-hide-sequence`, textToFind, true, undefined, 1000 * 60 * 60)
 
       const kp = Keypair.fromSecret("SAIYWGGWU2WMXYDSK33UBQBMBDKU4TTJVY3ZIFF24H2KQDR7RQW5KAEK")
       tx.sign(kp)
