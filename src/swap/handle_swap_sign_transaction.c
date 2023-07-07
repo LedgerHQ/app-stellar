@@ -60,11 +60,9 @@ void handle_swap_sign_transaction(void) {
     PRINTF("USB power ON/OFF\n");
     G_called_from_swap = true;
     G.swap.response_ready = false;
-#ifdef TARGET_NANOX
+#ifdef HAVE_BLE
     // grab the current plane mode setting
     G_io_app.plane_mode = os_setting_get(OS_SETTING_PLANEMODE, NULL, 0);
-#endif  // TARGET_NANOX
-#ifdef HAVE_BLE
     BLE_power(0, NULL);
     BLE_power(1, NULL);
 #endif  // HAVE_BLE

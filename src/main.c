@@ -122,7 +122,7 @@ void standalone_app_main() {
                     nvm_write((void *) &N_settings, (void *) &storage, sizeof(internal_storage_t));
                 }
 
-#ifdef TARGET_NANOX
+#ifdef HAVE_BLE
                 // grab the current plane mode setting
                 G_io_app.plane_mode = os_setting_get(OS_SETTING_PLANEMODE, NULL, 0);
 #endif  // TARGET_NANOX
@@ -133,7 +133,7 @@ void standalone_app_main() {
 
 #ifdef HAVE_BLE
                 BLE_power(0, NULL);
-                BLE_power(1, "Nano X");
+                BLE_power(1, NULL);
 #endif  // HAVE_BLE
                 app_main();
             }
