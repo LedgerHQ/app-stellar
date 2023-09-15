@@ -133,7 +133,11 @@ describe("hash signing", () => {
 
       // enable hash signing
       if (dev.name == "stax") {
-        const settingNav = new TouchNavigation([ButtonKind.InfoButton, ButtonKind.ToggleSettingButton1]);
+        const settingNav = new TouchNavigation([
+          ButtonKind.InfoButton,
+          ButtonKind.NavRightButton,
+          ButtonKind.ToggleSettingButton1,
+        ]);
         await sim.navigate(".", `${dev.prefix.toLowerCase()}-hash-signing-approve`, settingNav.schedule, true, false);
       } else {
         await sim.clickRight();
@@ -167,7 +171,11 @@ describe("hash signing", () => {
       // enable hash signing
       if (dev.name == "stax") {
         textToFind = "Hold to";
-        const settingNav = new TouchNavigation([ButtonKind.InfoButton, ButtonKind.ToggleSettingButton1]);
+        const settingNav = new TouchNavigation([
+          ButtonKind.InfoButton,
+          ButtonKind.NavRightButton,
+          ButtonKind.ToggleSettingButton1,
+        ]);
         await sim.navigate(".", `${dev.prefix.toLowerCase()}-hash-signing-reject`, settingNav.schedule, true, false);
       } else {
         await sim.clickRight();
@@ -201,7 +209,11 @@ describe("transactions", () => {
         const transport = await sim.getTransport();
         const str = new Str(transport);
         if (dev.name == "stax") {
-          const settingNav = new TouchNavigation([ButtonKind.InfoButton, ButtonKind.ToggleSettingButton2]);
+          const settingNav = new TouchNavigation([
+            ButtonKind.InfoButton,
+            ButtonKind.NavRightButton,
+            ButtonKind.ToggleSettingButton2,
+          ]);
           await sim.navigate(".", `tx`, settingNav.schedule, true, false);
         } else {
           await sim.clickRight();
@@ -244,7 +256,11 @@ describe("transactions", () => {
       // display sequence
       if (dev.name == "stax") {
         textToFind = "Hold to";
-        const settingNav = new TouchNavigation([ButtonKind.InfoButton, ButtonKind.ToggleSettingButton2]);
+        const settingNav = new TouchNavigation([
+          ButtonKind.InfoButton,
+          ButtonKind.NavRightButton,
+          ButtonKind.ToggleSettingButton2,
+        ]);
         await sim.navigate(".", `reject tx`, settingNav.schedule, true, false);
       } else {
         await sim.clickRight();
@@ -288,7 +304,11 @@ describe("transactions", () => {
       // display sequence
       if (dev.name == "stax") {
         textToFind = "Hold to";
-        const settingNav = new TouchNavigation([ButtonKind.InfoButton, ButtonKind.ToggleSettingButton2]);
+        const settingNav = new TouchNavigation([
+          ButtonKind.InfoButton,
+          ButtonKind.NavRightButton,
+          ButtonKind.ToggleSettingButton2,
+        ]);
         await sim.navigate(".", `reject fee bump tx`, settingNav.schedule, true, false);
       } else {
         await sim.clickRight();
