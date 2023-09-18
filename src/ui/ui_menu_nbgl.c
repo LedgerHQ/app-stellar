@@ -33,8 +33,8 @@ static bool settingsNavCallback(uint8_t page, nbgl_pageContent_t* content);
 enum { SWITCH_HASH_SET_TOKEN = FIRST_USER_TOKEN, SWITCH_SEQUENCE_SET_TOKEN };
 
 #define NB_INFO_FIELDS 2
-static const char* const infoTypes[] = {"Version", "Stellar App"};
-static const char* const infoContents[] = {APPVERSION, "(c) 2022 Ledger"};
+static const char* const infoTypes[] = {"Version", "Developer"};
+static const char* const infoContents[] = {APPVERSION, "Ledger"};
 
 #define NB_SETTINGS_SWITCHES 2
 #define SETTINGS_INIT_PAGE   0
@@ -48,6 +48,11 @@ void onQuitCallback(void) {
 
 static bool settingsNavCallback(uint8_t page, nbgl_pageContent_t* content) {
     if (page == 0) {
+        content->type = INFOS_LIST;
+        content->infosList.nbInfos = NB_INFO_FIELDS;
+        content->infosList.infoTypes = (const char**) infoTypes;
+        content->infosList.infoContents = (const char**) infoContents;
+    } else if (page == 1) {
         switches[0].text = "Hash signing";
         switches[0].subText = "Enable transaction hash\nsigning";
         switches[0].token = SWITCH_HASH_SET_TOKEN;
@@ -62,11 +67,6 @@ static bool settingsNavCallback(uint8_t page, nbgl_pageContent_t* content) {
         content->type = SWITCHES_LIST;
         content->switchesList.nbSwitches = NB_SETTINGS_SWITCHES;
         content->switchesList.switches = (nbgl_layoutSwitch_t*) switches;
-    } else if (page == 1) {
-        content->type = INFOS_LIST;
-        content->infosList.nbInfos = NB_INFO_FIELDS;
-        content->infosList.infoTypes = (const char**) infoTypes;
-        content->infosList.infoContents = (const char**) infoContents;
     } else {
         return false;
     }
