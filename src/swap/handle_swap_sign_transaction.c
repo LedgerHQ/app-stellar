@@ -65,8 +65,6 @@ void handle_swap_sign_transaction(void) {
     USB_power(0);
     USB_power(1);
     PRINTF("USB power ON/OFF\n");
-    G_called_from_swap = true;
-    G.swap.response_ready = false;
 #ifdef HAVE_BLE
     // grab the current plane mode setting
     G_io_app.plane_mode = os_setting_get(OS_SETTING_PLANEMODE, NULL, 0);
