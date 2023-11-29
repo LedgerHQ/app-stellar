@@ -37,3 +37,10 @@ int ui_approve_tx_hash_init();
  * @return 0 if success, negative integer otherwise.
  */
 int ui_approve_tx_init();
+
+/**
+ * Shows the process of signing a Soroban authorization.
+ *
+ * @return 0 if success, negative integer otherwise.
+ */
+int ui_approve_soroban_auth_init();

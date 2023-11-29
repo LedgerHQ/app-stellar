@@ -24,11 +24,14 @@
 #include "../types.h"
 #include "../sw.h"
 #include "../common/buffer.h"
+#include "../settings.h"
 
 #define PARSER_CHECK(x)         \
     {                           \
         if (!(x)) return false; \
     }
+
+bool parse_scval(buffer_t *buffer);
 
 /* SHA256("Public Global Stellar Network ; September 2015") */
 static const uint8_t NETWORK_ID_PUBLIC_HASH[32] = {
@@ -39,6 +42,59 @@ static const uint8_t NETWORK_ID_PUBLIC_HASH[32] = {
 static const uint8_t NETWORK_ID_TEST_HASH[32] = {
     0xce, 0xe0, 0x30, 0x2d, 0x59, 0x84, 0x4d, 0x32, 0xbd, 0xca, 0x91, 0x5c, 0x82, 0x03, 0xdd, 0x44,
     0xb3, 0x3f, 0xbb, 0x7e, 0xdc, 0x19, 0x05, 0x1e, 0xa3, 0x7a, 0xbe, 0xdf, 0x28, 0xec, 0xd4, 0x72};
+
+static const contract_t SOROBAN_ASSET_CONTRACTS[SOROBAN_ASSET_CONTRACTS_NUM] = {
+    // XLM (testnet)
+    // CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC
+    {"XLM",
+     {
+         0xd7, 0x92, 0x8b, 0x72, 0xc2, 0x70, 0x3c, 0xcf, 0xea, 0xf7, 0xeb,
+         0x9f, 0xf4, 0xef, 0x4d, 0x50, 0x4a, 0x55, 0xa8, 0xb9, 0x79, 0xfc,
+         0x9b, 0x45, 0x0e, 0xa2, 0xc8, 0x42, 0xb4, 0xd1, 0xce, 0x61,
+     }},
+    // CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA
+    {"XLM",
+     {
+         0x25, 0xb4, 0xfc, 0xd8, 0x59, 0xae, 0xc2, 0xfa, 0x63, 0x48, 0x43,
+         0x8c, 0x48, 0x9b, 0x3c, 0x3c, 0x10, 0xc9, 0x8b, 0x6d, 0x21, 0xbe,
+         0x4f, 0xd3, 0xcb, 0x30, 0xcb, 0x68, 0x95, 0x3e, 0xf9, 0x77,
+     }},
+    // CBZVSNVB55ANF24QVJL2K5QCLOAB6XITGTGXYEAF6NPTXYKEJUYQOHFC
+    {"yXLM",
+     {
+         0x73, 0x59, 0x36, 0xa1, 0xef, 0x40, 0xd2, 0xeb, 0x90, 0xaa, 0x57,
+         0xa5, 0x76, 0x02, 0x5b, 0x80, 0x1f, 0x5d, 0x13, 0x34, 0xcd, 0x7c,
+         0x10, 0x05, 0xf3, 0x5f, 0x3b, 0xe1, 0x44, 0x4d, 0x31, 0x07,
+     }},
+    // CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75
+    {"USDC",
+     {
+         0xad, 0xef, 0xce, 0x59, 0xae, 0xe5, 0x29, 0x68, 0xf7, 0x60, 0x61,
+         0xd4, 0x94, 0xc2, 0x52, 0x5b, 0x75, 0x65, 0x9f, 0xa4, 0x29, 0x6a,
+         0x65, 0xf4, 0x99, 0xef, 0x29, 0xe5, 0x64, 0x77, 0xe4, 0x96,
+     }},
+    // CDOFW7HNKLUZRLFZST4EW7V3AV4JI5IHMT6BPXXSY2IEFZ4NE5TWU2P4
+    {"yUSDC",
+     {
+         0xdc, 0x5b, 0x7c, 0xed, 0x52, 0xe9, 0x98, 0xac, 0xb9, 0x94, 0xf8,
+         0x4b, 0x7e, 0xbb, 0x05, 0x78, 0x94, 0x75, 0x07, 0x64, 0xfc, 0x17,
+         0xde, 0xf2, 0xc6, 0x90, 0x42, 0xe7, 0x8d, 0x27, 0x67, 0x6a,
+     }},
+    // CAAV3AE3VKD2P4TY7LWTQMMJHIJ4WOCZ5ANCIJPC3NRSERKVXNHBU2W7
+    {"XRP",
+     {
+         0x01, 0x5d, 0x80, 0x9b, 0xaa, 0x87, 0xa7, 0xf2, 0x78, 0xfa, 0xed,
+         0x38, 0x31, 0x89, 0x3a, 0x13, 0xcb, 0x38, 0x59, 0xe8, 0x1a, 0x24,
+         0x25, 0xe2, 0xdb, 0x63, 0x22, 0x45, 0x55, 0xbb, 0x4e, 0x1a,
+     }},
+    // CAUIKL3IYGMERDRUN6YSCLWVAKIFG5Q4YJHUKM4S4NJZQIA3BAS6OJPK
+    {"AQUA",
+     {
+         0x28, 0x85, 0x2f, 0x68, 0xc1, 0x98, 0x48, 0x8e, 0x34, 0x6f, 0xb1,
+         0x21, 0x2e, 0xd5, 0x02, 0x90, 0x53, 0x76, 0x1c, 0xc2, 0x4f, 0x45,
+         0x33, 0x92, 0xe3, 0x53, 0x98, 0x20, 0x1b, 0x08, 0x25, 0xe7,
+     }},
+};
 
 static bool buffer_advance(buffer_t *buffer, size_t num_bytes) {
     return buffer_seek_cur(buffer, num_bytes);
@@ -443,6 +499,10 @@ bool parse_path_payment_strict_receive(buffer_t *buffer, path_payment_strict_rec
     if (path_len > PATH_PAYMENT_MAX_PATH_LENGTH) {
         return false;
     }
+    for (uint32_t i = 0; i < path_len; i++) {
+        asset_t tmp_asset;
+        PARSER_CHECK(parse_asset(buffer, &tmp_asset))
+    }
     return true;
 }
 
@@ -613,6 +673,10 @@ bool parse_path_payment_strict_send(buffer_t *buffer, path_payment_strict_send_o
     if (path_len > PATH_PAYMENT_MAX_PATH_LENGTH) {
         return false;
     }
+    for (uint32_t i = 0; i < path_len; i++) {
+        asset_t tmp_asset;
+        PARSER_CHECK(parse_asset(buffer, &tmp_asset))
+    }
     return true;
 }
 
@@ -711,6 +775,139 @@ bool parse_begin_sponsoring_future_reserves(buffer_t *buffer,
     return true;
 }
 
+bool parse_sc_address(buffer_t *buffer, sc_address_t *sc_address) {
+    uint32_t address_type;
+    PARSER_CHECK(buffer_read32(buffer, &address_type))
+    sc_address->type = address_type;
+
+    switch (sc_address->type) {
+        case SC_ADDRESS_TYPE_ACCOUNT:
+            PARSER_CHECK(parse_account_id(buffer, &sc_address->address))
+            return true;
+        case SC_ADDRESS_TYPE_CONTRACT:
+            PARSER_CHECK(buffer_can_read(buffer, 32))
+            sc_address->address = buffer->ptr + buffer->offset;
+            buffer->offset += HASH_SIZE;
+            return true;
+        default:
+            return false;
+    }
+}
+
+bool parse_scval_vec(buffer_t *buffer) {
+    uint32_t vec_len;
+    PARSER_CHECK(buffer_read32(buffer, &vec_len))
+    for (uint32_t i = 0; i < vec_len; i++) {
+        PARSER_CHECK(parse_scval(buffer))
+    }
+    return true;
+}
+
+bool parse_scval_map(buffer_t *buffer) {
+    uint32_t map_len;
+    PARSER_CHECK(buffer_read32(buffer, &map_len))
+    for (uint32_t i = 0; i < map_len; i++) {
+        PARSER_CHECK(parse_scval(buffer))
+        PARSER_CHECK(parse_scval(buffer))
+    }
+    return true;
+}
+
+bool parse_contract_executable(buffer_t *buffer) {
+    uint32_t type;
+    PARSER_CHECK(buffer_read32(buffer, &type))
+    switch (type) {
+        case CONTRACT_EXECUTABLE_WASM:
+            PARSER_CHECK(buffer_advance(buffer, 32))  // code
+            break;
+        case CONTRACT_EXECUTABLE_STELLAR_ASSET:
+            // void
+            break;
+        default:
+            return false;
+    }
+    return true;
+}
+
+bool parse_scval(buffer_t *buffer) {
+    uint32_t sc_type;
+    PARSER_CHECK(buffer_read32(buffer, &sc_type))
+
+    switch (sc_type) {
+        case SCV_BOOL:
+            PARSER_CHECK(buffer_advance(buffer, 4))
+            break;
+        case SCV_VOID:
+            break;  // void
+        case SCV_ERROR:
+            return false;  // not implemented
+        case SCV_U32:
+        case SCV_I32:
+            PARSER_CHECK(buffer_advance(buffer, 4))
+            break;
+        case SCV_U64:
+        case SCV_I64:
+        case SCV_TIMEPOINT:
+        case SCV_DURATION:
+            PARSER_CHECK(buffer_advance(buffer, 8))
+            break;
+        case SCV_U128:
+        case SCV_I128:
+            PARSER_CHECK(buffer_advance(buffer, 16))
+            break;
+        case SCV_U256:
+        case SCV_I256:
+            PARSER_CHECK(buffer_advance(buffer, 32))
+            break;
+        case SCV_BYTES:
+        case SCV_STRING:
+        case SCV_SYMBOL: {
+            uint32_t data_len;
+            PARSER_CHECK(buffer_read32(buffer, &data_len))
+            PARSER_CHECK(buffer_advance(buffer, num_bytes(data_len)))
+            break;
+        }
+        case SCV_VEC: {
+            bool vec_exists;
+            PARSER_CHECK(buffer_read_bool(buffer, &vec_exists))
+            if (vec_exists) {
+                parse_scval_vec(buffer);
+            }
+            break;
+        }
+        case SCV_MAP: {
+            bool map_exists;
+            PARSER_CHECK(buffer_read_bool(buffer, &map_exists))
+            if (map_exists) {
+                parse_scval_map(buffer);
+            }
+            break;
+        }
+        case SCV_ADDRESS: {
+            sc_address_t sc_address;
+            PARSER_CHECK(parse_sc_address(buffer, &sc_address));
+            break;
+        }
+        case SCV_CONTRACT_INSTANCE: {
+            PARSER_CHECK(parse_contract_executable(buffer))
+            bool map_exists;
+            PARSER_CHECK(buffer_read_bool(buffer, &map_exists))
+            if (map_exists) {
+                parse_scval_map(buffer);
+            }
+            break;
+        }
+        case SCV_LEDGER_KEY_CONTRACT_INSTANCE:
+            break;  // void
+        case SCV_LEDGER_KEY_NONCE:
+            PARSER_CHECK(buffer_advance(buffer, 8))
+            break;
+        default:
+            return false;
+    }
+    return true;
+}
+
 bool parse_ledger_key(buffer_t *buffer, ledger_key_t *ledger_key) {
     uint32_t ledger_entry_type;
     PARSER_CHECK(buffer_read32(buffer, &ledger_entry_type))
@@ -742,6 +939,22 @@ bool parse_ledger_key(buffer_t *buffer, ledger_key_t *ledger_key) {
             PARSER_CHECK(buffer_can_read(buffer, LIQUIDITY_POOL_ID_SIZE))
             ledger_key->liquidity_pool.liquidity_pool_id = buffer->ptr + buffer->offset;
             PARSER_CHECK(buffer_advance(buffer, LIQUIDITY_POOL_ID_SIZE))
+            return true;
+        case CONTRACT_DATA: {
+            sc_address_t sc_address;
+            PARSER_CHECK(parse_sc_address(buffer, &sc_address))  // contract
+            PARSER_CHECK(parse_scval(buffer))                    // key
+            PARSER_CHECK(buffer_advance(buffer, 4))              // durability
+            return true;
+        }
+        case CONTRACT_CODE:
+            PARSER_CHECK(buffer_advance(buffer, 32))
+            return true;
+        case CONFIG_SETTING:
+            PARSER_CHECK(buffer_advance(buffer, 4))
+            return true;
+        case TTL:
+            PARSER_CHECK(buffer_advance(buffer, 32))
             return true;
         default:
             return false;
@@ -807,7 +1020,289 @@ bool parse_liquidity_pool_withdraw(buffer_t *buffer, liquidity_pool_withdraw_op_
     return true;
 }
 
+bool parse_extension_point(buffer_t *buffer) {
+    uint32_t v;
+    PARSER_CHECK(buffer_read32(buffer, &v))
+    if (v != 0) {
+        return false;
+    }
+    return true;
+}
+
+bool parse_restore_footprint(buffer_t *buffer, restore_footprint_op_t *op) {
+    (void) op;
+    PARSER_CHECK(parse_extension_point(buffer))
+    return true;
+}
+
+bool parse_soroban_resources(buffer_t *buffer) {
+    // footprint
+    uint32_t len;
+    ledger_key_t ledger_key;
+    PARSER_CHECK(buffer_read32(buffer, (uint32_t *) &len))  // read_only array length
+    for (uint32_t i = 0; i < len; i++) {
+        PARSER_CHECK(parse_ledger_key(buffer, &ledger_key))
+    }
+
+    PARSER_CHECK(buffer_read32(buffer, (uint32_t *) &len))  // read_write array length
+    for (uint32_t i = 0; i < len; i++) {
+        PARSER_CHECK(parse_ledger_key(buffer, &ledger_key))
+    }
+
+    PARSER_CHECK(buffer_advance(buffer, 4))  // instructions
+    PARSER_CHECK(buffer_advance(buffer, 4))  // read_bytes
+    PARSER_CHECK(buffer_advance(buffer, 4))  // write_bytes
+    return true;
+}
+
+bool parse_soroban_transaction_data(buffer_t *buffer) {
+    PARSER_CHECK(parse_extension_point(buffer))
+    PARSER_CHECK(parse_soroban_resources(buffer))
+    PARSER_CHECK(buffer_advance(buffer, 8))  // resource_fee
+    return true;
+}
+
+bool parse_soroban_credentials(buffer_t *buffer) {
+    uint32_t type;
+    PARSER_CHECK(buffer_read32(buffer, &type))
+    switch (type) {
+        case SOROBAN_CREDENTIALS_SOURCE_ACCOUNT:
+            // void
+            break;
+        case SOROBAN_CREDENTIALS_ADDRESS: {
+            sc_address_t address;
+            PARSER_CHECK(parse_sc_address(buffer, &address))
+            PARSER_CHECK(buffer_advance(buffer, 8))  // nonce
+            PARSER_CHECK(buffer_advance(buffer, 4))  // signatureExpirationLedger
+            PARSER_CHECK(parse_scval(buffer))        // signature
+            break;
+        }
+        default:
+            return false;
+    }
+    return true;
+}
+
+bool parse_create_contract_args(buffer_t *buffer) {
+    // contract_id_preimage
+    uint32_t type;
+    PARSER_CHECK(buffer_read32(buffer, &type))
+    switch (type) {
+        case CONTRACT_ID_PREIMAGE_FROM_ADDRESS: {
+            sc_address_t address;
+            PARSER_CHECK(parse_sc_address(buffer, &address))
+            PARSER_CHECK(buffer_advance(buffer, 32))  // salt
+            break;
+        }
+        case CONTRACT_ID_PREIMAGE_FROM_ASSET: {
+            asset_t asset;
+            PARSER_CHECK(parse_asset(buffer, &asset))
+            break;
+        }
+        default:
+            return false;
+    }
+
+    // executable
+    PARSER_CHECK(parse_contract_executable(buffer))
+    return true;
+}
+
+bool parse_invoke_contract_args(buffer_t *buffer, invoke_contract_args_t *args) {
+    // contractAddress
+    PARSER_CHECK(parse_sc_address(buffer, &args->address))
+    // functionName
+    size_t text_size;
+    PARSER_CHECK(parse_binary_string_ptr(buffer,
+                                         (const uint8_t **) &args->function_name.text,
+                                         &text_size,
+                                         32))
+    args->function_name.text_size = text_size;
+
+    // args
+    args->parameters_position = buffer->offset;
+    PRINTF("function_name.text_size=%d, function_name.text=%s\n",
+           args->function_name.text_size,
+           args->function_name.text);
+
+    args->contract_type = SOROBAN_CONTRACT_TYPE_UNVERIFIED;
+    for (int i = 0; i < SOROBAN_ASSET_CONTRACTS_NUM; i++) {
+        if (memcmp(args->address.address, SOROBAN_ASSET_CONTRACTS[i].address, 32) == 0) {
+            PRINTF("Valid contract address found\n");
+            if (args->function_name.text_size == 7 &&
+                memcmp(args->function_name.text, "approve", 7) == 0) {
+                args->contract_type = SOROBAN_CONTRACT_TYPE_ASSET_APPROVE;
+                memset(args->asset_approve.asset_code, 0, ASSET_CODE_MAX_LENGTH);
+                memcpy(args->asset_approve.asset_code,
+                       SOROBAN_ASSET_CONTRACTS[i].name,
+                       strlen(SOROBAN_ASSET_CONTRACTS[i].name));
+            } else if (args->function_name.text_size == 8 &&
+                       memcmp(args->function_name.text, "transfer", 8) == 0) {
+                args->contract_type = SOROBAN_CONTRACT_TYPE_ASSET_TRANSFER;
+                memset(args->asset_transfer.asset_code, 0, ASSET_CODE_MAX_LENGTH);
+                memcpy(args->asset_transfer.asset_code,
+                       SOROBAN_ASSET_CONTRACTS[i].name,
+                       strlen(SOROBAN_ASSET_CONTRACTS[i].name));
+            }
+            break;
+        }
+    }
+
+    PRINTF("args->contract_type=%d\n", args->contract_type);
+    uint32_t args_len;
+    PARSER_CHECK(buffer_read32(buffer, &args_len))
+
+    switch (args->contract_type) {
+        case SOROBAN_CONTRACT_TYPE_UNVERIFIED: {
+            for (uint32_t i = 0; i < args_len; i++) {
+                PARSER_CHECK(parse_scval(buffer))
+            }
+            break;
+        }
+        case SOROBAN_CONTRACT_TYPE_ASSET_APPROVE: {
+            if (args_len != 4) {
+                return false;
+            }
+
+            uint32_t sc_type;
+
+            PARSER_CHECK(buffer_read32(buffer, &sc_type))
+            if (sc_type != SCV_ADDRESS) {
+                return false;
+            }
+            PARSER_CHECK(parse_sc_address(buffer, &args->asset_approve.from))
+
+            PARSER_CHECK(buffer_read32(buffer, &sc_type))
+            if (sc_type != SCV_ADDRESS) {
+                return false;
+            }
+            PARSER_CHECK(parse_sc_address(buffer, &args->asset_approve.spender))
+
+            PARSER_CHECK(buffer_read32(buffer, &sc_type))
+            if (sc_type != SCV_I128) {
+                return false;
+            }
+            PARSER_CHECK(buffer_advance(buffer, 8))                           // amount.hi
+            PARSER_CHECK(buffer_read64(buffer, &args->asset_approve.amount))  // amount.lo
+
+            PARSER_CHECK(buffer_read32(buffer, &sc_type))
+            if (sc_type != SCV_U32) {
+                return false;
+            }
+            PARSER_CHECK(
+                buffer_read32(buffer, &args->asset_approve.expiration_ledger))  // exp ledger
+            break;
+        }
+        case SOROBAN_CONTRACT_TYPE_ASSET_TRANSFER: {
+            if (args_len != 3) {
+                return false;
+            }
+            uint32_t sc_type;
+            PARSER_CHECK(buffer_read32(buffer, &sc_type))
+            if (sc_type != SCV_ADDRESS) {
+                return false;
+            }
+            PARSER_CHECK(parse_sc_address(buffer, &args->asset_transfer.from))
+
+            PARSER_CHECK(buffer_read32(buffer, &sc_type))
+            if (sc_type != SCV_ADDRESS) {
+                return false;
+            }
+            PARSER_CHECK(parse_sc_address(buffer, &args->asset_transfer.to))
+
+            PARSER_CHECK(buffer_read32(buffer, &sc_type))
+            if (sc_type != SCV_I128) {
+                return false;
+            }
+            PARSER_CHECK(buffer_advance(buffer, 8))                            // amount.hi
+            PARSER_CHECK(buffer_read64(buffer, &args->asset_transfer.amount))  // amount.lo
+            break;
+        }
+        default:
+            return false;
+    }
+    return true;
+}
+
+bool parse_soroban_authorized_function(buffer_t *buffer) {
+    uint32_t type;
+    PARSER_CHECK(buffer_read32(buffer, &type))
+    switch (type) {
+        case SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN: {
+            // contractFn
+            invoke_contract_args_t args;
+            PARSER_CHECK(parse_invoke_contract_args(buffer, &args));
+            break;
+        }
+        case SOROBAN_AUTHORIZED_FUNCTION_TYPE_CREATE_CONTRACT_HOST_FN:
+            // createContractHostFn
+            PARSER_CHECK(parse_create_contract_args(buffer));
+            break;
+        default:
+            return false;
+    }
+    return true;
+}
+
+bool parse_soroban_authorized_invocation(buffer_t *buffer) {
+    // function
+    PARSER_CHECK(parse_soroban_authorized_function(buffer))
+
+    // subInvocations
+    uint32_t len;
+    PARSER_CHECK(buffer_read32(buffer, &len))
+    for (uint32_t i = 0; i < len; i++) {
+        PARSER_CHECK(parse_soroban_authorized_invocation(buffer))
+    }
+    return true;
+}
+
+bool parse_soroban_authorization_entry(buffer_t *buffer) {
+    PARSER_CHECK(parse_soroban_credentials(buffer))
+    PARSER_CHECK(parse_soroban_authorized_invocation(buffer))
+    return true;
+}
+
+bool parse_invoke_host_function(buffer_t *buffer, invoke_host_function_op_t *op) {
+    // hostFunction
+    uint32_t type;
+    PARSER_CHECK(buffer_read32(buffer, &type));
+    op->host_function_type = type;
+    PRINTF("host_func_type=%d\n", &op->host_function_type);
+    switch (op->host_function_type) {
+        case HOST_FUNCTION_TYPE_INVOKE_CONTRACT:
+            PARSER_CHECK(parse_invoke_contract_args(buffer, &op->invoke_contract_args))
+            break;
+        case HOST_FUNCTION_TYPE_CREATE_CONTRACT:
+            PARSER_CHECK(parse_create_contract_args(buffer))
+            break;
+        case HOST_FUNCTION_TYPE_UPLOAD_CONTRACT_WASM: {
+            uint32_t data_len;
+            PARSER_CHECK(buffer_read32(buffer, &data_len))
+            PARSER_CHECK(buffer_advance(buffer, num_bytes(data_len)))
+            break;
+        }
+        default:
+            break;
+    }
+
+    // auth<>
+    uint32_t auth_len;
+    PARSER_CHECK(buffer_read32(buffer, &auth_len))
+    for (uint32_t i = 0; i < auth_len; i++) {
+        PARSER_CHECK(parse_soroban_authorization_entry(buffer))
+    }
+    return true;
+}
+
+bool parse_extend_footprint_ttl(buffer_t *buffer, extend_footprint_ttl_op_t *op) {
+    PARSER_CHECK(parse_extension_point(buffer))
+    PARSER_CHECK(buffer_read32(buffer, &op->extend_to))
+    return true;
+}
+
 bool parse_operation(buffer_t *buffer, operation_t *operation) {
+    PRINTF("parse_operation: offset=%d\n", buffer->offset);
     explicit_bzero(operation, sizeof(operation_t));
     uint32_t op_type;
 
@@ -894,6 +1389,23 @@ bool parse_operation(buffer_t *buffer, operation_t *operation) {
             return parse_liquidity_pool_deposit(buffer, &operation->liquidity_pool_deposit_op);
         case OPERATION_TYPE_LIQUIDITY_POOL_WITHDRAW:
             return parse_liquidity_pool_withdraw(buffer, &operation->liquidity_pool_withdraw_op);
+        case OPERATION_INVOKE_HOST_FUNCTION: {
+            PARSER_CHECK(parse_invoke_host_function(buffer, &operation->invoke_host_function_op))
+#ifndef TEST
+            if (operation->invoke_host_function_op.host_function_type ==
+                    HOST_FUNCTION_TYPE_INVOKE_CONTRACT &&
+                operation->invoke_host_function_op.invoke_contract_args.contract_type ==
+                    SOROBAN_CONTRACT_TYPE_UNVERIFIED &&
+                !HAS_SETTING(S_CUSTOM_CONTRACTS_ENABLED)) {
+                THROW(SW_CUSTOM_CONTRACT_MODE_NOT_ENABLED);
+            }
+#endif
+            return true;
+        }
+        case OPERATION_EXTEND_FOOTPRINT_TTL:
+            return parse_extend_footprint_ttl(buffer, &operation->extend_footprint_ttl_op);
+        case OPERATION_RESTORE_FOOTPRINT:
+            return parse_restore_footprint(buffer, &operation->restore_footprint_op);
         default:
             return false;
     }
@@ -930,6 +1442,42 @@ bool parse_transaction_operation_len(buffer_t *buffer, uint8_t *operations_count
     return true;
 }
 
+bool check_operations(buffer_t *buffer, uint8_t op_count) {
+    PRINTF("check_operations: offset=%d\n", buffer->offset);
+    operation_t op;
+    for (uint8_t i = 0; i < op_count; i++) {
+        PARSER_CHECK(parse_operation(buffer, &op))
+        // for soroban tx, only one soroban operation is allowed
+        if (op_count != 1 && (op.type == OPERATION_EXTEND_FOOTPRINT_TTL ||
+                              op.type == OPERATION_INVOKE_HOST_FUNCTION ||
+                              op.type == OPERATION_INVOKE_HOST_FUNCTION)) {
+            PRINTF(
+                "check_operations: soroban operation is not allowed in multi-operation tx, "
+                "idx=%d\n",
+                i);
+            return false;
+        }
+    }
+    return true;
+}
+
+bool parse_transaction_ext(buffer_t *buffer) {
+    uint32_t ext;
+    PARSER_CHECK(buffer_read32(buffer, &ext))
+    PRINTF("parse_transaction_ext: ext=%d\n", ext);
+    switch (ext) {
+        case 0:
+            // void
+            break;
+        case 1:
+            PARSER_CHECK(parse_soroban_transaction_data(buffer))
+            break;
+        default:
+            break;
+    }
+    return true;
+}
+
 bool parse_transaction_details(buffer_t *buffer, transaction_details_t *transaction) {
     // account used to run the (inner)transaction
     PARSER_CHECK(parse_transaction_source(buffer, &transaction->source_account))
@@ -945,6 +1493,10 @@ bool parse_transaction_details(buffer_t *buffer, transaction_details_t *transact
 
     PARSER_CHECK(parse_transaction_memo(buffer, &transaction->memo))
     PARSER_CHECK(parse_transaction_operation_len(buffer, &transaction->operations_count))
+    size_t offset = buffer->offset;
+    PARSER_CHECK(check_operations(buffer, transaction->operations_count))
+    PARSER_CHECK(parse_transaction_ext(buffer))
+    buffer->offset = offset;
     return true;
 }
 
@@ -986,9 +1538,9 @@ bool parse_transaction_envelope_type(buffer_t *buffer, envelope_type_t *envelope
 
 bool parse_network(buffer_t *buffer, uint8_t *network) {
     PARSER_CHECK(buffer_can_read(buffer, HASH_SIZE))
-    if (memcmp(buffer->ptr, NETWORK_ID_PUBLIC_HASH, HASH_SIZE) == 0) {
+    if (memcmp(buffer->ptr + buffer->offset, NETWORK_ID_PUBLIC_HASH, HASH_SIZE) == 0) {
         *network = NETWORK_TYPE_PUBLIC;
-    } else if (memcmp(buffer->ptr, NETWORK_ID_TEST_HASH, HASH_SIZE) == 0) {
+    } else if (memcmp(buffer->ptr + buffer->offset, NETWORK_ID_TEST_HASH, HASH_SIZE) == 0) {
         *network = NETWORK_TYPE_TEST;
     } else {
         *network = NETWORK_TYPE_UNKNOWN;
@@ -1003,6 +1555,8 @@ bool parse_tx_xdr(const uint8_t *data, size_t size, tx_ctx_t *tx_ctx) {
 
     uint16_t offset = tx_ctx->offset;
     buffer.offset = tx_ctx->offset;
+
+    PRINTF("parse_tx_xdr: offset=%d\n", offset);
 
     if (offset == 0) {
         explicit_bzero(&tx_ctx->tx_details, sizeof(transaction_details_t));
@@ -1034,5 +1588,40 @@ bool parse_tx_xdr(const uint8_t *data, size_t size, tx_ctx_t *tx_ctx) {
     offset = buffer.offset;
     tx_ctx->tx_details.operation_index += 1;
     tx_ctx->offset = offset;
+    return true;
+}
+
+bool parse_auth(const uint8_t *data, size_t size, auth_ctx_t *auth_ctx) {
+    buffer_t buffer = {data, size, 0};
+    uint32_t type;
+    PARSER_CHECK(buffer_read32(&buffer, &type))
+    if (type != ENVELOPE_TYPE_SOROBAN_AUTHORIZATION) {
+        return false;
+    }
+    PARSER_CHECK(parse_network(&buffer, &auth_ctx->network))
+    PARSER_CHECK(buffer_read64(&buffer, &auth_ctx->nonce))
+    PARSER_CHECK(buffer_read32(&buffer, &auth_ctx->signature_exp_ledger))
+    PARSER_CHECK(buffer_read32(&buffer, &type))
+
+    auth_ctx->function_type = type;
+    switch (type) {
+        case SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN: {
+            // contractFn
+            PARSER_CHECK(parse_invoke_contract_args(&buffer, &auth_ctx->invoke_contract_args));
+#ifndef TEST
+            if (auth_ctx->invoke_contract_args.contract_type == SOROBAN_CONTRACT_TYPE_UNVERIFIED &&
+                !HAS_SETTING(S_CUSTOM_CONTRACTS_ENABLED)) {
+                THROW(SW_CUSTOM_CONTRACT_MODE_NOT_ENABLED);
+            }
+#endif
+            break;
+        }
+        case SOROBAN_AUTHORIZED_FUNCTION_TYPE_CREATE_CONTRACT_HOST_FN:
+            // createContractHostFn
+            PARSER_CHECK(parse_create_contract_args(&buffer))
+            break;
+        default:
+            return false;
+    }
     return true;
 }

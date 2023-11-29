@@ -31,27 +31,6 @@
 #include "../common/format.h"
 #include "../transaction/transaction_parser.h"
 
-#define FORMATTER_CHECK(x)                      \
-    {                                           \
-        if (!(x)) THROW(SW_TX_FORMATTING_FAIL); \
-    }
-
-#define STRLCPY(dst, src, size)               \
-    {                                         \
-        size_t len = strlcpy(dst, src, size); \
-        if (len >= size) {                    \
-            THROW(SW_TX_FORMATTING_FAIL);     \
-        }                                     \
-    }
-
-#define STRLCAT(dst, src, size)               \
-    {                                         \
-        size_t len = strlcat(dst, src, size); \
-        if (len >= size) {                    \
-            THROW(SW_TX_FORMATTING_FAIL);     \
-        }                                     \
-    }
-
 static const char *NETWORK_NAMES[3] = {"Public", "Testnet", "Unknown"};
 
 char op_caption[OPERATION_CAPTION_MAX_LENGTH];
@@ -291,6 +270,9 @@ static void format_transaction_details(tx_ctx_t *tx_ctx) {
         case ENVELOPE_TYPE_TX:
             STRLCPY(G.ui.detail_caption, "Transaction", DETAIL_CAPTION_MAX_LENGTH);
             break;
+        default:
+            THROW(SW_TX_FORMATTING_FAIL);
+            return;
     }
     STRLCPY(G.ui.detail_value, "Details", DETAIL_VALUE_MAX_LENGTH);
     if (tx_ctx->tx_details.memo.type != MEMO_NONE) {
@@ -1619,6 +1601,184 @@ static void format_liquidity_pool_withdraw(tx_ctx_t *tx_ctx) {
     push_to_formatter_stack(&format_liquidity_pool_withdraw_liquidity_pool_id);
 }
 
+static void format_invoke_host_function_asset_approve_expiration_ledger(tx_ctx_t *tx_ctx) {
+    STRLCPY(G.ui.detail_caption, "Expiration Ledger", DETAIL_CAPTION_MAX_LENGTH);
+    FORMATTER_CHECK(print_uint(tx_ctx->tx_details.op_details.invoke_host_function_op
+                                   .invoke_contract_args.asset_approve.expiration_ledger,
+                               G.ui.detail_value,
+                               DETAIL_VALUE_MAX_LENGTH))
+    format_operation_source_prepare(tx_ctx);
+}
+
+static void format_invoke_host_function_asset_approve_amount(tx_ctx_t *tx_ctx) {
+    STRLCPY(G.ui.detail_caption, "Amount", DETAIL_CAPTION_MAX_LENGTH);
+    char tmp[DETAIL_VALUE_MAX_LENGTH];
+    explicit_bzero(tmp, DETAIL_VALUE_MAX_LENGTH);
+    FORMATTER_CHECK(print_amount(tx_ctx->tx_details.op_details.invoke_host_function_op
+                                     .invoke_contract_args.asset_approve.amount,
+                                 NULL,
+                                 tx_ctx->network,
+                                 tmp,
+                                 DETAIL_VALUE_MAX_LENGTH))
+    STRLCAT(tmp, " ", DETAIL_VALUE_MAX_LENGTH);
+    STRLCAT(tmp,
+            tx_ctx->tx_details.op_details.invoke_host_function_op.invoke_contract_args.asset_approve
+                .asset_code,
+            DETAIL_VALUE_MAX_LENGTH);
+    STRLCPY(G.ui.detail_value, tmp, DETAIL_VALUE_MAX_LENGTH);
+    push_to_formatter_stack(&format_invoke_host_function_asset_approve_expiration_ledger);
+}
+
+static void format_invoke_host_function_asset_approve_spender(tx_ctx_t *tx_ctx) {
+    STRLCPY(G.ui.detail_caption, "Spender", DETAIL_CAPTION_MAX_LENGTH);
+
+    FORMATTER_CHECK(print_sc_address(&tx_ctx->tx_details.op_details.invoke_host_function_op
+                                          .invoke_contract_args.asset_approve.spender,
+                                     G.ui.detail_value,
+                                     DETAIL_VALUE_MAX_LENGTH,
+                                     0,
+                                     0))
+    push_to_formatter_stack(&format_invoke_host_function_asset_approve_amount);
+}
+
+static void format_invoke_host_function_asset_approve_from(tx_ctx_t *tx_ctx) {
+    STRLCPY(G.ui.detail_caption, "From", DETAIL_CAPTION_MAX_LENGTH);
+
+    FORMATTER_CHECK(print_sc_address(&tx_ctx->tx_details.op_details.invoke_host_function_op
+                                          .invoke_contract_args.asset_approve.from,
+                                     G.ui.detail_value,
+                                     DETAIL_VALUE_MAX_LENGTH,
+                                     0,
+                                     0))
+    push_to_formatter_stack(&format_invoke_host_function_asset_approve_spender);
+}
+
+static void format_invoke_host_function_asset_transfer_to(tx_ctx_t *tx_ctx) {
+    STRLCPY(G.ui.detail_caption, "To", DETAIL_CAPTION_MAX_LENGTH);
+
+    FORMATTER_CHECK(print_sc_address(&tx_ctx->tx_details.op_details.invoke_host_function_op
+                                          .invoke_contract_args.asset_transfer.to,
+                                     G.ui.detail_value,
+                                     DETAIL_VALUE_MAX_LENGTH,
+                                     0,
+                                     0))
+    format_operation_source_prepare(tx_ctx);
+}
+
+static void format_invoke_host_function_asset_transfer_from(tx_ctx_t *tx_ctx) {
+    STRLCPY(G.ui.detail_caption, "From", DETAIL_CAPTION_MAX_LENGTH);
+
+    FORMATTER_CHECK(print_sc_address(&tx_ctx->tx_details.op_details.invoke_host_function_op
+                                          .invoke_contract_args.asset_transfer.from,
+                                     G.ui.detail_value,
+                                     DETAIL_VALUE_MAX_LENGTH,
+                                     0,
+                                     0))
+    push_to_formatter_stack(&format_invoke_host_function_asset_transfer_to);
+}
+
+static void format_invoke_host_function_asset_transfer_amount(tx_ctx_t *tx_ctx) {
+    STRLCPY(G.ui.detail_caption, "Transfer", DETAIL_CAPTION_MAX_LENGTH);
+    char tmp[DETAIL_VALUE_MAX_LENGTH];
+    explicit_bzero(tmp, DETAIL_VALUE_MAX_LENGTH);
+    FORMATTER_CHECK(print_amount(tx_ctx->tx_details.op_details.invoke_host_function_op
+                                     .invoke_contract_args.asset_transfer.amount,
+                                 NULL,
+                                 tx_ctx->network,
+                                 tmp,
+                                 DETAIL_VALUE_MAX_LENGTH))
+    STRLCAT(tmp, " ", DETAIL_VALUE_MAX_LENGTH);
+    STRLCAT(tmp,
+            tx_ctx->tx_details.op_details.invoke_host_function_op.invoke_contract_args
+                .asset_transfer.asset_code,
+            DETAIL_VALUE_MAX_LENGTH);
+    STRLCPY(G.ui.detail_value, tmp, DETAIL_VALUE_MAX_LENGTH);
+    push_to_formatter_stack(&format_invoke_host_function_asset_transfer_from);
+}
+
+static void format_invoke_host_function_unverified_contract_warning(tx_ctx_t *tx_ctx) {
+    STRLCPY(G.ui.detail_caption, "RISK WARNING", DETAIL_CAPTION_MAX_LENGTH);
+    STRLCPY(G.ui.detail_value,
+            "Unverified contract, will not display details",
+            DETAIL_VALUE_MAX_LENGTH);
+    format_operation_source_prepare(tx_ctx);
+}
+
+static void format_invoke_host_function_func_name(tx_ctx_t *tx_ctx) {
+    STRLCPY(G.ui.detail_caption, "Function", DETAIL_CAPTION_MAX_LENGTH);
+
+    memcpy(G.ui.detail_value,
+           tx_ctx->tx_details.op_details.invoke_host_function_op.invoke_contract_args.function_name
+               .text,
+           tx_ctx->tx_details.op_details.invoke_host_function_op.invoke_contract_args.function_name
+               .text_size);
+    G.ui.detail_value[tx_ctx->tx_details.op_details.invoke_host_function_op.invoke_contract_args
+                          .function_name.text_size] = '\0';
+
+    switch (
+        tx_ctx->tx_details.op_details.invoke_host_function_op.invoke_contract_args.contract_type) {
+        case SOROBAN_CONTRACT_TYPE_UNVERIFIED:
+            push_to_formatter_stack(&format_invoke_host_function_unverified_contract_warning);
+            break;
+        case SOROBAN_CONTRACT_TYPE_ASSET_APPROVE:
+            push_to_formatter_stack(&format_invoke_host_function_asset_approve_from);
+            break;
+        case SOROBAN_CONTRACT_TYPE_ASSET_TRANSFER:
+            push_to_formatter_stack(&format_invoke_host_function_asset_transfer_amount);
+            break;
+        default:
+            THROW(SW_TX_FORMATTING_FAIL);
+            return;
+    }
+}
+
+static void format_invoke_host_function_contract_id(tx_ctx_t *tx_ctx) {
+    STRLCPY(G.ui.detail_caption, "Contract ID", DETAIL_CAPTION_MAX_LENGTH);
+
+    FORMATTER_CHECK(print_sc_address(
+        &tx_ctx->tx_details.op_details.invoke_host_function_op.invoke_contract_args.address,
+        G.ui.detail_value,
+        DETAIL_VALUE_MAX_LENGTH,
+        0,
+        0))
+    push_to_formatter_stack(&format_invoke_host_function_func_name);
+}
+
+static void format_invoke_host_function(tx_ctx_t *tx_ctx) {
+    switch (tx_ctx->tx_details.op_details.invoke_host_function_op.host_function_type) {
+        case HOST_FUNCTION_TYPE_INVOKE_CONTRACT:
+            STRLCPY(G.ui.detail_caption, "Soroban", DETAIL_CAPTION_MAX_LENGTH);
+            STRLCPY(G.ui.detail_value, "Invoke Smart Contract", DETAIL_VALUE_MAX_LENGTH);
+            push_to_formatter_stack(&format_invoke_host_function_contract_id);
+            break;
+        case HOST_FUNCTION_TYPE_CREATE_CONTRACT:
+            STRLCPY(G.ui.detail_caption, "Soroban", DETAIL_CAPTION_MAX_LENGTH);
+            STRLCPY(G.ui.detail_value, "Create Smart Contract", DETAIL_VALUE_MAX_LENGTH);
+            format_operation_source_prepare(tx_ctx);
+            break;
+        case HOST_FUNCTION_TYPE_UPLOAD_CONTRACT_WASM:
+            STRLCPY(G.ui.detail_caption, "Soroban", DETAIL_CAPTION_MAX_LENGTH);
+            STRLCPY(G.ui.detail_value, "Upload Smart Contract Wasm", DETAIL_VALUE_MAX_LENGTH);
+            format_operation_source_prepare(tx_ctx);
+            break;
+        default:
+            THROW(SW_TX_FORMATTING_FAIL);
+            return;
+    }
+}
+
+static void format_extend_footprint_ttl(tx_ctx_t *tx_ctx) {
+    STRLCPY(G.ui.detail_caption, "Soroban", DETAIL_CAPTION_MAX_LENGTH);
+    STRLCPY(G.ui.detail_value, "Extend Footprint TTL", DETAIL_VALUE_MAX_LENGTH);
+    format_operation_source_prepare(tx_ctx);
+}
+
+static void format_restore_footprint(tx_ctx_t *tx_ctx) {
+    STRLCPY(G.ui.detail_caption, "Soroban", DETAIL_CAPTION_MAX_LENGTH);
+    STRLCPY(G.ui.detail_value, "Restore Footprint", DETAIL_VALUE_MAX_LENGTH);
+    format_operation_source_prepare(tx_ctx);
+}
+
 static const format_function_t formatters[] = {&format_create_account,
                                                &format_payment,
                                                &format_path_payment_strict_receive,
@@ -1642,7 +1802,10 @@ static const format_function_t formatters[] = {&format_create_account,
                                                &format_clawback_claimable_balance,
                                                &format_set_trust_line_flags,
                                                &format_liquidity_pool_deposit,
-                                               &format_liquidity_pool_withdraw};
+                                               &format_liquidity_pool_withdraw,
+                                               &format_invoke_host_function,
+                                               &format_extend_footprint_ttl,
+                                               &format_restore_footprint};
 
 void format_confirm_operation(tx_ctx_t *tx_ctx) {
     if (tx_ctx->tx_details.operations_count > 1) {

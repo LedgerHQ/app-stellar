@@ -36,6 +36,11 @@
 #define SW_TX_HASH_SIGNING_MODE_NOT_ENABLED 0x6C66
 
 /**
+ * Status word for custom contract model not enabled.
+ */
+#define SW_CUSTOM_CONTRACT_MODE_NOT_ENABLED 0x6C67
+
+/**
  * Status word for unknown command with this INS.
  */
 #define SW_INS_NOT_SUPPORTED 0x6D00

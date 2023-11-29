@@ -66,10 +66,11 @@ typedef enum {
  * Enumeration with expected INS of APDU commands.
  */
 typedef enum {
-    INS_GET_PUBLIC_KEY = 0x02,         // public key of corresponding BIP32 path
-    INS_SIGN_TX = 0x04,                // sign transaction with BIP32 path
-    INS_GET_APP_CONFIGURATION = 0x06,  // app configuration of the application
-    INS_SIGN_TX_HASH = 0x08,           // sign transaction in hash mode
+    INS_GET_PUBLIC_KEY = 0x02,            // public key of corresponding BIP32 path
+    INS_SIGN_TX = 0x04,                   // sign transaction with BIP32 path
+    INS_GET_APP_CONFIGURATION = 0x06,     // app configuration of the application
+    INS_SIGN_TX_HASH = 0x08,              // sign transaction in hash mode
+    INS_SIGN_SOROBAN_AUTHORATION = 0x0a,  // sign soroban authoration
 } command_e;
 
 /**
@@ -88,9 +89,10 @@ typedef struct {
  * Enumeration with user request type.
  */
 typedef enum {
-    CONFIRM_ADDRESS,          // confirm address derived from public key
-    CONFIRM_TRANSACTION,      // confirm transaction information
-    CONFIRM_TRANSACTION_HASH  // confirm transaction hash information
+    CONFIRM_ADDRESS,             // confirm address derived from public key
+    CONFIRM_TRANSACTION,         // confirm transaction information
+    CONFIRM_TRANSACTION_HASH,    // confirm transaction hash information
+    CONFIRM_SOROBAN_AUTHORATION  // confirm soroban authoration information
 } request_type_e;
 
 /**
@@ -116,11 +118,26 @@ typedef struct {
     transaction_details_t tx_details;
 } tx_ctx_t;
 
+typedef struct {
+    uint8_t raw[RAW_TX_MAX_SIZE];
+    uint32_t raw_size;
+    uint8_t network;
+    uint64_t nonce;
+    uint32_t signature_exp_ledger;
+    soroban_authorization_function_type_t function_type;
+    invoke_contract_args_t invoke_contract_args;  // only exist when function_type is
+                                                  // SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN
+} auth_ctx_t;
+
 /**
  * Structure for global context.
  */
 typedef struct {
-    tx_ctx_t tx_info;                                     // tx
+    union {
+        tx_ctx_t tx_info;  // tx
+        auth_ctx_t auth;   // soroban auth
+    };
+
     uint8_t hash[HASH_SIZE];                              // tx hash
     uint32_t bip32_path[MAX_BIP32_PATH];                  // BIP32 path
     uint8_t raw_public_key[RAW_ED25519_PUBLIC_KEY_SIZE];  // BIP32 path public key

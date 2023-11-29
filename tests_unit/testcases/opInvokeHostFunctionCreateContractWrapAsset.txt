@@ -1,0 +1,5 @@
+Network; Testnet
+Max Fee; 0.0418694 XLM
+Sequence Num; 12842214208045059
+Tx Source; GDUTHC..XM2FN7
+Soroban; Create Smart Contract

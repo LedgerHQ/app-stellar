@@ -24,7 +24,8 @@ extern const internal_storage_t N_storage_real;
 // check a setting item
 #define HAS_SETTING(k) ((N_settings & (1 << (k))) >> (k))
 
-#define S_HASH_SIGNING_ENABLED    0
-#define S_SEQUENCE_NUMBER_ENABLED 1
+#define S_HASH_SIGNING_ENABLED     0
+#define S_CUSTOM_CONTRACTS_ENABLED 1
+#define S_SEQUENCE_NUMBER_ENABLED  2
 
 #define S_INITIALIZED 7
