@@ -61,13 +61,6 @@ int handler_sign_tx(buffer_t *cdata, bool is_first_chunk, bool more) {
         return io_send_sw(SW_OK);
     }
 
-    if (cx_hash_sha256(G_context.tx_info.raw,
-                       G_context.tx_info.raw_size,
-                       G_context.hash,
-                       HASH_SIZE) != HASH_SIZE) {
-        THROW(SW_TX_HASH_FAIL);
-    }
-
     if (!parse_tx_xdr(G_context.tx_info.raw, G_context.tx_info.raw_size, &G_context.tx_info)) {
         THROW(SW_TX_PARSING_FAIL);
     }
@@ -75,11 +68,29 @@ int handler_sign_tx(buffer_t *cdata, bool is_first_chunk, bool more) {
     G_context.state = STATE_PARSED;
     PRINTF("tx parsed.\n");
 
+    // We have been called from the Exchange app that has already vaidated the TX in the UI
     if (G_called_from_swap) {
+        if (G.swap.response_ready) {
+            // Safety against trying to make the app sign multiple TX
+            // This panic quit is a failsafe that should never trigger, as the app is supposed to
+            // exit after the first send when started in swap mode
+            os_sched_exit(-1);
+        } else {
+            // We will quit the app after this transaction, whether it succeeds or fails
+            G.swap.response_ready = true;
+        }
         if (!swap_check()) {
             return io_send_sw(SW_SWAP_CHECKING_FAIL);
         }
         uint8_t signature[SIGNATURE_SIZE];
+
+        if (cx_hash_sha256(G_context.tx_info.raw,
+                           G_context.tx_info.raw_size,
+                           G_context.hash,
+                           HASH_SIZE) != HASH_SIZE) {
+            THROW(SW_TX_HASH_FAIL);
+        }
+
         if (crypto_sign_message(G_context.hash,
                                 sizeof(G_context.hash),
                                 signature,
@@ -89,21 +100,32 @@ int handler_sign_tx(buffer_t *cdata, bool is_first_chunk, bool more) {
         } else {
             return send_response_sig(signature, SIGNATURE_SIZE);
         }
+
+    } else {
+        // Normal (not-swap) mode, derive the public_key and display the validation UI
+
+        cx_ecfp_private_key_t private_key = {0};
+        cx_ecfp_public_key_t public_key = {0};
+
+        // derive private key according to BIP32 path
+        int error =
+            crypto_derive_private_key(&private_key, G_context.bip32_path, G_context.bip32_path_len);
+        if (error != 0) {
+            explicit_bzero(&private_key, sizeof(private_key));
+            return io_send_sw(error);
+        }
+        // generate corresponding public key
+        crypto_init_public_key(&private_key, &public_key, G_context.raw_public_key);
+        // reset private key
+        explicit_bzero(&private_key, sizeof(private_key));
+
+        if (cx_hash_sha256(G_context.tx_info.raw,
+                           G_context.tx_info.raw_size,
+                           G_context.hash,
+                           HASH_SIZE) != HASH_SIZE) {
+            THROW(SW_TX_HASH_FAIL);
+        }
+
+        return ui_approve_tx_init();
     }
-
-    cx_ecfp_private_key_t private_key = {0};
-    cx_ecfp_public_key_t public_key = {0};
-
-    // derive private key according to BIP32 path
-    int error =
-        crypto_derive_private_key(&private_key, G_context.bip32_path, G_context.bip32_path_len);
-    if (error != 0) {
-        return io_send_sw(error);
-    }
-    // generate corresponding public key
-    crypto_init_public_key(&private_key, &public_key, G_context.raw_public_key);
-    // reset private key
-    explicit_bzero(&private_key, sizeof(private_key));
-
-    return ui_approve_tx_init();
 };

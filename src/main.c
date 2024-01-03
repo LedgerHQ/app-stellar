@@ -166,6 +166,8 @@ static void library_main_helper(struct libargs_s *args) {
         case SIGN_TRANSACTION:
             if (copy_transaction_parameters(args->create_transaction)) {
                 // never returns
+                G_called_from_swap = true;
+                G.swap.response_ready = false;
                 handle_swap_sign_transaction();
             }
             break;
@@ -213,7 +215,6 @@ __attribute__((section(".boot"))) int main(int arg0) {
         // Called as library from another app
         libargs_t *args = (libargs_t *) arg0;
         if (args->id == 0x100) {
-            G_called_from_swap = true;
             library_main(args);
         } else {
             app_exit();
