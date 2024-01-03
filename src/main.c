@@ -25,6 +25,7 @@
 #include "./settings.h"
 #include "./apdu/apdu_parser.h"
 #include "./apdu/dispatcher.h"
+#include "./swap/handle_swap_commands.h"
 #include "./swap/swap_lib_calls.h"
 #include "./ui/ui.h"
 
@@ -121,7 +122,7 @@ void standalone_app_main() {
                     nvm_write((void *) &N_settings, (void *) &storage, sizeof(internal_storage_t));
                 }
 
-#ifdef TARGET_NANOX
+#ifdef HAVE_BLE
                 // grab the current plane mode setting
                 G_io_app.plane_mode = os_setting_get(OS_SETTING_PLANEMODE, NULL, 0);
 #endif  // TARGET_NANOX
@@ -132,7 +133,7 @@ void standalone_app_main() {
 
 #ifdef HAVE_BLE
                 BLE_power(0, NULL);
-                BLE_power(1, "Nano X");
+                BLE_power(1, NULL);
 #endif  // HAVE_BLE
                 app_main();
             }
@@ -166,6 +167,8 @@ static void library_main_helper(struct libargs_s *args) {
         case SIGN_TRANSACTION:
             if (copy_transaction_parameters(args->create_transaction)) {
                 // never returns
+                G_called_from_swap = true;
+                G.swap.response_ready = false;
                 handle_swap_sign_transaction();
             }
             break;
@@ -213,7 +216,6 @@ __attribute__((section(".boot"))) int main(int arg0) {
         // Called as library from another app
         libargs_t *args = (libargs_t *) arg0;
         if (args->id == 0x100) {
-            G_called_from_swap = true;
             library_main(args);
         } else {
             app_exit();

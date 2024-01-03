@@ -84,7 +84,6 @@ int crypto_sign_message(const uint8_t *message,
                         const uint8_t *signature,
                         uint8_t signature_len) {
     cx_ecfp_private_key_t private_key = {0};
-    int sig_len = 0;
 
     // derive private key according to BIP32 path
     int error =
@@ -105,7 +104,7 @@ int crypto_sign_message(const uint8_t *message,
                           (unsigned char *) signature,
                           signature_len,
                           NULL);
-            PRINTF("Signature: %.*H\n", sig_len, signature);
+            PRINTF("Signature: %.*H\n", signature_len, signature);
         }
         CATCH_OTHER(e) {
             error = e;

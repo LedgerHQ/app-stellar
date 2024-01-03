@@ -30,8 +30,9 @@ void ui_action_validate_pubkey(bool choice) {
     } else {
         io_send_sw(SW_DENY);
     }
-
+#ifndef HAVE_NBGL
     ui_menu_main();
+#endif  // HAVE_NBGL
 }
 
 void ui_action_validate_transaction(bool choice) {
@@ -51,5 +52,7 @@ void ui_action_validate_transaction(bool choice) {
         G_context.state = STATE_NONE;
         io_send_sw(SW_DENY);
     }
+#ifndef HAVE_NBGL
     ui_menu_main();
+#endif  // HAVE_NBGL
 };

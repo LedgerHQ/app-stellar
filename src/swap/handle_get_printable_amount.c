@@ -4,6 +4,7 @@
 #include "os.h"
 
 #include "./swap_lib_calls.h"
+#include "./handle_swap_commands.h"
 #include "../utils.h"
 
 /* return 0 on error, 1 otherwise */

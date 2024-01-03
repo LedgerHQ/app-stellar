@@ -32,27 +32,42 @@ extern io_state_e G_io_state;
 extern global_ctx_t G_context;
 
 /**
- * Global context for swap requests.
- */
-extern swap_values_t G_swap_values;
-
-/**
  * Is it called through the exchange app
  */
 extern bool G_called_from_swap;
 
 /**
- * Global variable with the caption of the current UI detail.
+ * Use an union to avoid the UI variable footprints for the swap flow and vice versa
  */
-extern char G_ui_detail_caption[DETAIL_CAPTION_MAX_LENGTH];
+typedef union swap_or_ui_u {
+    struct {
+        /**
+         * The response to the swap is ready
+         */
+        bool response_ready;
 
-/**
- * Global variable with the value of the current UI detail.
- */
-extern char G_ui_detail_value[DETAIL_VALUE_MAX_LENGTH];
+        /**
+         * Global context for swap requests.
+         */
+        swap_values_t values;
+    } swap;
 
-extern volatile uint8_t G_ui_current_state;
+    struct {
+        /**
+         * Global variable with the caption of the current UI detail.
+         */
+        char detail_caption[DETAIL_CAPTION_MAX_LENGTH];
+        /**
+         * Global variable with the value of the current UI detail.
+         */
+        char detail_value[DETAIL_VALUE_MAX_LENGTH];
 
-extern uint8_t G_ui_current_data_index;
+        uint8_t current_state;
 
-extern ui_action_validate_cb G_ui_validate_callback;
+        uint8_t current_data_index;
+
+        ui_action_validate_cb validate_callback;
+    } ui;
+} swap_or_ui_t;
+
+extern swap_or_ui_t G;

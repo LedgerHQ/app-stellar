@@ -447,7 +447,7 @@ bool print_asset(const asset_t *asset, uint8_t network_id, char *out, size_t out
     return true;
 }
 
-bool print_flag(char *flag, char *out, size_t out_len) {
+bool print_flag(const char *flag, char *out, size_t out_len) {
     if (out[0]) {
         if (strlcat(out, ", ", out_len) >= out_len) {
             return false;

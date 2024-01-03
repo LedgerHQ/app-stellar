@@ -1,11 +1,8 @@
 # Compilation of Ledger's app
-src/glyphs.c
-src/glyphs.h
 bin/
 elfs/
 debug/
-dep/
-obj/
+build/
 tests_unit/build/
 tests_unit/testcases/*.raw
 tests_zemu/node_modules/

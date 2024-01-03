@@ -21,7 +21,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
 
     set_state_data(true);
     while (formatter_stack[formatter_index] != NULL) {
-        printf("%s: %s\n", G_ui_detail_caption, G_ui_detail_value);
+        printf("%s: %s\n", G.ui.detail_caption, G.ui.detail_value);
         formatter_index++;
 
         if (formatter_stack[formatter_index] != NULL) {
