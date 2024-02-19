@@ -65,7 +65,7 @@
 | ----------------------- | ------ | ---------------- |
 | 64                      | 0x9000 | `signature (64)` |
 
-## SIGN_TX
+## INS_SIGN_SOROBAN_AUTHORATION
 
 ### Command
 

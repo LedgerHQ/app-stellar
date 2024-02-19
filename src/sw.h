@@ -99,3 +99,8 @@
  * Status word for success.
  */
 #define SW_OK 0x9000
+
+/**
+ * Status word for internal error. (eg. crypto error)
+ */
+#define SW_INTERNAL_ERROR 0x7000
