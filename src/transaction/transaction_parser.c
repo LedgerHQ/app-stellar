@@ -940,22 +940,6 @@ bool parse_ledger_key(buffer_t *buffer, ledger_key_t *ledger_key) {
             ledger_key->liquidity_pool.liquidity_pool_id = buffer->ptr + buffer->offset;
             PARSER_CHECK(buffer_advance(buffer, LIQUIDITY_POOL_ID_SIZE))
             return true;
-        case CONTRACT_DATA: {
-            sc_address_t sc_address;
-            PARSER_CHECK(parse_sc_address(buffer, &sc_address))  // contract
-            PARSER_CHECK(parse_scval(buffer))                    // key
-            PARSER_CHECK(buffer_advance(buffer, 4))              // durability
-            return true;
-        }
-        case CONTRACT_CODE:
-            PARSER_CHECK(buffer_advance(buffer, 32))
-            return true;
-        case CONFIG_SETTING:
-            PARSER_CHECK(buffer_advance(buffer, 4))
-            return true;
-        case TTL:
-            PARSER_CHECK(buffer_advance(buffer, 32))
-            return true;
         default:
             return false;
     }
@@ -1032,33 +1016,6 @@ bool parse_extension_point(buffer_t *buffer) {
 bool parse_restore_footprint(buffer_t *buffer, restore_footprint_op_t *op) {
     (void) op;
     PARSER_CHECK(parse_extension_point(buffer))
-    return true;
-}
-
-bool parse_soroban_resources(buffer_t *buffer) {
-    // footprint
-    uint32_t len;
-    ledger_key_t ledger_key;
-    PARSER_CHECK(buffer_read32(buffer, (uint32_t *) &len))  // read_only array length
-    for (uint32_t i = 0; i < len; i++) {
-        PARSER_CHECK(parse_ledger_key(buffer, &ledger_key))
-    }
-
-    PARSER_CHECK(buffer_read32(buffer, (uint32_t *) &len))  // read_write array length
-    for (uint32_t i = 0; i < len; i++) {
-        PARSER_CHECK(parse_ledger_key(buffer, &ledger_key))
-    }
-
-    PARSER_CHECK(buffer_advance(buffer, 4))  // instructions
-    PARSER_CHECK(buffer_advance(buffer, 4))  // read_bytes
-    PARSER_CHECK(buffer_advance(buffer, 4))  // write_bytes
-    return true;
-}
-
-bool parse_soroban_transaction_data(buffer_t *buffer) {
-    PARSER_CHECK(parse_extension_point(buffer))
-    PARSER_CHECK(parse_soroban_resources(buffer))
-    PARSER_CHECK(buffer_advance(buffer, 8))  // resource_fee
     return true;
 }
 
@@ -1461,23 +1418,6 @@ bool check_operations(buffer_t *buffer, uint8_t op_count) {
     return true;
 }
 
-bool parse_transaction_ext(buffer_t *buffer) {
-    uint32_t ext;
-    PARSER_CHECK(buffer_read32(buffer, &ext))
-    PRINTF("parse_transaction_ext: ext=%d\n", ext);
-    switch (ext) {
-        case 0:
-            // void
-            break;
-        case 1:
-            PARSER_CHECK(parse_soroban_transaction_data(buffer))
-            break;
-        default:
-            break;
-    }
-    return true;
-}
-
 bool parse_transaction_details(buffer_t *buffer, transaction_details_t *transaction) {
     // account used to run the (inner)transaction
     PARSER_CHECK(parse_transaction_source(buffer, &transaction->source_account))
@@ -1493,10 +1433,11 @@ bool parse_transaction_details(buffer_t *buffer, transaction_details_t *transact
 
     PARSER_CHECK(parse_transaction_memo(buffer, &transaction->memo))
     PARSER_CHECK(parse_transaction_operation_len(buffer, &transaction->operations_count))
+
     size_t offset = buffer->offset;
     PARSER_CHECK(check_operations(buffer, transaction->operations_count))
-    PARSER_CHECK(parse_transaction_ext(buffer))
     buffer->offset = offset;
+
     return true;
 }
 
