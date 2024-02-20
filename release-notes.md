@@ -1,5 +1,12 @@
 # Release Notes
 
+## v5.1.0
+
+### Updated
+- Add support for Stellar Soroban.
+- Fix some bugs.
+- Remove the soon-to-be-deprecated SDK calls.
+
 ## v4.0.0
 
 ### Updated
