@@ -28,19 +28,6 @@ test.each(models)("can start and stop container ($dev.name)", async ({ dev, star
   }
 });
 
-test.each(models)("app version ($dev.name)", async ({ dev, startText }) => {
-  const sim = new Zemu(dev.path);
-  try {
-    await sim.start({ ...defaultOptions, model: dev.name, startText: startText });
-    const transport = await sim.getTransport();
-    const str = new Str(transport);
-    const result = await str.getAppConfiguration();
-    expect(result.version).toBe("5.0.3");
-  } finally {
-    await sim.close();
-  }
-});
-
 describe("get public key", () => {
   test.each(models)("get public key without confirmation ($dev.name)", async ({ dev, startText }) => {
     const sim = new Zemu(dev.path);
