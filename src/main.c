@@ -156,7 +156,6 @@ void standalone_app_main() {
 }
 
 static void library_main_helper(struct libargs_s *args) {
-    check_api_level(CX_COMPAT_APILEVEL);
     PRINTF("Inside library \n");
     switch (args->command) {
         case CHECK_ADDRESS:

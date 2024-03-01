@@ -33,12 +33,12 @@ int crypto_derive_private_key(cx_ecfp_private_key_t *private_key,
  * @param[out] raw_public_key
  *   Pointer to raw public key.
  *
- * @throw INVALID_PARAMETER
+ * @return 0 on success, error number otherwise.
  *
  */
-void crypto_init_public_key(cx_ecfp_private_key_t *private_key,
-                            cx_ecfp_public_key_t *public_key,
-                            uint8_t raw_public_key[static RAW_ED25519_PUBLIC_KEY_SIZE]);
+int crypto_init_public_key(cx_ecfp_private_key_t *private_key,
+                           cx_ecfp_public_key_t *public_key,
+                           uint8_t raw_public_key[static RAW_ED25519_PUBLIC_KEY_SIZE]);
 
 /**
  * Sign message.

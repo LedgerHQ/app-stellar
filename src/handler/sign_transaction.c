@@ -113,7 +113,7 @@ int handler_sign_tx(buffer_t *cdata, bool is_first_chunk, bool more) {
             crypto_derive_private_key(&private_key, G_context.bip32_path, G_context.bip32_path_len);
         if (error != 0) {
             explicit_bzero(&private_key, sizeof(private_key));
-            return io_send_sw(error);
+            return io_send_sw(SW_INTERNAL_ERROR);
         }
         // generate corresponding public key
         crypto_init_public_key(&private_key, &public_key, G_context.raw_public_key);

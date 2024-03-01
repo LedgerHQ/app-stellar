@@ -65,6 +65,20 @@
 | ----------------------- | ------ | ---------------- |
 | 64                      | 0x9000 | `signature (64)` |
 
+## INS_SIGN_SOROBAN_AUTHORATION
+
+### Command
+
+| CLA  | INS  | P1                                 | P2                           | Lc                                                                | CData                                                                                                                        |
+| ---- | ---- | ---------------------------------- | ---------------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| 0xE0 | 0x0A | 0x00 (first) <br> 0x80 (not_first) | 0x00 (last) <br> 0x80 (more) | 1 + 4n + k<br/>Only the first data chunk contains bip32 path data | `len(bip32_path) (1)` \|\|<br> `bip32_path{1} (4)` \|\|<br>`...` \|\|<br>`bip32_path{n} (4)` \|\|<br> `hash_id_preimage_chunk(k)` |
+
+### Response
+
+| Response length (bytes) | SW     | RData            |
+| ----------------------- | ------ | ---------------- |
+| 64                      | 0x9000 | `signature (64)` |
+
 ## Status Words
 
 | SW     | SW name                               | Description                                             |
@@ -76,6 +90,7 @@
 | 0x6C24 | `SW_UNKNOWN_OP`                       | Unknown Stellar operation                               |
 | 0x6C25 | `SW_UNKNOWN_ENVELOPE_TYPE`            | Unknown Stellar envelope type                           |
 | 0x6C66 | `SW_TX_HASH_SIGNING_MODE_NOT_ENABLED` | Hash signing model not enabled                          |
+| 0x6C66 | `SW_CUSTOM_CONTRACT_MODE_NOT_ENABLED` | Custom contract model not enabled                       |
 | 0x6D00 | `SW_INS_NOT_SUPPORTED`                | No command exists with `INS`                            |
 | 0x6E00 | `SW_CLA_NOT_SUPPORTED`                | Bad `CLA` used for this application                     |
 | 0xB000 | `SW_WRONG_RESPONSE_LENGTH`            | Wrong response length (buffer too small or too big)     |

@@ -30,13 +30,17 @@ static void displaySettingsMenu(void);
 static void settingsControlsCallback(int token, uint8_t index);
 static bool settingsNavCallback(uint8_t page, nbgl_pageContent_t* content);
 
-enum { SWITCH_HASH_SET_TOKEN = FIRST_USER_TOKEN, SWITCH_SEQUENCE_SET_TOKEN };
+enum {
+    SWITCH_HASH_SET_TOKEN = FIRST_USER_TOKEN,
+    SWITCH_CUSTOM_CONTRACTS_SET_TOKEN,
+    SWITCH_SEQUENCE_SET_TOKEN
+};
 
 #define NB_INFO_FIELDS 2
 static const char* const infoTypes[] = {"Version", "Developer"};
 static const char* const infoContents[] = {APPVERSION, "Ledger"};
 
-#define NB_SETTINGS_SWITCHES 2
+#define NB_SETTINGS_SWITCHES 3
 #define SETTINGS_INIT_PAGE   0
 #define SETTINGS_NB_PAGES    2
 #define SETTINGS_TOUCHABLE   false
@@ -58,11 +62,16 @@ static bool settingsNavCallback(uint8_t page, nbgl_pageContent_t* content) {
         switches[0].token = SWITCH_HASH_SET_TOKEN;
         switches[0].tuneId = TUNE_TAP_CASUAL;
         switches[0].initState = (HAS_SETTING(S_HASH_SIGNING_ENABLED)) ? ON_STATE : OFF_STATE;
-        switches[1].text = "Sequence number";
-        switches[1].subText = "Display sequence in\ntransactions";
-        switches[1].token = SWITCH_SEQUENCE_SET_TOKEN;
+        switches[1].text = "Custom contracts";
+        switches[1].subText = "Allow unverified\ncontracts";
+        switches[1].token = SWITCH_CUSTOM_CONTRACTS_SET_TOKEN;
         switches[1].tuneId = TUNE_TAP_CASUAL;
-        switches[1].initState = (HAS_SETTING(S_SEQUENCE_NUMBER_ENABLED)) ? ON_STATE : OFF_STATE;
+        switches[1].initState = (HAS_SETTING(S_CUSTOM_CONTRACTS_ENABLED)) ? ON_STATE : OFF_STATE;
+        switches[2].text = "Sequence number";
+        switches[2].subText = "Display sequence in\ntransactions";
+        switches[2].token = SWITCH_SEQUENCE_SET_TOKEN;
+        switches[2].tuneId = TUNE_TAP_CASUAL;
+        switches[2].initState = (HAS_SETTING(S_SEQUENCE_NUMBER_ENABLED)) ? ON_STATE : OFF_STATE;
 
         content->type = SWITCHES_LIST;
         content->switchesList.nbSwitches = NB_SETTINGS_SWITCHES;
@@ -78,6 +87,9 @@ static void settingsControlsCallback(int token, uint8_t index) {
     switch (token) {
         case SWITCH_HASH_SET_TOKEN:
             SETTING_TOGGLE(S_HASH_SIGNING_ENABLED);
+            break;
+        case SWITCH_CUSTOM_CONTRACTS_SET_TOKEN:
+            SETTING_TOGGLE(S_CUSTOM_CONTRACTS_ENABLED);
             break;
         case SWITCH_SEQUENCE_SET_TOKEN:
             SETTING_TOGGLE(S_SEQUENCE_NUMBER_ENABLED);

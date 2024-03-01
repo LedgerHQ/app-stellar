@@ -1,6 +1,7 @@
 #include "os.h"
 #include "ux.h"
 #include "os_io_seproxyhal.h"
+#include <string.h>
 
 #include "./swap_lib_calls.h"
 #include "handle_swap_commands.h"

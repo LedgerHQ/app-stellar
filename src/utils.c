@@ -113,6 +113,12 @@ bool encode_pre_auth_x_key(const uint8_t raw_pre_auth_tx[static RAW_PRE_AUTH_TX_
     return encode_key(raw_pre_auth_tx, VERSION_BYTE_PRE_AUTH_TX_KEY, out, out_len);
 }
 
+bool encode_contract(const uint8_t raw_contract[static RAW_CONTRACT_KEY_SIZE],
+                     char *out,
+                     size_t out_len) {
+    return encode_key(raw_contract, VERSION_BYTE_CONTRACT, out, out_len);
+}
+
 bool encode_ed25519_signed_payload(const ed25519_signed_payload_t *signed_payload,
                                    char *out,
                                    size_t out_len) {
@@ -225,6 +231,21 @@ bool print_account_id(const account_id_t account_id,
     return encode_ed25519_public_key(account_id, out, out_len);
 }
 
+bool print_contract_id(const uint8_t *contract_id,
+                       char *out,
+                       size_t out_len,
+                       uint8_t num_chars_l,
+                       uint8_t num_chars_r) {
+    if (num_chars_l > 0) {
+        char buffer[ENCODED_CONTRACT_KEY_LENGTH];
+        if (!encode_contract(contract_id, buffer, sizeof(buffer))) {
+            return false;
+        }
+        return print_summary(buffer, out, out_len, num_chars_l, num_chars_r);
+    }
+    return encode_contract(contract_id, out, out_len);
+}
+
 bool print_hash_x_key(const uint8_t raw_hash_x[static RAW_HASH_X_KEY_SIZE],
                       char *out,
                       size_t out_len,
@@ -254,6 +275,7 @@ bool print_pre_auth_x_key(const uint8_t raw_pre_auth_tx[static RAW_PRE_AUTH_TX_K
     }
     return encode_pre_auth_x_key(raw_pre_auth_tx, out, out_len);
 }
+
 bool print_ed25519_signed_payload(const ed25519_signed_payload_t *signed_payload,
                                   char *out,
                                   size_t out_len,
@@ -267,6 +289,19 @@ bool print_ed25519_signed_payload(const ed25519_signed_payload_t *signed_payload
         return false;
     };
     return print_summary(tmp, out, out_len, num_chars_l, num_chars_r);
+}
+
+bool print_sc_address(const sc_address_t *sc_address,
+                      char *out,
+                      size_t out_len,
+                      uint8_t num_chars_l,
+                      uint8_t num_chars_r) {
+    if (sc_address->type == SC_ADDRESS_TYPE_ACCOUNT) {
+        return print_account_id(sc_address->address, out, out_len, num_chars_l, num_chars_r);
+    } else {
+        return print_contract_id(sc_address->address, out, out_len, num_chars_l, num_chars_r);
+    }
+    return true;
 }
 
 bool print_muxed_account(const muxed_account_t *muxed_account,

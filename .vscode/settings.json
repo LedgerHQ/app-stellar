@@ -1,7 +1,14 @@
 {
     "files.associations": {
         "*.h": "c",
-        "random": "c"
+        "random": "c",
+        "ratio": "c",
+        "system_error": "c",
+        "array": "c",
+        "functional": "c",
+        "tuple": "c",
+        "type_traits": "c",
+        "utility": "c"
     },
     "C_Cpp.clang_format_path": "/usr/bin/clang-format",
     "editor.formatOnSave": true

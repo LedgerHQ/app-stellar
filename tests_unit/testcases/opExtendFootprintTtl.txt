@@ -1,0 +1,5 @@
+Network; Testnet
+Max Fee; 0.0040914 XLM
+Sequence Num; 12842214208045061
+Tx Source; GDUTHC..XM2FN7
+Soroban; Extend Footprint TTL
