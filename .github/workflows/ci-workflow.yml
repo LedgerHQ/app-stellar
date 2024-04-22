@@ -33,7 +33,7 @@ jobs:
 
       - name: Build unit tests
         run: |
-          make tests-unit
+          CTEST_OUTPUT_ON_FAILURE=1 make tests-unit
 
       - name: Generate code coverage
         run: |

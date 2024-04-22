@@ -1,5 +1,5 @@
 /*****************************************************************************
- *   Ledger Stellar App.
+ *   Ledger App Stellar.
  *   (c) 2022 Ledger SAS.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,11 +19,15 @@
 #include <limits.h>  // UINT8_MAX
 #include <assert.h>  // _Static_assert
 
-#include "../io.h"
-#include "../sw.h"
-#include "../types.h"
-#include "../settings.h"
-#include "../common/buffer.h"
+#include "io.h"
+#include "buffer.h"
+
+#include "get_app_configuration.h"
+#include "globals.h"
+#include "constants.h"
+#include "sw.h"
+#include "types.h"
+#include "settings.h"
 
 int handler_get_app_configuration() {
     PRINTF("handler_get_app_configuration invoked\n");
@@ -35,15 +39,12 @@ int handler_get_app_configuration() {
                    "MINOR version must be between 0 and 255!");
     _Static_assert(PATCH_VERSION >= 0 && PATCH_VERSION <= UINT8_MAX,
                    "PATCH version must be between 0 and 255!");
-
-    return io_send_response(
-        &(const buffer_t){.ptr =
-                              (uint8_t[APP_CONFIGURATION_SIZE + APP_VERSION_SIZE]){
-                                  (uint8_t) HAS_SETTING(S_HASH_SIGNING_ENABLED),
-                                  (uint8_t) MAJOR_VERSION,
-                                  (uint8_t) MINOR_VERSION,
-                                  (uint8_t) PATCH_VERSION},
-                          .size = APP_CONFIGURATION_SIZE + APP_VERSION_SIZE,
-                          .offset = 0},
+    return io_send_response_pointer(
+        (const uint8_t *) &(uint8_t[APP_CONFIGURATION_SIZE + APP_VERSION_SIZE]){
+            (uint8_t) HAS_SETTING(S_HASH_SIGNING_ENABLED),
+            (uint8_t) MAJOR_VERSION,
+            (uint8_t) MINOR_VERSION,
+            (uint8_t) PATCH_VERSION},
+        APP_CONFIGURATION_SIZE + APP_VERSION_SIZE,
         SW_OK);
 }

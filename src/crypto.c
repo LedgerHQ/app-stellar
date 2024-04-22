@@ -18,44 +18,36 @@
 #include <stdint.h>  // uint*_t
 #include <string.h>  // explicit_bzero
 
-#include "./crypto.h"
-#include "./globals.h"
+#include "crypto.h"
+#include "globals.h"
 
 #define STELLAR_SEED_KEY "ed25519 seed"
 
-int crypto_derive_private_key(cx_ecfp_private_key_t *private_key,
-                              const uint32_t *bip32_path,
-                              uint8_t bip32_path_len) {
-    uint8_t raw_private_key[RAW_ED25519_PRIVATE_KEY_SIZE] = {0};
-    int error = 0;
+cx_err_t crypto_derive_private_key(cx_ecfp_private_key_t *private_key,
+                                   const uint32_t *bip32_path,
+                                   uint8_t bip32_path_len) {
+    uint8_t raw_private_key[64] = {0};
+    cx_err_t error = CX_OK;
 
-    BEGIN_TRY {
-        TRY {
-            // derive the seed with bip32_path
-            os_perso_derive_node_with_seed_key(HDW_ED25519_SLIP10,
-                                               CX_CURVE_Ed25519,
-                                               bip32_path,
-                                               bip32_path_len,
-                                               raw_private_key,
-                                               NULL,
-                                               (unsigned char *) STELLAR_SEED_KEY,
-                                               sizeof(STELLAR_SEED_KEY));
-            // new private_key from raw
-            cx_ecfp_init_private_key(CX_CURVE_Ed25519,
-                                     raw_private_key,
-                                     sizeof(raw_private_key),
-                                     private_key);
-        }
-        CATCH_OTHER(e) {
-            error = e;
-        }
-        FINALLY {
-            explicit_bzero(&raw_private_key, sizeof(raw_private_key));
-        }
+    // derive the seed with bip32_path
+    CX_CHECK(os_derive_bip32_with_seed_no_throw(HDW_ED25519_SLIP10,
+                                                CX_CURVE_Ed25519,
+                                                bip32_path,
+                                                bip32_path_len,
+                                                raw_private_key,
+                                                NULL,
+                                                (unsigned char *) STELLAR_SEED_KEY,
+                                                sizeof(STELLAR_SEED_KEY)));
+    // new private_key from raw
+    CX_CHECK(cx_ecfp_init_private_key_no_throw(CX_CURVE_Ed25519, raw_private_key, 32, private_key));
+
+end:
+    explicit_bzero(&raw_private_key, sizeof(raw_private_key));
+    if (error != CX_OK) {
+        explicit_bzero(private_key, sizeof(*private_key));
+        return error;
     }
-    END_TRY;
-
-    return error;
+    return CX_OK;
 }
 
 // converts little endian 32 byte public key to big endian 32 byte public key
@@ -71,48 +63,48 @@ void raw_public_key_le_to_be(cx_ecfp_public_key_t *public_key,
     }
 }
 
-void crypto_init_public_key(cx_ecfp_private_key_t *private_key,
-                            cx_ecfp_public_key_t *public_key,
-                            uint8_t raw_public_key[static RAW_ED25519_PUBLIC_KEY_SIZE]) {
+cx_err_t crypto_init_public_key(cx_ecfp_private_key_t *private_key,
+                                cx_ecfp_public_key_t *public_key,
+                                uint8_t raw_public_key[static RAW_ED25519_PUBLIC_KEY_SIZE]) {
+    cx_err_t error = CX_OK;
+
     // generate corresponding public key
-    cx_ecfp_generate_pair(CX_CURVE_Ed25519, public_key, private_key, 1);
+    CX_CHECK(cx_ecfp_generate_pair_no_throw(CX_CURVE_Ed25519, public_key, private_key, 1));
+
+end:
+    if (error != CX_OK) {
+        return error;
+    }
     raw_public_key_le_to_be(public_key, raw_public_key);
+    return CX_OK;
 }
 
-int crypto_sign_message(const uint8_t *message,
-                        uint8_t message_len,
-                        const uint8_t *signature,
-                        uint8_t signature_len) {
+cx_err_t crypto_sign_message(const uint8_t *message,
+                             uint8_t message_len,
+                             const uint8_t *signature,
+                             uint8_t signature_len) {
     cx_ecfp_private_key_t private_key = {0};
+    cx_err_t error = CX_OK;
 
     // derive private key according to BIP32 path
-    int error =
-        crypto_derive_private_key(&private_key, G_context.bip32_path, G_context.bip32_path_len);
-    if (error != 0) {
+    error = crypto_derive_private_key(&private_key, G_context.bip32_path, G_context.bip32_path_len);
+    if (error != CX_OK) {
         return error;
     }
 
-    BEGIN_TRY {
-        TRY {
-            cx_eddsa_sign(&private_key,
-                          CX_LAST,
-                          CX_SHA512,
-                          message,
-                          message_len,
-                          NULL,
-                          0,
-                          (unsigned char *) signature,
-                          signature_len,
-                          NULL);
-            PRINTF("Signature: %.*H\n", signature_len, signature);
-        }
-        CATCH_OTHER(e) {
-            error = e;
-        }
-        FINALLY {
-            explicit_bzero(&private_key, sizeof(private_key));
-        }
+    CX_CHECK(cx_eddsa_sign_no_throw(&private_key,
+                                    CX_SHA512,
+                                    message,
+                                    message_len,
+                                    (unsigned char *) signature,
+                                    signature_len));
+    PRINTF("Signature: %.*H\n", signature_len, signature);
+
+end:
+    explicit_bzero(&private_key, sizeof(private_key));
+    if (error != CX_OK) {
+        PRINTF("In crypto_sign_message: ERROR %x \n", error);
+        return error;
     }
-    END_TRY;
-    return error;
+    return CX_OK;
 }

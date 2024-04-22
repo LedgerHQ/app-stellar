@@ -2,13 +2,15 @@
 #include <stdint.h>
 
 #include "os.h"
+#include "swap.h"
 
-#include "./swap_lib_calls.h"
-#include "./handle_swap_commands.h"
-#include "../utils.h"
+#include "handle_swap_sign_transaction.h"
+#include "stellar/printer.h"
 
-/* return 0 on error, 1 otherwise */
-int handle_get_printable_amount(get_printable_amount_parameters_t* params) {
+/* Format printable amount including the ticker from specified parameters.
+ *
+ * Must set empty printable_amount on error, printable amount otherwise */
+void swap_handle_get_printable_amount(get_printable_amount_parameters_t* params) {
     uint64_t amount;
     asset_t asset = {.type = ASSET_TYPE_NATIVE};
 
@@ -16,15 +18,18 @@ int handle_get_printable_amount(get_printable_amount_parameters_t* params) {
 
     if (!swap_str_to_u64(params->amount, params->amount_length, &amount)) {
         PRINTF("Amount is too big");
-        return 0;
+        goto error;
     }
 
-    if (print_amount(amount,
-                     &asset,
-                     NETWORK_TYPE_PUBLIC,
-                     params->printable_amount,
-                     sizeof(params->printable_amount))) {
-        return 0;
+    if (!print_amount(amount,
+                      &asset,
+                      NETWORK_TYPE_PUBLIC,
+                      params->printable_amount,
+                      sizeof(params->printable_amount))) {
+        goto error;
     }
-    return 1;
+    return;
+
+error:
+    memset(params->printable_amount, '\0', sizeof(params->printable_amount));
 }

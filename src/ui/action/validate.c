@@ -1,5 +1,5 @@
 /*****************************************************************************
- *   Ledger Stellar App.
+ *   Ledger App Stellar.
  *   (c) 2022 Ledger SAS.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,42 +17,35 @@
 
 #include <stdbool.h>  // bool
 
-#include "./validate.h"
-#include "../ui.h"
-#include "../../send_response.h"
-#include "../../sw.h"
-#include "../../crypto.h"
-#include "../../globals.h"
+#include "validate.h"
+#include "sw.h"
+#include "crypto.h"
+#include "globals.h"
+#include "helper/send_response.h"
 
-void ui_action_validate_pubkey(bool choice) {
+void validate_pubkey(bool choice) {
     if (choice) {
-        send_response_pubkey();
+        helper_send_response_pubkey();
     } else {
         io_send_sw(SW_DENY);
     }
-#ifndef HAVE_NBGL
-    ui_menu_main();
-#endif  // HAVE_NBGL
 }
 
-void ui_action_validate_transaction(bool choice) {
+void validate_transaction(bool choice) {
     if (choice) {
         G_context.state = STATE_APPROVED;
         uint8_t signature[SIGNATURE_SIZE];
         if (crypto_sign_message(G_context.hash,
                                 sizeof(G_context.hash),
                                 signature,
-                                SIGNATURE_SIZE) != 0) {
+                                SIGNATURE_SIZE) != CX_OK) {
             G_context.state = STATE_NONE;
             io_send_sw(SW_SIGNATURE_FAIL);
         } else {
-            send_response_sig(signature, SIGNATURE_SIZE);
+            helper_send_response_sig(signature);
         }
     } else {
         G_context.state = STATE_NONE;
         io_send_sw(SW_DENY);
     }
-#ifndef HAVE_NBGL
-    ui_menu_main();
-#endif  // HAVE_NBGL
-};
+}

@@ -1,7 +1,7 @@
 import { DEFAULT_START_OPTIONS, ButtonKind, TouchNavigation } from "@zondax/zemu";
 import { APP_SEED, models } from "./common";
 import * as testCasesFunction from "tests-common";
-import { Keypair } from "stellar-base";
+import { Keypair } from "@stellar/stellar-base";
 import Str from "@ledgerhq/hw-app-str";
 import Zemu from "@zondax/zemu";
 
@@ -22,19 +22,6 @@ test.each(models)("can start and stop container ($dev.name)", async ({ dev, star
   const sim = new Zemu(dev.path);
   try {
     await sim.start({ ...defaultOptions, model: dev.name, startText: startText });
-  } finally {
-    await sim.close();
-  }
-});
-
-test.each(models)("app version ($dev.name)", async ({ dev, startText }) => {
-  const sim = new Zemu(dev.path);
-  try {
-    await sim.start({ ...defaultOptions, model: dev.name, startText: startText });
-    const transport = await sim.getTransport();
-    const str = new Str(transport);
-    const result = await str.getAppConfiguration();
-    expect(result.version).toBe("5.0.2");
   } finally {
     await sim.close();
   }

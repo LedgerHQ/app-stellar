@@ -1,5 +1,5 @@
 /*****************************************************************************
- *   Ledger Stellar App.
+ *   Ledger App Stellar.
  *   (c) 2022 Ledger SAS.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,44 +15,46 @@
  *  limitations under the License.
  *****************************************************************************/
 
-#include <stdint.h>   // uint*_t
 #include <stdbool.h>  // bool
 #include <stddef.h>   // size_t
 #include <string.h>   // memset, explicit_bzero
 
-#include "./handler.h"
-#include "../globals.h"
-#include "../types.h"
-#include "../io.h"
-#include "../sw.h"
-#include "../crypto.h"
-#include "../send_response.h"
-#include "../common/buffer.h"
-#include "../ui/ui.h"
+#include "io.h"
+#include "buffer.h"
+
+#include "get_public_key.h"
+#include "globals.h"
+#include "sw.h"
+#include "crypto.h"
+#include "ui/display.h"
+#include "helper/send_response.h"
 
 int handler_get_public_key(buffer_t *cdata, bool display) {
-    PRINTF("handler_get_public_key invoked\n");
-
     explicit_bzero(&G_context, sizeof(G_context));
     G_context.req_type = CONFIRM_ADDRESS;
     G_context.state = STATE_NONE;
-
-    cx_ecfp_private_key_t private_key = {0};
-    cx_ecfp_public_key_t public_key = {0};
 
     if (!buffer_read_u8(cdata, &G_context.bip32_path_len) ||
         !buffer_read_bip32_path(cdata, G_context.bip32_path, (size_t) G_context.bip32_path_len)) {
         return io_send_sw(SW_WRONG_DATA_LENGTH);
     }
 
+    cx_err_t error = CX_OK;
+    cx_ecfp_private_key_t private_key = {0};
+    cx_ecfp_public_key_t public_key = {0};
+
     // derive private key according to BIP32 path
-    int error =
-        crypto_derive_private_key(&private_key, G_context.bip32_path, G_context.bip32_path_len);
-    if (error != 0) {
+    error = crypto_derive_private_key(&private_key, G_context.bip32_path, G_context.bip32_path_len);
+    if (error != CX_OK) {
         return io_send_sw(error);
     }
+
     // generate corresponding public key
-    crypto_init_public_key(&private_key, &public_key, G_context.raw_public_key);
+    error = crypto_init_public_key(&private_key, &public_key, G_context.raw_public_key);
+    if (error != CX_OK) {
+        return io_send_sw(error);
+    }
+
     // reset private key
     explicit_bzero(&private_key, sizeof(private_key));
 
@@ -60,5 +62,5 @@ int handler_get_public_key(buffer_t *cdata, bool display) {
         return ui_display_address();
     }
 
-    return send_response_pubkey();
+    return helper_send_response_pubkey();
 }
