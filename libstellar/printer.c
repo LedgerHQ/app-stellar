@@ -6,10 +6,12 @@
 
 #include "stellar/printer.h"
 
+#define INT256_LENGTH                     32
 #define MUXED_ACCOUNT_MED_25519_SIZE      43
 #define BINARY_MAX_SIZE                   36
 #define AMOUNT_WITH_COMMAS_MAX_LENGTH     24   // 922,337,203,685.4775807
 #define ED25519_SIGNED_PAYLOAD_MAX_LENGTH 166  // include the null terminator
+#define INT256_WITH_COMMAS_MAX_LENGTH     104
 
 uint16_t crc16(const uint8_t *input_str, int num_bytes) {
     uint16_t crc;
@@ -594,5 +596,266 @@ bool is_printable_binary(const uint8_t *str, size_t str_len) {
             return false;
         }
     }
+    return true;
+}
+
+static int allzeroes(const void *buf, size_t n) {
+    uint8_t *p = (uint8_t *) buf;
+    for (size_t i = 0; i < n; ++i) {
+        if (p[i]) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+/**
+ * Convert  a 128-bit or 256-bit unsigned integer to a decimal string.
+ */
+static bool uint256_to_decimal(const uint8_t *value, size_t value_len, char *out, size_t out_len) {
+    if (value_len > INT256_LENGTH) {
+        return false;
+    }
+
+    uint16_t n[16] = {0};
+    // Copy and right-align the number
+    memcpy((uint8_t *) n + INT256_LENGTH - value_len, value, value_len);
+
+    // Special case when value is 0
+    if (allzeroes(n, INT256_LENGTH)) {
+        if (out_len < 2) {
+            // Not enough space to hold "0" and \0.
+            return false;
+        }
+        if (strlcpy(out, "0", out_len) >= out_len) {
+            return false;
+        }
+        return true;
+    }
+
+    uint16_t *p = n;
+    for (int i = 0; i < 16; i++) {
+        n[i] = __builtin_bswap16(*p++);
+    }
+    int pos = out_len;
+    while (!allzeroes(n, sizeof(n))) {
+        if (pos == 0) {
+            return false;
+        }
+        pos -= 1;
+        unsigned int carry = 0;
+        for (int i = 0; i < 16; i++) {
+            int rem = ((carry << 16) | n[i]) % 10;
+            n[i] = ((carry << 16) | n[i]) / 10;
+            carry = rem;
+        }
+        out[pos] = '0' + carry;
+    }
+    memmove(out, out + pos, out_len - pos);
+    out[out_len - pos] = 0;
+    return true;
+}
+
+/**
+ * Convert a 128-bit or 256-bit signed integer to a decimal string.
+ */
+static bool int256_to_decimal(const uint8_t *value, size_t value_len, char *out, size_t out_len) {
+    if (value_len > INT256_LENGTH) {
+        // value len is bigger than INT256_LENGTH
+        return false;
+    }
+
+    bool is_negative = (value[0] & 0x80) != 0;
+    uint8_t n[INT256_LENGTH] = {0};
+    if (is_negative) {
+        // Compute the absolute value
+        bool carry = true;
+        for (int i = value_len - 1; i >= 0; --i) {
+            n[INT256_LENGTH - value_len + i] = ~value[i] + (carry ? 1 : 0);
+            carry = carry && (value[i] == 0);
+        }
+    } else {
+        memcpy(n + INT256_LENGTH - value_len, value, value_len);
+    }
+
+    char *p = out + out_len - 1;
+    *p = '\0';
+    do {
+        uint32_t remainder = 0;
+        for (int i = 0; i < INT256_LENGTH; ++i) {
+            uint32_t temp = (remainder << 8) | n[i];
+            n[i] = temp / 10;
+            remainder = temp % 10;
+        }
+        --p;
+        *p = '0' + remainder;
+    } while (!allzeroes(n, INT256_LENGTH) && p > out);
+
+    if (is_negative && p > out) {
+        --p;
+        *p = '-';
+    }
+
+    memmove(out, p, out_len - (p - out));
+    return true;
+}
+
+bool add_separator_to_number(char *out, size_t out_len) {
+    size_t length = strlen(out);
+    uint8_t negative = (out[0] == '-') ? 1 : 0;  // Check if the number is negative
+
+    // Calculate the new length of the string with the commas
+    size_t new_length = 0;
+    if (negative) {
+        if (length < 2) {
+            // The string is too short to have a negative number
+            return false;
+        }
+        new_length = length + (length - 2) / 3;
+    } else {
+        if (length < 1) {
+            // The string is too short to have a positive number
+            return false;
+        }
+        new_length = length + (length - 1) / 3;
+    }
+
+    // If the new length is greater than the maximum length, return false
+    if (new_length >= out_len) {
+        return false;
+    }
+
+    out[new_length] = '\0';  // Set the end of the new string
+
+    // Start from the end of the string and move the digits to their new positions
+    for (int i = length - 1, j = new_length - 1; i >= 0; i--, j--) {
+        out[j] = out[i];
+
+        // If the current position is a multiple of 3 and it's not the first digit, add a comma
+        if ((length - i) % 3 == 0 && i != negative && j > 0) {
+            out[--j] = ',';
+        }
+    }
+
+    return true;
+}
+
+bool print_int32(const uint8_t *value, char *out, size_t out_len, bool add_separator) {
+    return int256_to_decimal(value, 4, out, out_len) &&
+           (!add_separator || add_separator_to_number(out, out_len));
+}
+
+bool print_uint32(const uint8_t *value, char *out, size_t out_len, bool add_separator) {
+    return uint256_to_decimal(value, 4, out, out_len) &&
+           (!add_separator || add_separator_to_number(out, out_len));
+}
+
+bool print_int64(const uint8_t *value, char *out, size_t out_len, bool add_separator) {
+    return int256_to_decimal(value, 8, out, out_len) &&
+           (!add_separator || add_separator_to_number(out, out_len));
+}
+
+bool print_uint64(const uint8_t *value, char *out, size_t out_len, bool add_separator) {
+    return uint256_to_decimal(value, 8, out, out_len) &&
+           (!add_separator || add_separator_to_number(out, out_len));
+}
+
+bool print_int128(const uint8_t *value, char *out, size_t out_len, bool add_separator) {
+    return int256_to_decimal(value, 16, out, out_len) &&
+           (!add_separator || add_separator_to_number(out, out_len));
+}
+
+bool print_uint128(const uint8_t *value, char *out, size_t out_len, bool add_separator) {
+    return uint256_to_decimal(value, 16, out, out_len) &&
+           (!add_separator || add_separator_to_number(out, out_len));
+}
+
+bool print_int256(const uint8_t *value, char *out, size_t out_len, bool add_separator) {
+    return int256_to_decimal(value, 32, out, out_len) &&
+           (!add_separator || add_separator_to_number(out, out_len));
+}
+
+bool print_uint256(const uint8_t *value, char *out, size_t out_len, bool add_separator) {
+    return uint256_to_decimal(value, 32, out, out_len) &&
+           (!add_separator || add_separator_to_number(out, out_len));
+}
+
+bool print_scv_symbol(const scv_symbol_t *scv_symbol, char *out, size_t out_len) {
+    if (scv_symbol == NULL || out == NULL) {
+        return false;
+    }
+    if (scv_symbol->size > SCV_SYMBOL_MAX_SIZE || scv_symbol->size > out_len - 1) {
+        return false;
+    }
+    if (scv_symbol->size == 0) {
+        // print empty symbol
+        if (strlcpy(out, "[empty symbol]", out_len) >= out_len) {
+            return false;
+        }
+        return true;
+    }
+    if (!is_printable_binary(scv_symbol->symbol, scv_symbol->size)) {
+        return false;
+    }
+    memcpy(out, scv_symbol->symbol, scv_symbol->size);
+    out[scv_symbol->size] = '\0';
+    return true;
+}
+
+bool print_scv_string(const scv_string_t *scv_string, char *out, size_t out_len) {
+    if (scv_string == NULL || out == NULL) {
+        return false;
+    }
+
+    if (scv_string->size == 0) {
+        // print empty symbol
+        if (strlcpy(out, "[empty string]", out_len) >= out_len) {
+            return false;
+        }
+        return true;
+    }
+
+    // if the string is not printable, print [unprintable string]
+    if (!is_printable_binary(scv_string->string, scv_string->size)) {
+        if (strlcpy(out, "[unprintable string]", out_len) >= out_len) {
+            return false;
+        }
+        return true;
+    }
+
+    size_t copy_len = scv_string->size;
+
+    // If the output buffer is large enough to hold the entire scv_string, copy it directly and
+    // append a null terminator.
+    if (out_len > copy_len) {
+        memcpy(out, scv_string->string, copy_len);
+        out[copy_len] = '\0';  // Ensure the string is null-terminated.
+    } else {
+        if (out_len < 3) {
+            return false;
+        }
+        // Calculate the lengths of the beginning and end parts that can be displayed.
+        size_t dots_len = 2;                 // The length of two dots.
+        size_t available_len = out_len - 1;  // Subtract 1 to reserve space for the null terminator.
+        size_t start_copy_len = available_len / 2;
+        size_t end_copy_len = available_len - start_copy_len - dots_len;
+
+        // Copy the beginning part of the string.
+        memcpy(out, scv_string->string, start_copy_len);
+        out[start_copy_len] = '.';
+        out[start_copy_len + 1] = '.';
+
+        // Copy the end part of the string if there is space for it after the dots.
+        if (end_copy_len > 0) {
+            memcpy(out + start_copy_len + dots_len,
+                   scv_string->string + copy_len - end_copy_len,
+                   end_copy_len);
+        }
+
+        // Ensure the output string is null-terminated by placing a null character at the end of the
+        // buffer.
+        out[out_len - 1] = '\0';
+    }
+
     return true;
 }

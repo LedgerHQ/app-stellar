@@ -14,3 +14,6 @@ fuzz/build
 fuzz/testcases/
 tests_generate_binary/node_modules/
 .DS_Store
+.idea
+installer/
+linkermap.html

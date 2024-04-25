@@ -38,9 +38,11 @@ add_compile_definitions(TEST)
 include_directories(../libstellar/include)
 include_directories($ENV{BOLOS_SDK}/lib_standard_app)
 
-add_executable(test_parser test_parser.c)
+add_executable(test_tx_parser test_tx_parser.c)
+add_executable(test_auth_parser test_auth_parser.c)
 add_executable(test_printer test_printer.c)
-add_executable(test_formatter test_formatter.c)
+add_executable(test_tx_formatter test_tx_formatter.c)
+add_executable(test_auth_formatter test_auth_formatter.c)
 
 add_library(base58 SHARED $ENV{BOLOS_SDK}/lib_standard_app/base58.c)
 add_library(bip32 SHARED $ENV{BOLOS_SDK}/lib_standard_app/bip32.c)
@@ -56,7 +58,7 @@ add_library(formatter ../libstellar/formatter.c)
 add_library(base32 ../libstellar/base32.c)
 add_library(base64 ../libstellar/base64.c)
 
-target_link_libraries(test_parser PUBLIC 
+target_link_libraries(test_tx_parser PUBLIC 
                       parser
                       buffer
                       bip32
@@ -67,6 +69,17 @@ target_link_libraries(test_parser PUBLIC
                       read
                       bsd)
 
+target_link_libraries(test_auth_parser PUBLIC 
+                      parser
+                      buffer
+                      bip32
+                      cmocka 
+                      gcov
+                      varint
+                      write
+                      read
+                      bsd)
+                      
 target_link_libraries(test_printer PUBLIC 
                       printer
                       format
@@ -80,7 +93,7 @@ target_link_libraries(test_printer PUBLIC
                       read
                       bsd)
 
-target_link_libraries(test_formatter PUBLIC 
+target_link_libraries(test_tx_formatter PUBLIC 
                       formatter
                       parser
                       printer
@@ -96,6 +109,24 @@ target_link_libraries(test_formatter PUBLIC
                       read
                       bsd)
 
-add_test(test_parser test_parser)
+target_link_libraries(test_auth_formatter PUBLIC 
+                      formatter
+                      parser
+                      printer
+                      format
+                      base64
+                      base32
+                      buffer
+                      bip32
+                      cmocka 
+                      gcov
+                      varint
+                      write
+                      read
+                      bsd)
+
+add_test(test_tx_parser test_tx_parser)
+add_test(test_auth_parser test_auth_parser)
 add_test(test_printer test_printer)
-add_test(test_formatter test_formatter)
+add_test(test_tx_formatter test_tx_formatter)
+add_test(test_auth_formatter test_auth_formatter)

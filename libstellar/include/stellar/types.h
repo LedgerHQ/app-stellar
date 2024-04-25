@@ -49,6 +49,7 @@
 #define DATA_NAME_MAX_SIZE      64
 #define DATA_VALUE_MAX_SIZE     64
 #define HOME_DOMAIN_MAX_SIZE    32
+#define SCV_SYMBOL_MAX_SIZE     32
 
 #define NETWORK_TYPE_PUBLIC  0
 #define NETWORK_TYPE_TEST    1
@@ -512,6 +513,16 @@ typedef enum SCValType {
     SCV_LEDGER_KEY_NONCE = 21
 } sc_val_type_t;
 
+typedef struct {
+    uint32_t size;  // the max size of the symbol is SCV_SYMBOL_MAX_SIZE
+    const uint8_t *symbol;
+} scv_symbol_t;
+
+typedef struct {
+    uint32_t size;  // dont include the null terminator
+    const uint8_t *string;
+} scv_string_t;
+
 typedef enum { SC_ADDRESS_TYPE_ACCOUNT = 0, SC_ADDRESS_TYPE_CONTRACT = 1 } sc_address_type_t;
 
 typedef struct {
@@ -531,6 +542,7 @@ typedef struct {
         const uint8_t *name;
     } function;
     size_t parameters_position;
+    uint8_t parameters_length;
 } invoke_contract_args_t;
 
 typedef enum {
@@ -557,6 +569,13 @@ typedef enum {
     SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN = 0,
     SOROBAN_AUTHORIZED_FUNCTION_TYPE_CREATE_CONTRACT_HOST_FN = 1
 } soroban_authorization_function_type_t;
+
+typedef struct {
+    uint64_t nonce;
+    uint32_t signature_expiration_ledger;
+    soroban_authorization_function_type_t function_type;
+    invoke_contract_args_t invoke_contract_args;
+} soroban_authorization_t;
 
 // ************************* Soroban ************************* //
 
@@ -649,6 +668,13 @@ typedef struct {
 typedef struct {
     transaction_details_t tx;
     fee_bump_transaction_details_t fee_bump_tx;
+} tx_details_t;
+
+typedef struct {
+    union {
+        tx_details_t tx_details;
+        soroban_authorization_t soroban_authorization;
+    };
     envelope_type_t type;
     uint8_t network;
 } envelope_t;

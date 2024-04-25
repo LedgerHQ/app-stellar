@@ -68,33 +68,34 @@ bool swap_check() {
     char tmp_buf[DETAIL_VALUE_MAX_LENGTH];
 
     // tx type
-    if (G_context.tx_info.type != ENVELOPE_TYPE_TX) {
+    if (G_context.envelope.type != ENVELOPE_TYPE_TX) {
         return false;
     }
 
     // A XLM swap consist of only one "send" operation
-    if (G_context.tx_info.tx.operations_count != 1) {
+    if (G_context.envelope.tx_details.tx.operations_count != 1) {
         return false;
     }
 
     // parse the payment op
-    if (!parse_transaction_operation(G_context.raw, G_context.raw_size, &G_context.tx_info, 0)) {
+    if (!parse_transaction_operation(G_context.raw, G_context.raw_size, &G_context.envelope, 0)) {
         return false;
     }
 
     // op type
-    if (G_context.tx_info.tx.op_details.type != OPERATION_TYPE_PAYMENT) {
+    if (G_context.envelope.tx_details.tx.op_details.type != OPERATION_TYPE_PAYMENT) {
         return false;
     }
 
     // amount
-    if (G_context.tx_info.tx.op_details.payment_op.asset.type != ASSET_TYPE_NATIVE ||
-        G_context.tx_info.tx.op_details.payment_op.amount != (int64_t) G.swap_values.amount) {
+    if (G_context.envelope.tx_details.tx.op_details.payment_op.asset.type != ASSET_TYPE_NATIVE ||
+        G_context.envelope.tx_details.tx.op_details.payment_op.amount !=
+            (int64_t) G.swap_values.amount) {
         return false;
     }
 
     // destination addr
-    if (!print_muxed_account(&G_context.tx_info.tx.op_details.payment_op.destination,
+    if (!print_muxed_account(&G_context.envelope.tx_details.tx.op_details.payment_op.destination,
                              tmp_buf,
                              DETAIL_VALUE_MAX_LENGTH,
                              0,
@@ -106,19 +107,19 @@ bool swap_check() {
         return false;
     }
 
-    if (G_context.tx_info.tx.op_details.source_account_present) {
+    if (G_context.envelope.tx_details.tx.op_details.source_account_present) {
         return false;
     }
 
     // memo
-    if (G_context.tx_info.tx.memo.type != MEMO_TEXT ||
-        strcmp((char*) G_context.tx_info.tx.memo.text.text, G.swap_values.memo) != 0) {
+    if (G_context.envelope.tx_details.tx.memo.type != MEMO_TEXT ||
+        strcmp((char*) G_context.envelope.tx_details.tx.memo.text.text, G.swap_values.memo) != 0) {
         return false;
     }
 
     // fees
-    if (G_context.tx_info.network != NETWORK_TYPE_PUBLIC ||
-        G_context.tx_info.tx.fee != G.swap_values.fees) {
+    if (G_context.envelope.network != NETWORK_TYPE_PUBLIC ||
+        G_context.envelope.tx_details.tx.fee != G.swap_values.fees) {
         return false;
     }
 

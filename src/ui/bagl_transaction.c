@@ -135,6 +135,13 @@ UX_STEP_NOCB(ux_tx_review_step,
                  "Review",
                  "Transaction",
              });
+UX_STEP_NOCB(ux_auth_review_step,
+             pnn,
+             {
+                 &C_icon_eye,
+                 "Review",
+                 "Soroban Auth",
+             });
 UX_STEP_INIT(ux_tx_upper_delimiter, NULL, NULL, {
     // This function will be detailed later on.
     display_next_state(true);
@@ -161,6 +168,14 @@ UX_STEP_CB(ux_tx_approve_step,
                "Finalize",
                "Transaction",
            });
+UX_STEP_CB(ux_auth_approve_step,
+           pnn,
+           (*g_validate_callback)(true),
+           {
+               &C_icon_validate_14,
+               "Finalize",
+               "Soroban Auth",
+           });
 // Step with reject button
 UX_STEP_CB(ux_tx_reject_step,
            pb,
@@ -180,18 +195,21 @@ UX_FLOW(ux_tx_flow,
         &ux_tx_approve_step,
         &ux_tx_reject_step);
 
-int ui_display_transaction() {
-    if (G_context.req_type != CONFIRM_TRANSACTION || G_context.state != STATE_PARSED) {
-        G_context.state = STATE_NONE;
-        return io_send_sw(SW_BAD_STATE);
-    }
+UX_FLOW(ux_auth_flow,
+        &ux_auth_review_step,
+        &ux_tx_upper_delimiter,
+        &ux_tx_generic,
+        &ux_tx_lower_delimiter,
+        &ux_auth_approve_step,
+        &ux_tx_reject_step);
 
+void prepare_display() {
     reset_formatter();
 
     formatter_data_t fdata = {
         .raw_data = G_context.raw,
         .raw_data_len = G_context.raw_size,
-        .envelope = &G_context.tx_info,
+        .envelope = &G_context.envelope,
         .caption = G.ui.detail_caption,
         .value = G.ui.detail_value,
         .signing_key = G_context.raw_public_key,
@@ -205,7 +223,25 @@ int ui_display_transaction() {
     // PRINTF("formatter_data.raw_size: %d\n", formatter_data.buffer->size);
 
     g_validate_callback = &ui_action_validate_transaction;
+}
+
+int ui_display_transaction() {
+    if (G_context.req_type != CONFIRM_TRANSACTION || G_context.state != STATE_PARSED) {
+        G_context.state = STATE_NONE;
+        return io_send_sw(SW_BAD_STATE);
+    }
+    prepare_display();
     ux_flow_init(0, ux_tx_flow, NULL);
+    return 0;
+}
+
+int ui_display_auth() {
+    if (G_context.req_type != CONFIRM_SOROBAN_AUTHORATION || G_context.state != STATE_PARSED) {
+        G_context.state = STATE_NONE;
+        return io_send_sw(SW_BAD_STATE);
+    }
+    prepare_display();
+    ux_flow_init(0, ux_auth_flow, NULL);
     return 0;
 }
 #endif

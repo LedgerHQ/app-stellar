@@ -70,7 +70,7 @@ int handler_sign_tx(buffer_t *cdata, bool is_first_chunk, bool more) {
         return io_send_sw(SW_OK);
     }
 
-    if (!parse_transaction_envelope(G_context.raw, G_context.raw_size, &G_context.tx_info)) {
+    if (!parse_transaction_envelope(G_context.raw, G_context.raw_size, &G_context.envelope)) {
         THROW(SW_TX_PARSING_FAIL);
     }
 

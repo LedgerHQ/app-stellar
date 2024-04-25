@@ -10,13 +10,13 @@
         if (!(x)) return false; \
     }
 
-static bool read_scval_advance(buffer_t *buffer);
+bool read_scval_advance(buffer_t *buffer);
 
 static bool buffer_advance(buffer_t *buffer, size_t num_bytes) {
     return buffer_seek_cur(buffer, num_bytes);
 }
 
-static bool buffer_read32(buffer_t *buffer, uint32_t *n) {
+bool buffer_read32(buffer_t *buffer, uint32_t *n) {
     return buffer_read_u32(buffer, n, BE);
 }
 
@@ -44,6 +44,32 @@ static bool buffer_read_bytes(buffer_t *buffer, uint8_t *out, size_t size) {
     memcpy(out, buffer->ptr + buffer->offset, size);
     buffer->offset += size;
     return true;
+}
+
+static int64_t read_i64_be(const uint8_t *ptr, size_t offset) {
+    int64_t result = 0;
+    for (int i = 0; i < 8; i++) {
+        result = (result << 8) | ptr[offset + i];
+    }
+    return result;
+}
+
+bool parse_uint64(buffer_t *buffer, uint64_t *n) {
+    PARSER_CHECK(buffer_read64(buffer, n))
+    return true;
+}
+
+bool parse_bool(buffer_t *buffer, bool *b) {
+    return buffer_read_bool(buffer, b);
+}
+
+bool parse_int64(buffer_t *buffer, int64_t *n) {
+    if (!buffer_can_read(buffer, 8)) {
+        *n = 0;
+        return false;
+    }
+    *n = read_i64_be(buffer->ptr, buffer->offset);
+    return buffer_seek_cur(buffer, 8);
 }
 
 size_t num_bytes(size_t size) {
@@ -108,6 +134,24 @@ static bool parse_optional_type(buffer_t *buffer, xdr_type_reader reader, void *
         }
         return true;
     }
+}
+
+bool parse_scv_symbol(buffer_t *buffer, scv_symbol_t *symbol) {
+    if (!buffer_read32(buffer, &symbol->size) || symbol->size > SCV_SYMBOL_MAX_SIZE) {
+        return false;
+    }
+    PARSER_CHECK(buffer_can_read(buffer, num_bytes(symbol->size)))
+    symbol->symbol = buffer->ptr + buffer->offset;
+    return true;
+}
+
+bool parse_scv_string(buffer_t *buffer, scv_string_t *string) {
+    if (!buffer_read32(buffer, &string->size)) {
+        return false;
+    }
+    PARSER_CHECK(buffer_can_read(buffer, num_bytes(string->size)))
+    string->string = buffer->ptr + buffer->offset;
+    return true;
 }
 
 static bool parse_signer_key(buffer_t *buffer, signer_key_t *key) {
@@ -695,7 +739,7 @@ static bool parse_begin_sponsoring_future_reserves(buffer_t *buffer,
     return true;
 }
 
-static bool parse_sc_address(buffer_t *buffer, sc_address_t *sc_address) {
+bool parse_sc_address(buffer_t *buffer, sc_address_t *sc_address) {
     uint32_t address_type;
     PARSER_CHECK(buffer_read32(buffer, &address_type))
     sc_address->type = address_type;
@@ -749,7 +793,7 @@ static bool read_contract_executable_advance(buffer_t *buffer) {
     return true;
 }
 
-static bool read_scval_advance(buffer_t *buffer) {
+bool read_scval_advance(buffer_t *buffer) {
     uint32_t sc_type;
     PARSER_CHECK(buffer_read32(buffer, &sc_type))
 
@@ -996,13 +1040,22 @@ static bool parse_invoke_contract_args(buffer_t *buffer, invoke_contract_args_t 
     args->function.name_size = name_size;
 
     // args
-    args->parameters_position = buffer->offset;
-    // PRINTF("function_name.text_size=%d, function_name.text=%s\n",
-    //        args->function.name_size,
-    //        args->function.name);
-
     uint32_t args_len;
     PARSER_CHECK(buffer_read32(buffer, &args_len))
+
+    args->parameters_length = args_len;
+    args->parameters_position = buffer->offset;
+
+    // if (args_len > 10) {
+    //     // TODO: We dont support more than 10 arguments
+    //     return false;
+    // }
+
+    // PRINTF("function_name.text_size=%d, function_name.text=%s, args->parameters_length=%d\n",
+    //        args->function.name_size,
+    //        args->function.name,
+    //        args->parameters_length);
+
     for (uint32_t i = 0; i < args_len; i++) {
         PARSER_CHECK(read_scval_advance(buffer))
     }
@@ -1175,8 +1228,7 @@ static bool parse_operation(buffer_t *buffer, operation_t *operation) {
         case OPERATION_TYPE_LIQUIDITY_POOL_WITHDRAW:
             return parse_liquidity_pool_withdraw(buffer, &operation->liquidity_pool_withdraw_op);
         case OPERATION_INVOKE_HOST_FUNCTION: {
-            PARSER_CHECK(parse_invoke_host_function(buffer, &operation->invoke_host_function_op))
-            return true;
+            return parse_invoke_host_function(buffer, &operation->invoke_host_function_op);
         }
         case OPERATION_EXTEND_FOOTPRINT_TTL:
             return parse_extend_footprint_ttl(buffer, &operation->extend_footprint_ttl_op);
@@ -1301,30 +1353,30 @@ bool parse_transaction_envelope(const uint8_t *data, size_t data_len, envelope_t
         .offset = 0,
     };
 
-    explicit_bzero(&envelope->tx, sizeof(transaction_details_t));
-    explicit_bzero(&envelope->fee_bump_tx, sizeof(fee_bump_transaction_details_t));
+    explicit_bzero(&envelope->tx_details, sizeof(tx_details_t));
     uint32_t envelope_type;
     PARSER_CHECK(parse_network(&buffer, &envelope->network))
     PARSER_CHECK(buffer_read32(&buffer, &envelope_type))
     envelope->type = envelope_type;
     switch (envelope_type) {
         case ENVELOPE_TYPE_TX:
-            PARSER_CHECK(parse_transaction_details(&buffer, &envelope->tx))
+            PARSER_CHECK(parse_transaction_details(&buffer, &envelope->tx_details.tx))
             break;
         case ENVELOPE_TYPE_TX_FEE_BUMP:
-            PARSER_CHECK(parse_fee_bump_transaction_details(&buffer, &envelope->fee_bump_tx))
+            PARSER_CHECK(
+                parse_fee_bump_transaction_details(&buffer, &envelope->tx_details.fee_bump_tx))
             uint32_t inner_envelope_type;
             PARSER_CHECK(buffer_read32(&buffer, &inner_envelope_type))
             if (inner_envelope_type != ENVELOPE_TYPE_TX) {
                 return false;
             }
-            PARSER_CHECK(parse_transaction_details(&buffer, &envelope->tx))
+            PARSER_CHECK(parse_transaction_details(&buffer, &envelope->tx_details.tx))
             break;
         default:
             return false;
     }
 
-    envelope->tx.operation_position = buffer.offset;
+    envelope->tx_details.tx.operation_position = buffer.offset;
     return true;
 }
 
@@ -1335,11 +1387,64 @@ bool parse_transaction_operation(const uint8_t *data,
     buffer_t buffer = {
         .ptr = data,
         .size = data_len,
-        .offset = envelope->tx.operation_position,
+        .offset = envelope->tx_details.tx.operation_position,
     };
     for (uint8_t i = 0; i <= operation_index; i++) {
-        PARSER_CHECK(parse_operation(&buffer, &envelope->tx.op_details));
+        PARSER_CHECK(parse_operation(&buffer, &envelope->tx_details.tx.op_details));
     }
-    envelope->tx.operation_index = operation_index;
+    envelope->tx_details.tx.operation_index = operation_index;
+    return true;
+}
+
+bool parse_soroban_authorization_envelope(const uint8_t *data,
+                                          size_t data_len,
+                                          envelope_t *envelope) {
+    // PRINTF("parse_transaction_envelope: offset=%d\n", buffer->offset);
+    buffer_t buffer = {
+        .ptr = data,
+        .size = data_len,
+        .offset = 0,
+    };
+
+    explicit_bzero(&envelope->soroban_authorization, sizeof(soroban_authorization_t));
+
+    uint32_t envelope_type;
+    PARSER_CHECK(buffer_read32(&buffer, &envelope_type))
+    if (envelope_type != ENVELOPE_TYPE_SOROBAN_AUTHORIZATION) {
+        return false;
+    }
+    envelope->type = envelope_type;
+
+    PARSER_CHECK(parse_network(&buffer, &envelope->network))
+    PARSER_CHECK(buffer_read64(&buffer, &envelope->soroban_authorization.nonce))
+    PARSER_CHECK(
+        buffer_read32(&buffer, &envelope->soroban_authorization.signature_expiration_ledger))
+
+    // function
+    uint32_t type;
+    PARSER_CHECK(buffer_read32(&buffer, &type))
+    envelope->soroban_authorization.function_type = type;
+    switch (type) {
+        case SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN: {
+            // contractFn
+            PARSER_CHECK(
+                parse_invoke_contract_args(&buffer,
+                                           &envelope->soroban_authorization.invoke_contract_args));
+            break;
+        }
+        case SOROBAN_AUTHORIZED_FUNCTION_TYPE_CREATE_CONTRACT_HOST_FN:
+            // createContractHostFn
+            PARSER_CHECK(read_create_contract_args_advance(&buffer))
+            break;
+        default:
+            return false;
+    }
+
+    // subInvocations
+    uint32_t len;
+    PARSER_CHECK(buffer_read32(&buffer, &len))
+    for (uint32_t i = 0; i < len; i++) {
+        PARSER_CHECK(read_soroban_authorized_invocation_advance(&buffer))
+    }
     return true;
 }

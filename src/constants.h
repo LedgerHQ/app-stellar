@@ -26,12 +26,10 @@
 #define DETAIL_CAPTION_MAX_LENGTH 20
 
 /*
- * DETAIL_VALUE_MAX_LENGTH value of 89 is due to the maximum length of managed data value which can
- * be 64 bytes long. Managed data values are displayed as base64 encoded strings, which are
- * 4*((len+2)/3) characters long. (An additional slot is required for the end-of-string character of
- * course)
+ * DETAIL_VALUE_MAX_LENGTH value of 104 is chosen to fit the maximum length of 2**256 - 1 with
+ * commas.
  */
-#define DETAIL_VALUE_MAX_LENGTH 89
+#define DETAIL_VALUE_MAX_LENGTH 104
 
 #ifdef TARGET_NANOS
 #define RAW_TX_MAX_SIZE 1120

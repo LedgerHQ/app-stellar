@@ -22,3 +22,5 @@ int ui_display_address();
 int ui_display_transaction();
 
 int ui_display_hash();
+
+int ui_display_auth();
