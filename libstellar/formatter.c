@@ -1859,7 +1859,7 @@ static bool format_invoke_host_function_args_with_plugin(formatter_data_t *fdata
             return format_operation_source_prepare(fdata);
         }
     } else {
-        FORMATTER_CHECK(push_to_formatter_stack(&format_invoke_host_function_args))
+        FORMATTER_CHECK(push_to_formatter_stack(&format_invoke_host_function_args_with_plugin))
     }
     return true;
 }
@@ -1924,6 +1924,7 @@ static bool format_invoke_host_function_func_name(formatter_data_t *fdata) {
             FORMATTER_CHECK(push_to_formatter_stack(&format_invoke_host_function_args))
         }
     } else {
+        PRINTF("we should move control to plugin\n");
         parameters_index = 0;
         FORMATTER_CHECK(push_to_formatter_stack(&format_invoke_host_function_args_with_plugin))
     }
