@@ -11,6 +11,7 @@
 #include "stellar/formatter.h"
 #include "stellar/parser.h"
 #include "stellar/printer.h"
+#include "stellar/plugin.h"
 
 /*
  * the formatter prints the details and defines the order of the details
@@ -49,7 +50,8 @@ static format_function_t formatter_stack[MAX_FORMATTERS_PER_OPERATION];
 static int8_t formatter_index;
 static uint8_t current_data_index;
 static uint8_t parameters_index;
-static uint8_t last_parameter_at_formatter_index;  // TODO: reset it
+static uint8_t last_parameter_at_formatter_index;
+static uint8_t plugin_data_pair_count;
 
 static bool push_to_formatter_stack(format_function_t formatter) {
     if (formatter_index >= MAX_FORMATTERS_PER_OPERATION) {
@@ -1827,6 +1829,76 @@ static bool format_invoke_host_function_args(formatter_data_t *fdata) {
     return true;
 }
 
+static bool format_invoke_host_function_args_with_plugin(formatter_data_t *fdata) {
+    invoke_contract_args_t invoke_contract_args;
+    if (fdata->envelope->type == ENVELOPE_TYPE_SOROBAN_AUTHORIZATION) {
+        invoke_contract_args = fdata->envelope->soroban_authorization.invoke_contract_args;
+    } else {
+        invoke_contract_args =
+            fdata->envelope->tx_details.tx.op_details.invoke_host_function_op.invoke_contract_args;
+    }
+
+    const uint8_t *contract_address = invoke_contract_args.address.address;
+
+    // get data pair
+    if (fdata->plugin_query_data_pair(contract_address,
+                                      parameters_index,
+                                      fdata->caption,
+                                      fdata->caption_len,
+                                      fdata->value,
+                                      fdata->value_len) != STELLAR_PLUGIN_RESULT_OK) {
+        return false;
+    }
+
+    parameters_index++;
+    if (parameters_index == plugin_data_pair_count) {
+        last_parameter_at_formatter_index = formatter_index;
+        if (fdata->envelope->type == ENVELOPE_TYPE_SOROBAN_AUTHORIZATION) {
+            FORMATTER_CHECK(push_to_formatter_stack(NULL))
+        } else {
+            return format_operation_source_prepare(fdata);
+        }
+    } else {
+        FORMATTER_CHECK(push_to_formatter_stack(&format_invoke_host_function_args_with_plugin))
+    }
+    return true;
+}
+
+static bool should_move_control_to_plugin(formatter_data_t *fdata) {
+    if (fdata->plugin_check_presence == NULL || fdata->plugin_init_contract == NULL ||
+        fdata->plugin_query_data_pair_count == NULL || fdata->plugin_query_data_pair == NULL) {
+        return false;
+    }
+
+    invoke_contract_args_t invoke_contract_args;
+    if (fdata->envelope->type == ENVELOPE_TYPE_SOROBAN_AUTHORIZATION) {
+        invoke_contract_args = fdata->envelope->soroban_authorization.invoke_contract_args;
+    } else {
+        invoke_contract_args =
+            fdata->envelope->tx_details.tx.op_details.invoke_host_function_op.invoke_contract_args;
+    }
+
+    const uint8_t *contract_address = invoke_contract_args.address.address;
+
+    // check if plugin exists
+    if (!fdata->plugin_check_presence(contract_address)) {
+        return false;
+    }
+
+    // init plugin
+    if (fdata->plugin_init_contract(contract_address) != STELLAR_PLUGIN_RESULT_OK) {
+        return false;
+    }
+
+    // get data count
+    if (fdata->plugin_query_data_pair_count(contract_address, &plugin_data_pair_count) !=
+        STELLAR_PLUGIN_RESULT_OK) {
+        return false;
+    }
+
+    return plugin_data_pair_count != 0;
+}
+
 static bool format_invoke_host_function_func_name(formatter_data_t *fdata) {
     invoke_contract_args_t invoke_contract_args;
     if (fdata->envelope->type == ENVELOPE_TYPE_SOROBAN_AUTHORIZATION) {
@@ -1842,12 +1914,21 @@ static bool format_invoke_host_function_func_name(formatter_data_t *fdata) {
            invoke_contract_args.function.name_size);
     fdata->value[invoke_contract_args.function.name_size] = '\0';
 
-    if (invoke_contract_args.parameters_length == 0) {
-        return format_operation_source_prepare(fdata);
+    uint8_t data_count = should_move_control_to_plugin(fdata);
+    if (data_count == 0) {
+        // we should not move control to plugin
+        if (invoke_contract_args.parameters_length == 0) {
+            return format_operation_source_prepare(fdata);
+        } else {
+            parameters_index = 0;
+            FORMATTER_CHECK(push_to_formatter_stack(&format_invoke_host_function_args))
+        }
     } else {
+        // PRINTF("we should move control to plugin\n");
         parameters_index = 0;
-        FORMATTER_CHECK(push_to_formatter_stack(&format_invoke_host_function_args))
+        FORMATTER_CHECK(push_to_formatter_stack(&format_invoke_host_function_args_with_plugin))
     }
+
     return true;
 }
 

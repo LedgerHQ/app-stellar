@@ -26,6 +26,7 @@
 #include "globals.h"
 #include "sw.h"
 #include "settings.h"
+#include "plugin.h"
 #include "action/validate.h"
 #include "stellar/printer.h"
 #include "stellar/formatter.h"
@@ -310,6 +311,10 @@ void prepare_display() {
         .caption_len = DETAIL_CAPTION_MAX_LENGTH,
         .value_len = DETAIL_VALUE_MAX_LENGTH,
         .display_sequence = HAS_SETTING(S_SEQUENCE_NUMBER_ENABLED),
+        .plugin_check_presence = &plugin_check_presence,
+        .plugin_init_contract = &plugin_init_contract,
+        .plugin_query_data_pair_count = &plugin_query_data_pair_count,
+        .plugin_query_data_pair = &plugin_query_data_pair,
     };
 
     // init formatter_data

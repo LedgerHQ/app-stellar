@@ -1,14 +1,19 @@
 {
     "env": {
-        "ARM_EMBEDDED_TOOLCHAIN": "/opt/gcc-arm-none-eabi-10.3-2021.10"
+        "BOLOS_SDK": "/opt/nanos-secure-sdk",
+        "BOLOS_ENV": "/opt/bolos-devenv"
     },
     "configurations": [
         {
             "name": "Nano S",
             "includePath": [
+                "${workspaceFolder}/src",
+                "${workspaceFolder}/libstellar/include",
                 "/usr/include/**",
-                "${workspaceFolder}/src/**",
-                "${env:BOLOS_SDK}/**"
+                "${env:BOLOS_SDK}/include/*",
+                "${env:BOLOS_SDK}/lib_cxng/include/*",
+                "${env:BOLOS_SDK}/lib_ux/include/*",
+                "${env:BOLOS_SDK}/lib_standard_app/*",
             ],
             "defines": [
                 "TARGET_NANOS",
@@ -31,16 +36,12 @@
                 "HAVE_UX_FLOW",
                 "DEBUG=1",
                 "HAVE_PRINTF",
-                "PRINTF=screen_printf",
-                "HAVE_ECC=1",
-                "HAVE_ECC_TWISTED_EDWARDS=1",
-                "HAVE_ED25519_CURVE=1",
-                "HAVE_HASH=1"
+                "PRINTF=screen_printf"
             ],
-            "compilerPath": "${env:ARM_EMBEDDED_TOOLCHAIN}/bin/arm-none-eabi-gcc",
-            "cStandard": "c11",
+            "compilerPath": "${env:BOLOS_ENV}/gcc-arm-none-eabi-10.3-2021.10/bin/arm-none-eabi-gcc",
+            "cStandard": "gnu17",
             "cppStandard": "c++17",
-            "intelliSenseMode": "gcc-arm",
+            "intelliSenseMode": "linux-gcc-x64",
             "browse": {
                 "limitSymbolsToIncludedHeaders": true,
                 "databaseFilename": ""

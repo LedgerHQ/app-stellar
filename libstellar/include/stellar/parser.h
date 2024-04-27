@@ -4,7 +4,7 @@
 #include <string.h>
 
 #include "buffer.h"
-#include "stellar/types.h"
+#include "types.h"
 
 bool parse_transaction_envelope(const uint8_t *data, size_t data_len, envelope_t *envelope);
 

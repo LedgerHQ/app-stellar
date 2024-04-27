@@ -4,12 +4,11 @@ on:
   workflow_dispatch:
   push:
     branches:
-    - master
-    - develop
+      - master
+      - develop
   pull_request:
 
 jobs:
-
   build_application:
     name: Build application
     uses: LedgerHQ/ledger-app-workflows/.github/workflows/reusable_build.yml@v1
@@ -87,6 +86,9 @@ jobs:
         with:
           name: compiled_app_binaries
           path: build
+
+      - name: Copy plugin
+        run: cp -r tests_zemu/plugin_elfs/* build/
 
       - name: Run zemu tests
         run: cd tests_zemu && npm run test -- -t "\(${{ matrix.device }}\)"
