@@ -18,7 +18,7 @@ static const plugin_info_t plugins[] = {
 };
 
 // get app name if by contract address
-static char *get_app_name(const uint8_t *contract_address) {
+static const char *get_app_name(const uint8_t *contract_address) {
     for (uint8_t i = 0; i < sizeof(plugins) / sizeof(plugin_info_t); i++) {
         if (memcmp(plugins[i].contract_address, contract_address, RAW_CONTRACT_KEY_SIZE) == 0) {
             return plugins[i].app_name;
@@ -28,7 +28,7 @@ static char *get_app_name(const uint8_t *contract_address) {
 };
 
 bool plugin_check_presence(const uint8_t *contract_address) {
-    char *app_name = get_app_name(contract_address);
+    const char *app_name = get_app_name(contract_address);
     if (app_name == NULL) {
         return false;
     }
@@ -43,6 +43,7 @@ bool plugin_check_presence(const uint8_t *contract_address) {
             return true;
         }
         CATCH_OTHER(e) {
+            UNUSED(e);
             return false;
         }
         FINALLY {
@@ -53,7 +54,7 @@ bool plugin_check_presence(const uint8_t *contract_address) {
 };
 
 stellar_plugin_result_t plugin_init_contract(const uint8_t *contract_address) {
-    char *app_name = get_app_name(contract_address);
+    const char *app_name = get_app_name(contract_address);
 
     stellar_plugin_shared_ro_t plugin_shared_ro = {
         .envelope = &G_context.envelope,
@@ -77,7 +78,7 @@ stellar_plugin_result_t plugin_init_contract(const uint8_t *contract_address) {
 
 stellar_plugin_result_t plugin_query_data_pair_count(const uint8_t *contract_address,
                                                      uint8_t *data_pair_count) {
-    char *app_name = get_app_name(contract_address);
+    const char *app_name = get_app_name(contract_address);
 
     stellar_plugin_shared_ro_t plugin_shared_ro = {
         .envelope = &G_context.envelope,
@@ -106,7 +107,7 @@ stellar_plugin_result_t plugin_query_data_pair(const uint8_t *contract_address,
                                                uint8_t caption_len,
                                                char *value,
                                                uint8_t value_len) {
-    char *app_name = get_app_name(contract_address);
+    const char *app_name = get_app_name(contract_address);
 
     stellar_plugin_shared_ro_t plugin_shared_ro = {
         .envelope = &G_context.envelope,
