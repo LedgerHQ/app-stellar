@@ -392,7 +392,6 @@ describe("transactions", () => {
   });
 });
 
-
 describe("soroban auth", () => {
   describe.each(getAuthTestCases())("$caseName", (c) => {
     test.each(models)("device ($dev.name)", async ({ dev, startText }) => {
@@ -459,7 +458,176 @@ describe("soroban auth", () => {
       await sim.close();
     }
   });
+
 });
+
+describe("plugin", () => {
+  test.each(models)("invoke host function ($dev.name)", async ({ dev, startText, plugin_path }) => {
+    const tx = testCasesFunction.opInvokeHostFunctionTestPlugin();
+    const sim = new Zemu(dev.path, {
+      "StellarTest": plugin_path
+    });
+    try {
+      await sim.start({ ...defaultOptions, model: dev.name, startText: startText });
+      const transport = await sim.getTransport();
+      const str = new Str(transport);
+      if (dev.name == "stax") {
+        const settingNav = new TouchNavigation([
+          ButtonKind.InfoButton,
+          ButtonKind.NavRightButton,
+          ButtonKind.ToggleSettingButton2,
+        ]);
+        await sim.navigate(".", `${dev.prefix.toLowerCase()}-plugin-invoke-host-function`, settingNav.schedule, true, true);
+      } else {
+        await sim.clickRight();
+        await sim.clickBoth(undefined, false);
+        await sim.clickRight();
+        await sim.clickBoth(undefined, false);
+      }
+      const result = str.signTransaction("44'/148'/0'", tx.signatureBase());
+      const events = await sim.getEvents();
+      await sim.waitForScreenChanges(events);
+      let textToFind = "Finalize";
+      if (dev.name == "stax") {
+        textToFind = "Hold to";
+      }
+      await sim.navigateAndCompareUntilText(
+        ".",
+        `${dev.prefix.toLowerCase()}-plugin-invoke-host-function`,
+        textToFind,
+        true,
+        undefined,
+        1000 * 60 * 60
+      );
+      const kp = Keypair.fromSecret("SAIYWGGWU2WMXYDSK33UBQBMBDKU4TTJVY3ZIFF24H2KQDR7RQW5KAEK");
+      tx.sign(kp);
+      expect((await result).signature).toStrictEqual(tx.signatures[0].signature());
+    } finally {
+      await sim.close();
+    }
+  });
+
+  test.each(models)("reject tx ($dev.name)", async ({ dev, startText, plugin_path }) => {
+    const tx = testCasesFunction.opInvokeHostFunctionTestPlugin();
+    const sim = new Zemu(dev.path, {
+      "StellarTest": plugin_path
+    });
+    try {
+      await sim.start({ ...defaultOptions, model: dev.name, startText: startText, approveAction: ButtonKind.RejectButton });
+      const transport = await sim.getTransport();
+      const str = new Str(transport);
+      let textToFind = "Cancel";
+      // display sequence
+      if (dev.name == "stax") {
+        textToFind = "Hold to";
+        const settingNav = new TouchNavigation([
+          ButtonKind.InfoButton,
+          ButtonKind.NavRightButton,
+          ButtonKind.ToggleSettingButton2,
+        ]);
+        await sim.navigate(".", `${dev.prefix.toLowerCase()}-plugin-invoke-host-function-reject`, settingNav.schedule, true, false);
+      } else {
+        await sim.clickRight();
+        await sim.clickBoth(undefined, false);
+        await sim.clickRight();
+        await sim.clickBoth(undefined, false);
+      }
+
+      expect(() => str.signTransaction("44'/148'/0'", tx.signatureBase())).rejects.toThrow(
+        new Error("Transaction approval request was rejected")
+      );
+
+      const events = await sim.getEvents();
+      await sim.waitForScreenChanges(events);
+      await sim.navigateAndCompareUntilText(
+        ".",
+        `${dev.prefix.toLowerCase()}-plugin-invoke-host-function-reject`,
+        textToFind,
+        true,
+        undefined,
+        1000 * 60 * 60
+      );
+      if (dev.name == "stax") {
+        const settingNav = new TouchNavigation([ButtonKind.ApproveTapButton]);
+        await sim.navigate(".", `${dev.prefix.toLowerCase()}-plugin-invoke-host-function-reject`, settingNav.schedule, true, false);
+      }
+    } finally {
+      await sim.close();
+    }
+  });
+
+
+  test.each(models)("soroban auth ($dev.name)", async ({ dev, startText, plugin_path }) => {
+    const hashIdPreimage = testCasesFunction.sorobanAuthInvokeContractTestPlugin();
+    const sim = new Zemu(dev.path, {
+      "StellarTest": plugin_path
+    });
+    try {
+      await sim.start({ ...defaultOptions, model: dev.name, startText: startText });
+      const transport = await sim.getTransport();
+      const str = new Str(transport);
+      const result = str.signSorobanAuthoration("44'/148'/0'", hashIdPreimage.toXDR("raw"));
+      const events = await sim.getEvents();
+      await sim.waitForScreenChanges(events);
+      let textToFind = "Finalize";
+      if (dev.name == "stax") {
+        textToFind = "Hold to";
+      }
+      await sim.navigateAndCompareUntilText(
+        ".",
+        `${dev.prefix.toLowerCase()}-plugin-soroban-auth`,
+        textToFind,
+        true,
+        undefined,
+        1000 * 60 * 60
+      );
+      const kp = Keypair.fromSecret("SAIYWGGWU2WMXYDSK33UBQBMBDKU4TTJVY3ZIFF24H2KQDR7RQW5KAEK");
+      const signature = kp.sign(hash(hashIdPreimage.toXDR()))
+      expect((await result).signature).toStrictEqual(signature);
+    } finally {
+      await sim.close();
+    }
+  });
+
+
+  test.each(models)("reject soroban auth ($dev.name)", async ({ dev, startText, plugin_path }) => {
+    const hashIdPreimage = testCasesFunction.sorobanAuthInvokeContractTestPlugin();
+    const sim = new Zemu(dev.path, {
+      "StellarTest": plugin_path
+    });
+    try {
+      await sim.start({ ...defaultOptions, model: dev.name, startText: startText, approveAction: ButtonKind.RejectButton });
+      const transport = await sim.getTransport();
+      const str = new Str(transport);
+      expect(() => str.signSorobanAuthoration("44'/148'/0'", hashIdPreimage.toXDR("raw"))).rejects.toThrow(
+        new Error("Soroban authoration approval request was rejected")
+      );
+
+      let textToFind = "Cancel";
+      if (dev.name == "stax") {
+        textToFind = "Sign Soroban Auth?";
+      }
+      const events = await sim.getEvents();
+      await sim.waitForScreenChanges(events);
+      await sim.navigateAndCompareUntilText(
+        ".",
+        `${dev.prefix.toLowerCase()}-soroban-auth-reject`,
+        textToFind,
+        true,
+        undefined,
+        1000 * 60 * 60
+      );
+      if (dev.name == "stax") {
+        const settingNav = new TouchNavigation([ButtonKind.ApproveTapButton]);
+        await sim.navigate(".", `${dev.prefix.toLowerCase()}-soroban-auth-reject`, settingNav.schedule, true, false);
+      }
+    } finally {
+      await sim.close();
+    }
+  });
+});
+
+
 
 function camelToFilePath(str: string) {
   return str.replace(/([A-Z])/g, "-$1").toLowerCase();
@@ -470,6 +638,7 @@ function getTxTestCases() {
   const cases = [];
   for (const rawCase of casesFunction) {
     if (rawCase.startsWith("sorobanAuth")) continue;
+    if (rawCase === "opInvokeHostFunctionTestPlugin") continue;
     cases.push({
       caseName: rawCase,
       filePath: camelToFilePath(rawCase),
@@ -484,6 +653,7 @@ function getAuthTestCases() {
   const cases = [];
   for (const rawCase of casesFunction) {
     if (!rawCase.startsWith("sorobanAuth")) continue;
+    if (rawCase === "sorobanAuthInvokeContractTestPlugin") continue;
     cases.push({
       caseName: rawCase,
       filePath: camelToFilePath(rawCase),

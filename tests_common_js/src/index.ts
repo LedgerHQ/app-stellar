@@ -1333,6 +1333,35 @@ export function opInvokeHostFunctionWithoutArgs() {
   return TransactionBuilder.fromXDR(raw, Networks.TESTNET);
 }
 
+export function opInvokeHostFunctionTestPlugin() {
+  // from stellar_sdk import *
+
+  // kp0 = Keypair.from_secret("SAIYWGGWU2WMXYDSK33UBQBMBDKU4TTJVY3ZIFF24H2KQDR7RQW5KAEK")
+  // source = Account(kp0.public_key, 1234567890)
+  // scvals = [
+  //     scval.to_void(),
+  //     scval.to_uint128(1),
+  //     scval.to_int128(2),
+  //     scval.to_uint256(3),
+  //     scval.to_int256(4),
+  //     scval.to_int256(5),
+  // ]
+  // tx = (
+  //     TransactionBuilder(source, Network.TESTNET_NETWORK_PASSPHRASE, 500)
+  //     .append_invoke_contract_function_op(
+  //         contract_id="CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABSC4",
+  //         function_name="testfunc",
+  //         parameters=scvals,
+  //     )
+  //     .add_time_bounds(0, 0)
+  //     .build()
+  // )
+  // print(tx.to_xdr())
+
+  const raw = "AAAAAgAAAADpM4i7/S+9EYBt0L1ZzqkHnnzHDOex4VTxFM3+TkZuzQAAAfQAAAAASZYC0wAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAGAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIdGVzdGZ1bmMAAAAGAAAAAQAAAAkAAAAAAAAAAAAAAAAAAAABAAAACgAAAAAAAAAAAAAAAAAAAAIAAAALAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUAAAAAAAAAAAAAAAA=";
+  return TransactionBuilder.fromXDR(raw, Networks.TESTNET);
+}
+
 export function opInvokeHostFunctionAssetTransfer() {
   // import time
 
@@ -2923,5 +2952,60 @@ export function sorobanAuthInvokeContractWithoutArgs() {
   // print(data.to_xdr())
 
   const raw = "AAAACXrDOZdUTjF10ma9AiQ5sizbFlCMARY/JuXLKj4QRal5AAAAAEl1bUUCEMifAAAAAAAAAAHXkotywnA8z+r365/0701QSlWouXn8m0UOoshCtNHOYQAAAAh0ZXN0ZnVuYwAAAAAAAAACAAAAAAAAAAHXkotywnA8z+r365/0701QSlWouXn8m0UOoshCtNHOYQAAAAh0cmFuc2ZlcgAAAAMAAAASAAAAAAAAAACs0K3HeCOAAL22utIukZkjiX96h+MQzvFQXmwLC3FUJQAAABIAAAAAAAAAAHmloTuvVXFjeiFXxq/7dJHXxEVO7NKwt+QOZwI/CW+sAAAACgAAAAAAAAAAAAAAAmlEBQAAAAAAAAAAAAAAAAHXkotywnA8z+r365/0701QSlWouXn8m0UOoshCtNHOYQAAAAh0cmFuc2ZlcgAAAAMAAAASAAAAAAAAAACs0K3HeCOAAL22utIukZkjiX96h+MQzvFQXmwLC3FUJQAAABIAAAAAAAAAAHmloTuvVXFjeiFXxq/7dJHXxEVO7NKwt+QOZwI/CW+sAAAACgAAAAAAAAAAAAAAAmlEBQAAAAAA";
+  return xdr.HashIdPreimage.fromXDR(raw, "base64");
+}
+
+
+
+export function sorobanAuthInvokeContractTestPlugin() {
+  // from stellar_sdk import *
+  // from stellar_sdk import xdr
+
+  // data = xdr.HashIDPreimage(
+  //     xdr.EnvelopeType.ENVELOPE_TYPE_SOROBAN_AUTHORIZATION,
+  //     soroban_authorization=xdr.HashIDPreimageSorobanAuthorization(
+  //         network_id=xdr.Hash(Network(Network.PUBLIC_NETWORK_PASSPHRASE).network_id()),
+  //         nonce=xdr.Int64(1232432453),
+  //         signature_expiration_ledger=xdr.Uint32(34654367),
+  //         invocation=xdr.SorobanAuthorizedInvocation(function=xdr.SorobanAuthorizedFunction(
+  //             xdr.SorobanAuthorizedFunctionType.SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN,
+  //             contract_fn=xdr.InvokeContractArgs(
+  //                 contract_address=Address(
+  //                     "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABSC4").to_xdr_sc_address(),
+  //                 function_name=scval.to_symbol("testfunc").sym,
+  //                 args=[
+  //                     scval.to_address("GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"),  # from
+  //                     scval.to_address("GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"),  # to
+  //                     scval.to_int128(103560 * 10 ** 5),  # amount, 100 XLM
+  //                 ]
+  //             )), sub_invocations=[xdr.SorobanAuthorizedInvocation(function=xdr.SorobanAuthorizedFunction(
+  //             xdr.SorobanAuthorizedFunctionType.SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN,
+  //             contract_fn=xdr.InvokeContractArgs(
+  //                 contract_address=Address(
+  //                     "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC").to_xdr_sc_address(),
+  //                 function_name=scval.to_symbol("transfer").sym,
+  //                 args=[
+  //                     scval.to_address("GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"),  # from
+  //                     scval.to_address("GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"),  # to
+  //                     scval.to_int128(103560 * 10 ** 5),  # amount, 100 XLM
+  //                 ]
+  //             )), sub_invocations=[]), xdr.SorobanAuthorizedInvocation(function=xdr.SorobanAuthorizedFunction(
+  //             xdr.SorobanAuthorizedFunctionType.SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN,
+  //             contract_fn=xdr.InvokeContractArgs(
+  //                 contract_address=Address(
+  //                     "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC").to_xdr_sc_address(),
+  //                 function_name=scval.to_symbol("transfer").sym,
+  //                 args=[
+  //                     scval.to_address("GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"),  # from
+  //                     scval.to_address("GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"),  # to
+  //                     scval.to_int128(103560 * 10 ** 5),  # amount, 100 XLM
+  //                 ]
+  //             )), sub_invocations=[])])
+  //     )
+  // )
+
+  // print(data.to_xdr())
+
+  const raw = "AAAACXrDOZdUTjF10ma9AiQ5sizbFlCMARY/JuXLKj4QRal5AAAAAEl1bUUCEMifAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAh0ZXN0ZnVuYwAAAAMAAAASAAAAAAAAAACs0K3HeCOAAL22utIukZkjiX96h+MQzvFQXmwLC3FUJQAAABIAAAAAAAAAAHmloTuvVXFjeiFXxq/7dJHXxEVO7NKwt+QOZwI/CW+sAAAACgAAAAAAAAAAAAAAAmlEBQAAAAACAAAAAAAAAAHXkotywnA8z+r365/0701QSlWouXn8m0UOoshCtNHOYQAAAAh0cmFuc2ZlcgAAAAMAAAASAAAAAAAAAACs0K3HeCOAAL22utIukZkjiX96h+MQzvFQXmwLC3FUJQAAABIAAAAAAAAAAHmloTuvVXFjeiFXxq/7dJHXxEVO7NKwt+QOZwI/CW+sAAAACgAAAAAAAAAAAAAAAmlEBQAAAAAAAAAAAAAAAAHXkotywnA8z+r365/0701QSlWouXn8m0UOoshCtNHOYQAAAAh0cmFuc2ZlcgAAAAMAAAASAAAAAAAAAACs0K3HeCOAAL22utIukZkjiX96h+MQzvFQXmwLC3FUJQAAABIAAAAAAAAAAHmloTuvVXFjeiFXxq/7dJHXxEVO7NKwt+QOZwI/CW+sAAAACgAAAAAAAAAAAAAAAmlEBQAAAAAA";
   return xdr.HashIdPreimage.fromXDR(raw, "base64");
 }
