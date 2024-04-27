@@ -611,7 +611,7 @@ describe("plugin", () => {
       await sim.waitForScreenChanges(events);
       await sim.navigateAndCompareUntilText(
         ".",
-        `${dev.prefix.toLowerCase()}-soroban-auth-reject`,
+        `${dev.prefix.toLowerCase()}-plugin-soroban-auth-reject`,
         textToFind,
         true,
         undefined,
