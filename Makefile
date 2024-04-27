@@ -68,7 +68,7 @@ VARIANT_PARAM = COIN
 VARIANT_VALUES = stellar
 
 # Enabling DEBUG flag will enable PRINTF and disable optimizations
-DEBUG = 1
+DEBUG = 0
 
 ########################################
 #     Application custom permissions   #
