@@ -1,6 +1,6 @@
 /*****************************************************************************
  *   Ledger Stellar App.
- *   (c) 2022 Ledger SAS.
+ *   (c) 2024 Ledger SAS.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -46,9 +46,13 @@ int ui_display_address(void) {
         G_context.state = STATE_NONE;
         return io_send_sw(SW_BAD_STATE);
     }
-    memset(G.ui.detail_value, 0, 89);
 
-    if (!print_account_id(G_context.raw_public_key, G.ui.detail_value, 89, 0, 0)) {
+    explicit_bzero(G.ui.detail_value, DETAIL_VALUE_MAX_LENGTH);
+    if (!print_account_id(G_context.raw_public_key,
+                          G.ui.detail_value,
+                          DETAIL_VALUE_MAX_LENGTH,
+                          0,
+                          0)) {
         return io_send_sw(SW_DISPLAY_ADDRESS_FAIL);
     }
     nbgl_useCaseAddressConfirmation(G.ui.detail_value, confirmationChoice);

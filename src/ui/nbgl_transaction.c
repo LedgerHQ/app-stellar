@@ -1,6 +1,6 @@
 /*****************************************************************************
  *   Ledger Stellar App.
- *   (c) 2022 Ledger SAS.
+ *   (c) 2024 Ledger SAS.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -43,19 +43,19 @@
 #define MAX_NUMBER_OF_PAGES 40
 // Enums and Structs
 typedef struct {
-    uint8_t pagePairNb;  // how many data pairs are on the page
-    bool centered_info;  // if true, only one caption/value pair is displayed on page, and it is
-                         // centered.
+    uint8_t page_pair_nb;  // how many data pairs are on the page
+    bool centered_info;    // if true, only one caption/value pair is displayed on page, and it is
+                           // centered.
     uint8_t data_idx;
 } page_infos_t;
 
 // Globals
-static uint8_t nbPages;      // (nbPages + 1) = Number of pages to display transaction.
-static int16_t currentPage;  // start from 0, eht sign confirmation page is nbPages + 1.
+static uint8_t nb_pages;      // (nb_pages + 1) = Number of pages to display transaction.
+static int16_t current_page;  // start from 0, eht sign confirmation page is nb_pages + 1.
 nbgl_layoutTagValue_t caption_value_pairs[TAG_VAL_LST_MAX_PAIR_NB];
 static char str_values[TAG_VAL_LST_MAX_PAIR_NB][DETAIL_VALUE_MAX_LENGTH];
 static char str_captions[TAG_VAL_LST_MAX_PAIR_NB][DETAIL_CAPTION_MAX_LENGTH];
-static page_infos_t pagesInfos[MAX_NUMBER_OF_PAGES];
+static page_infos_t pages_infos[MAX_NUMBER_OF_PAGES];
 static formatter_data_t formatter_data;
 
 // Validate/Invalidate transaction and go back to home
@@ -64,40 +64,40 @@ static void ui_action_validate_transaction(bool choice) {
     ui_menu_main();
 }
 
-static void reviewTxContinue(void);
-static void reviewTxStart(void);
-static void rejectTxConfirmation(void);
-static void rejectTxChoice(void);
+static void review_tx_continue(void);
+static void review_tx_start(void);
+static void reject_tx_confirmation(void);
+static void reject_tx_choice(void);
 
-static void reviewAuthContinue(void);
-static void reviewAuthStart(void);
-static void rejectAuthConfirmation(void);
-static void rejectAuthChoice(void);
+static void review_auth_continue(void);
+static void review_auth_start(void);
+static void reject_auth_confirmation(void);
+static void reject_auth_choice(void);
 
 // Functions definitions
 static inline void INCR_AND_CHECK_PAGE_NB(void) {
-    nbPages++;
-    if (nbPages >= MAX_NUMBER_OF_PAGES) {
+    nb_pages++;
+    if (nb_pages >= MAX_NUMBER_OF_PAGES) {
         // TODO
         THROW(SW_BAD_STATE);
     }
 }
 
-static void prepareTxPagesInfos(void) {
-    PRINTF("prepareTxPagesInfos\n");
-    uint8_t tagLineNb = 0;
-    uint8_t tagItemLineNb = 0;
-    uint8_t tagValueLineNb = 0;
-    uint8_t pageLineNb = 0;
-    uint16_t fieldLen = 0;
+static void prepare_tx_pages_infos(void) {
+    PRINTF("prepare_tx_pages_infos\n");
+    uint8_t tag_line_nb = 0;
+    uint8_t tag_item_line_nb = 0;
+    uint8_t tag_value_line_nb = 0;
+    uint8_t page_line_nb = 0;
+    uint8_t field_len = 0;
     uint8_t data_index = 0;
     reset_formatter();
 
     // Reset globals.
-    nbPages = 0;
+    nb_pages = 0;
 
-    explicit_bzero(pagesInfos, sizeof(pagesInfos));
-    pagesInfos[0].data_idx = data_index;
+    explicit_bzero(pages_infos, sizeof(pages_infos));
+    pages_infos[0].data_idx = data_index;
 
     while (true) {  // Execute loop until last tx formatter is reached.
         bool data_exists = true;
@@ -110,62 +110,62 @@ static void prepareTxPagesInfos(void) {
             break;
         }
         PRINTF("Page %d - Item : %s - Value : %s\n",
-               nbPages,
+               nb_pages,
                G.ui.detail_caption,
                G.ui.detail_value);
 
         // Compute number of lines filled by tag item string.
-        fieldLen = strlen(G.ui.detail_caption);
-        tagItemLineNb = fieldLen / TAG_VAL_LST_ITEM_MAX_CHAR_PER_LINE;
-        tagItemLineNb += (fieldLen % TAG_VAL_LST_ITEM_MAX_CHAR_PER_LINE != 0) ? 1 : 0;
+        field_len = strlen(G.ui.detail_caption);
+        tag_item_line_nb = field_len / TAG_VAL_LST_ITEM_MAX_CHAR_PER_LINE;
+        tag_item_line_nb += (field_len % TAG_VAL_LST_ITEM_MAX_CHAR_PER_LINE != 0) ? 1 : 0;
         // Compute number of lines filled by tag value string.
-        fieldLen = strlen(G.ui.detail_value);
-        tagValueLineNb = fieldLen / TAG_VAL_LST_VAL_MAX_CHAR_PER_LINE;
-        tagValueLineNb += (fieldLen % TAG_VAL_LST_VAL_MAX_CHAR_PER_LINE != 0) ? 1 : 0;
+        field_len = strlen(G.ui.detail_value);
+        tag_value_line_nb = field_len / TAG_VAL_LST_VAL_MAX_CHAR_PER_LINE;
+        tag_value_line_nb += (field_len % TAG_VAL_LST_VAL_MAX_CHAR_PER_LINE != 0) ? 1 : 0;
         // Add number of screen lines occupied by tag pair to total lines occupied in page.
-        tagLineNb = tagValueLineNb + tagItemLineNb;
-        pageLineNb += tagLineNb;
+        tag_line_nb = tag_value_line_nb + tag_item_line_nb;
+        page_line_nb += tag_line_nb;
         // If there are multiple operations and a new operation is reached, create a
         // special page with only one caption/value pair to display operation number.
         if (is_op_header && G_context.envelope.tx_details.tx.operations_count > 1) {
             INCR_AND_CHECK_PAGE_NB();
-            pagesInfos[nbPages].pagePairNb = 1;
-            pagesInfos[nbPages].data_idx = data_index;
-            pagesInfos[nbPages].centered_info = true;
+            pages_infos[nb_pages].page_pair_nb = 1;
+            pages_infos[nb_pages].data_idx = data_index;
+            pages_infos[nb_pages].centered_info = true;
             INCR_AND_CHECK_PAGE_NB();
-            pageLineNb = 0;
-            pagesInfos[nbPages].pagePairNb = 0;
-            pagesInfos[nbPages].data_idx = data_index + 1;
+            page_line_nb = 0;
+            pages_infos[nb_pages].page_pair_nb = 0;
+            pages_infos[nb_pages].data_idx = data_index + 1;
         }
         // Else if number of lines occupied on page > allowed max number of lines per page,
         // go to next page.
-        else if (pageLineNb > TAG_VAL_LST_MAX_LINES_PER_PAGE) {
+        else if (page_line_nb > TAG_VAL_LST_MAX_LINES_PER_PAGE) {
             INCR_AND_CHECK_PAGE_NB();
-            pageLineNb = tagLineNb;
-            pagesInfos[nbPages].pagePairNb = 1;
-            pagesInfos[nbPages].data_idx = data_index;
+            page_line_nb = tag_line_nb;
+            pages_infos[nb_pages].page_pair_nb = 1;
+            pages_infos[nb_pages].data_idx = data_index;
         } else
         // Otherwise save number of pairs on current page
         {
-            pagesInfos[nbPages].pagePairNb++;
+            pages_infos[nb_pages].page_pair_nb++;
         }
         data_index++;
     }
 
     INCR_AND_CHECK_PAGE_NB();
 
-    for (uint8_t i = 0; i < nbPages; i++) {
+    for (uint8_t i = 0; i < nb_pages; i++) {
         PRINTF("Page %d - PairNb : %d - DataIdx : %d\n",
                i,
-               pagesInfos[i].pagePairNb,
-               pagesInfos[i].data_idx);
+               pages_infos[i].page_pair_nb,
+               pages_infos[i].data_idx);
     }
 }
 
-static void preparePage(uint8_t page) {
-    PRINTF("preparePage, page: %d\n", page);
+static void prepare_page(uint8_t page) {
+    PRINTF("prepare_page, page: %d\n", page);
     reset_formatter();
-    uint8_t data_start_index = pagesInfos[page].data_idx;
+    uint8_t data_start_index = pages_infos[page].data_idx;
     bool data_exists = true;
     bool is_op_header = false;
 
@@ -175,7 +175,7 @@ static void preparePage(uint8_t page) {
         };
     }
 
-    for (uint8_t i = 0; i < pagesInfos[page].pagePairNb; i++) {
+    for (uint8_t i = 0; i < pages_infos[page].page_pair_nb; i++) {
         if (!get_next_data(&formatter_data, true, &data_exists, &is_op_header)) {
             THROW(SW_FORMATTING_FAIL);
         };
@@ -186,12 +186,12 @@ static void preparePage(uint8_t page) {
     }
 }
 
-static bool displayTransactionPage(uint8_t page, nbgl_pageContent_t *content) {
-    PRINTF("displayTransactionPage, page: %d\n", page);
-    currentPage = page;
-    if (page < nbPages) {
-        preparePage(page);
-        if (pagesInfos[page].centered_info) {
+static bool display_transaction_page(uint8_t page, nbgl_pageContent_t *content) {
+    PRINTF("display_transaction_page, page: %d\n", page);
+    current_page = page;
+    if (page < nb_pages) {
+        prepare_page(page);
+        if (pages_infos[page].centered_info) {
             content->type = CENTERED_INFO;
             content->centeredInfo.style = LARGE_CASE_INFO;
             content->centeredInfo.text1 = "Please review";
@@ -202,7 +202,7 @@ static bool displayTransactionPage(uint8_t page, nbgl_pageContent_t *content) {
             content->centeredInfo.onTop = false;
         } else {
             content->type = TAG_VALUE_LIST;
-            content->tagValueList.nbPairs = pagesInfos[page].pagePairNb;
+            content->tagValueList.nbPairs = pages_infos[page].page_pair_nb;
             content->tagValueList.pairs = (nbgl_layoutTagValue_t *) &caption_value_pairs;
             content->tagValueList.smallCaseForValue = false;
             content->tagValueList.wrapping = true;
@@ -220,84 +220,84 @@ static bool displayTransactionPage(uint8_t page, nbgl_pageContent_t *content) {
     return true;
 }
 
-static void rejectTxConfirmation(void) {
+static void reject_tx_confirmation(void) {
     ui_action_validate_transaction(false);
     nbgl_useCaseStatus("Transaction\nRejected", false, ui_menu_main);
 }
 
-static void rejectTxChoice(void) {
+static void reject_tx_choice(void) {
     nbgl_useCaseConfirm("Reject transaction?",
                         NULL,
                         "Yes, Reject",
                         "Go back to transaction",
-                        rejectTxConfirmation);
+                        reject_tx_confirmation);
 }
 
-static void reviewTxChoice(bool confirm) {
+static void review_tx_choice(bool confirm) {
     if (confirm) {
         ui_action_validate_transaction(true);
         nbgl_useCaseStatus("TRANSACTION\nSIGNED", true, ui_menu_main);
     } else {
-        rejectTxChoice();
+        reject_tx_choice();
     }
 }
 
-static void reviewTxContinue(void) {
-    nbgl_useCaseRegularReview(currentPage,
-                              nbPages + 1,
+static void review_tx_continue(void) {
+    nbgl_useCaseRegularReview(current_page,
+                              nb_pages + 1,
                               "Reject transaction",
                               NULL,
-                              displayTransactionPage,
-                              reviewTxChoice);
+                              display_transaction_page,
+                              review_tx_choice);
 }
 
-static void reviewTxStart(void) {
+static void review_tx_start(void) {
     nbgl_useCaseReviewStart(&C_icon_stellar_64px,
                             "Review transaction",
                             NULL,
                             "Reject transaction",
-                            reviewTxContinue,
-                            rejectTxChoice);
+                            review_tx_continue,
+                            reject_tx_choice);
 }
 
-static void rejectAuthConfirmation(void) {
+static void reject_auth_confirmation(void) {
     ui_action_validate_transaction(false);
     nbgl_useCaseStatus("Soroban Auth\nRejected", false, ui_menu_main);
 }
 
-static void rejectAuthChoice(void) {
+static void reject_auth_choice(void) {
     nbgl_useCaseConfirm("Reject Soroban Auth?",
                         NULL,
                         "Yes, Reject",
                         "Go back to Soroban Auth",
-                        rejectAuthConfirmation);
+                        reject_auth_confirmation);
 }
 
-static void reviewAuthChoice(bool confirm) {
+static void review_auth_choice(bool confirm) {
     if (confirm) {
         ui_action_validate_transaction(true);
         nbgl_useCaseStatus("SOROBAN AUTH\nSIGNED", true, ui_menu_main);
     } else {
-        rejectAuthChoice();
+        reject_auth_choice();
     }
 }
 
-static void reviewAuthContinue(void) {
-    nbgl_useCaseRegularReview(currentPage,
-                              nbPages + 1,
+static void review_auth_continue(void) {
+    nbgl_useCaseRegularReview(current_page,
+                              nb_pages + 1,
                               "Reject Soroban Auth",
                               NULL,
-                              displayTransactionPage,
-                              reviewAuthChoice);
+                              display_transaction_page,
+                              review_auth_choice);
 }
 
-static void reviewAuthStart(void) {
+static void review_auth_start(void) {
     nbgl_useCaseReviewStart(&C_icon_stellar_64px,
                             "Review Soroban Auth",
                             NULL,
                             "Reject Soroban Auth",
-                            reviewAuthContinue,
-                            rejectAuthChoice);
+                            review_auth_continue,
+                            reject_auth_choice);
 }
 
 void prepare_display() {
@@ -320,8 +320,8 @@ void prepare_display() {
     // init formatter_data
     memcpy(&formatter_data, &fdata, sizeof(formatter_data_t));
 
-    currentPage = 0;
-    prepareTxPagesInfos();
+    current_page = 0;
+    prepare_tx_pages_infos();
 }
 
 int ui_display_transaction(void) {
@@ -331,7 +331,7 @@ int ui_display_transaction(void) {
     }
 
     prepare_display();
-    reviewTxStart();
+    review_tx_start();
     return 0;
 }
 
@@ -341,7 +341,7 @@ int ui_display_auth() {
         return io_send_sw(SW_BAD_STATE);
     }
     prepare_display();
-    reviewAuthStart();
+    review_auth_start();
     return 0;
 }
 #endif  // HAVE_NBGL

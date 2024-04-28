@@ -242,8 +242,7 @@ static bool format_memo(formatter_data_t *fdata) {
             break;
         }
         case MEMO_TEXT: {
-            // TODO: improve
-            char tmp[89];
+            char tmp[41];  // (28 / 3) * 4 = 37.33， 4 is for padding
             if (is_printable_binary(memo->text.text, memo->text.text_size)) {
                 STRLCPY(fdata->caption, "Memo Text", fdata->caption_len);
                 memcpy(tmp, (char *) memo->text.text, memo->text.text_size);

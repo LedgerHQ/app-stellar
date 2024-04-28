@@ -19,8 +19,23 @@ void ui_menu_main(void);
  */
 int ui_display_address();
 
+/**
+ * Display transaction on the device and ask confirmation to sign.
+ *
+ * @return 0 if success, negative integer otherwise.
+ */
 int ui_display_transaction();
 
+/**
+ * Display hash on the device and ask confirmation to sign.
+ *
+ * @return 0 if success, negative integer otherwise.
+ */
 int ui_display_hash();
 
+/**
+ * Display Soroban auth on the device and ask confirmation to sign.
+ *
+ * @return 0 if success, negative integer otherwise.
+ */
 int ui_display_auth();

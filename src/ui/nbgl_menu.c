@@ -1,6 +1,6 @@
 /*****************************************************************************
  *   Ledger Stellar App.
- *   (c) 2022 Ledger SAS.
+ *   (c) 2024 Ledger SAS.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -26,15 +26,15 @@
 #include "settings.h"
 #include "globals.h"
 
-static void displaySettingsMenu(void);
-static void settingsControlsCallback(int token, uint8_t index);
-static bool settingsNavCallback(uint8_t page, nbgl_pageContent_t* content);
+static void display_settings_menu(void);
+static void settings_controls_callback(int token, uint8_t index);
+static bool settings_nav_callback(uint8_t page, nbgl_pageContent_t* content);
 
 enum { SWITCH_HASH_SET_TOKEN = FIRST_USER_TOKEN, SWITCH_SEQUENCE_SET_TOKEN };
 
 #define NB_INFO_FIELDS 2
-static const char* const infoTypes[] = {"Version", "Developer"};
-static const char* const infoContents[] = {APPVERSION, "Ledger"};
+static const char* const info_types[] = {"Version", "Developer"};
+static const char* const info_contents[] = {APPVERSION, "Ledger"};
 
 #define NB_SETTINGS_SWITCHES 2
 #define SETTINGS_INIT_PAGE   0
@@ -42,16 +42,16 @@ static const char* const infoContents[] = {APPVERSION, "Ledger"};
 #define SETTINGS_TOUCHABLE   false
 static nbgl_layoutSwitch_t switches[NB_SETTINGS_SWITCHES];
 
-void onQuitCallback(void) {
+void on_quit_callback(void) {
     os_sched_exit(-1);
 }
 
-static bool settingsNavCallback(uint8_t page, nbgl_pageContent_t* content) {
+static bool settings_nav_callback(uint8_t page, nbgl_pageContent_t* content) {
     if (page == 0) {
         content->type = INFOS_LIST;
         content->infosList.nbInfos = NB_INFO_FIELDS;
-        content->infosList.infoTypes = (const char**) infoTypes;
-        content->infosList.infoContents = (const char**) infoContents;
+        content->infosList.infoTypes = (const char**) info_types;
+        content->infosList.infoContents = (const char**) info_contents;
     } else if (page == 1) {
         switches[0].text = "Hash signing";
         switches[0].subText = "Enable hash signing";
@@ -73,7 +73,7 @@ static bool settingsNavCallback(uint8_t page, nbgl_pageContent_t* content) {
     return true;
 }
 
-static void settingsControlsCallback(int token, uint8_t index) {
+static void settings_controls_callback(int token, uint8_t index) {
     UNUSED(index);
     switch (token) {
         case SWITCH_HASH_SET_TOKEN:
@@ -88,14 +88,14 @@ static void settingsControlsCallback(int token, uint8_t index) {
     }
 }
 
-static void displaySettingsMenu(void) {
+static void display_settings_menu(void) {
     nbgl_useCaseSettings("Stellar settings",
                          SETTINGS_INIT_PAGE,
                          SETTINGS_NB_PAGES,
                          SETTINGS_TOUCHABLE,
                          ui_menu_main,
-                         settingsNavCallback,
-                         settingsControlsCallback);
+                         settings_nav_callback,
+                         settings_controls_callback);
 }
 
 void ui_menu_main(void) {
@@ -103,7 +103,7 @@ void ui_menu_main(void) {
                      &C_icon_stellar_64px,
                      NULL,
                      true,
-                     displaySettingsMenu,
-                     onQuitCallback);
+                     display_settings_menu,
+                     on_quit_callback);
 }
 #endif  // HAVE_NBGL

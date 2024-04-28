@@ -208,8 +208,8 @@ to the terms and conditions of the following licenses.
 
 ------------------------------------------------------------------------------------------------------------------------
 
-src/common/base32.h
-src/common/base32.c
+libstellar/base32.h
+libstellar/base32.c
 
 The base32 algorithm was adapted from:
 https://github.com/heapsource/google-authenticator/blob/master/libpam/base32.h

@@ -1,6 +1,6 @@
 /*****************************************************************************
  *   Ledger App Stellar.
- *   (c) 2022 Ledger SAS.
+ *   (c) 2024 Ledger SAS.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@
 
 int handler_sign_hash(buffer_t *cdata) {
     if (!HAS_SETTING(S_HASH_SIGNING_ENABLED)) {
-        return io_send_sw(SW_TX_HASH_SIGNING_MODE_NOT_ENABLED);
+        return io_send_sw(SW_HASH_SIGNING_MODE_NOT_ENABLED);
     }
 
     explicit_bzero(&G_context, sizeof(G_context));

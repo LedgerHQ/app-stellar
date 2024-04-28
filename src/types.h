@@ -58,6 +58,9 @@ typedef struct {
     request_type_e req_type;                              // user request
 } global_ctx_t;
 
+/**
+ * Structure for swap.
+ */
 typedef struct {
     uint64_t amount;
     uint64_t fees;

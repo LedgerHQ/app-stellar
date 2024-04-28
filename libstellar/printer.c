@@ -301,7 +301,7 @@ bool print_claimable_balance_id(const claimable_balance_id_t *claimable_balance_
     data[1] = '\0';
     data[2] = '\0';
     data[3] = claimable_balance_id_t->type;
-    memcpy(data + 4, claimable_balance_id_t->v0, 32);
+    memcpy(data + 4, claimable_balance_id_t->v0, CLAIMABLE_BALANCE_ID_SIZE);
     return print_binary(data, 36, out, out_len, num_chars_l, num_chars_r);
 }
 

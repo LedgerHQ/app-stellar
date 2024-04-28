@@ -1,6 +1,6 @@
 /*****************************************************************************
  *   Ledger App Stellar.
- *   (c) 2022 Ledger SAS.
+ *   (c) 2024 Ledger SAS.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -73,7 +73,7 @@ int handler_sign_auth(buffer_t *cdata, bool is_first_chunk, bool more) {
     if (!parse_soroban_authorization_envelope(G_context.raw,
                                               G_context.raw_size,
                                               &G_context.envelope)) {
-        THROW(SW_TX_PARSING_FAIL);
+        return io_send_sw(SW_TX_PARSING_FAIL);
     }
 
     G_context.state = STATE_PARSED;

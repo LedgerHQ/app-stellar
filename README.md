@@ -50,7 +50,7 @@ During development, we recommend that you run the unit test first, as it takes l
 
 ### Unit testing
 
-The `./tests_unit` directory contains files for testing the utils, the xdr transaction parser, the screen formatter and the swap function.
+The `./tests_unit` directory contains files for testing the utils, the xdr transaction parser and the screen formatter.
 
 They require the [Node.js](https://nodejs.org/), [cmocka](https://cmocka.org/) unit testing framework, [CMake](https://cmake.org/) and [libbsd](https://libbsd.freedesktop.org/wiki/) to be installed:
 

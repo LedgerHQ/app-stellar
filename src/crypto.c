@@ -1,6 +1,6 @@
 /*****************************************************************************
  *   Ledger Stellar App.
- *   (c) 2022 Ledger SAS.
+ *   (c) 2024 Ledger SAS.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -39,7 +39,10 @@ cx_err_t crypto_derive_private_key(cx_ecfp_private_key_t *private_key,
                                                 (unsigned char *) STELLAR_SEED_KEY,
                                                 sizeof(STELLAR_SEED_KEY)));
     // new private_key from raw
-    CX_CHECK(cx_ecfp_init_private_key_no_throw(CX_CURVE_Ed25519, raw_private_key, 32, private_key));
+    CX_CHECK(cx_ecfp_init_private_key_no_throw(CX_CURVE_Ed25519,
+                                               raw_private_key,
+                                               RAW_ED25519_PRIVATE_KEY_SIZE,
+                                               private_key));
 
 end:
     explicit_bzero(&raw_private_key, sizeof(raw_private_key));

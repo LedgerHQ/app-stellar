@@ -1035,8 +1035,10 @@ static bool parse_invoke_contract_args(buffer_t *buffer, invoke_contract_args_t 
     PARSER_CHECK(parse_sc_address(buffer, &args->address))
     // functionName
     size_t name_size;
-    PARSER_CHECK(
-        parse_binary_string_ptr(buffer, (const uint8_t **) &args->function.name, &name_size, 32))
+    PARSER_CHECK(parse_binary_string_ptr(buffer,
+                                         (const uint8_t **) &args->function.name,
+                                         &name_size,
+                                         SCV_SYMBOL_MAX_SIZE))
     args->function.name_size = name_size;
 
     // args
