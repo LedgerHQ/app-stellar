@@ -11,22 +11,22 @@
 /**
  * Global buffer for interactions between SE and MCU.
  */
-extern uint8_t G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
+extern uint8_t G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];  // 128 bytes
 
 /**
  * Global structure to perform asynchronous UX aside IO operations.
  */
-extern ux_state_t G_ux;
+extern ux_state_t G_ux;  // 264 bytes
 
 /**
  * Global structure with the parameters to exchange with the BOLOS UX application.
  */
-extern bolos_ux_params_t G_ux_params;
+extern bolos_ux_params_t G_ux_params;  // 8 bytes
 
 /**
  * Global context for user requests.
  */
-extern global_ctx_t G_context;
+extern global_ctx_t G_context;  // 1528 bytes
 
 /**
  * Use an union to avoid the UI variable footprints for the swap flow and vice versa
@@ -48,4 +48,4 @@ typedef union swap_or_ui_u {
     } ui;
 } swap_or_ui_t;
 
-extern swap_or_ui_t G;
+extern swap_or_ui_t G;  // 128 bytes

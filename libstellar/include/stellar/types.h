@@ -482,7 +482,6 @@ typedef struct {
 
 // ************************* Soroban ************************* //
 
-// TODO: enum
 #define CONTRACT_ID_PREIMAGE_FROM_ADDRESS 0
 #define CONTRACT_ID_PREIMAGE_FROM_ASSET   1
 #define CONTRACT_EXECUTABLE_WASM          0
