@@ -1,5 +1,12 @@
 # Release Notes
 
+## v5.2.0
+
+### Updated
+- Add support for Stellar Soroban.
+- Add support for plugins.
+- Fix bugs.
+
 ## v4.0.0
 
 ### Updated

@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <cmocka.h>
+#include "stellar/parser.h"
 #include "stellar/formatter.h"
 
 #define MAX_ENVELOPE_SIZE 1024
