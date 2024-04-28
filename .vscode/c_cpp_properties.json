@@ -1,7 +1,6 @@
 {
     "env": {
-        "BOLOS_SDK": "/opt/nanos-secure-sdk",
-        "BOLOS_ENV": "/opt/bolos-devenv"
+        "BOLOS_SDK": "/opt/nanos-secure-sdk"
     },
     "configurations": [
         {
@@ -9,11 +8,11 @@
             "includePath": [
                 "${workspaceFolder}/src",
                 "${workspaceFolder}/libstellar/include",
-                "/usr/include/**",
-                "${env:BOLOS_SDK}/include/*",
-                "${env:BOLOS_SDK}/lib_cxng/include/*",
-                "${env:BOLOS_SDK}/lib_ux/include/*",
-                "${env:BOLOS_SDK}/lib_standard_app/*",
+                "/usr/include",
+                "${env:BOLOS_SDK}/include",
+                "${env:BOLOS_SDK}/lib_cxng/include",
+                "${env:BOLOS_SDK}/lib_ux/include",
+                "${env:BOLOS_SDK}/lib_standard_app",
             ],
             "defines": [
                 "TARGET_NANOS",
@@ -27,7 +26,6 @@
                 "HAVE_USB_APDU",
                 "USB_SEGMENT_SIZE=64",
                 "UNUSED(x)=(void)x",
-                "APPVERSION=\"1.0.0\"",
                 "APPNAME=\"Stellar\"",
                 "MAJOR_VERSION=1",
                 "MINOR_VERSION=0",
@@ -38,7 +36,7 @@
                 "HAVE_PRINTF",
                 "PRINTF=screen_printf"
             ],
-            "compilerPath": "${env:BOLOS_ENV}/gcc-arm-none-eabi-10.3-2021.10/bin/arm-none-eabi-gcc",
+            "compilerPath": "/opt/gcc-arm-none-eabi-10.3-2021.10/bin/arm-none-eabi-gcc",
             "cStandard": "gnu17",
             "cppStandard": "c++17",
             "intelliSenseMode": "linux-gcc-x64",
