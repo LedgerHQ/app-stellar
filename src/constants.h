@@ -26,10 +26,10 @@
 #define DETAIL_CAPTION_MAX_LENGTH 20
 
 /*
- * DETAIL_VALUE_MAX_LENGTH value of 104 is chosen to fit the maximum length of 2**256 - 1 with
- * commas.
+ * DETAIL_VALUE_MAX_LENGTH value of 105 is chosen to fit the maximum length of 2**256 - 1 with
+ * commas and decimals.
  */
-#define DETAIL_VALUE_MAX_LENGTH 104
+#define DETAIL_VALUE_MAX_LENGTH 105
 
 #ifdef TARGET_NANOS
 #define RAW_TX_MAX_SIZE 1120

@@ -211,7 +211,7 @@ bool print_allow_trust_flags(uint32_t flag, char *out, size_t out_len);
  *
  * @return True if the unsigned integer was printed successfully, false otherwise.
  */
-bool print_uint(uint64_t num, char *out, size_t out_len);
+bool print_uint64_num(uint64_t num, char *out, size_t out_len);
 
 /**
  * Print a signed 64-bit integer in a human-readable format.
@@ -222,7 +222,7 @@ bool print_uint(uint64_t num, char *out, size_t out_len);
  *
  * @return True if the signed integer was printed successfully, false otherwise.
  */
-bool print_int(int64_t num, char *out, size_t out_len);
+bool print_int64_num(int64_t num, char *out, size_t out_len);
 
 /**
  * Check if a binary string is printable.
@@ -287,97 +287,137 @@ bool print_time(uint64_t seconds, char *out, size_t out_len);
  * Print a 32-bit integer with an optional separator.
  *
  * @param value The 32-bit integer value to print.
+ * @param decimals The number of decimal places to add.
  * @param out The output buffer.
  * @param out_len The length of the output buffer.
  * @param add_separator A flag indicating whether to add a separator between digits.
  *
  * @return True if the integer was printed successfully, false otherwise.
  */
-bool print_int32(const uint8_t *value, char *out, size_t out_len, bool add_separator);
+bool print_int32(const uint8_t *value,
+                 uint8_t decimals,
+                 char *out,
+                 size_t out_len,
+                 bool add_separator);
 
 /**
  * Print an unsigned 32-bit integer with an optional separator.
  *
  * @param value The unsigned 32-bit integer value to print.
+ * @param decimals The number of decimal places to add.
  * @param out The output buffer.
  * @param out_len The length of the output buffer.
  * @param add_separator A flag indicating whether to add a separator between digits.
  *
  * @return True if the unsigned integer was printed successfully, false otherwise.
  */
-bool print_uint32(const uint8_t *value, char *out, size_t out_len, bool add_separator);
+bool print_uint32(const uint8_t *value,
+                  uint8_t decimals,
+                  char *out,
+                  size_t out_len,
+                  bool add_separator);
 
 /**
  * Print a 64-bit integer with an optional separator.
  *
  * @param value The 64-bit integer value to print.
+ * @param decimals The number of decimal places to add.
  * @param out The output buffer.
  * @param out_len The length of the output buffer.
  * @param add_separator A flag indicating whether to add a separator between digits.
  *
  * @return True if the integer was printed successfully, false otherwise.
  */
-bool print_int64(const uint8_t *value, char *out, size_t out_len, bool add_separator);
+bool print_int64(const uint8_t *value,
+                 uint8_t decimals,
+                 char *out,
+                 size_t out_len,
+                 bool add_separator);
 
 /**
  * Print an unsigned 64-bit integer with an optional separator.
  *
  * @param value The unsigned 64-bit integer value to print.
+ * @param decimals The number of decimal places to add.
  * @param out The output buffer.
  * @param out_len The length of the output buffer.
  * @param add_separator A flag indicating whether to add a separator between digits.
  *
  * @return True if the unsigned 64-bit integer was printed successfully, false otherwise.
  */
-bool print_uint64(const uint8_t *value, char *out, size_t out_len, bool add_separator);
+bool print_uint64(const uint8_t *value,
+                  uint8_t decimals,
+                  char *out,
+                  size_t out_len,
+                  bool add_separator);
 
 /**
  * Print a 128-bit integer with an optional separator.
  *
  * @param value The 128-bit integer value to print.
+ * @param decimals The number of decimal places to add.
  * @param out The output buffer.
  * @param out_len The length of the output buffer.
  * @param add_separator A flag indicating whether to add a separator between digits.
  *
  * @return True if the 128-bit integer was printed successfully, false otherwise.
  */
-bool print_int128(const uint8_t *value, char *out, size_t out_len, bool add_separator);
+bool print_int128(const uint8_t *value,
+                  uint8_t decimals,
+                  char *out,
+                  size_t out_len,
+                  bool add_separator);
 
 /**
  * Print an unsigned 128-bit integer with an optional separator.
  *
  * @param value The unsigned 128-bit integer value to print.
+ * @param decimals The number of decimal places to add.
  * @param out The output buffer.
  * @param out_len The length of the output buffer.
  * @param add_separator A flag indicating whether to add a separator between digits.
  *
  * @return True if the unsigned 128-bit integer was printed successfully, false otherwise.
  */
-bool print_uint128(const uint8_t *value, char *out, size_t out_len, bool add_separator);
+bool print_uint128(const uint8_t *value,
+                   uint8_t decimals,
+                   char *out,
+                   size_t out_len,
+                   bool add_separator);
 
 /**
  * Print a 256-bit integer with an optional separator.
  *
  * @param value The 256-bit integer value to print.
+ * @param decimals The number of decimal places to add.
  * @param out The output buffer.
  * @param out_len The length of the output buffer.
  * @param add_separator A flag indicating whether to add a separator between digits.
  *
  * @return True if the 256-bit integer was printed successfully, false otherwise.
  */
-bool print_int256(const uint8_t *value, char *out, size_t out_len, bool add_separator);
+bool print_int256(const uint8_t *value,
+                  uint8_t decimals,
+                  char *out,
+                  size_t out_len,
+                  bool add_separator);
 
 /**
  * Print an unsigned 256-bit integer with an optional separator.
  *
  * @param value The unsigned 256-bit integer value to print.
+ * @param decimals The number of decimal places to add.
  * @param out The output buffer.
  * @param out_len The length of the output buffer.
  * @param add_separator A flag indicating whether to add a separator between digits.
  *
  * @return True if the unsigned 256-bit integer was printed successfully, false otherwise.
  */
-bool print_uint256(const uint8_t *value, char *out, size_t out_len, bool add_separator);
+bool print_uint256(const uint8_t *value,
+                   uint8_t decimals,
+                   char *out,
+                   size_t out_len,
+                   bool add_separator);
 
 /**
  * Print a scv symbol.
@@ -410,3 +450,14 @@ bool print_scv_string(const scv_string_t *scv_string, char *out, size_t out_len)
  * @return True if the separator was added successfully, false otherwise.
  */
 bool add_separator_to_number(char *out, size_t out_len);
+
+/**
+ * Add a decimal point to a number printed in the output buffer.
+ *
+ * @param out The output buffer where the decimal point will be added.
+ * @param out_len The length of the output buffer.
+ * @param decimals The number of decimal places to add.
+ *
+ * @return True if the decimal point was added successfully, false otherwise.
+ */
+bool add_decimal_point(char *out, size_t out_len, uint8_t decimals);

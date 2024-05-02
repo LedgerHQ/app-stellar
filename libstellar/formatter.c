@@ -89,9 +89,9 @@ static bool format_transaction_source(formatter_data_t *fdata) {
 
 static bool format_min_seq_ledger_gap(formatter_data_t *fdata) {
     STRLCPY(fdata->caption, "Min Seq Ledger Gap", fdata->caption_len);
-    FORMATTER_CHECK(print_uint(fdata->envelope->tx_details.tx.cond.min_seq_ledger_gap,
-                               fdata->value,
-                               fdata->value_len))
+    FORMATTER_CHECK(print_uint64_num(fdata->envelope->tx_details.tx.cond.min_seq_ledger_gap,
+                                     fdata->value,
+                                     fdata->value_len))
     FORMATTER_CHECK(push_to_formatter_stack(&format_transaction_source))
     return true;
 }
@@ -106,8 +106,9 @@ static bool format_min_seq_ledger_gap_prepare(formatter_data_t *fdata) {
 
 static bool format_min_seq_age(formatter_data_t *fdata) {
     STRLCPY(fdata->caption, "Min Seq Age", fdata->caption_len);
-    FORMATTER_CHECK(
-        print_uint(fdata->envelope->tx_details.tx.cond.min_seq_age, fdata->value, fdata->value_len))
+    FORMATTER_CHECK(print_uint64_num(fdata->envelope->tx_details.tx.cond.min_seq_age,
+                                     fdata->value,
+                                     fdata->value_len))
     FORMATTER_CHECK(push_to_formatter_stack(&format_min_seq_ledger_gap_prepare))
     return true;
 }
@@ -123,8 +124,9 @@ static bool format_min_seq_age_prepare(formatter_data_t *fdata) {
 
 static bool format_min_seq_num(formatter_data_t *fdata) {
     STRLCPY(fdata->caption, "Min Seq Num", fdata->caption_len);
-    FORMATTER_CHECK(
-        print_uint(fdata->envelope->tx_details.tx.cond.min_seq_num, fdata->value, fdata->value_len))
+    FORMATTER_CHECK(print_uint64_num(fdata->envelope->tx_details.tx.cond.min_seq_num,
+                                     fdata->value,
+                                     fdata->value_len))
     FORMATTER_CHECK(push_to_formatter_stack(&format_min_seq_age_prepare))
     return true;
 }
@@ -140,18 +142,18 @@ static bool format_min_seq_num_prepare(formatter_data_t *fdata) {
 
 static bool format_ledger_bounds_max_ledger(formatter_data_t *fdata) {
     STRLCPY(fdata->caption, "Ledger Bounds Max", fdata->caption_len);
-    FORMATTER_CHECK(print_uint(fdata->envelope->tx_details.tx.cond.ledger_bounds.max_ledger,
-                               fdata->value,
-                               fdata->value_len))
+    FORMATTER_CHECK(print_uint64_num(fdata->envelope->tx_details.tx.cond.ledger_bounds.max_ledger,
+                                     fdata->value,
+                                     fdata->value_len))
     FORMATTER_CHECK(push_to_formatter_stack(&format_min_seq_num_prepare))
     return true;
 }
 
 static bool format_ledger_bounds_min_ledger(formatter_data_t *fdata) {
     STRLCPY(fdata->caption, "Ledger Bounds Min", fdata->caption_len);
-    FORMATTER_CHECK(print_uint(fdata->envelope->tx_details.tx.cond.ledger_bounds.min_ledger,
-                               fdata->value,
-                               fdata->value_len))
+    FORMATTER_CHECK(print_uint64_num(fdata->envelope->tx_details.tx.cond.ledger_bounds.min_ledger,
+                                     fdata->value,
+                                     fdata->value_len))
     if (fdata->envelope->tx_details.tx.cond.ledger_bounds.max_ledger != 0) {
         FORMATTER_CHECK(push_to_formatter_stack(&format_ledger_bounds_max_ledger))
     } else {
@@ -211,8 +213,9 @@ static bool format_time_bounds(formatter_data_t *fdata) {
 
 static bool format_sequence(formatter_data_t *fdata) {
     STRLCPY(fdata->caption, "Sequence Num", fdata->caption_len);
-    FORMATTER_CHECK(
-        print_uint(fdata->envelope->tx_details.tx.sequence_number, fdata->value, fdata->value_len))
+    FORMATTER_CHECK(print_uint64_num(fdata->envelope->tx_details.tx.sequence_number,
+                                     fdata->value,
+                                     fdata->value_len))
     FORMATTER_CHECK(push_to_formatter_stack(&format_time_bounds))
     return true;
 }
@@ -238,7 +241,7 @@ static bool format_memo(formatter_data_t *fdata) {
     switch (memo->type) {
         case MEMO_ID: {
             STRLCPY(fdata->caption, "Memo ID", fdata->caption_len);
-            FORMATTER_CHECK(print_uint(memo->id, fdata->value, fdata->value_len))
+            FORMATTER_CHECK(print_uint64_num(memo->id, fdata->value, fdata->value_len))
             break;
         }
         case MEMO_TEXT: {
@@ -337,9 +340,10 @@ static bool format_operation_source_prepare(formatter_data_t *fdata) {
 
 static bool format_bump_sequence_bump_to(formatter_data_t *fdata) {
     STRLCPY(fdata->caption, "Bump To", fdata->caption_len);
-    FORMATTER_CHECK(print_int(fdata->envelope->tx_details.tx.op_details.bump_sequence_op.bump_to,
-                              fdata->value,
-                              fdata->value_len))
+    FORMATTER_CHECK(
+        print_int64_num(fdata->envelope->tx_details.tx.op_details.bump_sequence_op.bump_to,
+                        fdata->value,
+                        fdata->value_len))
     return format_operation_source_prepare(fdata);
 }
 
@@ -479,9 +483,9 @@ static bool format_allow_trust(formatter_data_t *fdata) {
 static bool format_set_option_signer_weight(formatter_data_t *fdata) {
     STRLCPY(fdata->caption, "Weight", fdata->caption_len);
     FORMATTER_CHECK(
-        print_uint(fdata->envelope->tx_details.tx.op_details.set_options_op.signer.weight,
-                   fdata->value,
-                   fdata->value_len))
+        print_uint64_num(fdata->envelope->tx_details.tx.op_details.set_options_op.signer.weight,
+                         fdata->value,
+                         fdata->value_len))
     return format_operation_source_prepare(fdata);
 }
 
@@ -590,9 +594,9 @@ static bool format_set_option_home_domain_prepare(formatter_data_t *fdata) {
 static bool format_set_option_high_threshold(formatter_data_t *fdata) {
     STRLCPY(fdata->caption, "High Threshold", fdata->caption_len);
     FORMATTER_CHECK(
-        print_uint(fdata->envelope->tx_details.tx.op_details.set_options_op.high_threshold,
-                   fdata->value,
-                   fdata->value_len))
+        print_uint64_num(fdata->envelope->tx_details.tx.op_details.set_options_op.high_threshold,
+                         fdata->value,
+                         fdata->value_len))
     format_set_option_home_domain_prepare(fdata);
     return true;
 }
@@ -609,9 +613,9 @@ static bool format_set_option_high_threshold_prepare(formatter_data_t *fdata) {
 static bool format_set_option_medium_threshold(formatter_data_t *fdata) {
     STRLCPY(fdata->caption, "Medium Threshold", fdata->caption_len);
     FORMATTER_CHECK(
-        print_uint(fdata->envelope->tx_details.tx.op_details.set_options_op.medium_threshold,
-                   fdata->value,
-                   fdata->value_len))
+        print_uint64_num(fdata->envelope->tx_details.tx.op_details.set_options_op.medium_threshold,
+                         fdata->value,
+                         fdata->value_len))
     format_set_option_high_threshold_prepare(fdata);
     return true;
 }
@@ -628,9 +632,9 @@ static bool format_set_option_medium_threshold_prepare(formatter_data_t *fdata) 
 static bool format_set_option_low_threshold(formatter_data_t *fdata) {
     STRLCPY(fdata->caption, "Low Threshold", fdata->caption_len);
     FORMATTER_CHECK(
-        print_uint(fdata->envelope->tx_details.tx.op_details.set_options_op.low_threshold,
-                   fdata->value,
-                   fdata->value_len))
+        print_uint64_num(fdata->envelope->tx_details.tx.op_details.set_options_op.low_threshold,
+                         fdata->value,
+                         fdata->value_len))
     format_set_option_medium_threshold_prepare(fdata);
     return true;
 }
@@ -647,9 +651,9 @@ static bool format_set_option_low_threshold_prepare(formatter_data_t *fdata) {
 static bool format_set_option_master_weight(formatter_data_t *fdata) {
     STRLCPY(fdata->caption, "Master Weight", fdata->caption_len);
     FORMATTER_CHECK(
-        print_uint(fdata->envelope->tx_details.tx.op_details.set_options_op.master_weight,
-                   fdata->value,
-                   fdata->value_len))
+        print_uint64_num(fdata->envelope->tx_details.tx.op_details.set_options_op.master_weight,
+                         fdata->value,
+                         fdata->value_len))
     format_set_option_low_threshold_prepare(fdata);
     return true;
 }
@@ -890,18 +894,18 @@ static bool format_manage_sell_offer_buy(formatter_data_t *fdata) {
 static bool format_manage_sell_offer(formatter_data_t *fdata) {
     if (!fdata->envelope->tx_details.tx.op_details.manage_sell_offer_op.amount) {
         STRLCPY(fdata->caption, "Remove Offer", fdata->caption_len);
-        FORMATTER_CHECK(
-            print_uint(fdata->envelope->tx_details.tx.op_details.manage_sell_offer_op.offer_id,
-                       fdata->value,
-                       fdata->value_len))
+        FORMATTER_CHECK(print_uint64_num(
+            fdata->envelope->tx_details.tx.op_details.manage_sell_offer_op.offer_id,
+            fdata->value,
+            fdata->value_len))
         return format_operation_source_prepare(fdata);
     } else {
         if (fdata->envelope->tx_details.tx.op_details.manage_sell_offer_op.offer_id) {
             STRLCPY(fdata->caption, "Change Offer", fdata->caption_len);
-            FORMATTER_CHECK(
-                print_uint(fdata->envelope->tx_details.tx.op_details.manage_sell_offer_op.offer_id,
-                           fdata->value,
-                           fdata->value_len))
+            FORMATTER_CHECK(print_uint64_num(
+                fdata->envelope->tx_details.tx.op_details.manage_sell_offer_op.offer_id,
+                fdata->value,
+                fdata->value_len))
         } else {
             STRLCPY(fdata->caption, "Create Offer", fdata->caption_len);
             STRLCPY(fdata->value, "Type Active", fdata->value_len);
@@ -964,12 +968,12 @@ static bool format_manage_buy_offer(formatter_data_t *fdata) {
 
     if (op->buy_amount == 0) {
         STRLCPY(fdata->caption, "Remove Offer", fdata->caption_len);
-        FORMATTER_CHECK(print_uint(op->offer_id, fdata->value, fdata->value_len))
+        FORMATTER_CHECK(print_uint64_num(op->offer_id, fdata->value, fdata->value_len))
         return format_operation_source_prepare(fdata);
     } else {
         if (op->offer_id) {
             STRLCPY(fdata->caption, "Change Offer", fdata->caption_len);
-            FORMATTER_CHECK(print_uint(op->offer_id, fdata->value, fdata->value_len))
+            FORMATTER_CHECK(print_uint64_num(op->offer_id, fdata->value, fdata->value_len))
         } else {
             STRLCPY(fdata->caption, "Create Offer", fdata->caption_len);
             STRLCPY(fdata->value, "Type Active", fdata->value_len);
@@ -1282,7 +1286,7 @@ static bool format_revoke_sponsorship_trust_line_account(formatter_data_t *fdata
 }
 static bool format_revoke_sponsorship_offer_offer_id(formatter_data_t *fdata) {
     STRLCPY(fdata->caption, "Offer ID", fdata->caption_len);
-    FORMATTER_CHECK(print_uint(
+    FORMATTER_CHECK(print_uint64_num(
         fdata->envelope->tx_details.tx.op_details.revoke_sponsorship_op.ledger_key.offer.offer_id,
         fdata->value,
         fdata->value_len))
@@ -1716,15 +1720,15 @@ static bool format_invoke_host_function_args(formatter_data_t *fdata) {
     size_t length;
     STRLCPY(op_caption, "Arg ", OPERATION_CAPTION_MAX_LENGTH);
     length = strlen(op_caption);
-    FORMATTER_CHECK(print_uint(parameters_index + 1,
-                               op_caption + length,
-                               OPERATION_CAPTION_MAX_LENGTH - length))
+    FORMATTER_CHECK(print_uint64_num(parameters_index + 1,
+                                     op_caption + length,
+                                     OPERATION_CAPTION_MAX_LENGTH - length))
 
     STRLCAT(op_caption, " of ", sizeof(op_caption));
     length = strlen(op_caption);
-    FORMATTER_CHECK(print_uint(invoke_contract_args.parameters_length,
-                               op_caption + length,
-                               OPERATION_CAPTION_MAX_LENGTH - length))
+    FORMATTER_CHECK(print_uint64_num(invoke_contract_args.parameters_length,
+                                     op_caption + length,
+                                     OPERATION_CAPTION_MAX_LENGTH - length))
     STRLCPY(fdata->caption, op_caption, fdata->caption_len);
 
     buffer_t buffer = {.ptr = fdata->raw_data,
@@ -1749,19 +1753,19 @@ static bool format_invoke_host_function_args(formatter_data_t *fdata) {
             break;  // void
         case SCV_U32:
             FORMATTER_CHECK(
-                print_uint32(buffer.ptr + buffer.offset, fdata->value, fdata->value_len, true));
+                print_uint32(buffer.ptr + buffer.offset, 0, fdata->value, fdata->value_len, true));
             break;
         case SCV_I32:
             FORMATTER_CHECK(
-                print_int32(buffer.ptr + buffer.offset, fdata->value, fdata->value_len, true));
+                print_int32(buffer.ptr + buffer.offset, 0, fdata->value, fdata->value_len, true));
             break;
         case SCV_U64:
             FORMATTER_CHECK(
-                print_uint64(buffer.ptr + buffer.offset, fdata->value, fdata->value_len, true));
+                print_uint64(buffer.ptr + buffer.offset, 0, fdata->value, fdata->value_len, true));
             break;
         case SCV_I64:
             FORMATTER_CHECK(
-                print_int64(buffer.ptr + buffer.offset, fdata->value, fdata->value_len, true));
+                print_int64(buffer.ptr + buffer.offset, 0, fdata->value, fdata->value_len, true));
             break;
         case SCV_TIMEPOINT: {
             uint64_t timepoint;
@@ -1771,23 +1775,23 @@ static bool format_invoke_host_function_args(formatter_data_t *fdata) {
         }
         case SCV_DURATION:
             FORMATTER_CHECK(
-                print_int64(buffer.ptr + buffer.offset, fdata->value, fdata->value_len, true));
+                print_int64(buffer.ptr + buffer.offset, 0, fdata->value, fdata->value_len, true));
             break;
         case SCV_U128:
             FORMATTER_CHECK(
-                print_uint128(buffer.ptr + buffer.offset, fdata->value, fdata->value_len, true));
+                print_uint128(buffer.ptr + buffer.offset, 0, fdata->value, fdata->value_len, true));
             break;
         case SCV_I128:
             FORMATTER_CHECK(
-                print_int128(buffer.ptr + buffer.offset, fdata->value, fdata->value_len, true));
+                print_int128(buffer.ptr + buffer.offset, 0, fdata->value, fdata->value_len, true));
             break;
         case SCV_U256:
             FORMATTER_CHECK(
-                print_uint256(buffer.ptr + buffer.offset, fdata->value, fdata->value_len, true));
+                print_uint256(buffer.ptr + buffer.offset, 0, fdata->value, fdata->value_len, true));
             break;
         case SCV_I256:
             FORMATTER_CHECK(
-                print_int256(buffer.ptr + buffer.offset, fdata->value, fdata->value_len, true));
+                print_int256(buffer.ptr + buffer.offset, 0, fdata->value, fdata->value_len, true));
             break;
         case SCV_BYTES:
             STRLCPY(fdata->value, "[Bytes Data]", fdata->value_len);
@@ -2035,14 +2039,14 @@ static bool format_confirm_operation(formatter_data_t *fdata) {
         size_t length;
         STRLCPY(op_caption, "Operation ", OPERATION_CAPTION_MAX_LENGTH);
         length = strlen(op_caption);
-        FORMATTER_CHECK(print_uint(fdata->envelope->tx_details.tx.operation_index + 1,
-                                   op_caption + length,
-                                   OPERATION_CAPTION_MAX_LENGTH - length))
+        FORMATTER_CHECK(print_uint64_num(fdata->envelope->tx_details.tx.operation_index + 1,
+                                         op_caption + length,
+                                         OPERATION_CAPTION_MAX_LENGTH - length))
         STRLCAT(op_caption, " of ", sizeof(op_caption));
         length = strlen(op_caption);
-        FORMATTER_CHECK(print_uint(fdata->envelope->tx_details.tx.operations_count,
-                                   op_caption + length,
-                                   OPERATION_CAPTION_MAX_LENGTH - length))
+        FORMATTER_CHECK(print_uint64_num(fdata->envelope->tx_details.tx.operations_count,
+                                         op_caption + length,
+                                         OPERATION_CAPTION_MAX_LENGTH - length))
         STRLCPY(fdata->caption, op_caption, fdata->caption_len);
         FORMATTER_CHECK(push_to_formatter_stack(
             ((format_function_t) PIC(formatters[fdata->envelope->tx_details.tx.op_details.type]))));
@@ -2114,17 +2118,19 @@ static bool get_tx_details_formatter(formatter_data_t *fdata) {
 
 static bool format_auth_sig_exp(formatter_data_t *fdata) {
     STRLCPY(fdata->caption, "Sig Exp Ledger", fdata->caption_len);
-    FORMATTER_CHECK(print_uint(fdata->envelope->soroban_authorization.signature_expiration_ledger,
-                               fdata->value,
-                               fdata->value_len))
+    FORMATTER_CHECK(
+        print_uint64_num(fdata->envelope->soroban_authorization.signature_expiration_ledger,
+                         fdata->value,
+                         fdata->value_len))
     FORMATTER_CHECK(push_to_formatter_stack(&format_auth_function));
     return true;
 }
 
 static bool format_auth_nonce(formatter_data_t *fdata) {
     STRLCPY(fdata->caption, "Nonce", fdata->caption_len);
-    FORMATTER_CHECK(
-        print_uint(fdata->envelope->soroban_authorization.nonce, fdata->value, fdata->value_len))
+    FORMATTER_CHECK(print_uint64_num(fdata->envelope->soroban_authorization.nonce,
+                                     fdata->value,
+                                     fdata->value_len))
     FORMATTER_CHECK(push_to_formatter_stack(&format_auth_sig_exp))
     return true;
 }

@@ -11,7 +11,7 @@
 #define BINARY_MAX_SIZE                   36
 #define AMOUNT_WITH_COMMAS_MAX_LENGTH     24   // 922,337,203,685.4775807
 #define ED25519_SIGNED_PAYLOAD_MAX_LENGTH 166  // include the null terminator
-#define INT256_WITH_COMMAS_MAX_LENGTH     104
+#define NUMBER_WITH_COMMAS_MAX_LENGTH     105
 
 uint16_t crc16(const uint8_t *input_str, int num_bytes) {
     uint16_t crc;
@@ -305,56 +305,20 @@ bool print_claimable_balance_id(const claimable_balance_id_t *claimable_balance_
     return print_binary(data, 36, out, out_len, num_chars_l, num_chars_r);
 }
 
-bool print_uint(uint64_t num, char *out, size_t out_len) {
-    char buffer[AMOUNT_MAX_LENGTH];
-    uint64_t d_val = num;
-    size_t i, j;
-
-    if (num == 0) {
-        if (out_len < 2) {
-            return false;
-        }
-        if (strlcpy(out, "0", out_len) >= out_len) {
-            return false;
-        }
-        return true;
+bool print_uint64_num(uint64_t num, char *out, size_t out_len) {
+    uint8_t data[8] = {0};
+    for (int i = 0; i < 8; i++) {
+        data[i] = num >> (8 * (7 - i));
     }
-
-    memset(buffer, 0, AMOUNT_MAX_LENGTH);
-    for (i = 0; d_val > 0; i++) {
-        if (i >= AMOUNT_MAX_LENGTH) {
-            return false;
-        }
-        buffer[i] = (d_val % 10) + '0';
-        d_val /= 10;
-    }
-    if (out_len <= i) {
-        return false;
-    }
-    // reverse order
-    for (j = 0; j < i; j++) {
-        out[j] = buffer[i - j - 1];
-    }
-    out[i] = '\0';
-    return true;
+    return print_uint64(data, 0, out, out_len, false);
 }
 
-bool print_int(int64_t num, char *out, size_t out_len) {
-    if (out_len == 0) {
-        return false;
+bool print_int64_num(int64_t num, char *out, size_t out_len) {
+    uint8_t data[8] = {0};
+    for (int i = 0; i < 8; i++) {
+        data[i] = num >> (8 * (7 - i));
     }
-    if (num < 0) {
-        uint64_t n;
-
-        out[0] = '-';
-        if (num == INT64_MIN) {
-            n = (uint64_t) num;
-        } else {
-            n = -num;
-        }
-        return print_uint(n, out + 1, out_len - 1);
-    }
-    return print_uint(num, out, out_len);
+    return print_int64(data, 0, out, out_len, false);
 }
 
 bool print_time(uint64_t seconds, char *out, size_t out_len) {
@@ -531,48 +495,15 @@ bool print_amount(uint64_t amount,
                   char *out,
                   size_t out_len) {
     char buffer[AMOUNT_WITH_COMMAS_MAX_LENGTH] = {0};
-    uint64_t d_val = amount;
-    int i;
-
-    for (i = 0; d_val > 0 || i < 9; i++) {
-        // len('100.0000001') == 11
-        if (i >= 11 && i < AMOUNT_WITH_COMMAS_MAX_LENGTH && (i - 11) % 4 == 0) {
-            buffer[i] = ',';
-            i += 1;
-        }
-        if (i >= AMOUNT_WITH_COMMAS_MAX_LENGTH) {
-            return false;
-        }
-        if (d_val > 0) {
-            buffer[i] = (d_val % 10) + '0';
-            d_val /= 10;
-        } else {
-            buffer[i] = '0';
-        }
-        if (i == 6) {  // stroops to xlm: 1 xlm = 10000000 stroops
-            i += 1;
-            buffer[i] = '.';
-        }
-        if (i >= AMOUNT_WITH_COMMAS_MAX_LENGTH) {
-            return false;
-        }
+    uint8_t data[8] = {0};
+    for (int i = 0; i < 8; i++) {
+        data[i] = amount >> (8 * (7 - i));
     }
 
-    // reverse order
-    for (int j = 0; j < i / 2; j++) {
-        char c = buffer[j];
-        buffer[j] = buffer[i - j - 1];
-        buffer[i - j - 1] = c;
+    if (!print_uint64(data, 7, buffer, sizeof(buffer), true)) {
+        return false;
     }
 
-    // strip trailing 0s
-    i -= 1;
-    while (buffer[i] == '0') {
-        buffer[i] = 0;
-        i -= 1;
-    }
-    // strip trailing .
-    if (buffer[i] == '.') buffer[i] = 0;
     if (strlcpy(out, buffer, out_len) >= out_len) {
         return false;
     }
@@ -609,9 +540,6 @@ static int allzeroes(const void *buf, size_t n) {
     return 1;
 }
 
-/**
- * Convert  a 128-bit or 256-bit unsigned integer to a decimal string.
- */
 static bool uint256_to_decimal(const uint8_t *value, size_t value_len, char *out, size_t out_len) {
     if (value_len > INT256_LENGTH) {
         return false;
@@ -622,161 +550,313 @@ static bool uint256_to_decimal(const uint8_t *value, size_t value_len, char *out
     memcpy((uint8_t *) n + INT256_LENGTH - value_len, value, value_len);
 
     // Special case when value is 0
-    if (allzeroes(n, INT256_LENGTH)) {
+    if (allzeroes(n, sizeof(n))) {
         if (out_len < 2) {
             // Not enough space to hold "0" and \0.
             return false;
         }
-        if (strlcpy(out, "0", out_len) >= out_len) {
-            return false;
-        }
+        out[0] = '0';
+        out[1] = '\0';
         return true;
     }
 
-    uint16_t *p = n;
+    // Swap the byte order of each uint16_t element in the array
     for (int i = 0; i < 16; i++) {
-        n[i] = __builtin_bswap16(*p++);
+        n[i] = __builtin_bswap16(n[i]);
     }
+
+    size_t result_len = 0;
     int pos = out_len;
+
     while (!allzeroes(n, sizeof(n))) {
         if (pos == 0) {
             return false;
         }
-        pos -= 1;
-        unsigned int carry = 0;
+        pos--;
+        result_len++;
+
+        uint32_t carry = 0;
         for (int i = 0; i < 16; i++) {
-            int rem = ((carry << 16) | n[i]) % 10;
-            n[i] = ((carry << 16) | n[i]) / 10;
-            carry = rem;
+            uint32_t digit = ((carry << 16) | n[i]);
+            n[i] = digit / 10;
+            carry = digit % 10;
         }
         out[pos] = '0' + carry;
     }
-    memmove(out, out + pos, out_len - pos);
-    out[out_len - pos] = 0;
+
+    if (out_len < result_len + 1) {
+        // Not enough space to hold the result and \0.
+        return false;
+    }
+
+    // Move the result to the beginning of the output buffer
+    memmove(out, out + pos, result_len);
+    out[result_len] = '\0';
+
     return true;
 }
 
-/**
- * Convert a 128-bit or 256-bit signed integer to a decimal string.
- */
 static bool int256_to_decimal(const uint8_t *value, size_t value_len, char *out, size_t out_len) {
     if (value_len > INT256_LENGTH) {
-        // value len is bigger than INT256_LENGTH
+        // Value length is bigger than INT256_LENGTH
         return false;
     }
 
     bool is_negative = (value[0] & 0x80) != 0;
     uint8_t n[INT256_LENGTH] = {0};
+
     if (is_negative) {
-        // Compute the absolute value
+        // Compute the absolute value using two's complement
         bool carry = true;
-        for (int i = value_len - 1; i >= 0; --i) {
-            n[INT256_LENGTH - value_len + i] = ~value[i] + (carry ? 1 : 0);
+        for (size_t i = value_len; i-- > 0;) {
+            n[INT256_LENGTH - value_len + i] = ~value[i] + carry;
             carry = carry && (value[i] == 0);
         }
     } else {
         memcpy(n + INT256_LENGTH - value_len, value, value_len);
     }
 
-    char *p = out + out_len - 1;
-    *p = '\0';
+    char *p = out + out_len;
+    size_t result_len = 0;
+
     do {
+        if (p == out) {
+            // Not enough space in the output buffer
+            return false;
+        }
+
         uint32_t remainder = 0;
-        for (int i = 0; i < INT256_LENGTH; ++i) {
+        for (size_t i = 0; i < INT256_LENGTH; ++i) {
             uint32_t temp = (remainder << 8) | n[i];
             n[i] = temp / 10;
             remainder = temp % 10;
         }
-        --p;
-        *p = '0' + remainder;
-    } while (!allzeroes(n, INT256_LENGTH) && p > out);
 
-    if (is_negative && p > out) {
-        --p;
-        *p = '-';
+        *--p = '0' + remainder;
+        result_len++;
+    } while (!allzeroes(n, INT256_LENGTH));
+
+    if (is_negative) {
+        if (p == out) {
+            // Not enough space in the output buffer
+            return false;
+        }
+        *--p = '-';
+        result_len++;
     }
 
-    memmove(out, p, out_len - (p - out));
+    if (out_len < result_len + 1) {
+        // Not enough space to hold the result and \0.
+        return false;
+    }
+
+    memmove(out, p, result_len);
+    out[result_len] = '\0';
+
+    return true;
+}
+
+bool add_decimal_point(char *out, size_t out_len, uint8_t decimals) {
+    if (out == NULL || out_len == 0) {
+        return false;
+    }
+    if (decimals == 0) {
+        return true;
+    }
+
+    bool is_negative = out[0] == '-';
+    char *start = is_negative ? out + 1 : out;
+
+    size_t len = strlen(start);
+    if (len == 0) {
+        return true;
+    }
+
+    if (is_negative) {
+        if (decimals >= out_len - 2) {
+            // Not enough space to add decimal point and leading zero.
+            return false;
+        }
+    } else {
+        if (decimals >= out_len - 1) {
+            // Not enough space to add decimal point.
+            return false;
+        }
+    }
+
+    if (len <= decimals) {
+        // Shift the number to the right and add leading zeros
+        memmove(start + decimals - len + 2, start, len + 1);
+        start[0] = '0';
+        start[1] = '.';
+        memset(start + 2, '0', decimals - len);
+    } else {
+        // Insert the decimal point at the appropriate position
+        memmove(start + len - decimals + 1, start + len - decimals, decimals + 1);
+        start[len - decimals] = '.';
+    }
+
+    // Remove trailing zeros after decimal point
+    char *p = start + strlen(start) - 1;
+    while (p > start && *p == '0') {
+        *p-- = '\0';
+    }
+
+    // Remove decimal point if it's the last character
+    if (p > start && *p == '.') {
+        *p = '\0';
+    }
+
+    // Add the negative sign back if necessary
+    if (is_negative && out[0] != '-') {
+        memmove(out + 1, out, strlen(out) + 1);
+        out[0] = '-';
+    }
+
     return true;
 }
 
 bool add_separator_to_number(char *out, size_t out_len) {
+    if (out == NULL || out_len == 0) {
+        return false;
+    }
+
     size_t length = strlen(out);
     uint8_t negative = (out[0] == '-') ? 1 : 0;  // Check if the number is negative
+
+    // Find the position of the decimal point
+    char *decimal_point = strchr(out, '.');
+    size_t decimal_index = decimal_point ? decimal_point - out : length;
 
     // Calculate the new length of the string with the commas
     size_t new_length = 0;
     if (negative) {
-        if (length < 2) {
+        if (decimal_index < 2) {
             // The string is too short to have a negative number
             return false;
         }
-        new_length = length + (length - 2) / 3;
+        new_length = decimal_index + (decimal_index - 2) / 3;
     } else {
-        if (length < 1) {
+        if (decimal_index < 1) {
             // The string is too short to have a positive number
             return false;
         }
-        new_length = length + (length - 1) / 3;
+        new_length = decimal_index + (decimal_index - 1) / 3;
     }
 
     // If the new length is greater than the maximum length, return false
-    if (new_length >= out_len) {
+    if (new_length >= out_len || new_length >= NUMBER_WITH_COMMAS_MAX_LENGTH) {
         return false;
     }
 
-    out[new_length] = '\0';  // Set the end of the new string
+    char temp[NUMBER_WITH_COMMAS_MAX_LENGTH];
+    if (strlcpy(temp, out, NUMBER_WITH_COMMAS_MAX_LENGTH) >= NUMBER_WITH_COMMAS_MAX_LENGTH) {
+        return false;
+    }
+
+    temp[new_length] = '\0';  // Set the end of the new string
 
     // Start from the end of the string and move the digits to their new positions
-    for (int i = length - 1, j = new_length - 1; i >= 0; i--, j--) {
-        out[j] = out[i];
+    for (int i = decimal_index - 1, j = new_length - 1; i >= 0; i--, j--) {
+        temp[j] = out[i];
 
         // If the current position is a multiple of 3 and it's not the first digit, add a comma
-        if ((length - i) % 3 == 0 && i != negative && j > 0) {
-            out[--j] = ',';
+        if ((decimal_index - i) % 3 == 0 && i != negative && j > 0) {
+            temp[--j] = ',';
         }
+    }
+
+    // If there is a decimal point, append the part after the decimal point
+    if (decimal_point) {
+        // strlcpy(temp + new_length, decimal_point, NUMBER_WITH_COMMAS_MAX_LENGTH - new_length);
+        if (strlcpy(temp + new_length, decimal_point, NUMBER_WITH_COMMAS_MAX_LENGTH - new_length) >=
+            NUMBER_WITH_COMMAS_MAX_LENGTH - new_length) {
+            return false;
+        }
+    }
+
+    if (strlcpy(out, temp, out_len) >= out_len) {
+        return false;
     }
 
     return true;
 }
 
-bool print_int32(const uint8_t *value, char *out, size_t out_len, bool add_separator) {
-    return int256_to_decimal(value, 4, out, out_len) &&
+bool print_int32(const uint8_t *value,
+                 uint8_t decimals,
+                 char *out,
+                 size_t out_len,
+                 bool add_separator) {
+    return int256_to_decimal(value, 4, out, out_len) && add_decimal_point(out, out_len, decimals) &&
            (!add_separator || add_separator_to_number(out, out_len));
 }
 
-bool print_uint32(const uint8_t *value, char *out, size_t out_len, bool add_separator) {
+bool print_uint32(const uint8_t *value,
+                  uint8_t decimals,
+                  char *out,
+                  size_t out_len,
+                  bool add_separator) {
     return uint256_to_decimal(value, 4, out, out_len) &&
+           add_decimal_point(out, out_len, decimals) &&
            (!add_separator || add_separator_to_number(out, out_len));
 }
 
-bool print_int64(const uint8_t *value, char *out, size_t out_len, bool add_separator) {
-    return int256_to_decimal(value, 8, out, out_len) &&
+bool print_int64(const uint8_t *value,
+                 uint8_t decimals,
+                 char *out,
+                 size_t out_len,
+                 bool add_separator) {
+    return int256_to_decimal(value, 8, out, out_len) && add_decimal_point(out, out_len, decimals) &&
            (!add_separator || add_separator_to_number(out, out_len));
 }
 
-bool print_uint64(const uint8_t *value, char *out, size_t out_len, bool add_separator) {
+bool print_uint64(const uint8_t *value,
+                  uint8_t decimals,
+                  char *out,
+                  size_t out_len,
+                  bool add_separator) {
     return uint256_to_decimal(value, 8, out, out_len) &&
+           add_decimal_point(out, out_len, decimals) &&
            (!add_separator || add_separator_to_number(out, out_len));
 }
 
-bool print_int128(const uint8_t *value, char *out, size_t out_len, bool add_separator) {
+bool print_int128(const uint8_t *value,
+                  uint8_t decimals,
+                  char *out,
+                  size_t out_len,
+                  bool add_separator) {
     return int256_to_decimal(value, 16, out, out_len) &&
+           add_decimal_point(out, out_len, decimals) &&
            (!add_separator || add_separator_to_number(out, out_len));
 }
 
-bool print_uint128(const uint8_t *value, char *out, size_t out_len, bool add_separator) {
+bool print_uint128(const uint8_t *value,
+                   uint8_t decimals,
+                   char *out,
+                   size_t out_len,
+                   bool add_separator) {
     return uint256_to_decimal(value, 16, out, out_len) &&
+           add_decimal_point(out, out_len, decimals) &&
            (!add_separator || add_separator_to_number(out, out_len));
 }
 
-bool print_int256(const uint8_t *value, char *out, size_t out_len, bool add_separator) {
+bool print_int256(const uint8_t *value,
+                  uint8_t decimals,
+                  char *out,
+                  size_t out_len,
+                  bool add_separator) {
     return int256_to_decimal(value, 32, out, out_len) &&
+           add_decimal_point(out, out_len, decimals) &&
            (!add_separator || add_separator_to_number(out, out_len));
 }
 
-bool print_uint256(const uint8_t *value, char *out, size_t out_len, bool add_separator) {
+bool print_uint256(const uint8_t *value,
+                   uint8_t decimals,
+                   char *out,
+                   size_t out_len,
+                   bool add_separator) {
     return uint256_to_decimal(value, 32, out, out_len) &&
+           add_decimal_point(out, out_len, decimals) &&
            (!add_separator || add_separator_to_number(out, out_len));
 }
 

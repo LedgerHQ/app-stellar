@@ -12,7 +12,7 @@
 
 #define MAX_ENVELOPE_SIZE 1024
 #define MAX_CAPTION_SIZE  20
-#define MAX_VALUE_SIZE    104
+#define MAX_VALUE_SIZE    105
 
 const char *testcases[] = {
     "../testcases/opCreateAccount.raw",
