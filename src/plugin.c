@@ -2,6 +2,7 @@
 
 #include "plugin.h"
 #include "globals.h"
+#include "soroban_token.h"
 
 #define MAX_APP_NAME_LENGTH 20
 
@@ -28,6 +29,11 @@ static const char *get_app_name(const uint8_t *contract_address) {
 };
 
 bool plugin_check_presence(const uint8_t *contract_address) {
+    // Build-in token plugin
+    if (token_plugin_check_presence(contract_address)) {
+        return true;
+    }
+
     const char *app_name = get_app_name(contract_address);
     if (app_name == NULL) {
         return false;
@@ -54,6 +60,11 @@ bool plugin_check_presence(const uint8_t *contract_address) {
 };
 
 stellar_plugin_result_t plugin_init_contract(const uint8_t *contract_address) {
+    // Build-in token plugin
+    if (token_plugin_check_presence(contract_address)) {
+        return STELLAR_PLUGIN_RESULT_OK;
+    }
+
     const char *app_name = get_app_name(contract_address);
 
     stellar_plugin_shared_ro_t plugin_shared_ro = {
@@ -78,6 +89,11 @@ stellar_plugin_result_t plugin_init_contract(const uint8_t *contract_address) {
 
 stellar_plugin_result_t plugin_query_data_pair_count(const uint8_t *contract_address,
                                                      uint8_t *data_pair_count) {
+    // Build-in token plugin
+    if (token_plugin_check_presence(contract_address)) {
+        return token_plugin_query_data_pair_count(contract_address, data_pair_count);
+    }
+
     const char *app_name = get_app_name(contract_address);
 
     stellar_plugin_shared_ro_t plugin_shared_ro = {
@@ -107,6 +123,16 @@ stellar_plugin_result_t plugin_query_data_pair(const uint8_t *contract_address,
                                                uint8_t caption_len,
                                                char *value,
                                                uint8_t value_len) {
+    // Build-in token plugin
+    if (token_plugin_check_presence(contract_address)) {
+        return token_plugin_query_data_pair(contract_address,
+                                            data_pair_index,
+                                            caption,
+                                            caption_len,
+                                            value,
+                                            value_len);
+    }
+
     const char *app_name = get_app_name(contract_address);
 
     stellar_plugin_shared_ro_t plugin_shared_ro = {

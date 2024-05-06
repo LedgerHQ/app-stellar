@@ -23,7 +23,7 @@
 /*
  * Captions don't scroll so there is no use in having more capacity than can fit on screen at once.
  */
-#define DETAIL_CAPTION_MAX_LENGTH 20
+#define DETAIL_CAPTION_MAX_LENGTH 21
 
 /*
  * DETAIL_VALUE_MAX_LENGTH value of 105 is chosen to fit the maximum length of 2**256 - 1 with

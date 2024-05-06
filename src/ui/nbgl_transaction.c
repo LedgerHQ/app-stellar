@@ -31,6 +31,7 @@
 #include "stellar/printer.h"
 #include "stellar/formatter.h"
 #include "stellar/printer.h"
+#include "stellar/parser.h"
 
 // Macros
 #define TAG_VAL_LST_MAX_LINES_PER_PAGE     10
@@ -91,7 +92,7 @@ static void prepare_tx_pages_infos(void) {
     uint8_t page_line_nb = 0;
     uint8_t field_len = 0;
     uint8_t data_index = 0;
-    reset_formatter();
+    reset_formatter(&formatter_data);
 
     // Reset globals.
     nb_pages = 0;
@@ -164,7 +165,7 @@ static void prepare_tx_pages_infos(void) {
 
 static void prepare_page(uint8_t page) {
     PRINTF("prepare_page, page: %d\n", page);
-    reset_formatter();
+    reset_formatter(&formatter_data);
     uint8_t data_start_index = pages_infos[page].data_idx;
     bool data_exists = true;
     bool is_op_header = false;

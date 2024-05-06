@@ -205,8 +205,6 @@ UX_FLOW(ux_auth_flow,
         &ux_tx_reject_step);
 
 void prepare_display() {
-    reset_formatter();
-
     formatter_data_t fdata = {
         .raw_data = G_context.raw,
         .raw_data_len = G_context.raw_size,
@@ -222,6 +220,7 @@ void prepare_display() {
         .plugin_query_data_pair_count = &plugin_query_data_pair_count,
         .plugin_query_data_pair = &plugin_query_data_pair,
     };
+    reset_formatter(&fdata);
 
     // init formatter_data
     memcpy(&formatter_data, &fdata, sizeof(formatter_data_t));

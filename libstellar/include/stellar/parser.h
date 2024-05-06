@@ -122,3 +122,7 @@ bool parse_sc_address(buffer_t *buffer, sc_address_t *sc_address);
  * @return True if the reading was successful, false otherwise.
  */
 bool read_scval_advance(buffer_t *buffer);
+
+bool parse_auth_function(buffer_t *buffer,
+                         soroban_authorization_function_type_t *type,
+                         invoke_contract_args_t *args);

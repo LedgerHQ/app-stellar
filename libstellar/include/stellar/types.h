@@ -40,6 +40,8 @@
 /* max amount is max int64 scaled down: "922337203685.4775807" */
 #define AMOUNT_MAX_LENGTH 21
 
+#define MAX_SUB_INVOCATIONS_SIZE 16
+
 #define HASH_SIZE                 32
 #define LIQUIDITY_POOL_ID_SIZE    32
 #define CLAIMABLE_BALANCE_ID_SIZE 32
@@ -550,10 +552,19 @@ typedef enum {
     HOST_FUNCTION_TYPE_UPLOAD_CONTRACT_WASM = 2
 } host_function_type_t;
 
+typedef enum {
+    SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN = 0,
+    SOROBAN_AUTHORIZED_FUNCTION_TYPE_CREATE_CONTRACT_HOST_FN = 1
+} soroban_authorization_function_type_t;
+
 typedef struct {
     host_function_type_t host_function_type;
     invoke_contract_args_t
         invoke_contract_args;  // exists if host_function_type == HOST_FUNCTION_TYPE_INVOKE_CONTRACT
+    soroban_authorization_function_type_t auth_function_type;
+    size_t sub_invocation_positions[MAX_SUB_INVOCATIONS_SIZE];
+    uint8_t sub_invocations_count;
+    uint8_t sub_invocation_index;
 } invoke_host_function_op_t;
 
 typedef struct {
@@ -564,16 +575,14 @@ typedef struct {
     void *placeholder;
 } restore_footprint_op_t;
 
-typedef enum {
-    SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN = 0,
-    SOROBAN_AUTHORIZED_FUNCTION_TYPE_CREATE_CONTRACT_HOST_FN = 1
-} soroban_authorization_function_type_t;
-
 typedef struct {
     uint64_t nonce;
     uint32_t signature_expiration_ledger;
-    soroban_authorization_function_type_t function_type;
+    soroban_authorization_function_type_t auth_function_type;
     invoke_contract_args_t invoke_contract_args;
+    size_t sub_invocation_positions[MAX_SUB_INVOCATIONS_SIZE];
+    uint8_t sub_invocations_count;
+    uint8_t sub_invocation_index;
 } soroban_authorization_t;
 
 // ************************* Soroban ************************* //

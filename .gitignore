@@ -4,6 +4,7 @@ elfs/
 debug/
 build/
 tests_unit/build/
+tests_unit/cmake-build-debug/
 tests_unit/testcases/*.raw
 tests_zemu/node_modules/
 tests_zemu/snapshots-tmp/

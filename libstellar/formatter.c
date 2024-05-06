@@ -13,6 +13,12 @@
 #include "stellar/printer.h"
 #include "stellar/plugin.h"
 
+#if defined(TARGET_NANOS)
+#define INVOKE_SMART_CONTRACT "Invoke Contract"
+#else
+#define INVOKE_SMART_CONTRACT "Invoke Smart Contract"
+#endif
+
 /*
  * the formatter prints the details and defines the order of the details
  * by setting the next formatter to be called
@@ -50,9 +56,9 @@ static format_function_t formatter_stack[MAX_FORMATTERS_PER_OPERATION];
 static int8_t formatter_index;
 static uint8_t current_data_index;
 static uint8_t parameters_index;
-static uint8_t last_parameter_at_formatter_index;
 static uint8_t plugin_data_pair_count;
 
+static bool format_sub_invocation_start(formatter_data_t *fdata);
 static bool push_to_formatter_stack(format_function_t formatter) {
     if (formatter_index >= MAX_FORMATTERS_PER_OPERATION) {
         // PRINTF("Formatter stack overflow\n");
@@ -245,13 +251,17 @@ static bool format_memo(formatter_data_t *fdata) {
             break;
         }
         case MEMO_TEXT: {
-            char tmp[41];  // (28 / 3) * 4 = 37.33， 4 is for padding
             if (is_printable_binary(memo->text.text, memo->text.text_size)) {
                 STRLCPY(fdata->caption, "Memo Text", fdata->caption_len);
-                memcpy(tmp, (char *) memo->text.text, memo->text.text_size);
-                tmp[memo->text.text_size] = '\0';
-                STRLCPY(fdata->value, tmp, fdata->value_len);
+
+                if (memo->text.text_size >= fdata->value_len) {
+                    return false;
+                }
+
+                memcpy(fdata->value, (char *) memo->text.text, memo->text.text_size);
+                fdata->value[memo->text.text_size] = '\0';
             } else {
+                char tmp[41];  // (28 / 3) * 4 = 37.33， 4 is for padding
                 STRLCPY(fdata->caption, "Memo Text (base64)", fdata->caption_len);
                 FORMATTER_CHECK(
                     base64_encode(memo->text.text, memo->text.text_size, tmp, fdata->value_len))
@@ -402,18 +412,21 @@ static bool format_account_merge(formatter_data_t *fdata) {
 }
 
 static bool format_manage_data_value(formatter_data_t *fdata) {
-    // TODO: improve
-    char tmp[89];
     if (is_printable_binary(
             fdata->envelope->tx_details.tx.op_details.manage_data_op.data_value,
             fdata->envelope->tx_details.tx.op_details.manage_data_op.data_value_size)) {
         STRLCPY(fdata->caption, "Data Value", fdata->caption_len);
-        memcpy(tmp,
+        if (fdata->envelope->tx_details.tx.op_details.manage_data_op.data_value_size >=
+            fdata->value_len) {
+            return false;
+        }
+        memcpy(fdata->value,
                (char *) fdata->envelope->tx_details.tx.op_details.manage_data_op.data_value,
                fdata->envelope->tx_details.tx.op_details.manage_data_op.data_value_size);
-        tmp[fdata->envelope->tx_details.tx.op_details.manage_data_op.data_value_size] = '\0';
-        STRLCPY(fdata->value, tmp, fdata->value_len);
+        fdata->value[fdata->envelope->tx_details.tx.op_details.manage_data_op.data_value_size] =
+            '\0';
     } else {
+        char tmp[89];  // (64 / 3) * 4 = 85.33, 4 is for padding
         STRLCPY(fdata->caption, "Data Value (base64)", fdata->caption_len);
         FORMATTER_CHECK(
             base64_encode(fdata->envelope->tx_details.tx.op_details.manage_data_op.data_value,
@@ -426,12 +439,11 @@ static bool format_manage_data_value(formatter_data_t *fdata) {
 }
 
 static bool format_manage_data(formatter_data_t *fdata) {
-    char tmp[65];
-    memcpy(tmp,
+    memcpy(fdata->value,
            fdata->envelope->tx_details.tx.op_details.manage_data_op.data_name,
            fdata->envelope->tx_details.tx.op_details.manage_data_op.data_name_size);
-    tmp[fdata->envelope->tx_details.tx.op_details.manage_data_op.data_name_size] = '\0';
-    STRLCPY(fdata->value, tmp, fdata->value_len);
+    fdata->value[fdata->envelope->tx_details.tx.op_details.manage_data_op.data_name_size] = '\0';
+
     if (fdata->envelope->tx_details.tx.op_details.manage_data_op.data_value_size) {
         STRLCPY(fdata->caption, "Set Data", fdata->caption_len);
         FORMATTER_CHECK(push_to_formatter_stack(&format_manage_data_value))
@@ -729,7 +741,7 @@ static bool format_set_option_inflation_destination_prepare(formatter_data_t *fd
 static bool format_set_options_empty_body(formatter_data_t *fdata) {
     (void) fdata;
     STRLCPY(fdata->caption, "SET OPTIONS", fdata->caption_len);
-    STRLCPY(fdata->value, "BODY IS EMPTY", fdata->value_len);
+    STRLCPY(fdata->value, "[BODY IS EMPTY]", fdata->value_len);
     return format_operation_source_prepare(fdata);
 }
 
@@ -771,12 +783,16 @@ static bool format_change_trust_limit(formatter_data_t *fdata) {
 
 static bool format_change_trust_detail_liquidity_pool_fee(formatter_data_t *fdata) {
     STRLCPY(fdata->caption, "Pool Fee Rate", fdata->caption_len);
-    uint64_t fee = ((uint64_t) fdata->envelope->tx_details.tx.op_details.change_trust_op.line
-                        .liquidity_pool.constant_product.fee *
-                    10000000) /
-                   100;
-    FORMATTER_CHECK(
-        print_amount(fee, NULL, fdata->envelope->network, fdata->value, fdata->value_len))
+
+    // TODO: add a function to print a uint32_t
+    uint8_t fee[4] = {0};
+    for (int i = 0; i < 4; i++) {
+        fee[i] = fdata->envelope->tx_details.tx.op_details.change_trust_op.line.liquidity_pool
+                     .constant_product.fee >>
+                 (8 * (3 - i));
+    }
+    FORMATTER_CHECK(print_int32(fee, 2, fdata->value, fdata->value_len, false))
+
     STRLCAT(fdata->value, "%", fdata->value_len);
     if (fdata->envelope->tx_details.tx.op_details.change_trust_op.limit &&
         fdata->envelope->tx_details.tx.op_details.change_trust_op.limit != INT64_MAX) {
@@ -1703,170 +1719,9 @@ static bool format_liquidity_pool_withdraw(formatter_data_t *fdata) {
     return true;
 }
 
-static bool format_invoke_host_function_args(formatter_data_t *fdata) {
-    // PRINTF("++++++++++ formatter_index: %d, parameters_index: %d\n",
-    //        formatter_index,
-    //        parameters_index);
-    // Argument _ of _
-    invoke_contract_args_t invoke_contract_args;
-    if (fdata->envelope->type == ENVELOPE_TYPE_SOROBAN_AUTHORIZATION) {
-        invoke_contract_args = fdata->envelope->soroban_authorization.invoke_contract_args;
-    } else {
-        invoke_contract_args =
-            fdata->envelope->tx_details.tx.op_details.invoke_host_function_op.invoke_contract_args;
-    }
-
-    char op_caption[OPERATION_CAPTION_MAX_LENGTH] = {0};
-    size_t length;
-    STRLCPY(op_caption, "Arg ", OPERATION_CAPTION_MAX_LENGTH);
-    length = strlen(op_caption);
-    FORMATTER_CHECK(print_uint64_num(parameters_index + 1,
-                                     op_caption + length,
-                                     OPERATION_CAPTION_MAX_LENGTH - length))
-
-    STRLCAT(op_caption, " of ", sizeof(op_caption));
-    length = strlen(op_caption);
-    FORMATTER_CHECK(print_uint64_num(invoke_contract_args.parameters_length,
-                                     op_caption + length,
-                                     OPERATION_CAPTION_MAX_LENGTH - length))
-    STRLCPY(fdata->caption, op_caption, fdata->caption_len);
-
-    buffer_t buffer = {.ptr = fdata->raw_data,
-                       .size = fdata->raw_data_len,
-                       .offset = invoke_contract_args.parameters_position};
-    // Content
-    for (uint8_t i = 0; i < parameters_index; i++) {
-        FORMATTER_CHECK(read_scval_advance(&buffer))
-    }
-    uint32_t sc_type;
-    FORMATTER_CHECK(buffer_read32(&buffer, &sc_type))
-
-    switch (sc_type) {
-        case SCV_BOOL: {
-            bool b;
-            FORMATTER_CHECK(parse_bool(&buffer, &b))
-            STRLCPY(fdata->value, b ? "true" : "false", fdata->value_len);
-            break;
-        }
-        case SCV_VOID:
-            STRLCPY(fdata->value, "[void]", fdata->value_len);
-            break;  // void
-        case SCV_U32:
-            FORMATTER_CHECK(
-                print_uint32(buffer.ptr + buffer.offset, 0, fdata->value, fdata->value_len, true));
-            break;
-        case SCV_I32:
-            FORMATTER_CHECK(
-                print_int32(buffer.ptr + buffer.offset, 0, fdata->value, fdata->value_len, true));
-            break;
-        case SCV_U64:
-            FORMATTER_CHECK(
-                print_uint64(buffer.ptr + buffer.offset, 0, fdata->value, fdata->value_len, true));
-            break;
-        case SCV_I64:
-            FORMATTER_CHECK(
-                print_int64(buffer.ptr + buffer.offset, 0, fdata->value, fdata->value_len, true));
-            break;
-        case SCV_TIMEPOINT: {
-            uint64_t timepoint;
-            FORMATTER_CHECK(parse_uint64(&buffer, &timepoint));
-            FORMATTER_CHECK(print_time(timepoint, fdata->value, fdata->value_len));
-            break;
-        }
-        case SCV_DURATION:
-            FORMATTER_CHECK(
-                print_int64(buffer.ptr + buffer.offset, 0, fdata->value, fdata->value_len, true));
-            break;
-        case SCV_U128:
-            FORMATTER_CHECK(
-                print_uint128(buffer.ptr + buffer.offset, 0, fdata->value, fdata->value_len, true));
-            break;
-        case SCV_I128:
-            FORMATTER_CHECK(
-                print_int128(buffer.ptr + buffer.offset, 0, fdata->value, fdata->value_len, true));
-            break;
-        case SCV_U256:
-            FORMATTER_CHECK(
-                print_uint256(buffer.ptr + buffer.offset, 0, fdata->value, fdata->value_len, true));
-            break;
-        case SCV_I256:
-            FORMATTER_CHECK(
-                print_int256(buffer.ptr + buffer.offset, 0, fdata->value, fdata->value_len, true));
-            break;
-        case SCV_BYTES:
-            STRLCPY(fdata->value, "[Bytes Data]", fdata->value_len);
-            break;
-        case SCV_STRING: {
-            scv_string_t scv_string;
-            FORMATTER_CHECK(parse_scv_string(&buffer, &scv_string));
-            FORMATTER_CHECK(print_scv_string(&scv_string, fdata->value, fdata->value_len));
-            break;
-        }
-        case SCV_SYMBOL: {
-            scv_symbol_t scv_symbol;
-            FORMATTER_CHECK(parse_scv_symbol(&buffer, &scv_symbol));
-            FORMATTER_CHECK(print_scv_symbol(&scv_symbol, fdata->value, fdata->value_len));
-            break;
-        }
-        case SCV_ADDRESS: {
-            sc_address_t sc_address;
-            FORMATTER_CHECK(parse_sc_address(&buffer, &sc_address));
-            FORMATTER_CHECK(print_sc_address(&sc_address, fdata->value, fdata->value_len, 0, 0));
-            break;
-        }
-        default:
-            STRLCPY(fdata->value, "[unable to display]", fdata->value_len);
-    }
-
-    parameters_index++;
-    if (parameters_index == invoke_contract_args.parameters_length) {
-        last_parameter_at_formatter_index = formatter_index;
-        if (fdata->envelope->type == ENVELOPE_TYPE_SOROBAN_AUTHORIZATION) {
-            FORMATTER_CHECK(push_to_formatter_stack(NULL))
-        } else {
-            return format_operation_source_prepare(fdata);
-        }
-    } else {
-        FORMATTER_CHECK(push_to_formatter_stack(&format_invoke_host_function_args))
-    }
-    return true;
-}
-
-static bool format_invoke_host_function_args_with_plugin(formatter_data_t *fdata) {
-    invoke_contract_args_t invoke_contract_args;
-    if (fdata->envelope->type == ENVELOPE_TYPE_SOROBAN_AUTHORIZATION) {
-        invoke_contract_args = fdata->envelope->soroban_authorization.invoke_contract_args;
-    } else {
-        invoke_contract_args =
-            fdata->envelope->tx_details.tx.op_details.invoke_host_function_op.invoke_contract_args;
-    }
-
-    const uint8_t *contract_address = invoke_contract_args.address.address;
-
-    // get data pair
-    if (fdata->plugin_query_data_pair(contract_address,
-                                      parameters_index,
-                                      fdata->caption,
-                                      fdata->caption_len,
-                                      fdata->value,
-                                      fdata->value_len) != STELLAR_PLUGIN_RESULT_OK) {
-        return false;
-    }
-
-    parameters_index++;
-    if (parameters_index == plugin_data_pair_count) {
-        last_parameter_at_formatter_index = formatter_index;
-        if (fdata->envelope->type == ENVELOPE_TYPE_SOROBAN_AUTHORIZATION) {
-            FORMATTER_CHECK(push_to_formatter_stack(NULL))
-        } else {
-            return format_operation_source_prepare(fdata);
-        }
-    } else {
-        FORMATTER_CHECK(push_to_formatter_stack(&format_invoke_host_function_args_with_plugin))
-    }
-    return true;
-}
-
+/**
+ * If the plugin is present and the contract has data pairs, move the control to the plugin.
+ */
 static bool should_move_control_to_plugin(formatter_data_t *fdata) {
     if (fdata->plugin_check_presence == NULL || fdata->plugin_init_contract == NULL ||
         fdata->plugin_query_data_pair_count == NULL || fdata->plugin_query_data_pair == NULL) {
@@ -1902,7 +1757,176 @@ static bool should_move_control_to_plugin(formatter_data_t *fdata) {
     return plugin_data_pair_count != 0;
 }
 
-static bool format_invoke_host_function_func_name(formatter_data_t *fdata) {
+static bool print_scval(buffer_t buffer, char *value, uint8_t value_len) {
+    uint32_t sc_type;
+    FORMATTER_CHECK(buffer_read32(&buffer, &sc_type))
+
+    switch (sc_type) {
+        case SCV_BOOL: {
+            bool b;
+            FORMATTER_CHECK(parse_bool(&buffer, &b))
+            STRLCPY(value, b ? "true" : "false", value_len);
+            break;
+        }
+        case SCV_VOID:
+            STRLCPY(value, "[void]", value_len);
+            break;  // void
+        case SCV_U32:
+            FORMATTER_CHECK(print_uint32(buffer.ptr + buffer.offset, 0, value, value_len, true));
+            break;
+        case SCV_I32:
+            FORMATTER_CHECK(print_int32(buffer.ptr + buffer.offset, 0, value, value_len, true));
+            break;
+        case SCV_U64:
+            FORMATTER_CHECK(print_uint64(buffer.ptr + buffer.offset, 0, value, value_len, true));
+            break;
+        case SCV_I64:
+            FORMATTER_CHECK(print_int64(buffer.ptr + buffer.offset, 0, value, value_len, true));
+            break;
+        case SCV_TIMEPOINT: {
+            uint64_t timepoint;
+            FORMATTER_CHECK(parse_uint64(&buffer, &timepoint));
+            FORMATTER_CHECK(print_time(timepoint, value, value_len));
+            break;
+        }
+        case SCV_DURATION:
+            FORMATTER_CHECK(print_int64(buffer.ptr + buffer.offset, 0, value, value_len, true));
+            break;
+        case SCV_U128:
+            FORMATTER_CHECK(print_uint128(buffer.ptr + buffer.offset, 0, value, value_len, true));
+            break;
+        case SCV_I128:
+            FORMATTER_CHECK(print_int128(buffer.ptr + buffer.offset, 0, value, value_len, true));
+            break;
+        case SCV_U256:
+            FORMATTER_CHECK(print_uint256(buffer.ptr + buffer.offset, 0, value, value_len, true));
+            break;
+        case SCV_I256:
+            FORMATTER_CHECK(print_int256(buffer.ptr + buffer.offset, 0, value, value_len, true));
+            break;
+        case SCV_BYTES:
+            STRLCPY(value, "[Bytes Data]", value_len);
+            break;
+        case SCV_STRING: {
+            scv_string_t scv_string;
+            FORMATTER_CHECK(parse_scv_string(&buffer, &scv_string));
+            FORMATTER_CHECK(print_scv_string(&scv_string, value, value_len));
+            break;
+        }
+        case SCV_SYMBOL: {
+            scv_symbol_t scv_symbol;
+            FORMATTER_CHECK(parse_scv_symbol(&buffer, &scv_symbol));
+            FORMATTER_CHECK(print_scv_symbol(&scv_symbol, value, value_len));
+            break;
+        }
+        case SCV_ADDRESS: {
+            sc_address_t sc_address;
+            FORMATTER_CHECK(parse_sc_address(&buffer, &sc_address));
+            FORMATTER_CHECK(print_sc_address(&sc_address, value, value_len, 0, 0));
+            break;
+        }
+        default:
+            STRLCPY(value, "[unable to display]", value_len);
+    }
+    return true;
+}
+
+// Format sub-invocation
+static bool format_next_sub_invocation(formatter_data_t *fdata) {
+    uint8_t sub_invocations_count =
+        fdata->envelope->type == ENVELOPE_TYPE_SOROBAN_AUTHORIZATION
+            ? fdata->envelope->soroban_authorization.sub_invocations_count
+            : fdata->envelope->tx_details.tx.op_details.invoke_host_function_op
+                  .sub_invocations_count;
+    uint8_t *sub_invocation_index =
+        fdata->envelope->type == ENVELOPE_TYPE_SOROBAN_AUTHORIZATION
+            ? &fdata->envelope->soroban_authorization.sub_invocation_index
+            : &fdata->envelope->tx_details.tx.op_details.invoke_host_function_op
+                   .sub_invocation_index;
+    (*sub_invocation_index)++;
+    if (*sub_invocation_index == sub_invocations_count) {
+        return push_to_formatter_stack(NULL);
+    } else {
+        formatter_index = 0;
+        return push_to_formatter_stack(format_sub_invocation_start);
+    }
+}
+
+static bool format_sub_invocation_invoke_host_function_args(formatter_data_t *fdata) {
+    invoke_contract_args_t invoke_contract_args;
+    if (fdata->envelope->type == ENVELOPE_TYPE_SOROBAN_AUTHORIZATION) {
+        invoke_contract_args = fdata->envelope->soroban_authorization.invoke_contract_args;
+    } else {
+        invoke_contract_args =
+            fdata->envelope->tx_details.tx.op_details.invoke_host_function_op.invoke_contract_args;
+    }
+
+    char op_caption[OPERATION_CAPTION_MAX_LENGTH] = {0};
+    size_t length;
+    STRLCPY(op_caption, "Arg ", OPERATION_CAPTION_MAX_LENGTH);
+    length = strlen(op_caption);
+    FORMATTER_CHECK(print_uint64_num(parameters_index + 1,
+                                     op_caption + length,
+                                     OPERATION_CAPTION_MAX_LENGTH - length))
+
+    STRLCAT(op_caption, " of ", sizeof(op_caption));
+    length = strlen(op_caption);
+    FORMATTER_CHECK(print_uint64_num(invoke_contract_args.parameters_length,
+                                     op_caption + length,
+                                     OPERATION_CAPTION_MAX_LENGTH - length))
+    STRLCPY(fdata->caption, op_caption, fdata->caption_len);
+
+    buffer_t buffer = {.ptr = fdata->raw_data,
+                       .size = fdata->raw_data_len,
+                       .offset = invoke_contract_args.parameters_position};
+    // Content
+    for (uint8_t i = 0; i < parameters_index; i++) {
+        FORMATTER_CHECK(read_scval_advance(&buffer))
+    }
+
+    FORMATTER_CHECK(print_scval(buffer, fdata->value, fdata->value_len))
+
+    parameters_index++;
+    if (parameters_index == invoke_contract_args.parameters_length) {
+        return format_next_sub_invocation(fdata);
+    } else {
+        FORMATTER_CHECK(push_to_formatter_stack(&format_sub_invocation_invoke_host_function_args))
+    }
+    return true;
+}
+
+static bool format_sub_invocation_invoke_host_function_args_with_plugin(formatter_data_t *fdata) {
+    invoke_contract_args_t invoke_contract_args;
+    if (fdata->envelope->type == ENVELOPE_TYPE_SOROBAN_AUTHORIZATION) {
+        invoke_contract_args = fdata->envelope->soroban_authorization.invoke_contract_args;
+    } else {
+        invoke_contract_args =
+            fdata->envelope->tx_details.tx.op_details.invoke_host_function_op.invoke_contract_args;
+    }
+
+    const uint8_t *contract_address = invoke_contract_args.address.address;
+
+    // get data pair
+    if (fdata->plugin_query_data_pair(contract_address,
+                                      parameters_index,
+                                      fdata->caption,
+                                      fdata->caption_len,
+                                      fdata->value,
+                                      fdata->value_len) != STELLAR_PLUGIN_RESULT_OK) {
+        return false;
+    }
+
+    parameters_index++;
+    if (parameters_index == plugin_data_pair_count) {
+        return format_next_sub_invocation(fdata);
+    } else {
+        FORMATTER_CHECK(
+            push_to_formatter_stack(&format_sub_invocation_invoke_host_function_args_with_plugin))
+    }
+    return true;
+}
+
+static bool format_sub_invocation_invoke_host_function_func_name(formatter_data_t *fdata) {
     invoke_contract_args_t invoke_contract_args;
     if (fdata->envelope->type == ENVELOPE_TYPE_SOROBAN_AUTHORIZATION) {
         invoke_contract_args = fdata->envelope->soroban_authorization.invoke_contract_args;
@@ -1921,7 +1945,267 @@ static bool format_invoke_host_function_func_name(formatter_data_t *fdata) {
     if (data_count == 0) {
         // we should not move control to plugin
         if (invoke_contract_args.parameters_length == 0) {
-            return format_operation_source_prepare(fdata);
+            return format_next_sub_invocation(fdata);
+        } else {
+            parameters_index = 0;
+            FORMATTER_CHECK(
+                push_to_formatter_stack(&format_sub_invocation_invoke_host_function_args))
+        }
+    } else {
+        // PRINTF("we should move control to plugin\n");
+        parameters_index = 0;
+        FORMATTER_CHECK(
+            push_to_formatter_stack(&format_sub_invocation_invoke_host_function_args_with_plugin))
+    }
+
+    return true;
+}
+
+static bool format_sub_invocation_invoke_host_function_contract_id(formatter_data_t *fdata) {
+    invoke_contract_args_t invoke_contract_args;
+    if (fdata->envelope->type == ENVELOPE_TYPE_SOROBAN_AUTHORIZATION) {
+        invoke_contract_args = fdata->envelope->soroban_authorization.invoke_contract_args;
+    } else {
+        invoke_contract_args =
+            fdata->envelope->tx_details.tx.op_details.invoke_host_function_op.invoke_contract_args;
+    }
+
+    STRLCPY(fdata->caption, "Contract ID", fdata->caption_len);
+
+    FORMATTER_CHECK(
+        print_sc_address(&invoke_contract_args.address, fdata->value, fdata->value_len, 0, 0))
+    push_to_formatter_stack(&format_sub_invocation_invoke_host_function_func_name);
+    return true;
+}
+
+static bool format_sub_invocation_auth_function(formatter_data_t *fdata) {
+    // PRINTF("function_type: %d\n", fdata->envelope->soroban_authorization.auth_function_type);
+    soroban_authorization_function_type_t auth_function_type =
+        fdata->envelope->type == ENVELOPE_TYPE_SOROBAN_AUTHORIZATION
+            ? fdata->envelope->soroban_authorization.auth_function_type
+            : fdata->envelope->tx_details.tx.op_details.invoke_host_function_op.auth_function_type;
+    switch (auth_function_type) {
+        case SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN:
+            STRLCPY(fdata->caption, "Soroban", fdata->caption_len);
+            STRLCPY(fdata->value, INVOKE_SMART_CONTRACT, fdata->value_len);
+            FORMATTER_CHECK(
+                push_to_formatter_stack(&format_sub_invocation_invoke_host_function_contract_id));
+            break;
+        case SOROBAN_AUTHORIZED_FUNCTION_TYPE_CREATE_CONTRACT_HOST_FN:
+            STRLCPY(fdata->caption, "Soroban", fdata->caption_len);
+            STRLCPY(fdata->value, "Create Smart Contract", fdata->value_len);
+            FORMATTER_CHECK(format_next_sub_invocation(fdata));
+            break;
+        default:
+            return false;
+    }
+    return true;
+}
+
+static bool format_sub_invocation_start(formatter_data_t *fdata) {
+    uint8_t sub_invocation_index = 0;
+    uint8_t sub_invocations_count = 0;
+    if (fdata->envelope->type == ENVELOPE_TYPE_SOROBAN_AUTHORIZATION) {
+        sub_invocation_index = fdata->envelope->soroban_authorization.sub_invocation_index;
+        sub_invocations_count = fdata->envelope->soroban_authorization.sub_invocations_count;
+    } else {
+        sub_invocation_index =
+            fdata->envelope->tx_details.tx.op_details.invoke_host_function_op.sub_invocation_index;
+        sub_invocations_count =
+            fdata->envelope->tx_details.tx.op_details.invoke_host_function_op.sub_invocations_count;
+    }
+
+    STRLCPY(fdata->caption, "Nested Authorization", fdata->caption_len);
+
+    FORMATTER_CHECK(print_uint64_num(sub_invocation_index + 1, fdata->value, fdata->value_len))
+    STRLCAT(fdata->value, " of ", fdata->value_len)
+    FORMATTER_CHECK(print_uint64_num(sub_invocations_count,
+                                     fdata->value + strlen(fdata->value),
+                                     fdata->value_len - strlen(fdata->value)))
+
+    buffer_t buffer = {
+        .ptr = fdata->raw_data,
+        .size = fdata->raw_data_len,
+        .offset = fdata->envelope->type == ENVELOPE_TYPE_SOROBAN_AUTHORIZATION
+                      ? fdata->envelope->soroban_authorization
+                            .sub_invocation_positions[sub_invocation_index]
+                      : fdata->envelope->tx_details.tx.op_details.invoke_host_function_op
+                            .sub_invocation_positions[sub_invocation_index]};
+
+    // here we parse the sub-invocation, and store it in the invoke_contract_args
+    FORMATTER_CHECK(parse_auth_function(
+        &buffer,
+        fdata->envelope->type == ENVELOPE_TYPE_SOROBAN_AUTHORIZATION
+            ? &fdata->envelope->soroban_authorization.auth_function_type
+            : &fdata->envelope->tx_details.tx.op_details.invoke_host_function_op.auth_function_type,
+        fdata->envelope->type == ENVELOPE_TYPE_SOROBAN_AUTHORIZATION
+            ? &fdata->envelope->soroban_authorization.invoke_contract_args
+            : &fdata->envelope->tx_details.tx.op_details.invoke_host_function_op
+                   .invoke_contract_args))
+
+    FORMATTER_CHECK(push_to_formatter_stack(&format_sub_invocation_auth_function))
+    return true;
+}
+
+// Format sub-invocation
+
+static bool format_operation_source_for_invoke_host_function_op(formatter_data_t *fdata) {
+    STRLCPY(fdata->caption, "Op Source", fdata->caption_len);
+    if (fdata->envelope->type == ENVELOPE_TYPE_TX &&
+        fdata->envelope->tx_details.tx.source_account.type == KEY_TYPE_ED25519 &&
+        fdata->envelope->tx_details.tx.op_details.source_account.type == KEY_TYPE_ED25519 &&
+        memcmp(fdata->envelope->tx_details.tx.source_account.ed25519,
+               fdata->signing_key,
+               RAW_ED25519_PUBLIC_KEY_SIZE) == 0 &&
+        memcmp(fdata->envelope->tx_details.tx.op_details.source_account.ed25519,
+               fdata->signing_key,
+               RAW_ED25519_PUBLIC_KEY_SIZE) == 0) {
+        FORMATTER_CHECK(
+            print_muxed_account(&fdata->envelope->tx_details.tx.op_details.source_account,
+                                fdata->value,
+                                fdata->value_len,
+                                6,
+                                6))
+    } else {
+        FORMATTER_CHECK(
+            print_muxed_account(&fdata->envelope->tx_details.tx.op_details.source_account,
+                                fdata->value,
+                                fdata->value_len,
+                                0,
+                                0))
+    }
+    uint8_t sub_invocations_count =
+        fdata->envelope->type == ENVELOPE_TYPE_SOROBAN_AUTHORIZATION
+            ? fdata->envelope->soroban_authorization.sub_invocations_count
+            : fdata->envelope->tx_details.tx.op_details.invoke_host_function_op
+                  .sub_invocations_count;
+    if (sub_invocations_count > 0) {
+        FORMATTER_CHECK(push_to_formatter_stack(&format_sub_invocation_start))
+    } else {
+        FORMATTER_CHECK(push_to_formatter_stack(NULL))
+    }
+    return true;
+}
+
+static bool format_operation_source_prepare_for_invoke_host_function_op(formatter_data_t *fdata) {
+    if (fdata->envelope->tx_details.tx.op_details.source_account_present &&
+        fdata->envelope->type != ENVELOPE_TYPE_SOROBAN_AUTHORIZATION) {
+        // If the source exists, when the user clicks the next button,
+        // it will jump to the page showing the source
+        FORMATTER_CHECK(
+            push_to_formatter_stack(&format_operation_source_for_invoke_host_function_op))
+    } else {
+        uint8_t sub_invocations_count =
+            fdata->envelope->type == ENVELOPE_TYPE_SOROBAN_AUTHORIZATION
+                ? fdata->envelope->soroban_authorization.sub_invocations_count
+                : fdata->envelope->tx_details.tx.op_details.invoke_host_function_op
+                      .sub_invocations_count;
+        if (sub_invocations_count > 0) {
+            FORMATTER_CHECK(push_to_formatter_stack(&format_sub_invocation_start))
+        } else {
+            FORMATTER_CHECK(push_to_formatter_stack(NULL))
+        }
+    }
+    return true;
+}
+
+static bool format_invoke_host_function_args(formatter_data_t *fdata) {
+    invoke_contract_args_t invoke_contract_args;
+    if (fdata->envelope->type == ENVELOPE_TYPE_SOROBAN_AUTHORIZATION) {
+        invoke_contract_args = fdata->envelope->soroban_authorization.invoke_contract_args;
+    } else {
+        invoke_contract_args =
+            fdata->envelope->tx_details.tx.op_details.invoke_host_function_op.invoke_contract_args;
+    }
+
+    char op_caption[OPERATION_CAPTION_MAX_LENGTH] = {0};
+    size_t length;
+    STRLCPY(op_caption, "Arg ", OPERATION_CAPTION_MAX_LENGTH);
+    length = strlen(op_caption);
+    FORMATTER_CHECK(print_uint64_num(parameters_index + 1,
+                                     op_caption + length,
+                                     OPERATION_CAPTION_MAX_LENGTH - length))
+
+    STRLCAT(op_caption, " of ", sizeof(op_caption));
+    length = strlen(op_caption);
+    FORMATTER_CHECK(print_uint64_num(invoke_contract_args.parameters_length,
+                                     op_caption + length,
+                                     OPERATION_CAPTION_MAX_LENGTH - length))
+    STRLCPY(fdata->caption, op_caption, fdata->caption_len);
+
+    buffer_t buffer = {.ptr = fdata->raw_data,
+                       .size = fdata->raw_data_len,
+                       .offset = invoke_contract_args.parameters_position};
+    // Content
+    for (uint8_t i = 0; i < parameters_index; i++) {
+        FORMATTER_CHECK(read_scval_advance(&buffer))
+    }
+
+    FORMATTER_CHECK(print_scval(buffer, fdata->value, fdata->value_len))
+
+    parameters_index++;
+    if (parameters_index == invoke_contract_args.parameters_length) {
+        return format_operation_source_prepare_for_invoke_host_function_op(fdata);
+    } else {
+        FORMATTER_CHECK(push_to_formatter_stack(&format_invoke_host_function_args))
+    }
+    return true;
+}
+
+static bool format_invoke_host_function_args_with_plugin(formatter_data_t *fdata) {
+    invoke_contract_args_t invoke_contract_args;
+    if (fdata->envelope->type == ENVELOPE_TYPE_SOROBAN_AUTHORIZATION) {
+        invoke_contract_args = fdata->envelope->soroban_authorization.invoke_contract_args;
+    } else {
+        invoke_contract_args =
+            fdata->envelope->tx_details.tx.op_details.invoke_host_function_op.invoke_contract_args;
+    }
+
+    const uint8_t *contract_address = invoke_contract_args.address.address;
+
+    // get data pair
+    if (fdata->plugin_query_data_pair(contract_address,
+                                      parameters_index,
+                                      fdata->caption,
+                                      fdata->caption_len,
+                                      fdata->value,
+                                      fdata->value_len) != STELLAR_PLUGIN_RESULT_OK) {
+        return false;
+    }
+
+    parameters_index++;
+    if (parameters_index == plugin_data_pair_count) {
+        // if (fdata->envelope->type == ENVELOPE_TYPE_SOROBAN_AUTHORIZATION) {
+        //     FORMATTER_CHECK(push_to_formatter_stack(NULL))
+        // } else {
+        //     return format_operation_source_prepare(fdata);
+        // }
+        return format_operation_source_prepare_for_invoke_host_function_op(fdata);
+    } else {
+        FORMATTER_CHECK(push_to_formatter_stack(&format_invoke_host_function_args_with_plugin))
+    }
+    return true;
+}
+
+static bool format_invoke_host_function_func_name(formatter_data_t *fdata) {
+    invoke_contract_args_t invoke_contract_args;
+    if (fdata->envelope->type == ENVELOPE_TYPE_SOROBAN_AUTHORIZATION) {
+        invoke_contract_args = fdata->envelope->soroban_authorization.invoke_contract_args;
+    } else {
+        invoke_contract_args =
+            fdata->envelope->tx_details.tx.op_details.invoke_host_function_op.invoke_contract_args;
+    }
+    STRLCPY(fdata->caption, "Function", fdata->caption_len);
+
+    memcpy(fdata->value,
+           invoke_contract_args.function.name,
+           invoke_contract_args.function.name_size);
+    fdata->value[invoke_contract_args.function.name_size] = '\0';
+    uint8_t data_count = should_move_control_to_plugin(fdata);
+    if (data_count == 0) {
+        // we should not move control to plugin
+        if (invoke_contract_args.parameters_length == 0) {
+            return format_operation_source_prepare_for_invoke_host_function_op(fdata);
         } else {
             parameters_index = 0;
             FORMATTER_CHECK(push_to_formatter_stack(&format_invoke_host_function_args))
@@ -1936,32 +2220,39 @@ static bool format_invoke_host_function_func_name(formatter_data_t *fdata) {
 }
 
 static bool format_invoke_host_function_contract_id(formatter_data_t *fdata) {
-    invoke_contract_args_t invoke_contract_args;
-    if (fdata->envelope->type == ENVELOPE_TYPE_SOROBAN_AUTHORIZATION) {
-        invoke_contract_args = fdata->envelope->soroban_authorization.invoke_contract_args;
-    } else {
-        invoke_contract_args =
-            fdata->envelope->tx_details.tx.op_details.invoke_host_function_op.invoke_contract_args;
-    }
+    sc_address_t *address =
+        fdata->envelope->type == ENVELOPE_TYPE_SOROBAN_AUTHORIZATION
+            ? &fdata->envelope->soroban_authorization.invoke_contract_args.address
+            : &fdata->envelope->tx_details.tx.op_details.invoke_host_function_op
+                   .invoke_contract_args.address;
 
     STRLCPY(fdata->caption, "Contract ID", fdata->caption_len);
 
-    FORMATTER_CHECK(
-        print_sc_address(&invoke_contract_args.address, fdata->value, fdata->value_len, 0, 0))
+    FORMATTER_CHECK(print_sc_address(address, fdata->value, fdata->value_len, 0, 0))
     push_to_formatter_stack(&format_invoke_host_function_func_name);
     return true;
 }
 
 static bool format_invoke_host_function(formatter_data_t *fdata) {
+    // avoid the host function op be overwritten by the sub-invocation
+    if (fdata->envelope->tx_details.tx.op_details.invoke_host_function_op.sub_invocations_count) {
+        if (!parse_transaction_operation(fdata->raw_data,
+                                         fdata->raw_data_len,
+                                         fdata->envelope,
+                                         fdata->envelope->tx_details.tx.operation_index)) {
+            return false;
+        };
+    }
     switch (fdata->envelope->tx_details.tx.op_details.invoke_host_function_op.host_function_type) {
         case HOST_FUNCTION_TYPE_INVOKE_CONTRACT:
             STRLCPY(fdata->caption, "Soroban", fdata->caption_len);
-            STRLCPY(fdata->value, "Invoke Smart Contract", fdata->value_len);
+            STRLCPY(fdata->value, INVOKE_SMART_CONTRACT, fdata->value_len);
             FORMATTER_CHECK(push_to_formatter_stack(&format_invoke_host_function_contract_id));
             break;
         case HOST_FUNCTION_TYPE_CREATE_CONTRACT:
             STRLCPY(fdata->caption, "Soroban", fdata->caption_len);
             STRLCPY(fdata->value, "Create Smart Contract", fdata->value_len);
+            // we dont need to care the sub-invocation here
             return format_operation_source_prepare(fdata);
             break;
         case HOST_FUNCTION_TYPE_UPLOAD_CONTRACT_WASM:
@@ -1976,15 +2267,16 @@ static bool format_invoke_host_function(formatter_data_t *fdata) {
 }
 
 static bool format_auth_function(formatter_data_t *fdata) {
-    switch (fdata->envelope->soroban_authorization.function_type) {
+    switch (fdata->envelope->soroban_authorization.auth_function_type) {
         case SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN:
             STRLCPY(fdata->caption, "Soroban", fdata->caption_len);
-            STRLCPY(fdata->value, "Invoke Smart Contract", fdata->value_len);
+            STRLCPY(fdata->value, INVOKE_SMART_CONTRACT, fdata->value_len);
             FORMATTER_CHECK(push_to_formatter_stack(&format_invoke_host_function_contract_id));
             break;
         case SOROBAN_AUTHORIZED_FUNCTION_TYPE_CREATE_CONTRACT_HOST_FN:
             STRLCPY(fdata->caption, "Soroban", fdata->caption_len);
             STRLCPY(fdata->value, "Create Smart Contract", fdata->value_len);
+            // we dont need to care the sub-invocation here
             FORMATTER_CHECK(push_to_formatter_stack(NULL))
             break;
         default:
@@ -2116,7 +2408,7 @@ static bool get_tx_details_formatter(formatter_data_t *fdata) {
     return true;
 }
 
-static bool format_auth_sig_exp(formatter_data_t *fdata) {
+static bool format_soroban_authorization_sig_exp(formatter_data_t *fdata) {
     STRLCPY(fdata->caption, "Sig Exp Ledger", fdata->caption_len);
     FORMATTER_CHECK(
         print_uint64_num(fdata->envelope->soroban_authorization.signature_expiration_ledger,
@@ -2126,12 +2418,18 @@ static bool format_auth_sig_exp(formatter_data_t *fdata) {
     return true;
 }
 
-static bool format_auth_nonce(formatter_data_t *fdata) {
+static bool format_soroban_authorization_nonce(formatter_data_t *fdata) {
+    // avoid the root invoke_contract_args be overwritten by the sub-invocation
+    if (!parse_soroban_authorization_envelope(fdata->raw_data,
+                                              fdata->raw_data_len,
+                                              fdata->envelope)) {
+        return false;
+    };
     STRLCPY(fdata->caption, "Nonce", fdata->caption_len);
     FORMATTER_CHECK(print_uint64_num(fdata->envelope->soroban_authorization.nonce,
                                      fdata->value,
                                      fdata->value_len))
-    FORMATTER_CHECK(push_to_formatter_stack(&format_auth_sig_exp))
+    FORMATTER_CHECK(push_to_formatter_stack(&format_soroban_authorization_sig_exp))
     return true;
 }
 
@@ -2139,7 +2437,7 @@ static bool format_network(formatter_data_t *fdata) {
     STRLCPY(fdata->caption, "Network", fdata->caption_len);
     STRLCPY(fdata->value, (char *) PIC(NETWORK_NAMES[fdata->envelope->network]), fdata->value_len);
     if (fdata->envelope->type == ENVELOPE_TYPE_SOROBAN_AUTHORIZATION) {
-        FORMATTER_CHECK(push_to_formatter_stack(&format_auth_nonce))
+        FORMATTER_CHECK(push_to_formatter_stack(&format_soroban_authorization_nonce))
     } else {
         return get_tx_details_formatter(fdata);
     }
@@ -2159,7 +2457,7 @@ static bool format_soroban_authorization(formatter_data_t *fdata) {
     if (fdata->envelope->network != 0) {
         FORMATTER_CHECK(push_to_formatter_stack(&format_network))
     } else {
-        FORMATTER_CHECK(push_to_formatter_stack(&format_auth_nonce))
+        FORMATTER_CHECK(push_to_formatter_stack(&format_soroban_authorization_nonce))
     }
     return true;
 }
@@ -2194,10 +2492,13 @@ static uint8_t get_data_count(formatter_data_t *fdata) {
     return op_cnt + 1;
 }
 
-void reset_formatter() {
+bool reset_formatter(formatter_data_t *fdata) {
+    // TODO: fix back button?
+    (void) fdata;
     explicit_bzero(formatter_stack, sizeof(formatter_stack));
     formatter_index = 0;
     current_data_index = 0;
+    return true;
 }
 
 bool get_next_data(formatter_data_t *fdata, bool forward, bool *data_exists, bool *is_op_header) {
@@ -2218,7 +2519,6 @@ bool get_next_data(formatter_data_t *fdata, bool forward, bool *data_exists, boo
             }
             FORMATTER_CHECK(formatter_stack[0](fdata));
             *data_exists = true;
-            last_parameter_at_formatter_index = 255;
         } else if (current_data_index < total_data - 1 &&
                    formatter_stack[formatter_index - 1] == NULL) {
             current_data_index++;
@@ -2229,7 +2529,6 @@ bool get_next_data(formatter_data_t *fdata, bool forward, bool *data_exists, boo
             FORMATTER_CHECK(formatter_stack[0](fdata));
             *is_op_header = true;
             *data_exists = true;
-            last_parameter_at_formatter_index = 255;
         } else if (current_data_index == total_data - 1 &&
                    formatter_stack[formatter_index - 1] == NULL) {
             formatter_index++;  // we can back from the approve page
@@ -2242,9 +2541,7 @@ bool get_next_data(formatter_data_t *fdata, bool forward, bool *data_exists, boo
         if (current_data_index == 0 && formatter_index == 2) {
             formatter_index = 0;
             *data_exists = false;
-        }
-
-        else if (current_data_index > 0 && formatter_index == 2) {
+        } else if (current_data_index > 0 && formatter_index == 2) {
             current_data_index -= 1;
             FORMATTER_CHECK(format(fdata, current_data_index));
             if (formatter_stack[0] == NULL) {
@@ -2255,32 +2552,14 @@ bool get_next_data(formatter_data_t *fdata, bool forward, bool *data_exists, boo
             if (current_data_index > 0) {
                 *is_op_header = true;
             }
-            last_parameter_at_formatter_index = 255;
         } else {
-            formatter_index -= 2;
-
-            // For display the parameter of the soroabn operation
-            if (formatter_index <= last_parameter_at_formatter_index) {
-                if (last_parameter_at_formatter_index == formatter_index) {
-                    parameters_index -= 1;
-                } else {
-                    if (parameters_index < 2) {
-                        parameters_index = 0;
-                    } else {
-                        parameters_index -= 2;
-                    }
-                }
+            FORMATTER_CHECK(format(fdata, current_data_index));
+            if (formatter_stack[0] == NULL) {
+                return false;
             }
-            // PRINTF(
-            //     "---------- last_parameter_at_formatter_index: %d. formatter_index: %d, "
-            //     "parameters_index: %d\n",
-            //     last_parameter_at_formatter_index,
-            //     formatter_index - 1,
-            //     parameters_index);
-
-            FORMATTER_CHECK(formatter_stack[formatter_index - 1](fdata));
+            FORMATTER_CHECK(formatter_stack[0](fdata));
             *data_exists = true;
-            if (current_data_index > 0 && formatter_index == 2) {
+            if (current_data_index > 0) {
                 *is_op_header = true;
             }
         }

@@ -10,8 +10,8 @@
 #include "stellar/formatter.h"
 #include "stellar/parser.h"
 
-#define MAX_ENVELOPE_SIZE 1024
-#define MAX_CAPTION_SIZE  20
+#define MAX_ENVELOPE_SIZE 2048
+#define MAX_CAPTION_SIZE  21
 #define MAX_VALUE_SIZE    105
 
 const char *testcases[] = {
@@ -58,6 +58,15 @@ const char *testcases[] = {
     "../testcases/opInvokeHostFunctionCreateContractWrapAsset.raw",
     "../testcases/opInvokeHostFunctionWithoutArgs.raw",
     "../testcases/opInvokeHostFunctionUploadWasm.raw",
+    "../testcases/opInvokeHostFunctionWithAuth.raw",
+    "../testcases/opInvokeHostFunctionWithAuthAndNoArgsAndNoSource.raw",
+    "../testcases/opInvokeHostFunctionWithAuthAndNoArgs.raw",
+    "../testcases/opInvokeHostFunctionWithoutAuthAndNoSource.raw",
+    "../testcases/opInvokeHostFunctionTransferXlm.raw",
+    "../testcases/opInvokeHostFunctionTransferUsdc.raw",
+    "../testcases/opInvokeHostFunctionApproveUsdc.raw",
+    "../testcases/opInvokeHostFunctionWithComplexSubInvocation.raw",
+    "../testcases/opInvokeHostFunctionTestPlugin.raw",
     "../testcases/opManageDataAdd.raw",
     "../testcases/opManageDataAddWithUnprintableData.raw",
     "../testcases/opManageDataRemove.raw",
@@ -183,10 +192,10 @@ void test_format_envelope(void **state) {
                               .caption_len = MAX_CAPTION_SIZE,
                               .display_sequence = true};
 
-    char output[1024] = {0};
+    char output[4096] = {0};
     bool data_exists = true;
     bool is_op_header = false;
-    reset_formatter();
+    assert_true(reset_formatter(&fdata));
     while (true) {
         assert_true(get_next_data(&fdata, true, &data_exists, &is_op_header));
         if (!data_exists) {
@@ -201,10 +210,10 @@ void test_format_envelope(void **state) {
         strcat(output, temp);
     }
 
-    char expected_result[1024] = {0};
+    char expected_result[4096] = {0};
     FILE *result_file = fopen(result_filename, "r");
     assert_non_null(result_file);
-    fread(expected_result, sizeof(char), 1024, result_file);
+    fread(expected_result, sizeof(char), 4096, result_file);
     assert_string_equal(output, expected_result);
 
     fclose(file);
@@ -245,7 +254,7 @@ void test_formatter_forward(void **state) {
 
     bool data_exists = false;
     bool is_op_header = false;
-    reset_formatter();
+    assert_true(reset_formatter(&fdata));
 
     // Flow:
     // Memo Text; hello world
@@ -278,6 +287,10 @@ void test_formatter_forward(void **state) {
     assert_false(is_op_header);
     assert_string_equal(fdata.caption, "Sequence Num");
     assert_true(get_next_data(&fdata, false, &data_exists, &is_op_header));
+    assert_true(data_exists);
+    assert_false(is_op_header);
+    assert_string_equal(fdata.caption, "Memo Text");
+    assert_true(get_next_data(&fdata, true, &data_exists, &is_op_header));
     assert_true(data_exists);
     assert_false(is_op_header);
     assert_string_equal(fdata.caption, "Max Fee");
@@ -340,10 +353,6 @@ void test_formatter_forward(void **state) {
     assert_false(is_op_header);
     assert_string_equal(fdata.caption, "Home Domain");
 
-    assert_true(get_next_data(&fdata, false, &data_exists, &is_op_header));
-    assert_true(data_exists);
-    assert_false(is_op_header);
-    assert_string_equal(fdata.caption, "Operation Type");
     assert_true(get_next_data(&fdata, false, &data_exists, &is_op_header));
     assert_true(data_exists);
     assert_true(is_op_header);

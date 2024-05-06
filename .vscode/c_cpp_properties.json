@@ -18,6 +18,7 @@
                 "TARGET_NANOS",
                 "OS_IO_SEPROXYHAL",
                 "HAVE_BAGL",
+                "HAVE_NBGL",
                 "HAVE_SPRINTF",
                 "HAVE_IO_USB",
                 "HAVE_L4_USBLIB",
