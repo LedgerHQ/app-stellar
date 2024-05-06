@@ -2492,13 +2492,10 @@ static uint8_t get_data_count(formatter_data_t *fdata) {
     return op_cnt + 1;
 }
 
-bool reset_formatter(formatter_data_t *fdata) {
-    // TODO: fix back button?
-    (void) fdata;
+void reset_formatter() {
     explicit_bzero(formatter_stack, sizeof(formatter_stack));
     formatter_index = 0;
     current_data_index = 0;
-    return true;
 }
 
 bool get_next_data(formatter_data_t *fdata, bool forward, bool *data_exists, bool *is_op_header) {

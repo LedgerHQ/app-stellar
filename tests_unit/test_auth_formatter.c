@@ -71,7 +71,7 @@ void test_format_envelope(void **state) {
     char output[4096] = {0};
     bool data_exists = true;
     bool is_op_header = false;
-    assert_true(reset_formatter(&fdata));
+    reset_formatter();
     while (true) {
         assert_true(get_next_data(&fdata, true, &data_exists, &is_op_header));
         if (!data_exists) {

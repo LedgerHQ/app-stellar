@@ -220,7 +220,7 @@ void prepare_display() {
         .plugin_query_data_pair_count = &plugin_query_data_pair_count,
         .plugin_query_data_pair = &plugin_query_data_pair,
     };
-    reset_formatter(&fdata);
+    reset_formatter();
 
     // init formatter_data
     memcpy(&formatter_data, &fdata, sizeof(formatter_data_t));
