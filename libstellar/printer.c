@@ -13,10 +13,9 @@
 #define ED25519_SIGNED_PAYLOAD_MAX_LENGTH 166  // include the null terminator
 #define NUMBER_WITH_COMMAS_MAX_LENGTH     105
 
-uint16_t crc16(const uint8_t *input_str, int num_bytes) {
-    uint16_t crc;
-    crc = 0;
-    while (--num_bytes >= 0) {
+uint16_t crc16(const uint8_t *input_str, uint32_t num_bytes) {
+    uint16_t crc = 0;
+    while (num_bytes-- > 0) {
         crc = crc ^ (uint32_t) *input_str++ << 8;
         int i = 8;
         do {
@@ -28,7 +27,6 @@ uint16_t crc16(const uint8_t *input_str, int num_bytes) {
     }
     return crc;
 }
-
 bool encode_key(const uint8_t *in, uint8_t version_byte, char *out, uint8_t out_len) {
     if (in == NULL || out_len < 56 + 1) {
         return false;

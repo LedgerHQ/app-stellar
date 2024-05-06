@@ -2088,8 +2088,8 @@ static bool format_operation_source_for_invoke_host_function_op(formatter_data_t
 }
 
 static bool format_operation_source_prepare_for_invoke_host_function_op(formatter_data_t *fdata) {
-    if (fdata->envelope->tx_details.tx.op_details.source_account_present &&
-        fdata->envelope->type != ENVELOPE_TYPE_SOROBAN_AUTHORIZATION) {
+    if (fdata->envelope->type != ENVELOPE_TYPE_SOROBAN_AUTHORIZATION &&
+        fdata->envelope->tx_details.tx.op_details.source_account_present) {
         // If the source exists, when the user clicks the next button,
         // it will jump to the page showing the source
         FORMATTER_CHECK(

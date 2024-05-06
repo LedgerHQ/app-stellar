@@ -45,14 +45,14 @@ Download the installation script from [GitHub release page](https://github.com/l
 
 For Ledger Nano S:
 ```shell
-chmod +x stellar_installer_nano_s.sh
-./stellar_installer_nano_s.sh load
+chmod +x installer_nano_s.sh
+./installer_nano_s.sh load
 ```
 
 For Leder Nano S Plus:
 ```shell
-chmod +x stellar_installer_nano_s_plus.sh
-./stellar_installer_nano_s_plus.sh load
+chmod +x installer_nano_s_plus.sh
+./installer_nano_s_plus.sh load
 ```
 
 > [!NOTE]

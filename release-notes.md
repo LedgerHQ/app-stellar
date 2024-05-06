@@ -1,5 +1,11 @@
 # Release Notes
 
+## v5.3.0
+
+### Updated
+- Support displaying nested authorization.
+- Add built-in XLM and USDC Soroban Token plugin.
+
 ## v5.2.0
 
 ### Updated
