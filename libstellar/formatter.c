@@ -2492,7 +2492,7 @@ static uint8_t get_data_count(formatter_data_t *fdata) {
     return op_cnt + 1;
 }
 
-void reset_formatter() {
+void reset_formatter(void) {
     explicit_bzero(formatter_stack, sizeof(formatter_stack));
     formatter_index = 0;
     current_data_index = 0;

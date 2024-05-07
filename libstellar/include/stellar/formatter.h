@@ -51,7 +51,7 @@ typedef struct {
 /**
  * Reset the formatter state.
  */
-void reset_formatter();
+void reset_formatter(void);
 
 /**
  * Get the next data to display.
