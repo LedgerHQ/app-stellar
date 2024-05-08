@@ -40,7 +40,7 @@
             "compilerPath": "/opt/gcc-arm-none-eabi-10.3-2021.10/bin/arm-none-eabi-gcc",
             "cStandard": "gnu17",
             "cppStandard": "c++17",
-            "intelliSenseMode": "linux-gcc-x64",
+            "intelliSenseMode": "linux-gcc-arm",
             "browse": {
                 "limitSymbolsToIncludedHeaders": true,
                 "databaseFilename": ""

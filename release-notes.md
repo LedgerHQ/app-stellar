@@ -1,5 +1,10 @@
 # Release Notes
 
+## v5.3.1
+
+### Updated
+- Check the validity of the transaction before starting the review.
+
 ## v5.3.0
 
 ### Updated
