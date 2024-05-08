@@ -5,6 +5,10 @@
  */
 #define SW_FORMATTING_FAIL 0x6125
 /**
+ * Status word for too many pages to display. (40 pages max on Stax)
+ */
+#define SW_TOO_MANY_PAGES 0x6126
+/**
  * Status word for denied by user.
  */
 #define SW_DENY 0x6985
@@ -29,14 +33,6 @@
  */
 #define SW_CLA_NOT_SUPPORTED 0x6E00
 /**
- * Status word for wrong response length (buffer too small or too big).
- */
-#define SW_WRONG_RESPONSE_LENGTH 0xB000
-/**
- * Status word for fail to display BIP32 path.
- */
-#define SW_DISPLAY_BIP32_PATH_FAIL 0xB001
-/**
  * Status word for fail to display address.
  */
 #define SW_DISPLAY_ADDRESS_FAIL 0xB002
@@ -46,6 +42,7 @@
 #define SW_DISPLAY_TRANSACTION_HASH_FAIL 0xB003
 /**
  * Status word for wrong transaction length.
+ * When the data requested by the user is too large, this exception will be thrown.
  */
 #define SW_WRONG_TX_LENGTH 0xB004
 /**

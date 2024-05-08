@@ -30,9 +30,10 @@
 #define VERSION_BYTE_ED25519_SIGNED_PAYLOAD 15 << 3
 #define VERSION_BYTE_CONTRACT               2 << 3
 
-#define ASSET_CODE_MAX_LENGTH        13
-#define CLAIMANTS_MAX_LENGTH         10
-#define PATH_PAYMENT_MAX_PATH_LENGTH 5
+#define ASSET_CODE_MAX_LENGTH         13
+#define CLAIMANTS_MAX_LENGTH          10
+#define PATH_PAYMENT_MAX_PATH_LENGTH  5
+#define HOST_FUNCTION_ARGS_MAX_LENGTH 10
 
 /* For sure not more than 35 operations will fit in that */
 #define MAX_OPS 35

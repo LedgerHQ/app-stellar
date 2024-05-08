@@ -5,6 +5,10 @@
 #include "stellar/types.h"
 #include "stellar/network.h"
 
+#ifdef TEST
+#include <stdio.h>
+#endif
+
 #define PARSER_CHECK(x)         \
     {                           \
         if (!(x)) return false; \
@@ -1049,10 +1053,10 @@ static bool parse_invoke_contract_args(buffer_t *buffer, invoke_contract_args_t 
     args->parameters_length = args_len;
     args->parameters_position = buffer->offset;
 
-    // if (args_len > 10) {
-    //     // TODO: We dont support more than 10 arguments
-    //     return false;
-    // }
+    if (args_len > HOST_FUNCTION_ARGS_MAX_LENGTH) {
+        // We dont support more than 10 arguments
+        return false;
+    }
 
     // PRINTF("function_name.text_size=%d, function_name.text=%s, args->parameters_length=%d\n",
     //        args->function.name_size,
@@ -1125,7 +1129,7 @@ static bool parse_invoke_host_function(buffer_t *buffer, invoke_host_function_op
     uint32_t type;
     PARSER_CHECK(buffer_read32(buffer, &type));
     op->host_function_type = type;
-    // PRINTF("host_func_type=%d\n", &op->host_function_type);
+    PRINTF("host_function_type=%d\n", type);
     switch (op->host_function_type) {
         case HOST_FUNCTION_TYPE_INVOKE_CONTRACT:
             PARSER_CHECK(parse_invoke_contract_args(buffer, &op->invoke_contract_args))
@@ -1174,7 +1178,7 @@ static bool parse_invoke_host_function(buffer_t *buffer, invoke_host_function_op
     }
     op->sub_invocations_count = sub_invocations_count;
 
-    // PRINTF("sub_invocations_count=%d\n", sub_invocations_count);
+    PRINTF("sub_invocations_count=%d\n", sub_invocations_count);
     // for (uint8_t i = 0; i < 16; i++) {
     //     PRINTF("sub_invocation_positions[%d]=%d\n", i, op->sub_invocation_positions[i]);
     // }
@@ -1188,7 +1192,7 @@ static bool parse_extend_footprint_ttl(buffer_t *buffer, extend_footprint_ttl_op
 }
 
 static bool parse_operation(buffer_t *buffer, operation_t *operation) {
-    // PRINTF("parse_operation: offset=%d\n", buffer->offset);
+    PRINTF("parse_operation: offset=%ld\n", buffer->offset);
     explicit_bzero(operation, sizeof(operation_t));
     uint32_t op_type;
 
@@ -1318,16 +1322,14 @@ static bool parse_transaction_operation_len(buffer_t *buffer, uint8_t *operation
     return true;
 }
 
-// static bool check_operations(buffer_t *buffer, uint8_t op_count)
-// {
-//     // PRINTF("check_operations: offset=%d\n", buffer->offset);
-//     operation_t op;
-//     for (uint8_t i = 0; i < op_count; i++)
-//     {
-//         PARSER_CHECK(parse_operation(buffer, &op))
-//     }
-//     return true;
-// }
+static bool check_operations(buffer_t *buffer, uint8_t op_count) {
+    PRINTF("check_operations: op_count=%d, offset=%ld\n", op_count, buffer->offset);
+    operation_t op;
+    for (uint8_t i = 0; i < op_count; i++) {
+        PARSER_CHECK(parse_operation(buffer, &op))
+    }
+    return true;
+}
 
 static bool parse_transaction_details(buffer_t *buffer, transaction_details_t *transaction) {
     // account used to run the (inner)transaction
@@ -1394,7 +1396,7 @@ static bool parse_network(buffer_t *buffer, uint8_t *network) {
 }
 
 bool parse_transaction_envelope(const uint8_t *data, size_t data_len, envelope_t *envelope) {
-    // PRINTF("parse_transaction_envelope: offset=%d\n", buffer->offset);
+    PRINTF("parse_transaction_envelope\n");
     buffer_t buffer = {
         .ptr = data,
         .size = data_len,
@@ -1425,6 +1427,9 @@ bool parse_transaction_envelope(const uint8_t *data, size_t data_len, envelope_t
     }
 
     envelope->tx_details.tx.operation_position = buffer.offset;
+
+    // check all operations are valid
+    PARSER_CHECK(check_operations(&buffer, envelope->tx_details.tx.operations_count));
     return true;
 }
 
@@ -1470,7 +1475,7 @@ bool parse_auth_function(buffer_t *buffer,
 bool parse_soroban_authorization_envelope(const uint8_t *data,
                                           size_t data_len,
                                           envelope_t *envelope) {
-    // PRINTF("parse_transaction_envelope: offset=%d\n", buffer->offset);
+    PRINTF("parse_soroban_authorization_envelope\n");
     buffer_t buffer = {
         .ptr = data,
         .size = data_len,
@@ -1506,7 +1511,7 @@ bool parse_soroban_authorization_envelope(const uint8_t *data,
             envelope->soroban_authorization.sub_invocation_positions));
     }
     envelope->soroban_authorization.sub_invocations_count = sub_invocations_count;
-    // PRINTF("sub_invocations_count=%d\n", sub_invocations_count);
+    PRINTF("sub_invocations_count=%d\n", sub_invocations_count);
     // for (uint8_t i = 0; i < 16; i++) {
     //     PRINTF("sub_invocation_positions[%d]=%d\n",
     //            i,

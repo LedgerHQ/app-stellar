@@ -79,8 +79,7 @@ static void reject_auth_choice(void);
 static inline void INCR_AND_CHECK_PAGE_NB(void) {
     nb_pages++;
     if (nb_pages >= MAX_NUMBER_OF_PAGES) {
-        // TODO
-        THROW(SW_BAD_STATE);
+        THROW(SW_TOO_MANY_PAGES);
     }
 }
 

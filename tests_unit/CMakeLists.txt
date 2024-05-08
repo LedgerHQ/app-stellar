@@ -34,6 +34,7 @@ if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
 endif()
 
 add_compile_definitions(TEST)
+add_compile_definitions(PRINTF=printf)
 
 include_directories(../libstellar/include)
 include_directories($ENV{BOLOS_SDK}/lib_standard_app)

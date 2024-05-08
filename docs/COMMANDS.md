@@ -92,7 +92,6 @@
 | 0x6C66 | `SW_HASH_SIGNING_MODE_NOT_ENABLED`    | Hash signing model not enabled                          |
 | 0x6D00 | `SW_INS_NOT_SUPPORTED`                | No command exists with `INS`                            |
 | 0x6E00 | `SW_CLA_NOT_SUPPORTED`                | Bad `CLA` used for this application                     |
-| 0xB000 | `SW_WRONG_RESPONSE_LENGTH`            | Wrong response length (buffer too small or too big)     |
 | 0xB002 | `SW_DISPLAY_ADDRESS_FAIL`             | Failed to display address                               |
 | 0xB003 | `SW_DISPLAY_TRANSACTION_HASH_FAIL`    | Failed to display transaction hash                      |
 | 0xB004 | `SW_WRONG_TX_LENGTH`                  | Wrong raw transaction length                            |
