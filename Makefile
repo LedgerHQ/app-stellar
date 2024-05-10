@@ -30,7 +30,7 @@ APPNAME = "Stellar"
 # Application version
 APPVERSION_M = 5
 APPVERSION_N = 3
-APPVERSION_P = 1
+APPVERSION_P = 2
 APPVERSION = "$(APPVERSION_M).$(APPVERSION_N).$(APPVERSION_P)"
 
 # Application source files
