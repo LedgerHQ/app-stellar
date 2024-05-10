@@ -1,5 +1,10 @@
 # Release Notes
 
+## Unreleased
+
+### Updated
+- Optimize information display.
+
 ## v5.3.1
 
 ### Updated

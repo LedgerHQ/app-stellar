@@ -252,9 +252,8 @@ static bool format_memo(formatter_data_t *fdata) {
             break;
         }
         case MEMO_TEXT: {
+            STRLCPY(fdata->caption, "Memo Text", fdata->caption_len);
             if (is_printable_binary(memo->text.text, memo->text.text_size)) {
-                STRLCPY(fdata->caption, "Memo Text", fdata->caption_len);
-
                 if (memo->text.text_size >= fdata->value_len) {
                     return false;
                 }
@@ -263,10 +262,10 @@ static bool format_memo(formatter_data_t *fdata) {
                 fdata->value[memo->text.text_size] = '\0';
             } else {
                 char tmp[41];  // (28 / 3) * 4 = 37.33， 4 is for padding
-                STRLCPY(fdata->caption, "Memo Text (base64)", fdata->caption_len);
                 FORMATTER_CHECK(
                     base64_encode(memo->text.text, memo->text.text_size, tmp, fdata->value_len))
-                FORMATTER_CHECK(print_summary(tmp, fdata->value, fdata->value_len, 6, 6))
+                STRLCPY(fdata->value, "Base64: ", fdata->value_len)
+                STRLCAT(fdata->value, tmp, fdata->value_len)
             }
             break;
         }
@@ -413,10 +412,10 @@ static bool format_account_merge(formatter_data_t *fdata) {
 }
 
 static bool format_manage_data_value(formatter_data_t *fdata) {
+    STRLCPY(fdata->caption, "Data Value", fdata->caption_len);
     if (is_printable_binary(
             fdata->envelope->tx_details.tx.op_details.manage_data_op.data_value,
             fdata->envelope->tx_details.tx.op_details.manage_data_op.data_value_size)) {
-        STRLCPY(fdata->caption, "Data Value", fdata->caption_len);
         if (fdata->envelope->tx_details.tx.op_details.manage_data_op.data_value_size >=
             fdata->value_len) {
             return false;
@@ -428,13 +427,13 @@ static bool format_manage_data_value(formatter_data_t *fdata) {
             '\0';
     } else {
         char tmp[89];  // (64 / 3) * 4 = 85.33, 4 is for padding
-        STRLCPY(fdata->caption, "Data Value (base64)", fdata->caption_len);
         FORMATTER_CHECK(
             base64_encode(fdata->envelope->tx_details.tx.op_details.manage_data_op.data_value,
                           fdata->envelope->tx_details.tx.op_details.manage_data_op.data_value_size,
                           tmp,
                           sizeof(tmp)))
-        FORMATTER_CHECK(print_summary(tmp, fdata->value, fdata->value_len, 6, 6))
+        STRLCPY(fdata->value, "Base64: ", fdata->value_len)
+        STRLCAT(fdata->value, tmp, fdata->value_len)
     }
     return format_operation_source_prepare(fdata);
 }

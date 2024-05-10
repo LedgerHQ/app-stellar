@@ -131,11 +131,11 @@ bool encode_muxed_account(const muxed_account_t *raw_muxed_account, char *out, s
     }
 }
 
-bool print_summary(const char *in,
-                   char *out,
-                   size_t out_len,
-                   uint8_t num_chars_l,
-                   uint8_t num_chars_r) {
+static bool print_summary(const char *in,
+                          char *out,
+                          size_t out_len,
+                          uint8_t num_chars_l,
+                          uint8_t num_chars_r) {
     uint8_t result_len = num_chars_l + num_chars_r + 2;
     if (out_len < result_len + 1) {
         return false;

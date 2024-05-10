@@ -255,24 +255,6 @@ bool print_binary(const uint8_t *in,
                   uint8_t num_chars_r);
 
 /**
- * Print a summary of the given input string.
- *
- * @param in The input string to summarize.
- * @param out The output buffer.
- * @param out_len The length of the output buffer.
- * @param num_chars_l The number of characters to print on the left side. Set to 0 to print the full
- * input.
- * @param num_chars_r The number of characters to print on the right side.
- *
- * @return True if the summary was printed successfully, false otherwise.
- */
-bool print_summary(const char *in,
-                   char *out,
-                   size_t out_len,
-                   uint8_t num_chars_l,
-                   uint8_t num_chars_r);
-
-/**
  * Print a time in seconds as a human-readable string. UTC time is used.
  *
  * @param seconds The time in seconds to print.
