@@ -2092,6 +2092,7 @@ static bool format_operation_source_for_invoke_host_function_op(formatter_data_t
             : fdata->envelope->tx_details.tx.op_details.invoke_host_function_op
                   .sub_invocations_count;
     if (sub_invocations_count > 0) {
+        formatter_index = 0;
         FORMATTER_CHECK(push_to_formatter_stack(&format_sub_invocation_start))
     } else {
         FORMATTER_CHECK(push_to_formatter_stack(NULL))
@@ -2113,6 +2114,7 @@ static bool format_operation_source_prepare_for_invoke_host_function_op(formatte
                 : fdata->envelope->tx_details.tx.op_details.invoke_host_function_op
                       .sub_invocations_count;
         if (sub_invocations_count > 0) {
+            formatter_index = 0;
             FORMATTER_CHECK(push_to_formatter_stack(&format_sub_invocation_start))
         } else {
             FORMATTER_CHECK(push_to_formatter_stack(NULL))
