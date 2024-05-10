@@ -466,9 +466,22 @@ static bool format_allow_trust_authorize(formatter_data_t *fdata) {
 
 static bool format_allow_trust_asset_code(formatter_data_t *fdata) {
     STRLCPY(fdata->caption, "Asset Code", fdata->caption_len);
-    STRLCPY(fdata->value,
-            fdata->envelope->tx_details.tx.op_details.allow_trust_op.asset_code,
-            fdata->value_len);
+    char tmp[ASSET_CODE_MAX_LENGTH] = {0};
+    switch (fdata->envelope->tx_details.tx.op_details.allow_trust_op.asset_type) {
+        case ASSET_TYPE_CREDIT_ALPHANUM4: {
+            memcpy(tmp, fdata->envelope->tx_details.tx.op_details.allow_trust_op.asset_code, 4);
+            tmp[4] = '\0';
+            break;
+        }
+        case ASSET_TYPE_CREDIT_ALPHANUM12: {
+            memcpy(tmp, fdata->envelope->tx_details.tx.op_details.allow_trust_op.asset_code, 12);
+            tmp[12] = '\0';
+            break;
+        }
+        default:
+            return false;  // unknown asset type
+    }
+    STRLCPY(fdata->value, tmp, fdata->value_len);
     FORMATTER_CHECK(push_to_formatter_stack(&format_allow_trust_authorize))
     return true;
 }
@@ -1759,7 +1772,7 @@ static bool should_move_control_to_plugin(formatter_data_t *fdata) {
 
 static bool print_scval(buffer_t buffer, char *value, uint8_t value_len) {
     uint32_t sc_type;
-    FORMATTER_CHECK(buffer_read32(&buffer, &sc_type))
+    FORMATTER_CHECK(parse_uint32(&buffer, &sc_type))
 
     switch (sc_type) {
         case SCV_BOOL: {

@@ -75,6 +75,26 @@ bool parse_uint64(buffer_t *buffer, uint64_t *n);
 bool parse_int64(buffer_t *buffer, int64_t *n);
 
 /**
+ * Parse a uint32 from a buffer.
+ *
+ * @param buffer The buffer to parse.
+ * @param n The uint32 to fill with the parsed data.
+ *
+ * @return True if the parsing was successful, false otherwise.
+ */
+bool parse_uint32(buffer_t *buffer, uint32_t *n);
+
+/**
+ * Parse a int32 from a buffer.
+ *
+ * @param buffer The buffer to parse.
+ * @param n The int32 to fill with the parsed data.
+ *
+ * @return True if the parsing was successful, false otherwise.
+ */
+bool parse_int32(buffer_t *buffer, int32_t *n);
+
+/**
  * Parse a scv_symbol from a buffer.
  *
  * @param buffer The buffer to parse.
@@ -95,16 +115,6 @@ bool parse_scv_symbol(buffer_t *buffer, scv_symbol_t *symbol);
 bool parse_scv_string(buffer_t *buffer, scv_string_t *string);
 
 /**
- * Parse a uint32 from a buffer.
- *
- * @param buffer The buffer to parse.
- * @param n The uint32 to fill with the parsed data.
- *
- * @return True if the parsing was successful, false otherwise.
- */
-bool buffer_read32(buffer_t *buffer, uint32_t *n);
-
-/**
  * Parse a sc_address from a buffer.
  *
  * @param buffer The buffer to parse.
@@ -123,6 +133,13 @@ bool parse_sc_address(buffer_t *buffer, sc_address_t *sc_address);
  */
 bool read_scval_advance(buffer_t *buffer);
 
-bool parse_auth_function(buffer_t *buffer,
-                         soroban_authorization_function_type_t *type,
-                         invoke_contract_args_t *args);
+/**
+ * Parse a auth function from a buffer.
+ *
+ * @param buffer The buffer to parse.
+ * @param type The authorization function type to fill with the parsed data.
+ * @param args The invoke contract arguments to fill with the parsed data.
+ *
+ * @return True if the parsing was successful, false otherwise.
+ */
+bool parse_auth_function(buffer_t *buffer, uint32_t *type, invoke_contract_args_t *args);

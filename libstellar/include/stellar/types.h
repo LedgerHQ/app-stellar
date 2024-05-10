@@ -146,7 +146,7 @@ typedef struct {
 } muxed_account_med25519_t;
 
 typedef struct {
-    crypto_key_type_t type;
+    uint32_t type;  // crypto_key_type_t
     union {
         const uint8_t *ed25519;
         muxed_account_med25519_t med25519;
@@ -154,17 +154,17 @@ typedef struct {
 } muxed_account_t;
 
 typedef struct {
-    const char *asset_code;
+    const uint8_t *asset_code;
     account_id_t issuer;
 } alpha_num4_t;
 
 typedef struct {
-    const char *asset_code;
+    const uint8_t *asset_code;
     account_id_t issuer;
 } alpha_num12_t;
 
 typedef struct {
-    asset_type_t type;
+    uint32_t type;  // asset_type_t
     union {
         alpha_num4_t alpha_num4;
         alpha_num12_t alpha_num12;
@@ -180,7 +180,7 @@ typedef struct {
 } liquidity_pool_constant_product_parameters_t;
 
 typedef struct {
-    liquidity_pool_type_t type;
+    uint32_t type;  // liquidity_pool_type_t
     union {
         liquidity_pool_constant_product_parameters_t
             constant_product;  // type == LIQUIDITY_POOL_CONSTANT_PRODUCT
@@ -188,7 +188,7 @@ typedef struct {
 } liquidity_pool_parameters_t;
 
 typedef struct {
-    asset_type_t type;
+    uint32_t type;  // asset_type_t
     union {
         alpha_num4_t alpha_num4;
         alpha_num12_t alpha_num12;
@@ -197,7 +197,7 @@ typedef struct {
 } change_trust_asset_t;
 
 typedef struct {
-    asset_type_t type;
+    uint32_t type;  // asset_type_t
     union {
         alpha_num4_t alpha_num4;
         alpha_num12_t alpha_num12;
@@ -271,12 +271,13 @@ typedef struct {
 
 typedef struct {
     change_trust_asset_t line;
-    uint64_t limit;  // if limit is set to 0, deletes the trust line
+    int64_t limit;  // if limit is set to 0, deletes the trust line
 } change_trust_op_t;
 
 typedef struct {
     account_id_t trustor;
-    char asset_code[ASSET_CODE_MAX_LENGTH];
+    uint32_t asset_type;
+    const uint8_t *asset_code;
     // One of 0, AUTHORIZED_FLAG, or AUTHORIZED_TO_MAINTAIN_LIABILITIES_FLAG.
     uint32_t authorize;
 } allow_trust_op_t;
@@ -292,11 +293,11 @@ typedef struct {
 typedef struct {
     const uint8_t *ed25519;
     const uint8_t *payload;
-    size_t payload_len;
+    uint32_t payload_len;
 } ed25519_signed_payload_t;
 
 typedef struct {
-    signer_key_type_t type;
+    uint32_t type;  // signer_key_type_t
     union {
         const uint8_t *ed25519;
         const uint8_t *pre_auth_tx;
@@ -326,16 +327,16 @@ typedef struct {
     bool high_threshold_present;
     uint32_t high_threshold;
     bool home_domain_present;
-    uint32_t home_domain_size;
+    size_t home_domain_size;
     const uint8_t *home_domain;
     bool signer_present;
     signer_t signer;
 } set_options_op_t;
 
 typedef struct {
-    uint8_t data_name_size;
+    size_t data_name_size;
     const uint8_t *data_name;
-    uint8_t data_value_size;
+    size_t data_value_size;
     const uint8_t *data_value;
 } manage_data_op_t;
 
@@ -353,7 +354,7 @@ typedef enum {
 } claimant_type_t;
 
 typedef struct {
-    claimant_type_t type;
+    uint32_t type;  // claimant_type_t
     union {
         struct {
             account_id_t destination;  // The account that can use this condition
@@ -374,7 +375,7 @@ typedef enum {
 } claimable_balance_id_type_t;
 
 typedef struct {
-    claimable_balance_id_type_t type;
+    uint32_t type;  // claimable_balance_id_type_t
     const uint8_t *v0;
 } claimable_balance_id_t;
 
@@ -400,7 +401,7 @@ typedef enum {
 } ledger_entry_type_t;
 
 typedef struct {
-    ledger_entry_type_t type;
+    uint32_t type;  // ledger_entry_type_t
     union {
         struct {
             account_id_t account_id;
@@ -418,7 +419,7 @@ typedef struct {
 
         struct {
             account_id_t account_id;
-            uint8_t data_name_size;
+            size_t data_name_size;
             const uint8_t *data_name;
         } data;  // type == DATA
 
@@ -440,7 +441,7 @@ typedef enum {
 } revoke_sponsorship_type_t;
 
 typedef struct {
-    revoke_sponsorship_type_t type;
+    uint32_t type;  // revoke_sponsorship_type_t
     union {
         ledger_key_t ledger_key;
         struct {
@@ -516,19 +517,19 @@ typedef enum SCValType {
 } sc_val_type_t;
 
 typedef struct {
-    uint32_t size;  // the max size of the symbol is SCV_SYMBOL_MAX_SIZE
+    size_t size;  // the max size of the symbol is SCV_SYMBOL_MAX_SIZE
     const uint8_t *symbol;
 } scv_symbol_t;
 
 typedef struct {
-    uint32_t size;  // dont include the null terminator
+    size_t size;  // dont include the null terminator
     const uint8_t *string;
 } scv_string_t;
 
 typedef enum { SC_ADDRESS_TYPE_ACCOUNT = 0, SC_ADDRESS_TYPE_CONTRACT = 1 } sc_address_type_t;
 
 typedef struct {
-    sc_address_type_t type;
+    uint32_t type;           // sc_address_type_t
     const uint8_t *address;  // account id or contract id, 32
 } sc_address_t;
 
@@ -540,7 +541,7 @@ typedef enum {
 typedef struct {
     sc_address_t address;
     struct {
-        uint8_t name_size;
+        size_t name_size;
         const uint8_t *name;
     } function;
     size_t parameters_position;
@@ -559,10 +560,10 @@ typedef enum {
 } soroban_authorization_function_type_t;
 
 typedef struct {
-    host_function_type_t host_function_type;
+    uint32_t host_function_type;  // host_function_type_t
     invoke_contract_args_t
         invoke_contract_args;  // exists if host_function_type == HOST_FUNCTION_TYPE_INVOKE_CONTRACT
-    soroban_authorization_function_type_t auth_function_type;
+    uint32_t auth_function_type;  // soroban_authorization_function_type_t
     size_t sub_invocation_positions[MAX_SUB_INVOCATIONS_SIZE];
     uint8_t sub_invocations_count;
     uint8_t sub_invocation_index;
@@ -579,7 +580,7 @@ typedef struct {
 typedef struct {
     uint64_t nonce;
     uint32_t signature_expiration_ledger;
-    soroban_authorization_function_type_t auth_function_type;
+    uint32_t auth_function_type;  // soroban_authorization_function_type_t
     invoke_contract_args_t invoke_contract_args;
     size_t sub_invocation_positions[MAX_SUB_INVOCATIONS_SIZE];
     uint8_t sub_invocations_count;
@@ -587,10 +588,9 @@ typedef struct {
 } soroban_authorization_t;
 
 // ************************* Soroban ************************* //
-
 typedef struct {
     muxed_account_t source_account;
-    uint8_t type;
+    uint32_t type;  // envelope_type_t
     bool source_account_present;
     union {
         create_account_op_t create_account_op;
@@ -622,11 +622,11 @@ typedef struct {
 } operation_t;
 
 typedef struct {
-    memo_type_t type;
+    uint32_t type;  // memo_type_t
     union {
         uint64_t id;
         struct {
-            uint8_t text_size;
+            size_t text_size;
             const uint8_t *text;
         } text;
         const uint8_t *hash;
@@ -684,6 +684,6 @@ typedef struct {
         tx_details_t tx_details;
         soroban_authorization_t soroban_authorization;
     };
-    envelope_type_t type;
+    uint32_t type;  // envelope_type_t
     uint8_t network;
 } envelope_t;

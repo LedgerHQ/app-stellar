@@ -178,13 +178,15 @@ void test_print_asset() {
         0xcc, 0x90, 0xf7, 0x05, 0x51, 0x1c, 0x83, 0x8a, 0xad, 0x97, 0x34,
         0xa4, 0xa2, 0xfb, 0x0d, 0x7a, 0x03, 0xfc, 0x7f, 0xe8, 0x9a,
     };
+    uint8_t asset_code4[] = {'C', 'A', 'T', 0};
     asset_t assert_alphanum4 = {.type = ASSET_TYPE_CREDIT_ALPHANUM4,
-                                .alpha_num4 = {.asset_code = "CAT", .issuer = ed25519}};
+                                .alpha_num4 = {.asset_code = asset_code4, .issuer = ed25519}};
     assert_true(print_asset(&assert_alphanum4, 0, out, sizeof(out)));
     assert_string_equal(out, "CAT@GA7..VSGZ");
 
+    uint8_t asset_code12[] = {'B', 'A', 'N', 'A', 'N', 'A', 'N', 'A', 'N', 'A', 'N', 'A'};
     asset_t assert_alphanum12 = {.type = ASSET_TYPE_CREDIT_ALPHANUM12,
-                                 .alpha_num12 = {.asset_code = "BANANANANANA", .issuer = ed25519}};
+                                 .alpha_num12 = {.asset_code = asset_code12, .issuer = ed25519}};
     assert_true(print_asset(&assert_alphanum12, 0, out, sizeof(out)));
     assert_string_equal(out, "BANANANANANA@GA7..VSGZ");
 }
@@ -221,8 +223,9 @@ void test_print_amount_asset_alphanum4() {  // GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X
                         0xe,  0xb1, 0xcf, 0xe4, 0x4f, 0x36, 0x6f, 0x7d, 0xbe, 0x94, 0x6b,
                         0xed, 0x7,  0x72, 0x40, 0xf7, 0xf6, 0x24, 0xdf, 0x15, 0xc5};
     char printed[39];
+    uint8_t asset_code[] = {'U', 'S', 'D', 'C'};
     const asset_t asset = {.type = ASSET_TYPE_CREDIT_ALPHANUM4,
-                           .alpha_num4 = {.asset_code = "USDC", .issuer = issuer}};
+                           .alpha_num4 = {.asset_code = asset_code, .issuer = issuer}};
 
     assert_true(print_amount(1, &asset, NETWORK_TYPE_PUBLIC, printed, sizeof(printed)));
     assert_string_equal(printed, "0.0000001 USDC@GA5..KZVN");
@@ -253,8 +256,9 @@ void test_print_amount_asset_alphanum12() {  // GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335
                         0xe,  0xb1, 0xcf, 0xe4, 0x4f, 0x36, 0x6f, 0x7d, 0xbe, 0x94, 0x6b,
                         0xed, 0x7,  0x72, 0x40, 0xf7, 0xf6, 0x24, 0xdf, 0x15, 0xc5};
     char printed[47];
+    uint8_t asset_code[] = {'B', 'A', 'N', 'A', 'N', 'A', 'N', 'A', 'N', 'A', 'N', 'A'};
     const asset_t asset = {.type = ASSET_TYPE_CREDIT_ALPHANUM12,
-                           .alpha_num12 = {.asset_code = "BANANANANANA", .issuer = issuer}};
+                           .alpha_num12 = {.asset_code = asset_code, .issuer = issuer}};
 
     assert_true(print_amount(1, &asset, NETWORK_TYPE_PUBLIC, printed, sizeof(printed)));
     assert_string_equal(printed, "0.0000001 BANANANANANA@GA5..KZVN");

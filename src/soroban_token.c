@@ -105,7 +105,7 @@ stellar_plugin_result_t token_plugin_query_data_pair(const uint8_t *contract_add
                 }
 
                 uint32_t sc_type;
-                if (!buffer_read32(&buffer, &sc_type) || sc_type != SCV_I128 ||
+                if (!parse_uint32(&buffer, &sc_type) || sc_type != SCV_I128 ||
                     !print_int128(buffer.ptr + buffer.offset,
                                   CLASSIC_ASSET_DECIMALS,
                                   value,
@@ -122,7 +122,7 @@ stellar_plugin_result_t token_plugin_query_data_pair(const uint8_t *contract_add
                 sc_address_t from;
                 uint32_t sc_type;
 
-                if (!buffer_read32(&buffer, &sc_type) || sc_type != SCV_ADDRESS ||
+                if (!parse_uint32(&buffer, &sc_type) || sc_type != SCV_ADDRESS ||
                     !parse_sc_address(&buffer, &from) ||
                     !print_sc_address(&from, value, value_len, 0, 0)) {
                     return STELLAR_PLUGIN_RESULT_ERROR;
@@ -139,7 +139,7 @@ stellar_plugin_result_t token_plugin_query_data_pair(const uint8_t *contract_add
                 sc_address_t to;
                 uint32_t sc_type;
 
-                if (!buffer_read32(&buffer, &sc_type) || sc_type != SCV_ADDRESS ||
+                if (!parse_uint32(&buffer, &sc_type) || sc_type != SCV_ADDRESS ||
                     !parse_sc_address(&buffer, &to) ||
                     !print_sc_address(&to, value, value_len, 0, 0)) {
                     return STELLAR_PLUGIN_RESULT_ERROR;
@@ -157,7 +157,7 @@ stellar_plugin_result_t token_plugin_query_data_pair(const uint8_t *contract_add
                 sc_address_t from;
                 uint32_t sc_type;
 
-                if (!buffer_read32(&buffer, &sc_type) || sc_type != SCV_ADDRESS ||
+                if (!parse_uint32(&buffer, &sc_type) || sc_type != SCV_ADDRESS ||
                     !parse_sc_address(&buffer, &from) ||
                     !print_sc_address(&from, value, value_len, 0, 0)) {
                     return STELLAR_PLUGIN_RESULT_ERROR;
@@ -173,7 +173,7 @@ stellar_plugin_result_t token_plugin_query_data_pair(const uint8_t *contract_add
                 sc_address_t to;
                 uint32_t sc_type;
 
-                if (!buffer_read32(&buffer, &sc_type) || sc_type != SCV_ADDRESS ||
+                if (!parse_uint32(&buffer, &sc_type) || sc_type != SCV_ADDRESS ||
                     !parse_sc_address(&buffer, &to) ||
                     !print_sc_address(&to, value, value_len, 0, 0)) {
                     return STELLAR_PLUGIN_RESULT_ERROR;
@@ -187,7 +187,7 @@ stellar_plugin_result_t token_plugin_query_data_pair(const uint8_t *contract_add
                 }
 
                 uint32_t sc_type;
-                if (!buffer_read32(&buffer, &sc_type) || sc_type != SCV_I128 ||
+                if (!parse_uint32(&buffer, &sc_type) || sc_type != SCV_I128 ||
                     !print_int128(buffer.ptr + buffer.offset,
                                   CLASSIC_ASSET_DECIMALS,
                                   value,
@@ -208,7 +208,7 @@ stellar_plugin_result_t token_plugin_query_data_pair(const uint8_t *contract_add
                 }
 
                 uint32_t sc_type;
-                if (!buffer_read32(&buffer, &sc_type) || sc_type != SCV_U32 ||
+                if (!parse_uint32(&buffer, &sc_type) || sc_type != SCV_U32 ||
                     !print_uint32(buffer.ptr + buffer.offset, 0, value, value_len, false)) {
                     return STELLAR_PLUGIN_RESULT_ERROR;
                 }
