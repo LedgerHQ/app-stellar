@@ -79,28 +79,13 @@ int handler_sign_auth(buffer_t *cdata, bool is_first_chunk, bool more) {
     G_context.state = STATE_PARSED;
     PRINTF("soroban auth parsed.\n");
 
-    // Normal (not-swap) mode, derive the public_key and display the validation UI
-    cx_ecfp_private_key_t private_key = {0};
-    cx_ecfp_public_key_t public_key = {0};
+    cx_err_t error = crypto_derive_public_key(G_context.raw_public_key,
+                                              G_context.bip32_path,
+                                              G_context.bip32_path_len);
 
-    cx_err_t error = CX_OK;
-
-    // derive private key according to BIP32 path
-    error = crypto_derive_private_key(&private_key, G_context.bip32_path, G_context.bip32_path_len);
     if (error != CX_OK) {
-        explicit_bzero(&private_key, sizeof(private_key));
         return io_send_sw(error);
     }
-
-    // generate corresponding public key
-    error = crypto_init_public_key(&private_key, &public_key, G_context.raw_public_key);
-    if (error != CX_OK) {
-        explicit_bzero(&private_key, sizeof(private_key));
-        return io_send_sw(error);
-    }
-
-    // reset private key
-    explicit_bzero(&private_key, sizeof(private_key));
 
     if (cx_hash_sha256(G_context.raw, G_context.raw_size, G_context.hash, HASH_SIZE) != HASH_SIZE) {
         return io_send_sw(SW_TX_HASH_FAIL);

@@ -38,7 +38,9 @@ void validate_transaction(bool choice) {
         if (crypto_sign_message(G_context.hash,
                                 sizeof(G_context.hash),
                                 signature,
-                                SIGNATURE_SIZE) != CX_OK) {
+                                SIGNATURE_SIZE,
+                                G_context.bip32_path,
+                                G_context.bip32_path_len) != CX_OK) {
             G_context.state = STATE_NONE;
             io_send_sw(SW_SIGNATURE_FAIL);
         } else {

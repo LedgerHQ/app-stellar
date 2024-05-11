@@ -31,23 +31,12 @@ void swap_handle_check_address(check_address_parameters_t* params) {
         return;
     }
 
-    cx_ecfp_private_key_t privateKey;
-    cx_ecfp_public_key_t publicKey;
     uint8_t stellar_publicKey[RAW_ED25519_PUBLIC_KEY_SIZE];
 
-    if (crypto_derive_private_key(&privateKey, bip32_path, bip32_path_length) != CX_OK) {
-        explicit_bzero(&privateKey, sizeof(privateKey));
-        PRINTF("derive_private_key failed\n");
-        return;
-    }
-
-    if (crypto_init_public_key(&privateKey, &publicKey, stellar_publicKey) != CX_OK) {
-        explicit_bzero(&privateKey, sizeof(privateKey));
+    if (crypto_derive_public_key(stellar_publicKey, bip32_path, bip32_path_length) != CX_OK) {
         PRINTF("crypto_init_public_key failed\n");
         return;
     }
-
-    explicit_bzero(&privateKey, sizeof(privateKey));
 
     char address[57];
     if (!print_account_id(stellar_publicKey, address, sizeof(address), 0, 0)) {
