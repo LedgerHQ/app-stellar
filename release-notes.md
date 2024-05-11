@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## v5.3.4
+
+### Updated
+- Optimize information display.
+
 ## v5.3.3
 
 ### Updated

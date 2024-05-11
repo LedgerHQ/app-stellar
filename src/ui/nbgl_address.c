@@ -32,7 +32,7 @@ static void ui_action_validate_pubkey(bool choice) {
     ui_menu_main();
 }
 
-static void confirmationChoice(bool confirm) {
+static void confirmation_choice(bool confirm) {
     ui_action_validate_pubkey(confirm);
     if (confirm) {
         nbgl_useCaseStatus("ADDRESS\nVERIFIED", true, ui_menu_main);
@@ -55,7 +55,7 @@ int ui_display_address(void) {
                           0)) {
         return io_send_sw(SW_DISPLAY_ADDRESS_FAIL);
     }
-    nbgl_useCaseAddressConfirmation(G.ui.detail_value, confirmationChoice);
+    nbgl_useCaseAddressConfirmation(G.ui.detail_value, confirmation_choice);
     return 0;
 }
 #endif  // HAVE_NBGL
