@@ -27,6 +27,7 @@ uint16_t crc16(const uint8_t *input_str, uint32_t num_bytes) {
     }
     return crc;
 }
+
 bool encode_key(const uint8_t *in, uint8_t version_byte, char *out, uint8_t out_len) {
     if (in == NULL || out_len < 56 + 1) {
         return false;
@@ -241,14 +242,11 @@ bool print_ed25519_signed_payload(const ed25519_signed_payload_t *signed_payload
     };
 
     if (num_chars_l > 0) {
-        if (out_len < num_chars_l + num_chars_r + 2) {
+        if (out_len < num_chars_l + num_chars_r + 2 + 1) {
             return false;
         }
         return print_summary(tmp, out, out_len, num_chars_l, num_chars_r);
     } else {
-        if (out_len < ED25519_SIGNED_PAYLOAD_MAX_LENGTH) {
-            return false;
-        }
         if (strlcpy(out, tmp, out_len) >= out_len) {
             return false;
         }
@@ -289,17 +287,15 @@ bool print_claimable_balance_id(const claimable_balance_id_t *claimable_balance_
                                 size_t out_len,
                                 uint8_t num_chars_l,
                                 uint8_t num_chars_r) {
-    if (out_len < 36 * 2 + 1) {
+    if (out_len < (4 + CLAIMABLE_BALANCE_ID_SIZE) * 2 + 1) {
         return false;
     }
-    uint8_t data[36];
-    // enum is 1 byte
-    data[0] = '\0';
-    data[1] = '\0';
-    data[2] = '\0';
-    data[3] = claimable_balance_id_t->type;
+    uint8_t data[(4 + CLAIMABLE_BALANCE_ID_SIZE)];
+    for (uint8_t i = 0; i < 4; i++) {
+        data[i] = claimable_balance_id_t->type >> (8 * (3 - i));
+    }
     memcpy(data + 4, claimable_balance_id_t->v0, CLAIMABLE_BALANCE_ID_SIZE);
-    return print_binary(data, 36, out, out_len, num_chars_l, num_chars_r);
+    return print_binary(data, sizeof(data), out, out_len, num_chars_l, num_chars_r);
 }
 
 bool print_uint64_num(uint64_t num, char *out, size_t out_len) {
@@ -405,8 +401,12 @@ bool print_asset(const asset_t *asset, uint8_t network_id, char *out, size_t out
         return false;
     }
     if (asset->type != ASSET_TYPE_NATIVE) {
-        strlcat(out, "@", out_len);
-        strlcat(out, asset_issuer, out_len);
+        if (strlcat(out, "@", out_len) >= out_len) {
+            return false;
+        }
+        if (strlcat(out, asset_issuer, out_len) >= out_len) {
+            return false;
+        }
     }
     return true;
 }
@@ -512,8 +512,12 @@ bool print_amount(uint64_t amount,
         if (!print_asset(asset, network_id, asset_info, 23)) {
             return false;
         };
-        strlcat(out, " ", out_len);
-        strlcat(out, asset_info, out_len);
+        if (strlcat(out, " ", out_len) >= out_len) {
+            return false;
+        }
+        if (strlcat(out, asset_info, out_len) >= out_len) {
+            return false;
+        }
     }
     return true;
 }
@@ -765,7 +769,6 @@ bool add_separator_to_number(char *out, size_t out_len) {
 
     // If there is a decimal point, append the part after the decimal point
     if (decimal_point) {
-        // strlcpy(temp + new_length, decimal_point, NUMBER_WITH_COMMAS_MAX_LENGTH - new_length);
         if (strlcpy(temp + new_length, decimal_point, NUMBER_WITH_COMMAS_MAX_LENGTH - new_length) >=
             NUMBER_WITH_COMMAS_MAX_LENGTH - new_length) {
             return false;
@@ -874,8 +877,9 @@ bool print_scv_symbol(const scv_symbol_t *scv_symbol, char *out, size_t out_len)
     if (!is_printable_binary(scv_symbol->symbol, scv_symbol->size)) {
         return false;
     }
-    memcpy(out, scv_symbol->symbol, scv_symbol->size);
-    out[scv_symbol->size] = '\0';
+    if (!print_string(out, out_len, scv_symbol->symbol, scv_symbol->size)) {
+        return false;
+    }
     return true;
 }
 
@@ -934,5 +938,42 @@ bool print_scv_string(const scv_string_t *scv_string, char *out, size_t out_len)
         out[out_len - 1] = '\0';
     }
 
+    return true;
+}
+
+bool print_string(char *out, size_t out_len, const uint8_t *src, size_t src_size) {
+    if (out == NULL || src == NULL || out_len == 0) {
+        return false;
+    }
+    if (src_size + 1 > out_len) {
+        return false;
+    }
+    memcpy(out, src, src_size);
+    out[src_size] = '\0';
+    return true;
+}
+
+bool print_price(const price_t *price,
+                 const asset_t *asset_a,
+                 const asset_t *asset_b,
+                 uint8_t network_id,
+                 char *out,
+                 size_t out_len) {
+    uint64_t scaled_price = ((uint64_t) price->n * 10000000) / price->d;
+    if (!print_amount(scaled_price, NULL, network_id, out, out_len)) {
+        return false;
+    }
+
+    if (asset_a != NULL && asset_b != NULL) {
+        char tmp_asset_code[ASSET_CODE_MAX_LENGTH] = {0};
+        if (strlcat(out, " ", out_len) >= out_len ||
+            !print_asset_name(asset_a, network_id, tmp_asset_code, sizeof(tmp_asset_code)) ||
+            strlcat(out, tmp_asset_code, out_len) >= out_len ||
+            strlcat(out, "/", out_len) >= out_len ||
+            !print_asset_name(asset_b, network_id, tmp_asset_code, sizeof(tmp_asset_code)) ||
+            strlcat(out, tmp_asset_code, out_len) >= out_len) {
+            return false;
+        }
+    }
     return true;
 }

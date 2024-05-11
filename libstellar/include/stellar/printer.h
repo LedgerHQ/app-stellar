@@ -443,3 +443,34 @@ bool add_separator_to_number(char *out, size_t out_len);
  * @return True if the decimal point was added successfully, false otherwise.
  */
 bool add_decimal_point(char *out, size_t out_len, uint8_t decimals);
+
+/**
+ * Print a string.
+ *
+ * @param out The output buffer.
+ * @param out_len The length of the output buffer.
+ * @param src The source buffer.
+ * @param src_size The size of the source buffer, don't include the null terminator.
+ *
+ * @return True if the string was printed successfully, false otherwise.
+ */
+bool print_string(char *out, size_t out_len, const uint8_t *src, size_t src_size);
+
+/**
+ * Print a price.
+ *
+ * @param price The price to print.
+ * @param asset_a The first asset.
+ * @param asset_b The second asset.
+ * @param network_id The network ID to consider when printing the price.
+ * @param out The output buffer.
+ * @param out_len The length of the output buffer.
+ *
+ * @return True if the price was printed successfully, false otherwise.
+ */
+bool print_price(const price_t *price,
+                 const asset_t *asset_a,
+                 const asset_t *asset_b,
+                 uint8_t network_id,
+                 char *out,
+                 size_t out_len);

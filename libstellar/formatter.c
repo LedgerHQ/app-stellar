@@ -254,12 +254,10 @@ static bool format_memo(formatter_data_t *fdata) {
         case MEMO_TEXT: {
             STRLCPY(fdata->caption, "Memo Text", fdata->caption_len);
             if (is_printable_binary(memo->text.text, memo->text.text_size)) {
-                if (memo->text.text_size >= fdata->value_len) {
-                    return false;
-                }
-
-                memcpy(fdata->value, (char *) memo->text.text, memo->text.text_size);
-                fdata->value[memo->text.text_size] = '\0';
+                FORMATTER_CHECK(print_string(fdata->value,
+                                             fdata->value_len,
+                                             memo->text.text,
+                                             memo->text.text_size))
             } else {
                 char tmp[41];  // (28 / 3) * 4 = 37.33， 4 is for padding
                 FORMATTER_CHECK(
@@ -384,21 +382,8 @@ static bool format_account_merge_destination(formatter_data_t *fdata) {
 }
 
 static bool format_account_merge_detail(formatter_data_t *fdata) {
-    STRLCPY(fdata->caption, "Merge Account", fdata->caption_len);
-    if (fdata->envelope->tx_details.tx.op_details.source_account_present) {
-        FORMATTER_CHECK(
-            print_muxed_account(&fdata->envelope->tx_details.tx.op_details.source_account,
-                                fdata->value,
-                                fdata->value_len,
-                                0,
-                                0))
-    } else {
-        FORMATTER_CHECK(print_muxed_account(&fdata->envelope->tx_details.tx.source_account,
-                                            fdata->value,
-                                            fdata->value_len,
-                                            0,
-                                            0))
-    }
+    STRLCPY(fdata->caption, "Send", fdata->caption_len);
+    STRLCPY(fdata->value, "All Funds", fdata->value_len);
     FORMATTER_CHECK(push_to_formatter_stack(&format_account_merge_destination))
     return true;
 }
@@ -420,11 +405,11 @@ static bool format_manage_data_value(formatter_data_t *fdata) {
             fdata->value_len) {
             return false;
         }
-        memcpy(fdata->value,
-               (char *) fdata->envelope->tx_details.tx.op_details.manage_data_op.data_value,
-               fdata->envelope->tx_details.tx.op_details.manage_data_op.data_value_size);
-        fdata->value[fdata->envelope->tx_details.tx.op_details.manage_data_op.data_value_size] =
-            '\0';
+        FORMATTER_CHECK(
+            print_string(fdata->value,
+                         fdata->value_len,
+                         fdata->envelope->tx_details.tx.op_details.manage_data_op.data_value,
+                         fdata->envelope->tx_details.tx.op_details.manage_data_op.data_value_size))
     } else {
         char tmp[89];  // (64 / 3) * 4 = 85.33, 4 is for padding
         FORMATTER_CHECK(
@@ -439,10 +424,11 @@ static bool format_manage_data_value(formatter_data_t *fdata) {
 }
 
 static bool format_manage_data(formatter_data_t *fdata) {
-    memcpy(fdata->value,
-           fdata->envelope->tx_details.tx.op_details.manage_data_op.data_name,
-           fdata->envelope->tx_details.tx.op_details.manage_data_op.data_name_size);
-    fdata->value[fdata->envelope->tx_details.tx.op_details.manage_data_op.data_name_size] = '\0';
+    FORMATTER_CHECK(
+        print_string(fdata->value,
+                     fdata->value_len,
+                     fdata->envelope->tx_details.tx.op_details.manage_data_op.data_name,
+                     fdata->envelope->tx_details.tx.op_details.manage_data_op.data_name_size))
 
     if (fdata->envelope->tx_details.tx.op_details.manage_data_op.data_value_size) {
         STRLCPY(fdata->caption, "Set Data", fdata->caption_len);
@@ -465,22 +451,27 @@ static bool format_allow_trust_authorize(formatter_data_t *fdata) {
 
 static bool format_allow_trust_asset_code(formatter_data_t *fdata) {
     STRLCPY(fdata->caption, "Asset Code", fdata->caption_len);
-    char tmp[ASSET_CODE_MAX_LENGTH] = {0};
     switch (fdata->envelope->tx_details.tx.op_details.allow_trust_op.asset_type) {
         case ASSET_TYPE_CREDIT_ALPHANUM4: {
-            memcpy(tmp, fdata->envelope->tx_details.tx.op_details.allow_trust_op.asset_code, 4);
-            tmp[4] = '\0';
+            FORMATTER_CHECK(
+                print_string(fdata->value,
+                             fdata->value_len,
+                             fdata->envelope->tx_details.tx.op_details.allow_trust_op.asset_code,
+                             4))
+
             break;
         }
         case ASSET_TYPE_CREDIT_ALPHANUM12: {
-            memcpy(tmp, fdata->envelope->tx_details.tx.op_details.allow_trust_op.asset_code, 12);
-            tmp[12] = '\0';
+            FORMATTER_CHECK(
+                print_string(fdata->value,
+                             fdata->value_len,
+                             fdata->envelope->tx_details.tx.op_details.allow_trust_op.asset_code,
+                             12))
             break;
         }
         default:
             return false;  // unknown asset type
     }
-    STRLCPY(fdata->value, tmp, fdata->value_len);
     FORMATTER_CHECK(push_to_formatter_stack(&format_allow_trust_authorize))
     return true;
 }
@@ -514,29 +505,24 @@ static bool format_set_option_signer_weight(formatter_data_t *fdata) {
     return format_operation_source_prepare(fdata);
 }
 
-static bool format_set_option_signer_detail(formatter_data_t *fdata) {
-    STRLCPY(fdata->caption, "Signer Key", fdata->caption_len);
-    signer_key_t *key = &fdata->envelope->tx_details.tx.op_details.set_options_op.signer.key;
-
+static bool print_signer_key_detail(signer_key_t *key, char *value, size_t value_len) {
     switch (key->type) {
         case SIGNER_KEY_TYPE_ED25519: {
-            FORMATTER_CHECK(print_account_id(key->ed25519, fdata->value, fdata->value_len, 0, 0))
+            FORMATTER_CHECK(print_account_id(key->ed25519, value, value_len, 0, 0))
             break;
         }
         case SIGNER_KEY_TYPE_HASH_X: {
-            FORMATTER_CHECK(print_hash_x_key(key->hash_x, fdata->value, fdata->value_len, 0, 0))
+            FORMATTER_CHECK(print_hash_x_key(key->hash_x, value, value_len, 0, 0))
             break;
         }
-
         case SIGNER_KEY_TYPE_PRE_AUTH_TX: {
-            FORMATTER_CHECK(
-                print_pre_auth_x_key(key->pre_auth_tx, fdata->value, fdata->value_len, 0, 0))
+            FORMATTER_CHECK(print_pre_auth_x_key(key->pre_auth_tx, value, value_len, 0, 0))
             break;
         }
         case SIGNER_KEY_TYPE_ED25519_SIGNED_PAYLOAD: {
             FORMATTER_CHECK(print_ed25519_signed_payload(&key->ed25519_signed_payload,
-                                                         fdata->value,
-                                                         fdata->value_len,
+                                                         value,
+                                                         value_len,
                                                          12,
                                                          12))
             break;
@@ -544,6 +530,15 @@ static bool format_set_option_signer_detail(formatter_data_t *fdata) {
         default:
             return false;
     }
+    return true;
+}
+
+static bool format_set_option_signer_detail(formatter_data_t *fdata) {
+    STRLCPY(fdata->caption, "Signer Key", fdata->caption_len);
+    signer_key_t *key = &fdata->envelope->tx_details.tx.op_details.set_options_op.signer.key;
+
+    FORMATTER_CHECK(print_signer_key_detail(key, fdata->value, fdata->value_len))
+
     if (fdata->envelope->tx_details.tx.op_details.set_options_op.signer.weight != 0) {
         FORMATTER_CHECK(push_to_formatter_stack(&format_set_option_signer_weight))
     } else {
@@ -595,11 +590,11 @@ static bool format_set_option_signer_prepare(formatter_data_t *fdata) {
 static bool format_set_option_home_domain(formatter_data_t *fdata) {
     STRLCPY(fdata->caption, "Home Domain", fdata->caption_len);
     if (fdata->envelope->tx_details.tx.op_details.set_options_op.home_domain_size) {
-        memcpy(fdata->value,
-               fdata->envelope->tx_details.tx.op_details.set_options_op.home_domain,
-               fdata->envelope->tx_details.tx.op_details.set_options_op.home_domain_size);
-        fdata->value[fdata->envelope->tx_details.tx.op_details.set_options_op.home_domain_size] =
-            '\0';
+        FORMATTER_CHECK(
+            print_string(fdata->value,
+                         fdata->value_len,
+                         fdata->envelope->tx_details.tx.op_details.set_options_op.home_domain,
+                         fdata->envelope->tx_details.tx.op_details.set_options_op.home_domain_size))
     } else {
         STRLCPY(fdata->value, "[remove home domain from account]", fdata->value_len);
     }
@@ -871,28 +866,14 @@ static bool format_change_trust(formatter_data_t *fdata) {
 }
 
 static bool format_manage_sell_offer_price(formatter_data_t *fdata) {
+    manage_sell_offer_op_t *op = &fdata->envelope->tx_details.tx.op_details.manage_sell_offer_op;
     STRLCPY(fdata->caption, "Price", fdata->caption_len);
-    uint64_t price =
-        ((uint64_t) fdata->envelope->tx_details.tx.op_details.manage_sell_offer_op.price.n *
-         10000000) /
-        fdata->envelope->tx_details.tx.op_details.manage_sell_offer_op.price.d;
-    FORMATTER_CHECK(
-        print_amount(price, NULL, fdata->envelope->network, fdata->value, fdata->value_len))
-    STRLCAT(fdata->value, " ", fdata->value_len);
-    char tmp_asset_code[13] = {0};
-    FORMATTER_CHECK(
-        print_asset_name(&fdata->envelope->tx_details.tx.op_details.manage_sell_offer_op.buying,
-                         fdata->envelope->network,
-                         tmp_asset_code,
-                         sizeof(tmp_asset_code)))
-    STRLCAT(fdata->value, tmp_asset_code, fdata->value_len);
-    STRLCAT(fdata->value, "/", fdata->value_len);
-    FORMATTER_CHECK(
-        print_asset_name(&fdata->envelope->tx_details.tx.op_details.manage_sell_offer_op.selling,
-                         fdata->envelope->network,
-                         tmp_asset_code,
-                         sizeof(tmp_asset_code)))
-    STRLCAT(fdata->value, tmp_asset_code, fdata->value_len);
+    FORMATTER_CHECK(print_price(&op->price,
+                                &op->buying,
+                                &op->selling,
+                                fdata->envelope->network,
+                                fdata->value,
+                                fdata->value_len))
     return format_operation_source_prepare(fdata);
 }
 
@@ -936,7 +917,6 @@ static bool format_manage_sell_offer(formatter_data_t *fdata) {
                 fdata->value_len))
         } else {
             STRLCPY(fdata->caption, "Create Offer", fdata->caption_len);
-            STRLCPY(fdata->value, "Type Active", fdata->value_len);
         }
         FORMATTER_CHECK(push_to_formatter_stack(&format_manage_sell_offer_buy))
     }
@@ -945,26 +925,13 @@ static bool format_manage_sell_offer(formatter_data_t *fdata) {
 
 static bool format_manage_buy_offer_price(formatter_data_t *fdata) {
     manage_buy_offer_op_t *op = &fdata->envelope->tx_details.tx.op_details.manage_buy_offer_op;
-
     STRLCPY(fdata->caption, "Price", fdata->caption_len);
-    uint64_t price = ((uint64_t) op->price.n * 10000000) / op->price.d;
-    FORMATTER_CHECK(
-        print_amount(price, NULL, fdata->envelope->network, fdata->value, fdata->value_len))
-    STRLCAT(fdata->value, " ", fdata->value_len);
-    char tmp_asset_code[13] = {0};
-    FORMATTER_CHECK(
-        print_asset_name(&fdata->envelope->tx_details.tx.op_details.manage_buy_offer_op.selling,
-                         fdata->envelope->network,
-                         tmp_asset_code,
-                         sizeof(tmp_asset_code)))
-    STRLCAT(fdata->value, tmp_asset_code, fdata->value_len);
-    STRLCAT(fdata->value, "/", fdata->value_len);
-    FORMATTER_CHECK(
-        print_asset_name(&fdata->envelope->tx_details.tx.op_details.manage_buy_offer_op.buying,
-                         fdata->envelope->network,
-                         tmp_asset_code,
-                         sizeof(tmp_asset_code)))
-    STRLCAT(fdata->value, tmp_asset_code, fdata->value_len);
+    FORMATTER_CHECK(print_price(&op->price,
+                                &op->selling,
+                                &op->buying,
+                                fdata->envelope->network,
+                                fdata->value,
+                                fdata->value_len))
     return format_operation_source_prepare(fdata);
 }
 
@@ -1004,7 +971,6 @@ static bool format_manage_buy_offer(formatter_data_t *fdata) {
             FORMATTER_CHECK(print_uint64_num(op->offer_id, fdata->value, fdata->value_len))
         } else {
             STRLCPY(fdata->caption, "Create Offer", fdata->caption_len);
-            STRLCPY(fdata->value, "Type Active", fdata->value_len);
         }
         FORMATTER_CHECK(push_to_formatter_stack(&format_manage_buy_offer_sell))
     }
@@ -1012,28 +978,15 @@ static bool format_manage_buy_offer(formatter_data_t *fdata) {
 }
 
 static bool format_create_passive_sell_offer_price(formatter_data_t *fdata) {
-    STRLCPY(fdata->caption, "Price", fdata->caption_len);
-
     create_passive_sell_offer_op_t *op =
         &fdata->envelope->tx_details.tx.op_details.create_passive_sell_offer_op;
-    uint64_t price = ((uint64_t) op->price.n * 10000000) / op->price.d;
-    FORMATTER_CHECK(
-        print_amount(price, NULL, fdata->envelope->network, fdata->value, fdata->value_len))
-    STRLCAT(fdata->value, " ", fdata->value_len);
-    char tmp_asset_code[13] = {0};
-    FORMATTER_CHECK(print_asset_name(
-        &fdata->envelope->tx_details.tx.op_details.create_passive_sell_offer_op.buying,
-        fdata->envelope->network,
-        tmp_asset_code,
-        sizeof(tmp_asset_code)))
-    STRLCAT(fdata->value, tmp_asset_code, fdata->value_len);
-    STRLCAT(fdata->value, "/", fdata->value_len);
-    FORMATTER_CHECK(print_asset_name(
-        &fdata->envelope->tx_details.tx.op_details.create_passive_sell_offer_op.selling,
-        fdata->envelope->network,
-        tmp_asset_code,
-        sizeof(tmp_asset_code)))
-    STRLCAT(fdata->value, tmp_asset_code, fdata->value_len);
+    STRLCPY(fdata->caption, "Price", fdata->caption_len);
+    FORMATTER_CHECK(print_price(&op->price,
+                                &op->buying,
+                                &op->selling,
+                                fdata->envelope->network,
+                                fdata->value,
+                                fdata->value_len))
     return format_operation_source_prepare(fdata);
 }
 
@@ -1312,6 +1265,7 @@ static bool format_revoke_sponsorship_trust_line_account(formatter_data_t *fdata
     FORMATTER_CHECK(push_to_formatter_stack(&format_revoke_sponsorship_trust_line_asset))
     return true;
 }
+
 static bool format_revoke_sponsorship_offer_offer_id(formatter_data_t *fdata) {
     STRLCPY(fdata->caption, "Offer ID", fdata->caption_len);
     FORMATTER_CHECK(print_uint64_num(
@@ -1336,13 +1290,12 @@ static bool format_revoke_sponsorship_offer_seller_id(formatter_data_t *fdata) {
 
 static bool format_revoke_sponsorship_data_data_name(formatter_data_t *fdata) {
     STRLCPY(fdata->caption, "Data Name", fdata->caption_len);
-    memcpy(
+    FORMATTER_CHECK(print_string(
         fdata->value,
+        fdata->value_len,
         fdata->envelope->tx_details.tx.op_details.revoke_sponsorship_op.ledger_key.data.data_name,
         fdata->envelope->tx_details.tx.op_details.revoke_sponsorship_op.ledger_key.data
-            .data_name_size);
-    fdata->value[fdata->envelope->tx_details.tx.op_details.revoke_sponsorship_op.ledger_key.data
-                     .data_name_size] = '\0';
+            .data_name_size))
     return format_operation_source_prepare(fdata);
 }
 
@@ -1387,31 +1340,7 @@ static bool format_revoke_sponsorship_claimable_signer_signer_key_detail(formatt
     signer_key_t *key =
         &fdata->envelope->tx_details.tx.op_details.revoke_sponsorship_op.signer.signer_key;
 
-    switch (key->type) {
-        case SIGNER_KEY_TYPE_ED25519: {
-            FORMATTER_CHECK(print_account_id(key->ed25519, fdata->value, fdata->value_len, 0, 0))
-            break;
-        }
-        case SIGNER_KEY_TYPE_HASH_X: {
-            FORMATTER_CHECK(print_hash_x_key(key->hash_x, fdata->value, fdata->value_len, 0, 0))
-            break;
-        }
-        case SIGNER_KEY_TYPE_PRE_AUTH_TX: {
-            FORMATTER_CHECK(
-                print_pre_auth_x_key(key->pre_auth_tx, fdata->value, fdata->value_len, 0, 0))
-            break;
-        }
-        case SIGNER_KEY_TYPE_ED25519_SIGNED_PAYLOAD: {
-            FORMATTER_CHECK(print_ed25519_signed_payload(&key->ed25519_signed_payload,
-                                                         fdata->value,
-                                                         fdata->value_len,
-                                                         12,
-                                                         12))
-            break;
-        }
-        default:
-            return false;
-    }
+    FORMATTER_CHECK(print_signer_key_detail(key, fdata->value, fdata->value_len))
     return format_operation_source_prepare(fdata);
 }
 
@@ -1606,26 +1535,28 @@ static bool format_set_trust_line_flags(formatter_data_t *fdata) {
 }
 
 static bool format_liquidity_pool_deposit_max_price(formatter_data_t *fdata) {
+    liquidity_pool_deposit_op_t *op =
+        &fdata->envelope->tx_details.tx.op_details.liquidity_pool_deposit_op;
     STRLCPY(fdata->caption, "Max Price", fdata->caption_len);
-    uint64_t price =
-        ((uint64_t)
-             fdata->envelope->tx_details.tx.op_details.liquidity_pool_deposit_op.max_price.n *
-         10000000) /
-        fdata->envelope->tx_details.tx.op_details.liquidity_pool_deposit_op.max_price.d;
-    FORMATTER_CHECK(
-        print_amount(price, NULL, fdata->envelope->network, fdata->value, fdata->value_len))
+    FORMATTER_CHECK(print_price(&op->max_price,
+                                NULL,
+                                NULL,
+                                fdata->envelope->network,
+                                fdata->value,
+                                fdata->value_len))
     return format_operation_source_prepare(fdata);
 }
 
 static bool format_liquidity_pool_deposit_min_price(formatter_data_t *fdata) {
+    liquidity_pool_deposit_op_t *op =
+        &fdata->envelope->tx_details.tx.op_details.liquidity_pool_deposit_op;
     STRLCPY(fdata->caption, "Min Price", fdata->caption_len);
-    uint64_t price =
-        ((uint64_t)
-             fdata->envelope->tx_details.tx.op_details.liquidity_pool_deposit_op.min_price.n *
-         10000000) /
-        fdata->envelope->tx_details.tx.op_details.liquidity_pool_deposit_op.min_price.d;
-    FORMATTER_CHECK(
-        print_amount(price, NULL, fdata->envelope->network, fdata->value, fdata->value_len))
+    FORMATTER_CHECK(print_price(&op->min_price,
+                                NULL,
+                                NULL,
+                                fdata->envelope->network,
+                                fdata->value,
+                                fdata->value_len))
     FORMATTER_CHECK(push_to_formatter_stack(&format_liquidity_pool_deposit_max_price))
     return true;
 }
@@ -1947,11 +1878,10 @@ static bool format_sub_invocation_invoke_host_function_func_name(formatter_data_
             fdata->envelope->tx_details.tx.op_details.invoke_host_function_op.invoke_contract_args;
     }
     STRLCPY(fdata->caption, "Function", fdata->caption_len);
-
-    memcpy(fdata->value,
-           invoke_contract_args.function.name,
-           invoke_contract_args.function.name_size);
-    fdata->value[invoke_contract_args.function.name_size] = '\0';
+    FORMATTER_CHECK(print_string(fdata->value,
+                                 fdata->value_len,
+                                 invoke_contract_args.function.name,
+                                 invoke_contract_args.function.name_size))
 
     uint8_t data_count = should_move_control_to_plugin(fdata);
     if (data_count == 0) {
@@ -2210,11 +2140,11 @@ static bool format_invoke_host_function_func_name(formatter_data_t *fdata) {
             fdata->envelope->tx_details.tx.op_details.invoke_host_function_op.invoke_contract_args;
     }
     STRLCPY(fdata->caption, "Function", fdata->caption_len);
+    FORMATTER_CHECK(print_string(fdata->value,
+                                 fdata->value_len,
+                                 invoke_contract_args.function.name,
+                                 invoke_contract_args.function.name_size))
 
-    memcpy(fdata->value,
-           invoke_contract_args.function.name,
-           invoke_contract_args.function.name_size);
-    fdata->value[invoke_contract_args.function.name_size] = '\0';
     uint8_t data_count = should_move_control_to_plugin(fdata);
     if (data_count == 0) {
         // we should not move control to plugin
@@ -2300,13 +2230,13 @@ static bool format_auth_function(formatter_data_t *fdata) {
 }
 
 static bool format_extend_footprint_ttl(formatter_data_t *fdata) {
-    STRLCPY(fdata->caption, "Soroban", fdata->caption_len);
+    STRLCPY(fdata->caption, "Operation Type", fdata->caption_len);
     STRLCPY(fdata->value, "Extend Footprint TTL", fdata->value_len);
     return format_operation_source_prepare(fdata);
 }
 
 static bool format_restore_footprint(formatter_data_t *fdata) {
-    STRLCPY(fdata->caption, "Soroban", fdata->caption_len);
+    STRLCPY(fdata->caption, "Operation Type", fdata->caption_len);
     STRLCPY(fdata->value, "Restore Footprint", fdata->value_len);
     return format_operation_source_prepare(fdata);
 }
