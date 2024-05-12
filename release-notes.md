@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## v5.4.0
+
+### Updated
+- `GET_APP_CONFIGURATION` will return the maximum size of the transaction's signature base that the device can process.
+- The maximum transaction size limit has been increased to 1,536 bytes. (Ledger Nano S)
+- The maximum transaction size limit has been increased to 10,240 bytes. (Ledger Nano S Plus, Ledger Nano X and Ledger Stax)
+
 ## v5.3.4
 
 ### Updated
