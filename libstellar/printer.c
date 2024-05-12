@@ -9,7 +9,6 @@
 #define INT256_LENGTH                     32
 #define MUXED_ACCOUNT_MED_25519_SIZE      43
 #define BINARY_MAX_SIZE                   36
-#define AMOUNT_WITH_COMMAS_MAX_LENGTH     24   // 922,337,203,685.4775807
 #define ED25519_SIGNED_PAYLOAD_MAX_LENGTH 166  // include the null terminator
 #define NUMBER_WITH_COMMAS_MAX_LENGTH     105
 
@@ -491,32 +490,23 @@ bool print_amount(uint64_t amount,
                   uint8_t network_id,
                   char *out,
                   size_t out_len) {
-    char buffer[AMOUNT_WITH_COMMAS_MAX_LENGTH] = {0};
     uint8_t data[8] = {0};
     for (int i = 0; i < 8; i++) {
         data[i] = amount >> (8 * (7 - i));
     }
 
-    if (!print_uint64(data, 7, buffer, sizeof(buffer), true)) {
+    if (!print_uint64(data, 7, out, out_len, true)) {
         return false;
     }
-
-    if (strlcpy(out, buffer, out_len) >= out_len) {
-        return false;
-    }
-
-    char asset_info[23];  // BANANANANANA@GBD..KHK4, 12 + 1 + 3 + 2 + 4 = 22
 
     if (asset) {
-        if (!print_asset(asset, network_id, asset_info, 23)) {
-            return false;
-        };
         if (strlcat(out, " ", out_len) >= out_len) {
             return false;
         }
-        if (strlcat(out, asset_info, out_len) >= out_len) {
+        size_t length = strlen(out);
+        if (!print_asset(asset, network_id, out + length, out_len - length)) {
             return false;
-        }
+        };
     }
     return true;
 }
@@ -593,6 +583,12 @@ static bool uint256_to_decimal(const uint8_t *value, size_t value_len, char *out
     memmove(out, out + pos, result_len);
     out[result_len] = '\0';
 
+    // Clear the rest of the 'out' array
+    // Generally speaking, this is unnecessary,
+    // but handler_get_app_configuration requires that it must be followed by `\0`.
+    if (result_len + 1 < out_len) {
+        memset(out + result_len + 1, 0, out_len - result_len - 1);
+    }
     return true;
 }
 
@@ -653,6 +649,12 @@ static bool int256_to_decimal(const uint8_t *value, size_t value_len, char *out,
     memmove(out, p, result_len);
     out[result_len] = '\0';
 
+    // Clear the rest of the 'out' array
+    // Generally speaking, this is unnecessary,
+    // but handler_get_app_configuration requires that it must be followed by `\0`.
+    if (result_len + 1 < out_len) {
+        memset(out + result_len + 1, 0, out_len - result_len - 1);
+    }
     return true;
 }
 
