@@ -132,3 +132,8 @@ tests-zemu:
 	./build_elfs.sh
 	cd tests_common_js && npm install && npm run build
 	cd tests_zemu && npm install && rm -rf snapshots-tmp && npm run test
+
+build-installer:
+	rm -rf installer
+	make clean && make BOLOS_SDK=$(NANOSP_SDK) && python scripts/installer_generator.py
+	make clean && make BOLOS_SDK=$(NANOS_SDK) && python scripts/installer_generator.py
