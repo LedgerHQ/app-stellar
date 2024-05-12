@@ -508,7 +508,6 @@ bool print_amount(uint64_t amount,
     char asset_info[23];  // BANANANANANA@GBD..KHK4, 12 + 1 + 3 + 2 + 4 = 22
 
     if (asset) {
-        // qualify amount
         if (!print_asset(asset, network_id, asset_info, 23)) {
             return false;
         };

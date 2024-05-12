@@ -32,7 +32,7 @@
 #define DETAIL_VALUE_MAX_LENGTH 105
 
 #ifdef TARGET_NANOS
-#define RAW_TX_MAX_SIZE 1120
+#define RAW_TX_MAX_SIZE 1536
 #else
-#define RAW_TX_MAX_SIZE 5120
+#define RAW_TX_MAX_SIZE 10240
 #endif

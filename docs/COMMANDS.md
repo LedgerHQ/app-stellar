@@ -50,7 +50,7 @@
 
 | Response length (bytes) | SW     | RData                                                                        |
 | ----------------------- | ------ | ---------------------------------------------------------------------------- |
-| 4                       | 0x9000 | `MAJOR (1)` \|\| `MINOR (1)` \|\| `PATCH (1)`\|\| `HASH_SIGNING_ENABLED (1)` |
+| 4                       | 0x9000 | `HASH_SIGNING_ENABLED (1)` \|\| `MAJOR (1)` \|\| `MINOR (1)` \|\| `PATCH (1)` \|\| `RAW_TX_MAX_SIZE (2)` |
 
 ## SIGN_HASH
 

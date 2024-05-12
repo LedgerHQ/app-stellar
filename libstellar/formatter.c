@@ -43,11 +43,6 @@ typedef bool (*format_function_t)(formatter_data_t *fdata);
         if (len >= size) return false;        \
     }
 
-/*
- * Longest string will be "Operation ii of nn"
- */
-#define OPERATION_CAPTION_MAX_LENGTH 20
-
 /* 16 formatters in a row ought to be enough for everybody*/
 #define MAX_FORMATTERS_PER_OPERATION 16
 
@@ -60,6 +55,7 @@ static uint8_t parameters_index;
 static uint8_t plugin_data_pair_count;
 
 static bool format_sub_invocation_start(formatter_data_t *fdata);
+
 static bool push_to_formatter_stack(format_function_t formatter) {
     if (formatter_index >= MAX_FORMATTERS_PER_OPERATION) {
         PRINTF("Formatter stack overflow\n");
@@ -259,11 +255,11 @@ static bool format_memo(formatter_data_t *fdata) {
                                              memo->text.text,
                                              memo->text.text_size))
             } else {
-                char tmp[41];  // (28 / 3) * 4 = 37.33， 4 is for padding
-                FORMATTER_CHECK(
-                    base64_encode(memo->text.text, memo->text.text_size, tmp, fdata->value_len))
                 STRLCPY(fdata->value, "Base64: ", fdata->value_len)
-                STRLCAT(fdata->value, tmp, fdata->value_len)
+                FORMATTER_CHECK(base64_encode(memo->text.text,
+                                              memo->text.text_size,
+                                              fdata->value + strlen(fdata->value),
+                                              fdata->value_len - strlen(fdata->value)))
             }
             break;
         }
@@ -411,14 +407,12 @@ static bool format_manage_data_value(formatter_data_t *fdata) {
                          fdata->envelope->tx_details.tx.op_details.manage_data_op.data_value,
                          fdata->envelope->tx_details.tx.op_details.manage_data_op.data_value_size))
     } else {
-        char tmp[89];  // (64 / 3) * 4 = 85.33, 4 is for padding
+        STRLCPY(fdata->value, "Base64: ", fdata->value_len)
         FORMATTER_CHECK(
             base64_encode(fdata->envelope->tx_details.tx.op_details.manage_data_op.data_value,
                           fdata->envelope->tx_details.tx.op_details.manage_data_op.data_value_size,
-                          tmp,
-                          sizeof(tmp)))
-        STRLCPY(fdata->value, "Base64: ", fdata->value_len)
-        STRLCAT(fdata->value, tmp, fdata->value_len)
+                          fdata->value + strlen(fdata->value),
+                          fdata->value_len - strlen(fdata->value)))
     }
     return format_operation_source_prepare(fdata);
 }
@@ -1804,20 +1798,18 @@ static bool format_sub_invocation_invoke_host_function_args(formatter_data_t *fd
             fdata->envelope->tx_details.tx.op_details.invoke_host_function_op.invoke_contract_args;
     }
 
-    char op_caption[OPERATION_CAPTION_MAX_LENGTH] = {0};
     size_t length;
-    STRLCPY(op_caption, "Arg ", OPERATION_CAPTION_MAX_LENGTH);
-    length = strlen(op_caption);
+    STRLCPY(fdata->caption, "Arg ", fdata->caption_len);
+    length = strlen(fdata->caption);
     FORMATTER_CHECK(print_uint64_num(parameters_index + 1,
-                                     op_caption + length,
-                                     OPERATION_CAPTION_MAX_LENGTH - length))
+                                     fdata->caption + length,
+                                     fdata->caption_len - length))
 
-    STRLCAT(op_caption, " of ", sizeof(op_caption));
-    length = strlen(op_caption);
+    STRLCAT(fdata->caption, " of ", fdata->caption_len);
+    length = strlen(fdata->caption);
     FORMATTER_CHECK(print_uint64_num(invoke_contract_args.parameters_length,
-                                     op_caption + length,
-                                     OPERATION_CAPTION_MAX_LENGTH - length))
-    STRLCPY(fdata->caption, op_caption, fdata->caption_len);
+                                     fdata->caption + length,
+                                     fdata->caption_len - length))
 
     buffer_t buffer = {.ptr = fdata->raw_data,
                        .size = fdata->raw_data_len,
@@ -2062,20 +2054,18 @@ static bool format_invoke_host_function_args(formatter_data_t *fdata) {
             fdata->envelope->tx_details.tx.op_details.invoke_host_function_op.invoke_contract_args;
     }
 
-    char op_caption[OPERATION_CAPTION_MAX_LENGTH] = {0};
     size_t length;
-    STRLCPY(op_caption, "Arg ", OPERATION_CAPTION_MAX_LENGTH);
-    length = strlen(op_caption);
+    STRLCPY(fdata->caption, "Arg ", fdata->caption_len);
+    length = strlen(fdata->caption);
     FORMATTER_CHECK(print_uint64_num(parameters_index + 1,
-                                     op_caption + length,
-                                     OPERATION_CAPTION_MAX_LENGTH - length))
+                                     fdata->caption + length,
+                                     fdata->caption_len - length))
 
-    STRLCAT(op_caption, " of ", sizeof(op_caption));
-    length = strlen(op_caption);
+    STRLCAT(fdata->caption, " of ", fdata->caption_len);
+    length = strlen(fdata->caption);
     FORMATTER_CHECK(print_uint64_num(invoke_contract_args.parameters_length,
-                                     op_caption + length,
-                                     OPERATION_CAPTION_MAX_LENGTH - length))
-    STRLCPY(fdata->caption, op_caption, fdata->caption_len);
+                                     fdata->caption + length,
+                                     fdata->caption_len - length))
 
     buffer_t buffer = {.ptr = fdata->raw_data,
                        .size = fdata->raw_data_len,
@@ -2271,19 +2261,18 @@ static const format_function_t formatters[] = {&format_create_account,
 
 static bool format_confirm_operation(formatter_data_t *fdata) {
     if (fdata->envelope->tx_details.tx.operations_count > 1) {
-        char op_caption[OPERATION_CAPTION_MAX_LENGTH] = {0};
         size_t length;
-        STRLCPY(op_caption, "Operation ", OPERATION_CAPTION_MAX_LENGTH);
-        length = strlen(op_caption);
+        STRLCPY(fdata->caption, "Operation ", fdata->caption_len);
+        length = strlen(fdata->caption);
         FORMATTER_CHECK(print_uint64_num(fdata->envelope->tx_details.tx.operation_index + 1,
-                                         op_caption + length,
-                                         OPERATION_CAPTION_MAX_LENGTH - length))
-        STRLCAT(op_caption, " of ", sizeof(op_caption));
-        length = strlen(op_caption);
+                                         fdata->caption + length,
+                                         fdata->caption_len - length))
+        STRLCAT(fdata->caption, " of ", fdata->caption_len);
+        length = strlen(fdata->caption);
         FORMATTER_CHECK(print_uint64_num(fdata->envelope->tx_details.tx.operations_count,
-                                         op_caption + length,
-                                         OPERATION_CAPTION_MAX_LENGTH - length))
-        STRLCPY(fdata->caption, op_caption, fdata->caption_len);
+                                         fdata->caption + length,
+                                         fdata->caption_len - length))
+
         FORMATTER_CHECK(push_to_formatter_stack(
             ((format_function_t) PIC(formatters[fdata->envelope->tx_details.tx.op_details.type]))));
     } else {

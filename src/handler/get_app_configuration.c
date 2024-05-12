@@ -39,12 +39,15 @@ int handler_get_app_configuration() {
                    "MINOR version must be between 0 and 255!");
     _Static_assert(PATCH_VERSION >= 0 && PATCH_VERSION <= UINT8_MAX,
                    "PATCH version must be between 0 and 255!");
-    return io_send_response_pointer(
-        (const uint8_t *) &(uint8_t[APP_CONFIGURATION_SIZE + APP_VERSION_SIZE]){
-            (uint8_t) HAS_SETTING(S_HASH_SIGNING_ENABLED),
-            (uint8_t) MAJOR_VERSION,
-            (uint8_t) MINOR_VERSION,
-            (uint8_t) PATCH_VERSION},
-        APP_CONFIGURATION_SIZE + APP_VERSION_SIZE,
-        SW_OK);
+    _Static_assert(RAW_TX_MAX_SIZE >= 0 && RAW_TX_MAX_SIZE <= UINT16_MAX,
+                   "RAW_TX_MAX_SIZE must be between 0 and 65535!");
+
+    uint8_t config[] = {HAS_SETTING(S_HASH_SIGNING_ENABLED),
+                        MAJOR_VERSION,
+                        MINOR_VERSION,
+                        PATCH_VERSION,
+                        RAW_TX_MAX_SIZE >> 8,
+                        RAW_TX_MAX_SIZE & 0xFF};
+
+    return io_send_response_pointer(config, sizeof(config), SW_OK);
 }
