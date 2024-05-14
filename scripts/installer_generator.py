@@ -10,7 +10,7 @@ VERSION="{version}"
 MODEL="{model}"
 APPNAME="Stellar"
 APPPATH="44'/148'"
-LOAD_PARAMS=(--targetId {target_id} --targetVersion="" --apiLevel 5 --fileName bin/app.hex --appName "Stellar" --appFlags {app_flags} --delete --tlv --dataSize {data_size} --installparamsSize {install_params_size})
+LOAD_PARAMS=(--targetId {target_id} --targetVersion="" {extra_params} --fileName bin/app.hex --appName "Stellar" --appFlags {app_flags} --delete --tlv --dataSize {data_size} --installparamsSize {install_params_size})
 DELETE_PARAMS=(--targetId {target_id} --appName "Stellar")
 
 APPHEX="{app_hex}"
@@ -54,8 +54,14 @@ GET_DATA_SIZE_COMMAND = "echo $((0x`cat debug/app.map | grep _envram_data | tr -
 GET_INSTALL_PARAMS_SIZE_COMMAND = "echo $((0x`cat debug/app.map | grep _einstall_parameters | tr -s ' ' | cut -f2 -d' ' |cut -f2 -d'x'` - 0x`cat debug/app.map | grep _install_parameters | tr -s ' ' | cut -f2 -d' ' |cut -f2 -d'x'`))"
 
 data_size = subprocess.check_output(GET_DATA_SIZE_COMMAND, shell=True).decode().strip()
-install_params_size = subprocess.check_output(GET_INSTALL_PARAMS_SIZE_COMMAND, shell=True).decode().strip()
-version = subprocess.check_output("git rev-parse --short HEAD", shell=True).decode().strip()
+install_params_size = (
+    subprocess.check_output(GET_INSTALL_PARAMS_SIZE_COMMAND, shell=True)
+    .decode()
+    .strip()
+)
+version = (
+    subprocess.check_output("git rev-parse --short HEAD", shell=True).decode().strip()
+)
 
 model = "nano_s"
 with open("debug/app.map") as f:
@@ -66,9 +72,11 @@ with open("debug/app.map") as f:
 if model == "nano_s":
     target_id = "0x31100004"
     app_flags = "0x800"
+    extra_params = ""
 elif model == "nano_s_plus":
     target_id = "0x33100004"
     app_flags = "0xa00"
+    extra_params = "--apiLevel 5"
 
 with open("bin/app.hex") as f:
     app_hex = f.read()
@@ -80,7 +88,8 @@ script = template.format(
     data_size=data_size,
     install_params_size=install_params_size,
     app_hex=app_hex,
-    model=model
+    model=model,
+    extra_params=extra_params,
 )
 
 filename = f"installer/installer_{model}.sh"
