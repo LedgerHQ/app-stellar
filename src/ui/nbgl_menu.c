@@ -1,6 +1,7 @@
 /*****************************************************************************
  *   Ledger Stellar App.
  *   (c) 2024 Ledger SAS.
+ *   (c) 2024 overcat.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -34,7 +35,7 @@ enum { SWITCH_HASH_SET_TOKEN = FIRST_USER_TOKEN, SWITCH_SEQUENCE_SET_TOKEN };
 
 #define NB_INFO_FIELDS 2
 static const char* const info_types[] = {"Version", "Developer"};
-static const char* const info_contents[] = {APPVERSION, "Ledger"};
+static const char* const info_contents[] = {APPVERSION, "overcat"};
 
 #define NB_SETTINGS_SWITCHES 2
 #define SETTINGS_INIT_PAGE   0
