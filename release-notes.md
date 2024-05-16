@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## v5.4.1
+
+### Updated
+- Optimize interactive prompt messages.
+- Optimize the flow for confirming addresses on Stax.
+
 ## v5.4.0
 
 ### Updated
