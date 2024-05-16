@@ -301,7 +301,7 @@ static void review_auth_start(void) {
                             reject_auth_choice);
 }
 
-void prepare_display() {
+static void prepare_display() {
     formatter_data_t fdata = {
         .raw_data = G_context.raw,
         .raw_data_len = G_context.raw_size,

@@ -52,7 +52,7 @@ describe("get public key", () => {
     try {
       let confirmText = "Approve";
       if (dev.name == "stax") {
-        confirmText = "Address";
+        confirmText = "Confirm";
       }
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText, approveAction: ButtonKind.ApproveTapButton });
       const transport = await sim.getTransport();
@@ -76,7 +76,7 @@ describe("get public key", () => {
     try {
       let confirmText = "Reject";
       if (dev.name == "stax") {
-        confirmText = "Address";
+        confirmText = "Confirm";
       }
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText, approveAction: ButtonKind.RejectButton });
       const transport = await sim.getTransport();

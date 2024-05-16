@@ -55,8 +55,8 @@ end:
 }
 
 // converts little endian 32 byte public key to big endian 32 byte public key
-void raw_public_key_le_to_be(cx_ecfp_public_key_t *public_key,
-                             uint8_t raw_public_key[static RAW_ED25519_PUBLIC_KEY_SIZE]) {
+static void raw_public_key_le_to_be(cx_ecfp_public_key_t *public_key,
+                                    uint8_t raw_public_key[static RAW_ED25519_PUBLIC_KEY_SIZE]) {
     // copy public key little endian to big endian
     for (uint8_t i = 0; i < RAW_ED25519_PUBLIC_KEY_SIZE; i++) {
         raw_public_key[i] = public_key->W[64 - i];

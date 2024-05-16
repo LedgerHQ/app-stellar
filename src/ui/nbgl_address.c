@@ -42,6 +42,14 @@ static void confirmation_choice(bool confirm) {
     }
 }
 
+static void status_cancel(void) {
+    confirmation_choice(false);
+}
+
+static void address_display(void) {
+    nbgl_useCaseAddressConfirmation(G.ui.detail_value, confirmation_choice);
+}
+
 int ui_display_address(void) {
     if (G_context.req_type != CONFIRM_ADDRESS || G_context.state != STATE_NONE) {
         G_context.state = STATE_NONE;
@@ -56,7 +64,13 @@ int ui_display_address(void) {
                           0)) {
         return io_send_sw(SW_DISPLAY_ADDRESS_FAIL);
     }
-    nbgl_useCaseAddressConfirmation(G.ui.detail_value, confirmation_choice);
+
+    nbgl_useCaseReviewStart(&C_icon_stellar_64px,
+                            "Verify Stellar\naddress",
+                            "",
+                            "Cancel",
+                            address_display,
+                            status_cancel);
     return 0;
 }
 #endif  // HAVE_NBGL
