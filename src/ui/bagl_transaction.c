@@ -167,7 +167,7 @@ UX_STEP_CB(ux_tx_approve_step,
            (*g_validate_callback)(true),
            {
                &C_icon_validate_14,
-               "Finalize",
+               "Sign",
                "Transaction",
            });
 UX_STEP_CB(ux_auth_approve_step,
@@ -175,7 +175,7 @@ UX_STEP_CB(ux_auth_approve_step,
            (*g_validate_callback)(true),
            {
                &C_icon_validate_14,
-               "Finalize",
+               "Sign",
                "Soroban Auth",
            });
 // Step with reject button
@@ -184,7 +184,7 @@ UX_STEP_CB(ux_tx_reject_step,
            (*g_validate_callback)(false),
            {
                &C_icon_crossmark,
-               "Cancel",
+               "Reject",
            });
 
 // FLOW to display transaction information:

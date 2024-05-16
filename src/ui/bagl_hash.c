@@ -72,7 +72,7 @@ UX_STEP_CB(ux_tx_hash_display_approve_step,
            (*g_validate_callback)(true),
            {
                &C_icon_validate_14,
-               "Approve",
+               "Sign Hash",
            });
 // Step with reject button
 UX_STEP_CB(ux_tx_hash_display_reject_step,

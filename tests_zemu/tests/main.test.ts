@@ -136,7 +136,7 @@ describe("hash signing", () => {
       const result = str.signHash("44'/148'/0'", hash);
       const events = await sim.getEvents();
       await sim.waitForScreenChanges(events);
-      let textToFind = "Approve";
+      let textToFind = "Sign Hash";
       if (dev.name == "stax") {
         textToFind = "Hold to";
       }
@@ -212,9 +212,10 @@ describe("transactions", () => {
         const result = str.signTransaction("44'/148'/0'", tx.signatureBase());
         const events = await sim.getEvents();
         await sim.waitForScreenChanges(events);
-        let textToFind = "Finalize";
+        // TODO: If set to Sign, it will not pass the test. Is this a bug in Zemu?
+        let textToFind = /\bSign\b/;
         if (dev.name == "stax") {
-          textToFind = "Hold to";
+          textToFind = /\bHold to\b/;
         }
         await sim.navigateAndCompareUntilText(
           ".",
@@ -240,7 +241,7 @@ describe("transactions", () => {
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText, approveAction: ButtonKind.RejectButton });
       const transport = await sim.getTransport();
       const str = new Str(transport);
-      let textToFind = "Cancel";
+      let textToFind = "Reject";
       // display sequence
       if (dev.name == "stax") {
         textToFind = "Hold to";
@@ -288,7 +289,7 @@ describe("transactions", () => {
       const transport = await sim.getTransport();
       const str = new Str(transport);
 
-      let textToFind = "Cancel";
+      let textToFind = "Reject";
       // display sequence
       if (dev.name == "stax") {
         textToFind = "Hold to";
@@ -339,9 +340,9 @@ describe("transactions", () => {
       const result = str.signTransaction("44'/148'/0'", tx.signatureBase());
       const events = await sim.getEvents();
       await sim.waitForScreenChanges(events);
-      let textToFind = "Finalize";
+      let textToFind = /\bSign\b/;
       if (dev.name == "stax") {
-        textToFind = "Hold to";
+        textToFind = /\bHold to\b/;
       }
       await sim.navigateAndCompareUntilText(
         ".",
@@ -370,9 +371,9 @@ describe("transactions", () => {
       const result = str.signTransaction("44'/148'/0'", tx.signatureBase());
       const events = await sim.getEvents();
       await sim.waitForScreenChanges(events);
-      let textToFind = "Finalize";
+      let textToFind = /\bSign\b/;
       if (dev.name == "stax") {
-        textToFind = "Hold to";
+        textToFind = /\bHold to\b/;
       }
       await sim.navigateAndCompareUntilText(
         ".",
@@ -404,9 +405,9 @@ describe("soroban auth", () => {
         const result = str.signSorobanAuthoration("44'/148'/0'", hashIdPreimage.toXDR("raw"));
         const events = await sim.getEvents();
         await sim.waitForScreenChanges(events);
-        let textToFind = "Finalize";
+        let textToFind = /\bSign\b/;
         if (dev.name == "stax") {
-          textToFind = "Hold to";
+          textToFind = /\bHold to\b/;
         }
         await sim.navigateAndCompareUntilText(
           ".",
@@ -436,7 +437,7 @@ describe("soroban auth", () => {
         new Error("Soroban authoration approval request was rejected")
       );
 
-      let textToFind = "Cancel";
+      let textToFind = "Reject";
       if (dev.name == "stax") {
         textToFind = "Sign Soroban Auth?";
       }
@@ -487,9 +488,9 @@ describe("plugin", () => {
       const result = str.signTransaction("44'/148'/0'", tx.signatureBase());
       const events = await sim.getEvents();
       await sim.waitForScreenChanges(events);
-      let textToFind = "Finalize";
+      let textToFind = /\bSign\b/;
       if (dev.name == "stax") {
-        textToFind = "Hold to";
+        textToFind = /\bHold to\b/;
       }
       await sim.navigateAndCompareUntilText(
         ".",
@@ -516,7 +517,7 @@ describe("plugin", () => {
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText, approveAction: ButtonKind.RejectButton });
       const transport = await sim.getTransport();
       const str = new Str(transport);
-      let textToFind = "Cancel";
+      let textToFind = "Reject";
       // display sequence
       if (dev.name == "stax") {
         textToFind = "Hold to";
@@ -569,9 +570,9 @@ describe("plugin", () => {
       const result = str.signSorobanAuthoration("44'/148'/0'", hashIdPreimage.toXDR("raw"));
       const events = await sim.getEvents();
       await sim.waitForScreenChanges(events);
-      let textToFind = "Finalize";
+      let textToFind = /\bSign\b/;
       if (dev.name == "stax") {
-        textToFind = "Hold to";
+        textToFind = /\bHold to\b/;
       }
       await sim.navigateAndCompareUntilText(
         ".",
@@ -603,7 +604,7 @@ describe("plugin", () => {
         new Error("Soroban authoration approval request was rejected")
       );
 
-      let textToFind = "Cancel";
+      let textToFind = "Reject";
       if (dev.name == "stax") {
         textToFind = "Sign Soroban Auth?";
       }
