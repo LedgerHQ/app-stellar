@@ -41,18 +41,17 @@
  */
 #define SW_DISPLAY_TRANSACTION_HASH_FAIL 0xB003
 /**
- * Status word for wrong transaction length.
- * When the data requested by the user is too large, this exception will be thrown.
+ * Status word for the data is too large to be processed.
  */
-#define SW_WRONG_TX_LENGTH 0xB004
+#define SW_DATA_TOO_LARGE 0xB004
 /**
- * Status word for fail of transaction parsing.
+ * Status word for fail of data parsing.
  */
-#define SW_TX_PARSING_FAIL 0xB005
+#define SW_DATA_PARSING_FAIL 0xB005
 /**
- * Status word for fail of transaction hash.
+ * Status word for fail of data hash.
  */
-#define SW_TX_HASH_FAIL 0xB006
+#define SW_DATA_HASH_FAIL 0xB006
 /**
  * Status word for bad state.
  */

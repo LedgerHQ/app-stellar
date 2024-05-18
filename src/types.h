@@ -12,8 +12,8 @@
  * Enumeration with expected INS of APDU commands.
  */
 typedef enum {
-    GET_PUBLIC_KEY = 0x02,                // public key of corresponding BIP32 path
-    SIGN_TX = 0x04,                       // sign transaction with BIP32 path
+    INS_GET_PUBLIC_KEY = 0x02,            // public key of corresponding BIP32 path
+    INS_SIGN_TX = 0x04,                   // sign transaction with BIP32 path
     INS_GET_APP_CONFIGURATION = 0x06,     // app configuration of the application
     INS_SIGN_HASH = 0x08,                 // sign transaction in hash mode
     INS_SIGN_SOROBAN_AUTHORATION = 0x0a,  // sign soroban authoration
@@ -48,7 +48,7 @@ enum e_state {
  */
 typedef struct {
     envelope_t envelope;
-    uint8_t raw[RAW_TX_MAX_SIZE];
+    uint8_t raw[RAW_DATA_MAX_SIZE];
     uint32_t raw_size;
     uint8_t raw_public_key[RAW_ED25519_PUBLIC_KEY_SIZE];  // BIP32 path public key
     uint8_t hash[HASH_SIZE];                              // tx hash

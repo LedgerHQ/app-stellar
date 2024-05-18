@@ -40,8 +40,8 @@ int handler_sign_auth(buffer_t *cdata, bool is_first_chunk, bool more) {
         explicit_bzero(&G_context, sizeof(G_context));
     }
 
-    if (G_context.raw_size + cdata->size > RAW_TX_MAX_SIZE) {
-        return io_send_sw(SW_WRONG_TX_LENGTH);
+    if (G_context.raw_size + cdata->size > RAW_DATA_MAX_SIZE) {
+        return io_send_sw(SW_DATA_TOO_LARGE);
     }
 
     if (is_first_chunk) {
@@ -74,7 +74,7 @@ int handler_sign_auth(buffer_t *cdata, bool is_first_chunk, bool more) {
     if (!parse_soroban_authorization_envelope(G_context.raw,
                                               G_context.raw_size,
                                               &G_context.envelope)) {
-        return io_send_sw(SW_TX_PARSING_FAIL);
+        return io_send_sw(SW_DATA_PARSING_FAIL);
     }
 
     G_context.state = STATE_PARSED;
@@ -89,7 +89,7 @@ int handler_sign_auth(buffer_t *cdata, bool is_first_chunk, bool more) {
     }
 
     if (cx_hash_sha256(G_context.raw, G_context.raw_size, G_context.hash, HASH_SIZE) != HASH_SIZE) {
-        return io_send_sw(SW_TX_HASH_FAIL);
+        return io_send_sw(SW_DATA_HASH_FAIL);
     }
 
     return ui_display_auth();

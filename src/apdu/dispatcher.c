@@ -40,7 +40,7 @@ int apdu_dispatcher(const command_t *cmd) {
     }
 
     if (G_called_from_swap) {
-        if (cmd->ins != GET_PUBLIC_KEY && cmd->ins != SIGN_TX) {
+        if (cmd->ins != INS_GET_PUBLIC_KEY && cmd->ins != INS_SIGN_TX) {
             PRINTF("Only GET_PUBLIC_KEY and SIGN_TX can be called during swap\n");
             return io_send_sw(SW_INS_NOT_SUPPORTED);
         }
@@ -54,7 +54,7 @@ int apdu_dispatcher(const command_t *cmd) {
                 return io_send_sw(SW_WRONG_P1P2);
             }
             return handler_get_app_configuration();
-        case GET_PUBLIC_KEY:
+        case INS_GET_PUBLIC_KEY:
             if (cmd->p1 != 0 || cmd->p2 > 1) {
                 return io_send_sw(SW_WRONG_P1P2);
             }
@@ -81,7 +81,7 @@ int apdu_dispatcher(const command_t *cmd) {
             buf.size = cmd->lc;
             buf.offset = 0;
             return handler_sign_hash(&buf);
-        case SIGN_TX:
+        case INS_SIGN_TX:
             if ((cmd->p1 != P1_FIRST && cmd->p1 != P1_MORE) ||
                 (cmd->p2 != P2_LAST && cmd->p2 != P2_MORE)) {
                 return io_send_sw(SW_WRONG_P1P2);

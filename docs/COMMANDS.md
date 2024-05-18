@@ -8,7 +8,7 @@
 | `SIGN_TX`                       | 0x04 | Sign the raw transaction                               |
 | `GET_APP_CONFIGURATION`         | 0x06 | Get application configuration information              |
 | `SIGN_HASH`                     | 0x08 | Sign the hash                                          |
-| `INS_SIGN_SOROBAN_AUTHORATION`  | 0x0A | Sign the Soroban Authoration                           |
+| `SIGN_SOROBAN_AUTHORATION`      | 0x0A | Sign the Soroban Authoration                           |
 
 ## GET_PUBLIC_KEY
 
@@ -50,7 +50,7 @@
 
 | Response length (bytes) | SW     | RData                                                                        |
 | ----------------------- | ------ | ---------------------------------------------------------------------------- |
-| 4                       | 0x9000 | `HASH_SIGNING_ENABLED (1)` \|\| `MAJOR (1)` \|\| `MINOR (1)` \|\| `PATCH (1)` \|\| `RAW_TX_MAX_SIZE (2)` |
+| 4                       | 0x9000 | `HASH_SIGNING_ENABLED (1)` \|\| `MAJOR (1)` \|\| `MINOR (1)` \|\| `PATCH (1)` \|\| `RAW_DATA_MAX_SIZE (2)` |
 
 ## SIGN_HASH
 
@@ -66,7 +66,7 @@
 | ----------------------- | ------ | ---------------- |
 | 64                      | 0x9000 | `signature (64)` |
 
-## INS_SIGN_SOROBAN_AUTHORATION
+## SIGN_SOROBAN_AUTHORATION
 
 ### Command
 
@@ -85,7 +85,7 @@
 
 | SW     | SW name                               | Description                                             |
 | ------ | ------------------------------------- | ------------------------------------------------------- |
-| 0x6125 | `SW_TX_FORMATTING_FAIL`               | Failed to format transaction data                       |
+| 0x6125 | `SW_FORMATTING_FAIL`                  | Failed to format the data                               |
 | 0x6985 | `SW_DENY`                             | Rejected by user                                        |
 | 0x6A87 | `SW_WRONG_DATA_LENGTH`                | `Lc` or minimum APDU lenght is incorrect                |
 | 0x6B00 | `SW_WRONG_P1P2`                       | Either `P1` or `P2` is incorrect                        |
@@ -94,10 +94,10 @@
 | 0x6E00 | `SW_CLA_NOT_SUPPORTED`                | Bad `CLA` used for this application                     |
 | 0xB002 | `SW_DISPLAY_ADDRESS_FAIL`             | Failed to display address                               |
 | 0xB003 | `SW_DISPLAY_TRANSACTION_HASH_FAIL`    | Failed to display transaction hash                      |
-| 0xB004 | `SW_WRONG_TX_LENGTH`                  | Wrong raw transaction length                            |
-| 0xB005 | `SW_TX_PARSING_FAIL`                  | Failed to parse raw transaction                         |
-| 0xB006 | `SW_TX_HASH_FAIL`                     | Failed to compute hash digest of raw transaction        |
+| 0xB004 | `SW_DATA_TOO_LARGE`                   | The data is too large to be processed                   |
+| 0xB005 | `SW_DATA_PARSING_FAIL`                | Failed to parse raw data                                |
+| 0xB006 | `SW_DATA_HASH_FAIL`                   | Failed to compute hash digest of raw data               |
 | 0xB007 | `SW_BAD_STATE`                        | Security issue with bad state                           |
-| 0xB008 | `SW_SIGNATURE_FAIL`                   | Signature of raw transaction or transaction hash failed |
+| 0xB008 | `SW_SIGNATURE_FAIL`                   | Generating signature failed                             |
 | 0xB009 | `SW_SWAP_CHECKING_FAIL`               | Failed to check swap params (maybe the data is invalid) |
 | 0x9000 | `SW_OK`                               | Success                                                 |
