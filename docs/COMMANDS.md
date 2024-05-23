@@ -8,7 +8,7 @@
 | `SIGN_TX`                       | 0x04 | Sign the raw transaction                               |
 | `GET_APP_CONFIGURATION`         | 0x06 | Get application configuration information              |
 | `SIGN_HASH`                     | 0x08 | Sign the hash                                          |
-| `SIGN_SOROBAN_AUTHORATION`      | 0x0A | Sign the Soroban Authoration                           |
+| `SIGN_SOROBAN_AUTHORIZATION`    | 0x0A | Sign the Soroban Authorization                         |
 
 ## GET_PUBLIC_KEY
 
@@ -66,7 +66,7 @@
 | ----------------------- | ------ | ---------------- |
 | 64                      | 0x9000 | `signature (64)` |
 
-## SIGN_SOROBAN_AUTHORATION
+## SIGN_SOROBAN_AUTHORIZATION
 
 ### Command
 

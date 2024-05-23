@@ -12,11 +12,11 @@
  * Enumeration with expected INS of APDU commands.
  */
 typedef enum {
-    INS_GET_PUBLIC_KEY = 0x02,            // public key of corresponding BIP32 path
-    INS_SIGN_TX = 0x04,                   // sign transaction with BIP32 path
-    INS_GET_APP_CONFIGURATION = 0x06,     // app configuration of the application
-    INS_SIGN_HASH = 0x08,                 // sign transaction in hash mode
-    INS_SIGN_SOROBAN_AUTHORATION = 0x0a,  // sign soroban authoration
+    INS_GET_PUBLIC_KEY = 0x02,              // public key of corresponding BIP32 path
+    INS_SIGN_TX = 0x04,                     // sign transaction with BIP32 path
+    INS_GET_APP_CONFIGURATION = 0x06,       // app configuration of the application
+    INS_SIGN_HASH = 0x08,                   // sign transaction in hash mode
+    INS_SIGN_SOROBAN_AUTHORIZATION = 0x0a,  // sign soroban authorization
 } command_e;
 
 /**
@@ -32,10 +32,10 @@ typedef enum {
  * Enumeration with user request type.
  */
 typedef enum {
-    CONFIRM_ADDRESS,             // confirm address derived from public key
-    CONFIRM_TRANSACTION,         // confirm transaction information
-    CONFIRM_HASH,                // confirm hash information
-    CONFIRM_SOROBAN_AUTHORATION  // confirm soroban authoration information
+    CONFIRM_ADDRESS,               // confirm address derived from public key
+    CONFIRM_TRANSACTION,           // confirm transaction information
+    CONFIRM_HASH,                  // confirm hash information
+    CONFIRM_SOROBAN_AUTHORIZATION  // confirm soroban authorization information
 } request_type_e;
 
 enum e_state {

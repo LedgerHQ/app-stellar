@@ -241,7 +241,7 @@ int ui_display_transaction() {
 }
 
 int ui_display_auth() {
-    if (G_context.req_type != CONFIRM_SOROBAN_AUTHORATION || G_context.state != STATE_PARSED) {
+    if (G_context.req_type != CONFIRM_SOROBAN_AUTHORIZATION || G_context.state != STATE_PARSED) {
         G_context.state = STATE_NONE;
         return io_send_sw(SW_BAD_STATE);
     }

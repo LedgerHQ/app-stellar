@@ -5,7 +5,7 @@
 #include "buffer.h"
 
 /**
- * Handler for INS_SIGN_SOROBAN_AUTHORATION command. If successfully parse BIP32 path
+ * Handler for INS_SIGN_SOROBAN_AUTHORIZATION command. If successfully parse BIP32 path
  * and soroban authorization, sign soroban authorization and send APDU response.
  *
  * @param[in,out] cdata
