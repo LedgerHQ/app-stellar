@@ -21,7 +21,7 @@ make clean
 
 for sdk in "${DEVICE_SDKS[@]}"; do
     echo "* Building elfs for $(basename "$sdk")..."
-    make -j DEBUG=1 BOLOS_SDK="$sdk"
+    make -j BOLOS_SDK="$sdk"
 done
 
 echo "done"

@@ -1,0 +1,15 @@
+Network; Testnet
+Max Fee; 0.00005 XLM
+Sequence Num; 1234567891
+Tx Source; GDUTHC..XM2FN7
+Soroban; Invoke Smart Contract
+Contract ID; CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC
+Function; test
+Arg 1 of 8; true
+Arg 2 of 8; [void]
+Arg 3 of 8; 1,234
+Arg 4 of 8; 12,345
+Arg 5 of 8; 23,432,453
+Arg 6 of 8; 454,546
+Arg 7 of 8; 2044-09-04 17:39:22
+Arg 8 of 8; 34,543,643

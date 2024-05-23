@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include "os.h"
 
 typedef uint8_t internal_storage_t;
 

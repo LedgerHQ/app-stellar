@@ -6,15 +6,17 @@
 #include <stdio.h>
 #include <string.h>
 #include <cmocka.h>
+#include "stellar/parser.h"
 
-#include "transaction/transaction_parser.h"
+#define MAX_ENVELOPE_SIZE 2048
 
-static const char *testcases[] = {
+const char *testcases[] = {
     "../testcases/opCreateAccount.raw",
     "../testcases/opPaymentAssetNative.raw",
     "../testcases/opPaymentAssetAlphanum4.raw",
     "../testcases/opPaymentAssetAlphanum12.raw",
     "../testcases/opPaymentWithMuxedDestination.raw",
+    "../testcases/opRestoreFootprint.raw",
     "../testcases/opPathPaymentStrictReceive.raw",
     "../testcases/opPathPaymentStrictReceiveWithEmptyPath.raw",
     "../testcases/opPathPaymentStrictReceiveWithMuxedDestination.raw",
@@ -42,6 +44,25 @@ static const char *testcases[] = {
     "../testcases/opAccountMerge.raw",
     "../testcases/opAccountMergeWithMuxedDestination.raw",
     "../testcases/opInflation.raw",
+    "../testcases/opInvokeHostFunctionAssetApprove.raw",
+    "../testcases/opInvokeHostFunctionScvalsCase0.raw",
+    "../testcases/opInvokeHostFunctionScvalsCase1.raw",
+    "../testcases/opInvokeHostFunctionScvalsCase2.raw",
+    "../testcases/opInvokeHostFunctionAssetTransfer.raw",
+    "../testcases/opInvokeHostFunctionCreateContractNewAsset.raw",
+    "../testcases/opInvokeHostFunctionCreateContractWasmId.raw",
+    "../testcases/opInvokeHostFunctionCreateContractWrapAsset.raw",
+    "../testcases/opInvokeHostFunctionWithoutArgs.raw",
+    "../testcases/opInvokeHostFunctionUploadWasm.raw",
+    "../testcases/opInvokeHostFunctionWithAuth.raw",
+    "../testcases/opInvokeHostFunctionWithAuthAndNoArgsAndNoSource.raw",
+    "../testcases/opInvokeHostFunctionWithAuthAndNoArgs.raw",
+    "../testcases/opInvokeHostFunctionWithoutAuthAndNoSource.raw",
+    "../testcases/opInvokeHostFunctionTransferXlm.raw",
+    "../testcases/opInvokeHostFunctionTransferUsdc.raw",
+    "../testcases/opInvokeHostFunctionApproveUsdc.raw",
+    "../testcases/opInvokeHostFunctionWithComplexSubInvocation.raw",
+    "../testcases/opInvokeHostFunctionTestPlugin.raw",
     "../testcases/opManageDataAdd.raw",
     "../testcases/opManageDataAddWithUnprintableData.raw",
     "../testcases/opManageDataRemove.raw",
@@ -56,6 +77,7 @@ static const char *testcases[] = {
     "../testcases/opClaimClaimableBalance.raw",
     "../testcases/opBeginSponsoringFutureReserves.raw",
     "../testcases/opEndSponsoringFutureReserves.raw",
+    "../testcases/opExtendFootprintTtl.raw",
     "../testcases/opRevokeSponsorshipAccount.raw",
     "../testcases/opRevokeSponsorshipTrustLineWithAsset.raw",
     "../testcases/opRevokeSponsorshipTrustLineWithLiquidityPoolId.raw",
@@ -122,24 +144,29 @@ static const char *testcases[] = {
     "../testcases/opSourceOmitTxMuxedSourceEqualOpSourceEqualSigner.raw",
 };
 
-static void parse_tx(const char *filename) {
-    FILE *f = fopen(filename, "rb");
-    assert_non_null(f);
-    tx_ctx_t tx_info;
-    memset(&tx_info, 0, sizeof(tx_ctx_t));
-    tx_info.raw_size = fread(tx_info.raw, 1, RAW_TX_MAX_SIZE, f);
-    if (!parse_tx_xdr(tx_info.raw, tx_info.raw_size, &tx_info)) {
-        fail_msg("parse %s failed!", filename);
-    }
-}
+void test_parse_data(void **state) {
+    const char *filename = (char *) *state;
+    FILE *file = fopen(filename, "rb");
+    assert_non_null(file);
+    envelope_t envelope;
 
-void test_parse() {
-    for (int i = 0; i < sizeof(testcases) / sizeof(testcases[0]); i++) {
-        parse_tx(testcases[i]);
+    memset(&envelope, 0, sizeof(envelope_t));
+    uint8_t data[MAX_ENVELOPE_SIZE];
+    size_t read_count = fread(data, sizeof(char), MAX_ENVELOPE_SIZE, file);
+    assert_true(parse_transaction_envelope(data, read_count, &envelope));
+    for (uint8_t i = 0; i < envelope.tx_details.tx.operations_count; i++) {
+        assert_true(parse_transaction_operation(data, read_count, &envelope, i));
     }
 }
 
 int main() {
-    const struct CMUnitTest tests[] = {cmocka_unit_test(test_parse)};
+    struct CMUnitTest tests[sizeof(testcases) / sizeof(testcases[0])];
+    for (int i = 0; i < sizeof(testcases) / sizeof(testcases[0]); i++) {
+        tests[i].name = testcases[i];
+        tests[i].test_func = test_parse_data;
+        tests[i].initial_state = (void *) testcases[i];
+        tests[i].setup_func = NULL;
+        tests[i].teardown_func = NULL;
+    }
     return cmocka_run_group_tests(tests, NULL, NULL);
 }

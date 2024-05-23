@@ -1,0 +1,61 @@
+Nonce; 1232432453
+Sig Exp Ledger; 34654367
+Soroban; Invoke Smart Contract
+Contract ID; CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC
+Function; func0
+Arg 1 of 1; 10,356,000,000
+Nested Authorization; 1 of 11
+Soroban; Invoke Smart Contract
+Contract ID; CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC
+Function; func1
+Arg 1 of 1; 10,356,000,000
+Nested Authorization; 2 of 11
+Soroban; Invoke Smart Contract
+Contract ID; CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC
+Function; func2
+Arg 1 of 1; 10,356,000,000
+Nested Authorization; 3 of 11
+Soroban; Invoke Smart Contract
+Contract ID; CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC
+Function; func3
+Arg 1 of 1; 10,356,000,000
+Nested Authorization; 4 of 11
+Soroban; Invoke Smart Contract
+Contract ID; CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC
+Function; func4
+Arg 1 of 1; 10,356,000,000
+Nested Authorization; 5 of 11
+Soroban; Invoke Smart Contract
+Contract ID; CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC
+Function; func5
+Arg 1 of 1; 10,356,000,000
+Nested Authorization; 6 of 11
+Soroban; Invoke Smart Contract
+Contract ID; CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC
+Function; func6
+Arg 1 of 1; 10,356,000,000
+Nested Authorization; 7 of 11
+Soroban; Invoke Smart Contract
+Contract ID; CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC
+Function; func7
+Arg 1 of 1; 10,356,000,000
+Nested Authorization; 8 of 11
+Soroban; Invoke Smart Contract
+Contract ID; CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC
+Function; func8
+Arg 1 of 1; 10,356,000,000
+Nested Authorization; 9 of 11
+Soroban; Invoke Smart Contract
+Contract ID; CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC
+Function; func9
+Arg 1 of 1; 10,356,000,000
+Nested Authorization; 10 of 11
+Soroban; Invoke Smart Contract
+Contract ID; CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC
+Function; func10
+Arg 1 of 1; 10,356,000,000
+Nested Authorization; 11 of 11
+Soroban; Invoke Smart Contract
+Contract ID; CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC
+Function; func11
+Arg 1 of 1; 10,356,000,000
