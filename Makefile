@@ -21,21 +21,25 @@ endif
 include $(BOLOS_SDK)/Makefile.defines
 
 APPNAME = Stellar
-APPVERSION_M=4
+APPVERSION_M=5
 APPVERSION_N=0
 APPVERSION_P=3
 APPVERSION=$(APPVERSION_M).$(APPVERSION_N).$(APPVERSION_P)
 
 ifeq ($(TARGET_NAME), TARGET_NANOS)
-APP_LOAD_FLAGS=--appFlags 0x800  # APPLICATION_FLAG_LIBRARY
+APP_LOAD_PARAMS = --appFlags 0x800  # APPLICATION_FLAG_LIBRARY
 else
-APP_LOAD_FLAGS=--appFlags 0xa00  # APPLICATION_FLAG_LIBRARY + APPLICATION_FLAG_BOLOS_SETTINGS
+APP_LOAD_PARAMS = --appFlags 0xa00  # APPLICATION_FLAG_LIBRARY + APPLICATION_FLAG_BOLOS_SETTINGS
 endif
-APP_LOAD_PARAMS=$(APP_LOAD_FLAGS) --path "44'/148'" --curve ed25519 $(COMMON_LOAD_PARAMS)
+APP_LOAD_PARAMS += --curve ed25519
+APP_LOAD_PARAMS += --path "44'/148'"
+APP_LOAD_PARAMS +=  $(COMMON_LOAD_PARAMS)
 
 #prepare hsm generation
 ifeq ($(TARGET_NAME),TARGET_NANOS)
 	ICONNAME=icons/nanos_app_stellar.gif
+else ifeq ($(TARGET_NAME),TARGET_STAX)
+	ICONNAME=icons/stax_app_stellar.gif
 else
 	ICONNAME=icons/nanox_app_stellar.gif
 endif
@@ -48,28 +52,35 @@ all: default
 ############
 # Platform #
 ############
+ifneq ($(TARGET_NAME),TARGET_STAX)
+    DEFINES   += HAVE_BAGL HAVE_UX_FLOW
+endif
 
 DEFINES   += OS_IO_SEPROXYHAL
-DEFINES   += HAVE_BAGL HAVE_SPRINTF
+DEFINES   += HAVE_SPRINTF
 DEFINES   += HAVE_IO_USB HAVE_L4_USBLIB IO_USB_MAX_ENDPOINTS=4 IO_HID_EP_LENGTH=64 HAVE_USB_APDU
 DEFINES   += MAJOR_VERSION=$(APPVERSION_M) MINOR_VERSION=$(APPVERSION_N) PATCH_VERSION=$(APPVERSION_P)
 
 DEFINES   += USB_SEGMENT_SIZE=64
 DEFINES   += BLE_SEGMENT_SIZE=32 #max MTU, min 20
-DEFINES   += UNUSED\(x\)=\(void\)x
 DEFINES   += APPVERSION=\"$(APPVERSION)\"
-
-DEFINES   += HAVE_UX_FLOW
 
 DEFINES   += HAVE_WEBUSB WEBUSB_URL_SIZE_B=0 WEBUSB_URL=""
 
+# BLE
 ifeq ($(TARGET_NAME),TARGET_NANOX)
-	DEFINES       += HAVE_BLE BLE_COMMAND_TIMEOUT_MS=2000
-	DEFINES       += HAVE_BLE_APDU # basic ledger apdu transport over BLE
+DEFINES   += HAVE_BLE BLE_COMMAND_TIMEOUT_MS=2000 HAVE_BLE_APDU
+else ifeq ($(TARGET_NAME),TARGET_STAX)
+DEFINES   += HAVE_BLE BLE_COMMAND_TIMEOUT_MS=2000 HAVE_BLE_APDU
 endif
+
 
 ifeq ($(TARGET_NAME),TARGET_NANOS)
 	DEFINES       += IO_SEPROXYHAL_BUFFER_SIZE_B=128
+else ifeq ($(TARGET_NAME),TARGET_STAX)
+	DEFINES       += IO_SEPROXYHAL_BUFFER_SIZE_B=300
+	DEFINES       += NBGL_QRCODE
+	SDK_SOURCE_PATH += qrcode
 else
 	DEFINES       += IO_SEPROXYHAL_BUFFER_SIZE_B=300
 	DEFINES       += HAVE_GLO096
@@ -114,12 +125,8 @@ $(info GCCPATH is not set: arm-none-eabi-* will be used from PATH)
 endif
 
 CC       := $(CLANGPATH)clang
-
-#CFLAGS   += -O0
-CFLAGS   += -O3 -Os
 AS       := $(GCCPATH)arm-none-eabi-gcc
 LD       := $(GCCPATH)arm-none-eabi-gcc
-LDFLAGS  += -O3 -Os
 LDLIBS   += -lm -lgcc -lc
 
 # import rules to compile glyphs(/pone)
@@ -129,10 +136,15 @@ include $(BOLOS_SDK)/Makefile.glyphs
 APP_SOURCE_PATH  += src
 SDK_SOURCE_PATH  += lib_stusb
 SDK_SOURCE_PATH  += lib_stusb_impl
-SDK_SOURCE_PATH  += lib_ux
+
+ifneq ($(TARGET_NAME),TARGET_STAX)
+SDK_SOURCE_PATH += lib_ux
+endif
 
 ifeq ($(TARGET_NAME),TARGET_NANOX)
-	SDK_SOURCE_PATH  += lib_blewbxx lib_blewbxx_impl
+SDK_SOURCE_PATH  += lib_blewbxx lib_blewbxx_impl
+else ifeq ($(TARGET_NAME),TARGET_STAX)
+SDK_SOURCE_PATH  += lib_blewbxx lib_blewbxx_impl
 endif
 
 
@@ -158,7 +170,7 @@ tests-unit:
 	rm -rf tests_unit/build && cmake -Btests_unit/build -Htests_unit/ && make -C tests_unit/build/ && make -C tests_unit/build test
 
 tests-zemu:
-	./build_elfs.sh && rm -rf ./tests_zemu/elfs/stellar_nano*.elf && cp ./elfs/stellar_nano*.elf ./tests_zemu/elfs
+	./build_elfs.sh
 	cd tests_common_js && npm install && npm run build
 	cd tests_zemu && npm install && rm -rf snapshots-tmp && npm run test
 

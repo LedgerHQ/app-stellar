@@ -23,25 +23,45 @@
 #include "./globals.h"
 #include "./common/buffer.h"
 #include "./common/write.h"
+#include "handle_swap_commands.h"
 
+#ifdef HAVE_BAGL
 void io_seproxyhal_display(const bagl_element_t *element) {
     io_seproxyhal_display_default((bagl_element_t *) element);
 }
+#endif  // HAVE_BAGL
 
 uint8_t io_event(uint8_t channel __attribute__((unused))) {
     switch (G_io_seproxyhal_spi_buffer[0]) {
+#ifdef HAVE_NBGL
+        case SEPROXYHAL_TAG_FINGER_EVENT:
+            UX_FINGER_EVENT(G_io_seproxyhal_spi_buffer);
+            break;
+#endif  // HAVE_NBGL
+
+#ifdef HAVE_BAGL
         case SEPROXYHAL_TAG_BUTTON_PUSH_EVENT:
             UX_BUTTON_PUSH_EVENT(G_io_seproxyhal_spi_buffer);
             break;
+#endif  // HAVE_BAGL
+
         case SEPROXYHAL_TAG_STATUS_EVENT:
             if (G_io_apdu_media == IO_APDU_MEDIA_USB_HID &&  //
                 !(U4BE(G_io_seproxyhal_spi_buffer, 3) &      //
                   SEPROXYHAL_TAG_STATUS_EVENT_FLAG_USB_POWERED)) {
                 THROW(EXCEPTION_IO_RESET);
             }
+
             /* fallthrough */
+            __attribute__((fallthrough));
+
         case SEPROXYHAL_TAG_DISPLAY_PROCESSED_EVENT:
+#ifdef HAVE_BAGL
             UX_DISPLAYED_EVENT({});
+#endif  // HAVE_BAGL
+#ifdef HAVE_NBGL
+            UX_DEFAULT_EVENT();
+#endif  // HAVE_NBGL
             break;
         case SEPROXYHAL_TAG_TICKER_EVENT:
             UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer, {});
@@ -82,19 +102,12 @@ uint16_t io_exchange_al(uint8_t channel, uint16_t tx_len) {
 }
 
 int io_recv_command() {
-    int ret;
+    int ret = -1;
 
     switch (G_io_state) {
         case READY:
             G_io_state = RECEIVED;
-            // If we are in swap mode and have validated a TX, we send it and immediatly quit
-            if (G_called_from_swap && G.swap.response_ready) {
-                ret = io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, G_output_len);
-                PRINTF("Swap answer is processed and sent. The app will quit\n");
-                os_sched_exit(0);
-            } else {
-                ret = io_exchange(CHANNEL_APDU, G_output_len);
-            }
+            ret = io_exchange(CHANNEL_APDU, G_output_len);
             break;
         case RECEIVED:
             G_io_state = WAITING;
@@ -128,8 +141,19 @@ int io_send_response(const buffer_t *rdata, uint16_t sw) {
     write_u16_be(G_io_apdu_buffer, G_output_len, sw);
     G_output_len += 2;
 
+    // If we are in swap mode and have validated a TX, we send it and immediately quit
+    if (G_called_from_swap && G.swap.response_ready) {
+        if (io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, G_output_len) == 0) {
+            finalize_exchange_sign_transaction(sw == SW_OK);
+        } else {
+            PRINTF("Unrecoverable\n");
+            os_sched_exit(-1);
+        }
+    }
+
     switch (G_io_state) {
         case READY:
+            PRINTF("G_io_state error\n");
             ret = -1;
             break;
         case RECEIVED:

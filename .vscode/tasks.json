@@ -4,7 +4,7 @@
         {
             "label": "make",
             "type": "shell",
-            "command": "make clean && make",
+            "command": "BOLOS_SDK=${input:sdk} make",
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -14,9 +14,9 @@
             ]
         },
         {
-            "label": "[debug] make",
+            "label": "make debug",
             "type": "shell",
-            "command": "make clean && make DEBUG=1",
+            "command": "BOLOS_SDK=${input:sdk} make DEBUG=1",
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -38,64 +38,48 @@
             ]
         },
         {
-            "label": "make load",
-            "type": "shell",
-            "command": "make load",
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "problemMatcher": [
-                "$gcc"
-            ]
-        },
-        {
             "label": "run Speculos",
             "type": "shell",
-            "command": "speculos -m nanos -s $MNEMONIC --apdu-port 9999 --display headless ${workspaceFolder}/bin/app.elf",
+            "command": "python3 /speculos/speculos.py --model ${input:model} ${workspaceFolder}/bin/app.elf --display headless",
             "group": {
                 "kind": "build",
                 "isDefault": true
             },
-            "dependsOn": [
-                "make debug"
-            ],
             "problemMatcher": []
-        },
-        {
-            "label": "[debug] run Speculos",
-            "type": "shell",
-            "command": "speculos -m nanos -s $MNEMONIC --apdu-port 9999 --display headless -d ${workspaceFolder}/bin/app.elf",
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "dependsOn": [
-                "make debug"
-            ],
-            "problemMatcher": []
-        },
-        {
-            "label": "run unit tests",
-            "type": "shell",
-            "command": "make tests-unit",
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "problemMatcher": [
-                "$gcc"
-            ]
         },
         {
             "label": "kill Speculos",
             "type": "shell",
-            "command": "pkill -f speculos",
+            "command": "pkill -f speculos.py",
             "group": {
                 "kind": "build",
                 "isDefault": true
             },
             "problemMatcher": []
+        }
+    ],
+    "inputs": [
+        {
+            "id" : "sdk",
+            "type": "pickString",
+            "description": "Which SDK to you want to use ?",
+            "options": [
+                "$NANOS_SDK TARGET=nanos",
+                "$NANOX_SDK TARGET=nanox",
+                "$NANOSP_SDK TARGET=nanos2",
+                "$STAX_SDK TARGET=stax",
+            ]
+        },
+        {
+            "id" : "model",
+            "type": "pickString",
+            "description": "Which model to run speculos for ?",
+            "options": [
+                "nanos",
+                "nanox",
+                "nanosp",
+                "stax",
+            ]
         }
     ]
 }

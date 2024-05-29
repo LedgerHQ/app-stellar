@@ -46,13 +46,14 @@ add_executable(test_tx_formatter test_tx_formatter.c)
 add_executable(test_swap test_swap.c)
 
 file(GLOB src_common "../src/common/*.c")
+file(GLOB swap_files ../src/swap/handle_get_printable_amount.c ../src/swap/handle_check_address.c ../src/swap/swap_utils.c )
 
 add_library(common STATIC ${src_common})
 add_library(utils STATIC ../src/utils.c)
 add_library(globals STATIC ../src/globals.c)
 add_library(tx_parser STATIC ../src/transaction/transaction_parser.c)
 add_library(tx_formatter STATIC ../src/transaction/transaction_formatter.c)
-add_library(swap STATIC ../src/swap/swap_lib_calls.c)
+add_library(swap STATIC ${swap_files})
 
 target_link_libraries(test_utils PUBLIC cmocka gcov utils common bsd)
 target_link_libraries(test_tx_parser PUBLIC cmocka gcov tx_parser utils common bsd)

@@ -1646,17 +1646,17 @@ static const format_function_t formatters[] = {&format_create_account,
 
 void format_confirm_operation(tx_ctx_t *tx_ctx) {
     if (tx_ctx->tx_details.operations_count > 1) {
-        size_t len;
+        size_t length;
         STRLCPY(op_caption, "Operation ", OPERATION_CAPTION_MAX_LENGTH);
-        len = strlen(op_caption);
+        length = strlen(op_caption);
         FORMATTER_CHECK(print_uint(tx_ctx->tx_details.operation_index,
-                                   op_caption + len,
-                                   OPERATION_CAPTION_MAX_LENGTH - len))
+                                   op_caption + length,
+                                   OPERATION_CAPTION_MAX_LENGTH - length))
         STRLCAT(op_caption, " of ", sizeof(op_caption));
-        len = strlen(op_caption);
+        length = strlen(op_caption);
         FORMATTER_CHECK(print_uint(tx_ctx->tx_details.operations_count,
-                                   op_caption + len,
-                                   OPERATION_CAPTION_MAX_LENGTH - len))
+                                   op_caption + length,
+                                   OPERATION_CAPTION_MAX_LENGTH - length))
         push_to_formatter_stack(
             ((format_function_t) PIC(formatters[tx_ctx->tx_details.op_details.type])));
     } else {
