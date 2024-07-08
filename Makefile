@@ -43,7 +43,7 @@ ICON_NANOS = icons/nanos_app_stellar.gif
 ICON_NANOX = icons/nanox_app_stellar.gif
 ICON_NANOSP = icons/nanox_app_stellar.gif
 ICON_STAX = icons/stax_app_stellar.gif
-# ICON_FLEX = icons/app_boilerplate_40px.gif
+ICON_FLEX = icons/flex_app_stellar.gif
 
 # Application allowed derivation curves.
 # Possibles curves are: secp256k1, secp256r1, ed25519 and bls12381g1
