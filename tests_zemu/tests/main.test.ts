@@ -1,8 +1,9 @@
 import { DEFAULT_START_OPTIONS, ButtonKind, TouchNavigation } from "@zondax/zemu";
 import { APP_SEED, models } from "./common";
 import * as testCasesFunction from "tests-common";
-import { Keypair } from "@stellar/stellar-base";
+import { Keypair, StrKey } from "@stellar/stellar-base";
 import Str from "@ledgerhq/hw-app-str";
+import { StellarUserRefusedError, StellarHashSigningNotEnabledError } from "@ledgerhq/hw-app-str";
 import Zemu from "@zondax/zemu";
 import { sha256 } from 'sha.js'
 
@@ -35,13 +36,10 @@ describe("get public key", () => {
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText });
       const transport = await sim.getTransport();
       const str = new Str(transport);
-      const result = await str.getPublicKey("44'/148'/0'", false, false);
+      const { rawPublicKey } = await str.getPublicKey("44'/148'/0'", false);
+      const result = StrKey.encodeEd25519PublicKey(rawPublicKey);
       const kp = Keypair.fromSecret("SAIYWGGWU2WMXYDSK33UBQBMBDKU4TTJVY3ZIFF24H2KQDR7RQW5KAEK");
-
-      expect(result).toStrictEqual({
-        publicKey: kp.publicKey(),
-        raw: kp.rawPublicKey(),
-      });
+      expect(result).toEqual(kp.publicKey());
     } finally {
       await sim.close();
     }
@@ -57,15 +55,13 @@ describe("get public key", () => {
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText, approveAction: ButtonKind.ApproveTapButton });
       const transport = await sim.getTransport();
       const str = new Str(transport);
-      const result = str.getPublicKey("44'/148'/0'", false, true);
+      const result = str.getPublicKey("44'/148'/0'", true);
       const kp = Keypair.fromSecret("SAIYWGGWU2WMXYDSK33UBQBMBDKU4TTJVY3ZIFF24H2KQDR7RQW5KAEK");
       const events = await sim.getEvents();
       await sim.waitForScreenChanges(events);
       await sim.navigateAndCompareUntilText(".", `${dev.prefix.toLowerCase()}-public-key-approve`, confirmText, true);
-      expect(result).resolves.toStrictEqual({
-        publicKey: kp.publicKey(),
-        raw: kp.rawPublicKey(),
-      });
+      const pk = StrKey.encodeEd25519PublicKey((await result).rawPublicKey);
+      expect(pk).toEqual(kp.publicKey());
     } finally {
       await sim.close();
     }
@@ -82,10 +78,7 @@ describe("get public key", () => {
       const transport = await sim.getTransport();
       const str = new Str(transport);
 
-      // TODO: Maybe we should throw a more specific exception in @ledgerhq/hw-app-str
-      expect(() => str.getPublicKey("44'/148'/0'", false, true)).rejects.toThrow(
-        "Ledger device: Condition of use not satisfied (denied by the user?) (0x6985)"
-      );
+      expect(() => str.getPublicKey("44'/148'/0'", true)).rejects.toThrow(StellarUserRefusedError);
 
       const events = await sim.getEvents();
       await sim.waitForScreenChanges(events);
@@ -104,9 +97,7 @@ describe("hash signing", () => {
       const transport = await sim.getTransport();
       const str = new Str(transport);
       const hash = Buffer.from("3389e9f0f1a65f19736cacf544c2e825313e8447f569233bb8db39aa607c8889", "hex");
-      expect(() => str.signHash("44'/148'/0'", hash)).rejects.toThrow(
-        new Error("Hash signing not allowed. Have you enabled it in the app settings?")
-      );
+      expect(() => str.signHash("44'/148'/0'", hash)).rejects.toThrow(StellarHashSigningNotEnabledError);
     } finally {
       await sim.close();
     }
@@ -172,7 +163,7 @@ describe("hash signing", () => {
       }
 
       const hash = Buffer.from("3389e9f0f1a65f19736cacf544c2e825313e8447f569233bb8db39aa607c8889", "hex");
-      expect(() => str.signHash("44'/148'/0'", hash)).rejects.toThrow(new Error("Transaction approval request was rejected"));
+      expect(() => str.signHash("44'/148'/0'", hash)).rejects.toThrow(StellarUserRefusedError);
 
       const events = await sim.getEvents();
       await sim.waitForScreenChanges(events);
@@ -258,9 +249,7 @@ describe("transactions", () => {
         await sim.clickBoth(undefined, false);
       }
 
-      expect(() => str.signTransaction("44'/148'/0'", tx.signatureBase())).rejects.toThrow(
-        new Error("Transaction approval request was rejected")
-      );
+      expect(() => str.signTransaction("44'/148'/0'", tx.signatureBase())).rejects.toThrow(StellarUserRefusedError);
 
       const events = await sim.getEvents();
       await sim.waitForScreenChanges(events);
@@ -306,9 +295,7 @@ describe("transactions", () => {
         await sim.clickBoth(undefined, false);
       }
 
-      expect(() => str.signTransaction("44'/148'/0'", tx.signatureBase())).rejects.toThrow(
-        new Error("Transaction approval request was rejected")
-      );
+      expect(() => str.signTransaction("44'/148'/0'", tx.signatureBase())).rejects.toThrow(StellarUserRefusedError);
 
       const events = await sim.getEvents();
       await sim.waitForScreenChanges(events);
@@ -402,7 +389,7 @@ describe("soroban auth", () => {
         await sim.start({ ...defaultOptions, model: dev.name, startText: startText });
         const transport = await sim.getTransport();
         const str = new Str(transport);
-        const result = str.signSorobanAuthoration("44'/148'/0'", hashIdPreimage.toXDR("raw"));
+        const result = str.signSorobanAuthorization("44'/148'/0'", hashIdPreimage.toXDR("raw"));
         const events = await sim.getEvents();
         await sim.waitForScreenChanges(events);
         let textToFind = /\bSign\b/;
@@ -433,9 +420,7 @@ describe("soroban auth", () => {
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText, approveAction: ButtonKind.RejectButton });
       const transport = await sim.getTransport();
       const str = new Str(transport);
-      expect(() => str.signSorobanAuthoration("44'/148'/0'", hashIdPreimage.toXDR("raw"))).rejects.toThrow(
-        new Error("Soroban authoration approval request was rejected")
-      );
+      expect(() => str.signSorobanAuthorization("44'/148'/0'", hashIdPreimage.toXDR("raw"))).rejects.toThrow(StellarUserRefusedError);
 
       let textToFind = "Reject";
       if (dev.name == "stax") {
@@ -534,9 +519,7 @@ describe("plugin", () => {
         await sim.clickBoth(undefined, false);
       }
 
-      expect(() => str.signTransaction("44'/148'/0'", tx.signatureBase())).rejects.toThrow(
-        new Error("Transaction approval request was rejected")
-      );
+      expect(() => str.signTransaction("44'/148'/0'", tx.signatureBase())).rejects.toThrow(StellarUserRefusedError);
 
       const events = await sim.getEvents();
       await sim.waitForScreenChanges(events);
@@ -567,7 +550,7 @@ describe("plugin", () => {
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText });
       const transport = await sim.getTransport();
       const str = new Str(transport);
-      const result = str.signSorobanAuthoration("44'/148'/0'", hashIdPreimage.toXDR("raw"));
+      const result = str.signSorobanAuthorization("44'/148'/0'", hashIdPreimage.toXDR("raw"));
       const events = await sim.getEvents();
       await sim.waitForScreenChanges(events);
       let textToFind = /\bSign\b/;
@@ -600,9 +583,7 @@ describe("plugin", () => {
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText, approveAction: ButtonKind.RejectButton });
       const transport = await sim.getTransport();
       const str = new Str(transport);
-      expect(() => str.signSorobanAuthoration("44'/148'/0'", hashIdPreimage.toXDR("raw"))).rejects.toThrow(
-        new Error("Soroban authoration approval request was rejected")
-      );
+      expect(() => str.signSorobanAuthorization("44'/148'/0'", hashIdPreimage.toXDR("raw"))).rejects.toThrow(StellarUserRefusedError);
 
       let textToFind = "Reject";
       if (dev.name == "stax") {

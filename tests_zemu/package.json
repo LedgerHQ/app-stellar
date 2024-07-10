@@ -11,7 +11,7 @@
     "test": "jest"
   },
   "devDependencies": {
-    "@ledgerhq/hw-app-str": "github:overcat/hw-ledger-str-dev",
+    "@ledgerhq/hw-app-str": "^7.0.0",
     "@ledgerhq/hw-transport-http": "^6.28.6",
     "@stellar/stellar-base": "^11.0.0",
     "@types/jest": "^29.2.1",
