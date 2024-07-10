@@ -1,66 +1,30 @@
-// For format details, see https://aka.ms/vscode-remote/devcontainer.json or the definition README at
-// https://github.com/microsoft/vscode-dev-containers/tree/master/containers/ubuntu-18.04-git
+// For format details, see https://aka.ms/devcontainer.json.
 {
-  "name": "Ledger Dev",
-  "dockerFile": "Dockerfile",
-  "build": {
-    "args": {}
-  },
-  // https://code.visualstudio.com/remote/advancedcontainers/environment-variables
-  // BOLOS_SDK can be one of NANOS_SDK, NANOX_SDK and NANOSPLUS_SDK
-  "remoteEnv": {
-    "BOLOS_SDK": "${containerEnv:NANOS_SDK}",
-    "MNEMONIC": "other base behind follow wet put glad muscle unlock sell income october", // "${localEnv:MNEMONIC}"
-    "CTEST_OUTPUT_ON_FAILURE": "1",
-    "PIP_INDEX_URL": "https://mirrors.ustc.edu.cn/pypi/web/simple"
-  },
-  // The optional 'runArgs' property can be used to specify additional runtime arguments.
-  "runArgs": [
-    // Uncomment the line if you will use a ptrace-based debugger like C++, Go, and Rust.
-    "--cap-add=SYS_PTRACE",
-    "--security-opt",
-    "seccomp=unconfined"
-  ],
-  // Use 'settings' to set *default* container specific settings.json values on container create.
-  // You can edit these settings after create using File > Preferences > Settings > Remote.
-  "settings": {
-    "terminal.integrated.profiles.linux": {
-      "bash": {
-        "path": "/bin/bash"
-      },
-      "fish": {
-        "path": "/bin/fish"
-      }
-    },
-    "terminal.integrated.defaultProfile.linux": "fish"
-  },
-  // Use 'forwardPorts' to make a list of ports inside the container available locally.
-  // "forwardPorts": [3000],
-  // Use 'portsAttributes' to set default properties for specific forwarded ports. More info: https://code.visualstudio.com/docs/remote/devcontainerjson-reference.
-  "portsAttributes": {
-    "5000": {
-      "label": "Speculos Restful API",
-      "onAutoForward": "notify"
-    },
-    "9999": {
-      "label": "Speculos APDU Server TCP port",
-      "onAutoForward": "silent"
-    },
-  },
-  // Use 'otherPortsAttributes' to configure any ports that aren't configured using 'portsAttributes'.
-  "otherPortsAttributes": {
-    "onAutoForward": "silent"
-  },
-  // Uncomment the next line to run commands after the container is created.
-  // "postCreateCommand": "",
-  // Add the IDs of extensions you want installed when the container is created in the array below.
-  "extensions": [
-    "ms-vscode.cpptools-extension-pack",
-    "spmeesseman.vscode-taskexplorer",
-    "webfreak.debug"
-  ],
-  // Comment out to connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
-  // On Linux, this will prevent new files getting created as root, but you may need to update the USER_UID
-  // and USER_GID in .devcontainer/Dockerfile to match your user if not 1000.
-  "remoteUser": "ledgerdev"
+	"name": "ledgerdev",
+	"image": "ghcr.io/lightsail-network/ledger-devcontainer:latest",
+	// https://code.visualstudio.com/remote/advancedcontainers/environment-variables
+	// BOLOS_SDK can be one of NANOS_SDK, NANOSP_SDK, NANOX_SDK, STAX_SDK and FLEX_SDK
+	"remoteEnv": {
+		"BOLOS_SDK": "${containerEnv:NANOS_SDK}",
+		"MNEMONIC": "${localEnv:MNEMONIC}" // you can set this in your local environment to avoid typing it in every time
+	},
+	"forwardPorts": [
+		9999 // APDU port
+	],
+	"appPort": 5000,
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-vscode.cpptools-extension-pack"
+			],
+			"settings": {
+				"terminal.integrated.defaultProfile.linux": "fish",
+				"terminal.integrated.shell.linux": {
+					"fish": {
+						"path": "/usr/bin/fish"
+					}
+				}
+			}
+		}
+	}
 }

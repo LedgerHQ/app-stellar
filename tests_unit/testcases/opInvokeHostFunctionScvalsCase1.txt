@@ -1,0 +1,16 @@
+Network; Testnet
+Max Fee; 0.00005 XLM
+Sequence Num; 1234567891
+Tx Source; GDUTHC..XM2FN7
+Soroban; Invoke Smart Contract
+Contract ID; CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC
+Function; test
+Arg 1 of 9; 34,543,643
+Arg 2 of 9; 43,543,645,645,645
+Arg 3 of 9; 43,543,645,645,645
+Arg 4 of 9; 115,792,089,237,316,195,423,570,985,008,687,907,853,269,984,665,640,564,039,457,584,007,913,129,639,935
+Arg 5 of 9; -57,896,044,618,658,097,711,785,492,504,343,953,926,634,992,332,820,282,019,728,792,003,956,564,819,968
+Arg 6 of 9; [Bytes Data]
+Arg 7 of 9; hello this is test string
+Arg 8 of 9; testfunc
+Arg 9 of 9; [unable to display]

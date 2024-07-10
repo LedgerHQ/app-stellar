@@ -1,4 +1,4 @@
-Memo Text (base64); 6L+Z5p..hleQ==
+Memo Text; Base64: 6L+Z5piv5LiA5p2h5rWL6K+V5raI5oGvIGhleQ==
 Max Fee; 0.00001 XLM
 Sequence Num; 103720918407102568
 Valid Before (UTC); 2022-12-12 04:12:12

@@ -4,5 +4,5 @@ Sequence Num; 103720918407102568
 Valid Before (UTC); 2022-12-12 04:12:12
 Tx Source; GDUTHC..XM2FN7
 Operation Type; Claim Claimable Balance
-Balance ID; 00000000da0d..49149b91f5be
+Balance ID; 00000000DA0D..49149B91F5BE
 Op Source; GDUTHC..XM2FN7

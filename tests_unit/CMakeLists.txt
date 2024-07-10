@@ -1,20 +1,20 @@
 cmake_minimum_required(VERSION 3.10)
 
-if (${CMAKE_VERSION} VERSION_LESS 3.10)
+if(${CMAKE_VERSION} VERSION_LESS 3.10)
     cmake_policy(VERSION ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION})
-endif ()
+endif()
 
 # project information
-project(tests_unit
+project(unit_tests
         VERSION 0.1
-        DESCRIPTION "Unit tests for Ledger Nano application"
+	      DESCRIPTION "Unit tests for Ledger Nano application"
         LANGUAGES C)
 
 
 # guard against bad build-type strings
 if (NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Debug")
-endif ()
+  set(CMAKE_BUILD_TYPE "Debug")
+endif()
 
 include(CTest)
 ENABLE_TESTING()
@@ -29,38 +29,105 @@ set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${GCC_COVERAGE_LINK_
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${GCC_COVERAGE_LINK_FLAGS}")
 
 # guard against in-source builds
-if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
-    message(FATAL_ERROR "In-source builds not allowed. Please make a new directory (called a build directory) and run CMake from there. You may need to remove CMakeCache.txt. ")
-endif ()
+if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
+  message(FATAL_ERROR "In-source builds not allowed. Please make a new directory (called a build directory) and run CMake from there. You may need to remove CMakeCache.txt. ")
+endif()
 
 add_compile_definitions(TEST)
-add_definitions("-DIO_SEPROXYHAL_BUFFER_SIZE_B=128") # cmake -DIO_SEPROXYHAL_BUFFER_SIZE_B=128
-add_definitions("-DTARGET_NANOS=1")
+add_compile_definitions(PRINTF=)
 
-include_directories(../src)
-include_directories(mock_includes)
+include_directories(../libstellar/include)
+include_directories($ENV{BOLOS_SDK}/lib_standard_app)
 
-add_executable(test_utils test_utils.c)
 add_executable(test_tx_parser test_tx_parser.c)
+add_executable(test_auth_parser test_auth_parser.c)
+add_executable(test_printer test_printer.c)
 add_executable(test_tx_formatter test_tx_formatter.c)
-add_executable(test_swap test_swap.c)
+add_executable(test_auth_formatter test_auth_formatter.c)
 
-file(GLOB src_common "../src/common/*.c")
-file(GLOB swap_files ../src/swap/handle_get_printable_amount.c ../src/swap/handle_check_address.c ../src/swap/swap_utils.c )
+add_library(base58 SHARED $ENV{BOLOS_SDK}/lib_standard_app/base58.c)
+add_library(bip32 SHARED $ENV{BOLOS_SDK}/lib_standard_app/bip32.c)
+add_library(buffer SHARED $ENV{BOLOS_SDK}/lib_standard_app/buffer.c)
+add_library(read SHARED $ENV{BOLOS_SDK}/lib_standard_app/read.c)
+add_library(write SHARED $ENV{BOLOS_SDK}/lib_standard_app/write.c)
+add_library(format SHARED $ENV{BOLOS_SDK}/lib_standard_app/format.c)
+add_library(varint SHARED $ENV{BOLOS_SDK}/lib_standard_app/varint.c)
+add_library(apdu_parser SHARED $ENV{BOLOS_SDK}/lib_standard_app/parser.c)
+add_library(parser ../libstellar/parser.c)
+add_library(printer ../libstellar/printer.c)
+add_library(formatter ../libstellar/formatter.c)
+add_library(base32 ../libstellar/base32.c)
+add_library(base64 ../libstellar/base64.c)
 
-add_library(common STATIC ${src_common})
-add_library(utils STATIC ../src/utils.c)
-add_library(globals STATIC ../src/globals.c)
-add_library(tx_parser STATIC ../src/transaction/transaction_parser.c)
-add_library(tx_formatter STATIC ../src/transaction/transaction_formatter.c)
-add_library(swap STATIC ${swap_files})
+target_link_libraries(test_tx_parser PUBLIC 
+                      parser
+                      buffer
+                      bip32
+                      cmocka 
+                      gcov
+                      varint
+                      write
+                      read
+                      bsd)
 
-target_link_libraries(test_utils PUBLIC cmocka gcov utils common bsd)
-target_link_libraries(test_tx_parser PUBLIC cmocka gcov tx_parser utils common bsd)
-target_link_libraries(test_tx_formatter PUBLIC cmocka gcov tx_parser tx_formatter utils common globals bsd)
-target_link_libraries(test_swap PUBLIC cmocka gcov swap tx_formatter tx_parser utils common bsd)
+target_link_libraries(test_auth_parser PUBLIC 
+                      parser
+                      buffer
+                      bip32
+                      cmocka 
+                      gcov
+                      varint
+                      write
+                      read
+                      bsd)
+                      
+target_link_libraries(test_printer PUBLIC 
+                      printer
+                      format
+                      base32
+                      buffer
+                      bip32
+                      cmocka 
+                      gcov
+                      varint
+                      write
+                      read
+                      bsd)
 
-add_test(test_utils test_utils)
+target_link_libraries(test_tx_formatter PUBLIC 
+                      formatter
+                      parser
+                      printer
+                      format
+                      base64
+                      base32
+                      buffer
+                      bip32
+                      cmocka 
+                      gcov
+                      varint
+                      write
+                      read
+                      bsd)
+
+target_link_libraries(test_auth_formatter PUBLIC 
+                      formatter
+                      parser
+                      printer
+                      format
+                      base64
+                      base32
+                      buffer
+                      bip32
+                      cmocka 
+                      gcov
+                      varint
+                      write
+                      read
+                      bsd)
+
 add_test(test_tx_parser test_tx_parser)
+add_test(test_auth_parser test_auth_parser)
+add_test(test_printer test_printer)
 add_test(test_tx_formatter test_tx_formatter)
-add_test(test_swap test_swap)
+add_test(test_auth_formatter test_auth_formatter)

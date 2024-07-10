@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../types.h"
+#include "parser.h"
 
 /**
  * Parameter 2 for last APDU to receive.
@@ -10,6 +10,7 @@
  * Parameter 2 for more APDU to receive.
  */
 #define P2_MORE 0x80
+
 /**
  * Parameter 1 for first APDU number.
  */

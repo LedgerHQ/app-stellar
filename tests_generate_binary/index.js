@@ -32,7 +32,13 @@ function main() {
     console.log("Generating test cases...");
     for (const testCase of getTestCases()) {
         const outputPath = path.join(dir, `${testCase.caseName}.raw`)
-        const buf = testCase.txFunction().signatureBase()
+        let buf;
+        if (testCase.caseName.startsWith("sorobanAuth")) {
+            buf = testCase.txFunction().toXDR("raw")
+        } else {
+            buf = testCase.txFunction().signatureBase()
+        }
+
         console.log(outputPath)
         fs.writeFile(outputPath, buf, (err) => {
             if (err) {

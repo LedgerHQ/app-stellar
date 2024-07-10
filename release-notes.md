@@ -1,5 +1,53 @@
 # Release Notes
 
+## Unreleased
+
+## v5.4.1
+
+### Updated
+- Optimize interactive prompt messages.
+- Optimize the flow for confirming addresses on Stax.
+
+## v5.4.0
+
+### Updated
+- `GET_APP_CONFIGURATION` will return the maximum size of the transaction's signature base that the device can process.
+- The maximum transaction size limit has been increased to 1,536 bytes. (Ledger Nano S)
+- The maximum transaction size limit has been increased to 10,240 bytes. (Ledger Nano S Plus, Ledger Nano X and Ledger Stax)
+
+## v5.3.4
+
+### Updated
+- Optimize information display.
+
+## v5.3.3
+
+### Updated
+- Fix bugs.
+
+## v5.3.2
+
+### Updated
+- Optimize information display.
+
+## v5.3.1
+
+### Updated
+- Check the validity of the transaction before starting the review.
+
+## v5.3.0
+
+### Updated
+- Support displaying nested authorization.
+- Add built-in XLM and USDC Soroban Token plugin.
+
+## v5.2.0
+
+### Updated
+- Add support for Stellar Soroban.
+- Add support for plugins.
+- Fix bugs.
+
 ## v4.0.0
 
 ### Updated
