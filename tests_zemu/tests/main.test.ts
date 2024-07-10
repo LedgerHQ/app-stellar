@@ -115,6 +115,7 @@ describe("hash signing", () => {
         const settingNav = new TouchNavigation([
           ButtonKind.InfoButton,
           ButtonKind.ToggleSettingButton1,
+          ButtonKind.ConfirmYesButton,
         ]);
         await sim.navigate(".", `${dev.prefix.toLowerCase()}-hash-signing-approve`, settingNav.schedule, true, true);
       } else {
@@ -152,6 +153,7 @@ describe("hash signing", () => {
         const settingNav = new TouchNavigation([
           ButtonKind.InfoButton,
           ButtonKind.ToggleSettingButton1,
+          ButtonKind.ConfirmYesButton,
         ]);
         await sim.navigate(".", `${dev.prefix.toLowerCase()}-hash-signing-reject`, settingNav.schedule, true, false);
       } else {

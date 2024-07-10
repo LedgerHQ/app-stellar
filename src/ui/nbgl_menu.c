@@ -54,6 +54,8 @@ static const nbgl_contentInfoList_t info_list = {
     .infoContents = INFO_CONTENTS,
 };
 
+static uint8_t init_setting_page;
+static void review_warning_choice(bool confirm);
 static void controls_callback(int token, uint8_t index, int page);
 
 // settings menu definition
@@ -68,16 +70,42 @@ static const nbgl_genericContents_t setting_contents = {.callbackCallNeeded = fa
                                                         .contentsList = contents,
                                                         .nbContents = SETTING_CONTENTS_NB};
 
-static void controls_callback(int token, uint8_t index, int page) {
-    UNUSED(index);
-    UNUSED(page);
-
-    if (token == SWITCH_HASH_SET_TOKEN) {
-        // toggle the switch value
-        switches[SWITCH_HASH_SET_ID].initState =
-            (!HAS_SETTING(S_HASH_SIGNING_ENABLED)) ? ON_STATE : OFF_STATE;
+// callback for setting warning choice
+static void review_warning_choice(bool confirm) {
+    if (confirm) {
+        switches[SWITCH_HASH_SET_ID].initState = ON_STATE;
         // store the new setting value in NVM
         SETTING_TOGGLE(S_HASH_SIGNING_ENABLED);
+    }
+
+    // Reset setting menu to the right page
+    nbgl_useCaseHomeAndSettings(APPNAME,
+                                &C_icon_stellar_64px,
+                                NULL,
+                                init_setting_page,
+                                &setting_contents,
+                                &info_list,
+                                NULL,
+                                app_quit);
+}
+
+static void controls_callback(int token, uint8_t index, int page) {
+    UNUSED(index);
+    init_setting_page = page;
+
+    if (token == SWITCH_HASH_SET_TOKEN) {
+        if (HAS_SETTING(S_HASH_SIGNING_ENABLED)) {
+            switches[SWITCH_HASH_SET_ID].initState = OFF_STATE;
+            SETTING_TOGGLE(S_HASH_SIGNING_ENABLED);
+        } else {
+            // Display the warning message and ask the user to confirm
+            nbgl_useCaseChoice(&C_Warning_64px,
+                               "Enable Hash Signing",
+                               "Are you sure to\nallow hash signing?",
+                               "I understand, confirm",
+                               "Cancel",
+                               review_warning_choice);
+        }
     } else if (token == SWITCH_SEQUENCE_SET_TOKEN) {
         // toggle the switch value
         switches[SWITCH_SEQUENCE_SET_ID].initState =
