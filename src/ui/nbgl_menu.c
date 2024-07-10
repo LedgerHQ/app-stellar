@@ -27,84 +27,90 @@
 #include "settings.h"
 #include "globals.h"
 
-static void display_settings_menu(void);
-static void settings_controls_callback(int token, uint8_t index);
-static bool settings_nav_callback(uint8_t page, nbgl_pageContent_t* content);
-
-enum { SWITCH_HASH_SET_TOKEN = FIRST_USER_TOKEN, SWITCH_SEQUENCE_SET_TOKEN };
-
-#define NB_INFO_FIELDS 2
-static const char* const info_types[] = {"Version", "Developer"};
-static const char* const info_contents[] = {APPVERSION, "overcat"};
-
-#define NB_SETTINGS_SWITCHES 2
-#define SETTINGS_INIT_PAGE   0
-#define SETTINGS_NB_PAGES    2
-#define SETTINGS_TOUCHABLE   false
-static nbgl_layoutSwitch_t switches[NB_SETTINGS_SWITCHES];
-
-void on_quit_callback(void) {
+//  -----------------------------------------------------------
+//  ----------------------- HOME PAGE -------------------------
+//  -----------------------------------------------------------
+void app_quit(void) {
+    // exit app here
     os_sched_exit(-1);
 }
 
-static bool settings_nav_callback(uint8_t page, nbgl_pageContent_t* content) {
-    if (page == 0) {
-        content->type = INFOS_LIST;
-        content->infosList.nbInfos = NB_INFO_FIELDS;
-        content->infosList.infoTypes = (const char**) info_types;
-        content->infosList.infoContents = (const char**) info_contents;
-    } else if (page == 1) {
-        switches[0].text = "Hash signing";
-        switches[0].subText = "Enable hash signing";
-        switches[0].token = SWITCH_HASH_SET_TOKEN;
-        switches[0].tuneId = TUNE_TAP_CASUAL;
-        switches[0].initState = (HAS_SETTING(S_HASH_SIGNING_ENABLED)) ? ON_STATE : OFF_STATE;
-        switches[1].text = "Sequence number";
-        switches[1].subText = "Display sequence in\ntransactions";
-        switches[1].token = SWITCH_SEQUENCE_SET_TOKEN;
-        switches[1].tuneId = TUNE_TAP_CASUAL;
-        switches[1].initState = (HAS_SETTING(S_SEQUENCE_NUMBER_ENABLED)) ? ON_STATE : OFF_STATE;
+//  -----------------------------------------------------------
+//  --------------------- SETTINGS MENU -----------------------
+//  -----------------------------------------------------------
+#define SETTING_INFO_NB 2
+static const char* const INFO_TYPES[SETTING_INFO_NB] = {"Version", "Developer"};
+static const char* const INFO_CONTENTS[SETTING_INFO_NB] = {APPVERSION, "overcat"};
 
-        content->type = SWITCHES_LIST;
-        content->switchesList.nbSwitches = NB_SETTINGS_SWITCHES;
-        content->switchesList.switches = (nbgl_layoutSwitch_t*) switches;
-    } else {
-        return false;
-    }
-    return true;
-}
+// settings switches definitions
+enum { SWITCH_HASH_SET_TOKEN = FIRST_USER_TOKEN, SWITCH_SEQUENCE_SET_TOKEN };
+enum { SWITCH_HASH_SET_ID = 0, SWITCH_SEQUENCE_SET_ID, SETTINGS_SWITCHES_NB };
 
-static void settings_controls_callback(int token, uint8_t index) {
+static nbgl_contentSwitch_t switches[SETTINGS_SWITCHES_NB] = {0};
+
+static const nbgl_contentInfoList_t info_list = {
+    .nbInfos = SETTING_INFO_NB,
+    .infoTypes = INFO_TYPES,
+    .infoContents = INFO_CONTENTS,
+};
+
+static void controls_callback(int token, uint8_t index, int page);
+
+// settings menu definition
+#define SETTING_CONTENTS_NB 1
+static const nbgl_content_t contents[SETTING_CONTENTS_NB] = {
+    {.type = SWITCHES_LIST,
+     .content.switchesList.nbSwitches = SETTINGS_SWITCHES_NB,
+     .content.switchesList.switches = switches,
+     .contentActionCallback = controls_callback}};
+
+static const nbgl_genericContents_t setting_contents = {.callbackCallNeeded = false,
+                                                        .contentsList = contents,
+                                                        .nbContents = SETTING_CONTENTS_NB};
+
+static void controls_callback(int token, uint8_t index, int page) {
     UNUSED(index);
-    switch (token) {
-        case SWITCH_HASH_SET_TOKEN:
-            SETTING_TOGGLE(S_HASH_SIGNING_ENABLED);
-            break;
-        case SWITCH_SEQUENCE_SET_TOKEN:
-            SETTING_TOGGLE(S_SEQUENCE_NUMBER_ENABLED);
-            break;
-        default:
-            PRINTF("Should not happen !");
-            break;
+    UNUSED(page);
+
+    if (token == SWITCH_HASH_SET_TOKEN) {
+        // toggle the switch value
+        switches[SWITCH_HASH_SET_ID].initState =
+            (!HAS_SETTING(S_HASH_SIGNING_ENABLED)) ? ON_STATE : OFF_STATE;
+        // store the new setting value in NVM
+        SETTING_TOGGLE(S_HASH_SIGNING_ENABLED);
+    } else if (token == SWITCH_SEQUENCE_SET_TOKEN) {
+        // toggle the switch value
+        switches[SWITCH_SEQUENCE_SET_ID].initState =
+            (!HAS_SETTING(S_SEQUENCE_NUMBER_ENABLED)) ? ON_STATE : OFF_STATE;
+        // store the new setting value in NVM
+        SETTING_TOGGLE(S_SEQUENCE_NUMBER_ENABLED);
     }
 }
 
-static void display_settings_menu(void) {
-    nbgl_useCaseSettings("Stellar settings",
-                         SETTINGS_INIT_PAGE,
-                         SETTINGS_NB_PAGES,
-                         SETTINGS_TOUCHABLE,
-                         ui_menu_main,
-                         settings_nav_callback,
-                         settings_controls_callback);
-}
-
+// home page definition
 void ui_menu_main(void) {
-    nbgl_useCaseHome("Stellar",
-                     &C_icon_stellar_64px,
-                     NULL,
-                     true,
-                     display_settings_menu,
-                     on_quit_callback);
+    // Initialize switches data
+    switches[SWITCH_HASH_SET_ID].initState =
+        (HAS_SETTING(S_HASH_SIGNING_ENABLED)) ? ON_STATE : OFF_STATE;
+    switches[SWITCH_HASH_SET_ID].text = "Hash signing";
+    switches[SWITCH_HASH_SET_ID].subText = "Enable hash signing";
+    switches[SWITCH_HASH_SET_ID].token = SWITCH_HASH_SET_TOKEN;
+    switches[SWITCH_HASH_SET_ID].tuneId = TUNE_TAP_CASUAL;
+
+    switches[SWITCH_SEQUENCE_SET_ID].initState =
+        (HAS_SETTING(S_SEQUENCE_NUMBER_ENABLED)) ? ON_STATE : OFF_STATE;
+    switches[SWITCH_SEQUENCE_SET_ID].text = "Sequence number";
+    switches[SWITCH_SEQUENCE_SET_ID].subText = "Display sequence in\ntransactions";
+    switches[SWITCH_SEQUENCE_SET_ID].token = SWITCH_SEQUENCE_SET_TOKEN;
+    switches[SWITCH_SEQUENCE_SET_ID].tuneId = TUNE_TAP_CASUAL;
+
+    nbgl_useCaseHomeAndSettings(APPNAME,
+                                &C_icon_stellar_64px,
+                                NULL,
+                                INIT_HOME_PAGE,
+                                &setting_contents,
+                                &info_list,
+                                NULL,
+                                app_quit);
 }
 #endif  // HAVE_NBGL

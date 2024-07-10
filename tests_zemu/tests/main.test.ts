@@ -114,7 +114,6 @@ describe("hash signing", () => {
       if (dev.name == "stax") {
         const settingNav = new TouchNavigation([
           ButtonKind.InfoButton,
-          ButtonKind.NavRightButton,
           ButtonKind.ToggleSettingButton1,
         ]);
         await sim.navigate(".", `${dev.prefix.toLowerCase()}-hash-signing-approve`, settingNav.schedule, true, true);
@@ -152,7 +151,6 @@ describe("hash signing", () => {
         textToFind = "Hold to";
         const settingNav = new TouchNavigation([
           ButtonKind.InfoButton,
-          ButtonKind.NavRightButton,
           ButtonKind.ToggleSettingButton1,
         ]);
         await sim.navigate(".", `${dev.prefix.toLowerCase()}-hash-signing-reject`, settingNav.schedule, true, false);
@@ -190,7 +188,6 @@ describe("transactions", () => {
         if (dev.name == "stax") {
           const settingNav = new TouchNavigation([
             ButtonKind.InfoButton,
-            ButtonKind.NavRightButton,
             ButtonKind.ToggleSettingButton2,
           ]);
           await sim.navigate(".", `${dev.prefix.toLowerCase()}-${c.filePath}`, settingNav.schedule, true, true);
@@ -238,7 +235,6 @@ describe("transactions", () => {
         textToFind = "Hold to";
         const settingNav = new TouchNavigation([
           ButtonKind.InfoButton,
-          ButtonKind.NavRightButton,
           ButtonKind.ToggleSettingButton2,
         ]);
         await sim.navigate(".", `${dev.prefix.toLowerCase()}-tx-reject`, settingNav.schedule, true, false);
@@ -284,7 +280,6 @@ describe("transactions", () => {
         textToFind = "Hold to";
         const settingNav = new TouchNavigation([
           ButtonKind.InfoButton,
-          ButtonKind.NavRightButton,
           ButtonKind.ToggleSettingButton2,
         ]);
         await sim.navigate(".", `${dev.prefix.toLowerCase()}-fee-bump-tx-reject`, settingNav.schedule, true, false);
@@ -460,7 +455,6 @@ describe("plugin", () => {
       if (dev.name == "stax") {
         const settingNav = new TouchNavigation([
           ButtonKind.InfoButton,
-          ButtonKind.NavRightButton,
           ButtonKind.ToggleSettingButton2,
         ]);
         await sim.navigate(".", `${dev.prefix.toLowerCase()}-plugin-invoke-host-function`, settingNav.schedule, true, true);
@@ -508,7 +502,6 @@ describe("plugin", () => {
         textToFind = "Hold to";
         const settingNav = new TouchNavigation([
           ButtonKind.InfoButton,
-          ButtonKind.NavRightButton,
           ButtonKind.ToggleSettingButton2,
         ]);
         await sim.navigate(".", `${dev.prefix.toLowerCase()}-plugin-invoke-host-function-reject`, settingNav.schedule, true, false);

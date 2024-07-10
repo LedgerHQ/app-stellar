@@ -27,27 +27,13 @@
 #include "stellar/printer.h"
 #include "action/validate.h"
 
-// Validate/Invalidate public key and go back to home
-static void ui_action_validate_pubkey(bool choice) {
-    validate_pubkey(choice);
-    ui_menu_main();
-}
-
-static void confirmation_choice(bool confirm) {
-    ui_action_validate_pubkey(confirm);
+static void review_choice(bool confirm) {
+    validate_pubkey(confirm);
     if (confirm) {
-        nbgl_useCaseStatus("ADDRESS\nVERIFIED", true, ui_menu_main);
+        nbgl_useCaseReviewStatus(STATUS_TYPE_ADDRESS_VERIFIED, ui_menu_main);
     } else {
-        nbgl_useCaseStatus("Address verification\ncancelled", false, ui_menu_main);
+        nbgl_useCaseReviewStatus(STATUS_TYPE_ADDRESS_REJECTED, ui_menu_main);
     }
-}
-
-static void status_cancel(void) {
-    confirmation_choice(false);
-}
-
-static void address_display(void) {
-    nbgl_useCaseAddressConfirmation(G.ui.detail_value, confirmation_choice);
 }
 
 int ui_display_address(void) {
@@ -65,12 +51,12 @@ int ui_display_address(void) {
         return io_send_sw(SW_DISPLAY_ADDRESS_FAIL);
     }
 
-    nbgl_useCaseReviewStart(&C_icon_stellar_64px,
-                            "Verify Stellar\naddress",
-                            "",
-                            "Cancel",
-                            address_display,
-                            status_cancel);
+    nbgl_useCaseAddressReview(G.ui.detail_value,
+                              NULL,
+                              &C_icon_stellar_64px,
+                              "Verify Stellar address",
+                              NULL,
+                              review_choice);
     return 0;
 }
 #endif  // HAVE_NBGL
