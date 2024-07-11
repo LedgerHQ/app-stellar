@@ -1,6 +1,10 @@
 # Release Notes
 
-## Unreleased
+## v5.4.2
+
+### Updated
+- Give an alert when enabling hash signing in settings. (Ledger Stax and Ledger Flex) 
+- Bug fixes.
 
 ## v5.4.1
 
