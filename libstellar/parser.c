@@ -84,12 +84,18 @@ bool parse_int32(buffer_t *buffer, int32_t *n) {
     return buffer_seek_cur(buffer, 4);
 }
 
-static size_t num_bytes(size_t size) {
+static bool num_bytes(size_t size, size_t *out_size) {
     size_t remainder = size % 4;
     if (remainder == 0) {
-        return size;
+        *out_size = size;
+        return true;
     }
-    return size + 4 - remainder;
+    if (size > SIZE_MAX - 4) {
+        // size + 4 would overflow
+        return false;
+    }
+    *out_size = size + 4 - remainder;
+    return true;
 }
 
 static bool check_padding(const uint8_t *buffer, size_t offset, size_t length) {
@@ -113,8 +119,11 @@ static bool parse_binary_string_ptr(buffer_t *buffer,
     if (max_length != 0 && size > max_length) {
         return false;
     }
-    PARSER_CHECK(buffer_read_bytes(buffer, string, num_bytes(size)))
-    PARSER_CHECK(check_padding(*string, size, num_bytes(size)))  // security check
+
+    size_t data_size = 0;
+    PARSER_CHECK(num_bytes(size, &data_size))
+    PARSER_CHECK(buffer_read_bytes(buffer, string, data_size))
+    PARSER_CHECK(check_padding(*string, size, data_size))  // security check
     if (out_len) {
         *out_len = size;
     }
@@ -173,9 +182,9 @@ static bool parse_signer_key(buffer_t *buffer, signer_key_t *key) {
                 key->ed25519_signed_payload.payload_len > 64) {
                 return false;
             }
-            PARSER_CHECK(buffer_read_bytes(buffer,
-                                           &key->ed25519_signed_payload.payload,
-                                           num_bytes(key->ed25519_signed_payload.payload_len)))
+            size_t data_size = 0;
+            PARSER_CHECK(num_bytes(key->ed25519_signed_payload.payload_len, &data_size))
+            PARSER_CHECK(buffer_read_bytes(buffer, &key->ed25519_signed_payload.payload, data_size))
             return true;
         default:
             return false;
@@ -754,9 +763,10 @@ bool read_scval_advance(buffer_t *buffer) {
         case SCV_BYTES:
         case SCV_STRING:
         case SCV_SYMBOL: {
-            uint32_t data_len;
-            PARSER_CHECK(parse_uint32(buffer, &data_len))
-            PARSER_CHECK(buffer_advance(buffer, num_bytes(data_len)))
+            size_t data_size = 0;
+            PARSER_CHECK(parse_uint32(buffer, &data_size))
+            PARSER_CHECK(num_bytes(data_size, &data_size))
+            PARSER_CHECK(buffer_advance(buffer, data_size))
             break;
         }
         case SCV_VEC: {
@@ -1034,9 +1044,10 @@ static bool parse_invoke_host_function(buffer_t *buffer, invoke_host_function_op
             PARSER_CHECK(read_create_contract_args_advance(buffer))
             break;
         case HOST_FUNCTION_TYPE_UPLOAD_CONTRACT_WASM: {
-            uint32_t data_len;
-            PARSER_CHECK(parse_uint32(buffer, &data_len))
-            PARSER_CHECK(buffer_advance(buffer, num_bytes(data_len)))
+            size_t data_size = 0;
+            PARSER_CHECK(parse_uint32(buffer, &data_size))
+            PARSER_CHECK(num_bytes(data_size, &data_size))
+            PARSER_CHECK(buffer_advance(buffer, data_size))
             break;
         }
         default:
