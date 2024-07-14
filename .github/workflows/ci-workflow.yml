@@ -11,9 +11,11 @@ on:
 jobs:
   build_application:
     name: Build application
-    uses: LedgerHQ/ledger-app-workflows/.github/workflows/reusable_build.yml@v1
+    uses: lightsail-network/ledger-app-workflows/.github/workflows/reusable_build.yml@master
     with:
       upload_app_binaries_artifact: compiled_app_binaries
+      # TODO: Zemu does not support 3.28.0 yet.
+      builder_tag: "3.27.0"
 
   unit_tests:
     name: Unit test

@@ -129,6 +129,11 @@ describe("hash signing", () => {
       await sim.waitForScreenChanges(events);
       let textToFind = "Sign Hash";
       if (dev.name == "stax") {
+        const acceptRisk = new TouchNavigation([
+          ButtonKind.ConfirmNoButton,
+          ButtonKind.ConfirmYesButton,
+        ]);
+        await sim.navigate(".", `${dev.prefix.toLowerCase()}-hash-signing-approve`, acceptRisk.schedule, true, true);
         textToFind = "Hold to";
       }
       await sim.navigateAndCompareUntilText(".", `${dev.prefix.toLowerCase()}-hash-signing-approve`, textToFind, true);
@@ -167,6 +172,14 @@ describe("hash signing", () => {
 
       const events = await sim.getEvents();
       await sim.waitForScreenChanges(events);
+
+      if (dev.name == "stax") {
+        const acceptRisk = new TouchNavigation([
+          ButtonKind.ConfirmNoButton,
+          ButtonKind.ConfirmYesButton,
+        ]);
+        await sim.navigate(".", `${dev.prefix.toLowerCase()}-hash-signing-reject`, acceptRisk.schedule, true, false);
+      }
       await sim.navigateAndCompareUntilText(".", `${dev.prefix.toLowerCase()}-hash-signing-reject`, textToFind, true);
       if (dev.name == "stax") {
         const settingNav = new TouchNavigation([ButtonKind.ApproveTapButton]);
