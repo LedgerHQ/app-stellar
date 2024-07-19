@@ -4,6 +4,7 @@
 
 ### Updated
 - Give an alert when enabling hash signing in settings. (Ledger Stax and Ledger Flex) 
+- Add support for more Soroban tokens.
 - Bug fixes.
 
 ## v5.4.1
