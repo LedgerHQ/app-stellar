@@ -5,6 +5,7 @@
 ### Updated
 - Give an alert when enabling hash signing in settings. (Ledger Stax and Ledger Flex) 
 - Default to prohibit signing unverified contracts, need to enable "Custom contracts" in settings.
+- Add support for more Soroban tokens.
 - Bug fixes.
 
 ## v5.4.1
