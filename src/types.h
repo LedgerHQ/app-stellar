@@ -56,6 +56,7 @@ typedef struct {
     uint8_t bip32_path_len;                               // length of BIP32 path
     state_e state;                                        // state of the context
     request_type_e req_type;                              // user request
+    bool unverified_contracts;
 } global_ctx_t;
 
 /**

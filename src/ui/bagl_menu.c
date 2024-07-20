@@ -24,26 +24,44 @@ static void ui_idle(void);
 static void display_settings(const ux_flow_step_t* const start_step);
 static void switch_settings_hash_signing();
 static void switch_settings_sequence_number();
+static void switch_settings_unverified_contracts();
 
 // FLOW for the settings menu:
 // #1 screen: enable hash signing
 // #2 screen: quit
 #if defined(TARGET_NANOS)
+
+UX_STEP_CB(ux_settings_unverified_contracts_step,
+           bnnn_paging,
+           switch_settings_unverified_contracts(),
+           {
+               .title = "Custom contracts",
+               .text = G.ui.detail_value,
+           });
 UX_STEP_CB(ux_settings_hash_signing_step,
            bnnn_paging,
            switch_settings_hash_signing(),
            {
                .title = "Hash signing",
-               .text = G.ui.detail_value,
+               .text = G.ui.detail_value + 12,
            });
 UX_STEP_CB(ux_settings_sequence_number_step,
            bnnn_paging,
            switch_settings_sequence_number(),
            {
                .title = "Sequence Number",
-               .text = G.ui.detail_value + 12,
+               .text = G.ui.detail_value + 24,
            });
 #else
+UX_STEP_CB(ux_settings_unverified_contracts_step,
+           bnnn,
+           switch_settings_unverified_contracts(),
+           {
+               "Custom contracts",
+               "Allow unverified",
+               "contracts",
+               G.ui.detail_value,
+           });
 UX_STEP_CB(ux_settings_hash_signing_step,
            bnnn,
            switch_settings_hash_signing(),
@@ -51,7 +69,7 @@ UX_STEP_CB(ux_settings_hash_signing_step,
                "Hash signing",
                "Enable hash",
                "signing",
-               G.ui.detail_value,
+               G.ui.detail_value + 12,
            });
 UX_STEP_CB(ux_settings_sequence_number_step,
            bnnn,
@@ -60,8 +78,9 @@ UX_STEP_CB(ux_settings_sequence_number_step,
                "Sequence Number",
                "Display sequence",
                "in transactions",
-               G.ui.detail_value + 12,
+               G.ui.detail_value + 24,
            });
+
 #endif
 UX_STEP_CB(ux_settings_exit_step,
            pb,
@@ -71,6 +90,7 @@ UX_STEP_CB(ux_settings_exit_step,
                "Back",
            });
 UX_FLOW(ux_settings_flow,
+        &ux_settings_unverified_contracts_step,
         &ux_settings_hash_signing_step,
         &ux_settings_sequence_number_step,
         &ux_settings_exit_step);
@@ -109,11 +129,15 @@ static void ui_idle(void) {
 
 static void display_settings(const ux_flow_step_t* const start_step) {
     strlcpy(G.ui.detail_value,
-            (HAS_SETTING(S_HASH_SIGNING_ENABLED) ? "Enabled" : "NOT Enabled"),
+            (HAS_SETTING(S_UNVERIFIED_CONTRACTS_ENABLED) ? "Enabled" : "NOT Enabled"),
             12);
     strlcpy(G.ui.detail_value + 12,
+            (HAS_SETTING(S_HASH_SIGNING_ENABLED) ? "Enabled" : "NOT Enabled"),
+            12);
+    strlcpy(G.ui.detail_value + 24,
             (HAS_SETTING(S_SEQUENCE_NUMBER_ENABLED) ? "Displayed" : "NOT Displayed"),
             14);
+
     ux_flow_init(0, ux_settings_flow, start_step);
 }
 
@@ -125,5 +149,10 @@ static void switch_settings_hash_signing() {
 static void switch_settings_sequence_number() {
     SETTING_TOGGLE(S_SEQUENCE_NUMBER_ENABLED);
     display_settings(&ux_settings_sequence_number_step);
+}
+
+static void switch_settings_unverified_contracts() {
+    SETTING_TOGGLE(S_UNVERIFIED_CONTRACTS_ENABLED);
+    display_settings(&ux_settings_unverified_contracts_step);
 }
 #endif  // HAVE_BAGL

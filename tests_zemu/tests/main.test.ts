@@ -1,4 +1,4 @@
-import { DEFAULT_START_OPTIONS, ButtonKind, TouchNavigation } from "@zondax/zemu";
+import { DEFAULT_START_OPTIONS, ButtonKind, TouchNavigation, INavElement } from "@zondax/zemu";
 import { APP_SEED, models } from "./common";
 import * as testCasesFunction from "tests-common";
 import { Keypair, StrKey } from "@stellar/stellar-base";
@@ -6,6 +6,35 @@ import Str from "@ledgerhq/hw-app-str";
 import { StellarUserRefusedError, StellarHashSigningNotEnabledError } from "@ledgerhq/hw-app-str";
 import Zemu from "@zondax/zemu";
 import { sha256 } from 'sha.js'
+import { ActionKind } from "@zondax/zemu/dist/types";
+
+const settingToggleCustomContracts: INavElement = {
+  type: ActionKind.Touch,
+  button: {
+    x: 350,
+    y: 115,
+    delay: 0.25,
+  }
+}
+
+const settingToggleHashSigning: INavElement = {
+  type: ActionKind.Touch,
+  button: {
+    x: 350,
+    y: 238,
+    delay: 0.25,
+  }
+}
+
+const settingToggleSequence: INavElement = {
+  type: ActionKind.Touch,
+  button: {
+    x: 350,
+    y: 362,
+    delay: 0.25,
+  }
+}
+
 
 beforeAll(async () => {
   await Zemu.checkAndPullImage();
@@ -112,15 +141,16 @@ describe("hash signing", () => {
 
       // enable hash signing
       if (dev.name == "stax") {
-        const settingNav = new TouchNavigation([
-          ButtonKind.InfoButton,
-          ButtonKind.ToggleSettingButton1,
-          ButtonKind.ConfirmYesButton,
-        ]);
-        await sim.navigate(".", `${dev.prefix.toLowerCase()}-hash-signing-approve`, settingNav.schedule, true, true);
+        const settingNav = [
+          ...new TouchNavigation([ButtonKind.InfoButton]).schedule,
+          settingToggleHashSigning,
+          ...new TouchNavigation([ButtonKind.ConfirmYesButton]).schedule
+        ]
+        await sim.navigate(".", `${dev.prefix.toLowerCase()}-hash-signing-approve`, settingNav, true, false);
       } else {
         await sim.clickRight();
         await sim.clickBoth(undefined, false);
+        await sim.clickRight();
         await sim.clickBoth(undefined, false);
       }
       const hash = Buffer.from("3389e9f0f1a65f19736cacf544c2e825313e8447f569233bb8db39aa607c8889", "hex");
@@ -133,7 +163,7 @@ describe("hash signing", () => {
           ButtonKind.ConfirmNoButton,
           ButtonKind.ConfirmYesButton,
         ]);
-        await sim.navigate(".", `${dev.prefix.toLowerCase()}-hash-signing-approve`, acceptRisk.schedule, true, true);
+        await sim.navigate(".", `${dev.prefix.toLowerCase()}-hash-signing-approve`, acceptRisk.schedule, true, false);
         textToFind = "Hold to";
       }
       await sim.navigateAndCompareUntilText(".", `${dev.prefix.toLowerCase()}-hash-signing-approve`, textToFind, true);
@@ -155,15 +185,16 @@ describe("hash signing", () => {
       // enable hash signing
       if (dev.name == "stax") {
         textToFind = "Hold to";
-        const settingNav = new TouchNavigation([
-          ButtonKind.InfoButton,
-          ButtonKind.ToggleSettingButton1,
-          ButtonKind.ConfirmYesButton,
-        ]);
-        await sim.navigate(".", `${dev.prefix.toLowerCase()}-hash-signing-reject`, settingNav.schedule, true, false);
+        const settingNav = [
+          ...new TouchNavigation([ButtonKind.InfoButton]).schedule,
+          settingToggleHashSigning,
+          ...new TouchNavigation([ButtonKind.ConfirmYesButton]).schedule
+        ]
+        await sim.navigate(".", `${dev.prefix.toLowerCase()}-hash-signing-reject`, settingNav, true, false);
       } else {
         await sim.clickRight();
         await sim.clickBoth(undefined, false);
+        await sim.clickRight();
         await sim.clickBoth(undefined, false);
       }
 
@@ -201,14 +232,18 @@ describe("transactions", () => {
         const transport = await sim.getTransport();
         const str = new Str(transport);
         if (dev.name == "stax") {
-          const settingNav = new TouchNavigation([
-            ButtonKind.InfoButton,
-            ButtonKind.ToggleSettingButton2,
-          ]);
-          await sim.navigate(".", `${dev.prefix.toLowerCase()}-${c.filePath}`, settingNav.schedule, true, true);
+          const settingNav = [
+            ...new TouchNavigation([ButtonKind.InfoButton]).schedule,
+            settingToggleCustomContracts,
+            ...new TouchNavigation([ButtonKind.ConfirmYesButton]).schedule,
+            // settingToggleSequence,
+          ];
+          await sim.navigate(".", `${dev.prefix.toLowerCase()}-${c.filePath}`, settingNav, true, true);
         } else {
           await sim.clickRight();
           await sim.clickBoth(undefined, false);
+          await sim.clickBoth(undefined, false);
+          await sim.clickRight();
           await sim.clickRight();
           await sim.clickBoth(undefined, false);
         }
@@ -219,6 +254,19 @@ describe("transactions", () => {
         let textToFind = /\bSign\b/;
         if (dev.name == "stax") {
           textToFind = /\bHold to\b/;
+
+          if (c.caseName.includes("InvokeHostFunction")
+            && !c.caseName.includes("Create")
+            && !c.caseName.includes("Upload")
+            && !c.caseName.includes("Xlm")
+            && !c.caseName.includes("Usdc")
+          ) {
+            const acceptRisk = new TouchNavigation([
+              ButtonKind.ConfirmNoButton,
+              ButtonKind.ConfirmYesButton,
+            ]);
+            await sim.navigate(".", `${dev.prefix.toLowerCase()}-${c.filePath}`, acceptRisk.schedule, true, true);
+          }
         }
         await sim.navigateAndCompareUntilText(
           ".",
@@ -248,14 +296,18 @@ describe("transactions", () => {
       // display sequence
       if (dev.name == "stax") {
         textToFind = "Hold to";
-        const settingNav = new TouchNavigation([
-          ButtonKind.InfoButton,
-          ButtonKind.ToggleSettingButton2,
-        ]);
-        await sim.navigate(".", `${dev.prefix.toLowerCase()}-tx-reject`, settingNav.schedule, true, false);
+        const settingNav = [
+          ...new TouchNavigation([ButtonKind.InfoButton]).schedule,
+          settingToggleCustomContracts,
+          ...new TouchNavigation([ButtonKind.ConfirmYesButton]).schedule,
+          // settingToggleSequence,
+        ];
+        await sim.navigate(".", `${dev.prefix.toLowerCase()}-tx-reject`, settingNav, true, false);
       } else {
         await sim.clickRight();
         await sim.clickBoth(undefined, false);
+        await sim.clickBoth(undefined, false);
+        await sim.clickRight();
         await sim.clickRight();
         await sim.clickBoth(undefined, false);
       }
@@ -293,14 +345,18 @@ describe("transactions", () => {
       // display sequence
       if (dev.name == "stax") {
         textToFind = "Hold to";
-        const settingNav = new TouchNavigation([
-          ButtonKind.InfoButton,
-          ButtonKind.ToggleSettingButton2,
-        ]);
-        await sim.navigate(".", `${dev.prefix.toLowerCase()}-fee-bump-tx-reject`, settingNav.schedule, true, false);
+        const settingNav = [
+          ...new TouchNavigation([ButtonKind.InfoButton]).schedule,
+          settingToggleCustomContracts,
+          ...new TouchNavigation([ButtonKind.ConfirmYesButton]).schedule,
+          // settingToggleSequence,
+        ];
+        await sim.navigate(".", `${dev.prefix.toLowerCase()}-fee-bump-tx-reject`, settingNav, true, false);
       } else {
         await sim.clickRight();
         await sim.clickBoth(undefined, false);
+        await sim.clickBoth(undefined, false);
+        await sim.clickRight();
         await sim.clickRight();
         await sim.clickBoth(undefined, false);
       }
@@ -388,6 +444,20 @@ describe("transactions", () => {
       await sim.close();
     }
   });
+
+  test.each(models)("custom contracts mode is not enabled ($dev.name)", async ({ dev, startText }) => {
+    const tx = testCasesFunction.opInvokeHostFunctionScvalsCase0();
+    const sim = new Zemu(dev.path);
+    try {
+      await sim.start({ ...defaultOptions, model: dev.name, startText: startText });
+      const transport = await sim.getTransport();
+      const str = new Str(transport);
+      // TODO: Waiting for SDK update.
+      expect(() => str.signTransaction("44'/148'/0'", tx.signatureBase())).rejects.toThrow();
+    } finally {
+      await sim.close();
+    }
+  });
 });
 
 describe("soroban auth", () => {
@@ -399,13 +469,36 @@ describe("soroban auth", () => {
         await sim.start({ ...defaultOptions, model: dev.name, startText: startText });
         const transport = await sim.getTransport();
         const str = new Str(transport);
+
+        if (dev.name == "stax") {
+          const settingNav = [
+            ...new TouchNavigation([ButtonKind.InfoButton]).schedule,
+            settingToggleCustomContracts,
+            ...new TouchNavigation([ButtonKind.ConfirmYesButton]).schedule
+          ];
+          await sim.navigate(".", `${dev.prefix.toLowerCase()}-${c.filePath}`, settingNav, true, false);
+        } else {
+          await sim.clickRight();
+          await sim.clickBoth(undefined, false);
+          await sim.clickBoth(undefined, false);
+        }
+
         const result = str.signSorobanAuthorization("44'/148'/0'", hashIdPreimage.toXDR("raw"));
         const events = await sim.getEvents();
         await sim.waitForScreenChanges(events);
         let textToFind = /\bSign\b/;
         if (dev.name == "stax") {
           textToFind = /\bHold to\b/;
+
+          if (!c.caseName.includes("Create")) {
+            const acceptRisk = new TouchNavigation([
+              ButtonKind.ConfirmNoButton,
+              ButtonKind.ConfirmYesButton,
+            ]);
+            await sim.navigate(".", `${dev.prefix.toLowerCase()}-${c.filePath}`, acceptRisk.schedule, true, true);
+          }
         }
+
         await sim.navigateAndCompareUntilText(
           ".",
           `${dev.prefix.toLowerCase()}-${c.filePath}`,
@@ -430,6 +523,20 @@ describe("soroban auth", () => {
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText, approveAction: ButtonKind.RejectButton });
       const transport = await sim.getTransport();
       const str = new Str(transport);
+
+      if (dev.name == "stax") {
+        const settingNav = [
+          ...new TouchNavigation([ButtonKind.InfoButton]).schedule,
+          settingToggleCustomContracts,
+          ...new TouchNavigation([ButtonKind.ConfirmYesButton]).schedule
+        ];
+        await sim.navigate(".", `${dev.prefix.toLowerCase()}-soroban-auth-reject`, settingNav, true, false);
+      } else {
+        await sim.clickRight();
+        await sim.clickBoth(undefined, false);
+        await sim.clickBoth(undefined, false);
+      }
+
       expect(() => str.signSorobanAuthorization("44'/148'/0'", hashIdPreimage.toXDR("raw"))).rejects.toThrow(StellarUserRefusedError);
 
       let textToFind = "Reject";
@@ -438,6 +545,15 @@ describe("soroban auth", () => {
       }
       const events = await sim.getEvents();
       await sim.waitForScreenChanges(events);
+
+      if (dev.name == "stax") {
+        const acceptRisk = new TouchNavigation([
+          ButtonKind.ConfirmNoButton,
+          ButtonKind.ConfirmYesButton,
+        ]);
+        await sim.navigate(".", `${dev.prefix.toLowerCase()}-soroban-auth-reject`, acceptRisk.schedule, true, true);
+      }
+
       await sim.navigateAndCompareUntilText(
         ".",
         `${dev.prefix.toLowerCase()}-soroban-auth-reject`,
@@ -455,6 +571,19 @@ describe("soroban auth", () => {
     }
   });
 
+  test.each(models)("custom contracts mode is not enabled ($dev.name)", async ({ dev, startText }) => {
+    const hashIdPreimage = testCasesFunction.sorobanAuthInvokeContract();
+    const sim = new Zemu(dev.path);
+    try {
+      await sim.start({ ...defaultOptions, model: dev.name, startText: startText });
+      const transport = await sim.getTransport();
+      const str = new Str(transport);
+      // TODO: Waiting for SDK update.
+      expect(() => str.signSorobanAuthorization("44'/148'/0'", hashIdPreimage.toXDR("raw"))).rejects.toThrow();
+    } finally {
+      await sim.close();
+    }
+  });
 });
 
 describe("plugin", () => {
@@ -467,18 +596,6 @@ describe("plugin", () => {
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText });
       const transport = await sim.getTransport();
       const str = new Str(transport);
-      if (dev.name == "stax") {
-        const settingNav = new TouchNavigation([
-          ButtonKind.InfoButton,
-          ButtonKind.ToggleSettingButton2,
-        ]);
-        await sim.navigate(".", `${dev.prefix.toLowerCase()}-plugin-invoke-host-function`, settingNav.schedule, true, true);
-      } else {
-        await sim.clickRight();
-        await sim.clickBoth(undefined, false);
-        await sim.clickRight();
-        await sim.clickBoth(undefined, false);
-      }
       const result = str.signTransaction("44'/148'/0'", tx.signatureBase());
       const events = await sim.getEvents();
       await sim.waitForScreenChanges(events);
@@ -512,23 +629,8 @@ describe("plugin", () => {
       const transport = await sim.getTransport();
       const str = new Str(transport);
       let textToFind = "Reject";
-      // display sequence
-      if (dev.name == "stax") {
-        textToFind = "Hold to";
-        const settingNav = new TouchNavigation([
-          ButtonKind.InfoButton,
-          ButtonKind.ToggleSettingButton2,
-        ]);
-        await sim.navigate(".", `${dev.prefix.toLowerCase()}-plugin-invoke-host-function-reject`, settingNav.schedule, true, false);
-      } else {
-        await sim.clickRight();
-        await sim.clickBoth(undefined, false);
-        await sim.clickRight();
-        await sim.clickBoth(undefined, false);
-      }
 
       expect(() => str.signTransaction("44'/148'/0'", tx.signatureBase())).rejects.toThrow(StellarUserRefusedError);
-
       const events = await sim.getEvents();
       await sim.waitForScreenChanges(events);
       await sim.navigateAndCompareUntilText(

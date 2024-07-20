@@ -48,7 +48,8 @@ int handler_get_app_configuration() {
                         MINOR_VERSION,
                         PATCH_VERSION,
                         RAW_DATA_MAX_SIZE >> 8,
-                        RAW_DATA_MAX_SIZE & 0xFF};
+                        RAW_DATA_MAX_SIZE & 0xFF,
+                        HAS_SETTING(S_UNVERIFIED_CONTRACTS_ENABLED)};
 
     return io_send_response_pointer(config, sizeof(config), SW_OK);
 }

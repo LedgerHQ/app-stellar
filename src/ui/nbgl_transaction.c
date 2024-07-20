@@ -76,6 +76,11 @@ static void review_auth_start(void);
 static void reject_auth_confirmation(void);
 static void reject_auth_choice(void);
 
+static void warning_choice_tx1(bool confirm);
+static void warning_choice_tx2(bool confirm);
+static void warning_choice_auth1(bool confirm);
+static void warning_choice_auth2(bool confirm);
+
 // Functions definitions
 static inline void INCR_AND_CHECK_PAGE_NB(void) {
     nb_pages++;
@@ -331,9 +336,69 @@ int ui_display_transaction(void) {
         return io_send_sw(SW_BAD_STATE);
     }
 
-    prepare_display();
-    review_tx_start();
+    if (G_context.unverified_contracts) {
+        nbgl_useCaseChoice(&C_Warning_64px,
+                           "Security risk detected",
+                           "It may not be safe to sign this "
+                           "transaction. To continue, you'll "
+                           "need to review the risk.",
+                           "Back to safety",
+                           "Review the risk",
+                           warning_choice_tx1);
+    } else {
+        prepare_display();
+        review_tx_start();
+    }
+
     return 0;
+}
+
+static void warning_choice_tx2(bool confirm) {
+    if (confirm) {
+        prepare_display();
+        review_tx_start();
+    } else {
+        ui_action_validate_transaction(false);
+    }
+}
+
+static void warning_choice_tx1(bool confirm) {
+    if (confirm) {
+        ui_action_validate_transaction(false);
+    } else {
+        nbgl_useCaseChoice(
+            NULL,
+            "The transaction cannot be trusted",
+            "Unverified contracts may not be displayed in a readable form on your Ledger, so you "
+            "need to examine them very carefully before sign them.",
+            "I accept the risk",
+            "Reject transaction",
+            warning_choice_tx2);
+    }
+}
+
+static void warning_choice_auth2(bool confirm) {
+    if (confirm) {
+        prepare_display();
+        review_auth_start();
+    } else {
+        ui_action_validate_transaction(false);
+    }
+}
+
+static void warning_choice_auth1(bool confirm) {
+    if (confirm) {
+        ui_action_validate_transaction(false);
+    } else {
+        nbgl_useCaseChoice(
+            NULL,
+            "The Soroban Authorization cannot be trusted",
+            "Unverified contracts may not be displayed in a readable form on your Ledger, so you "
+            "need to examine them very carefully before sign them.",
+            "I accept the risk",
+            "Reject transaction",
+            warning_choice_auth2);
+    }
 }
 
 int ui_display_auth() {
@@ -341,8 +406,19 @@ int ui_display_auth() {
         G_context.state = STATE_NONE;
         return io_send_sw(SW_BAD_STATE);
     }
-    prepare_display();
-    review_auth_start();
+    if (G_context.unverified_contracts) {
+        nbgl_useCaseChoice(&C_Warning_64px,
+                           "Security risk detected",
+                           "It may not be safe to sign this "
+                           "transaction. To continue, you'll "
+                           "need to review the risk.",
+                           "Back to safety",
+                           "Review the risk",
+                           warning_choice_auth1);
+    } else {
+        prepare_display();
+        review_auth_start();
+    }
     return 0;
 }
 #endif  // HAVE_NBGL
