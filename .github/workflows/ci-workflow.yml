@@ -61,7 +61,7 @@ jobs:
     name: Stellar e2e tests
     strategy:
       matrix:
-        device: ["nanos", "nanox", "nanosp", "stax"]
+        device: ["nanos", "nanox", "nanosp", "stax", "flex"]
       fail-fast: false
     needs:
       - build_application

@@ -704,7 +704,7 @@ static bool read_scval_vec_advance(buffer_t *buffer) {
     return true;
 }
 
-static bool rad_scval_map_advance(buffer_t *buffer) {
+static bool read_scval_map_advance(buffer_t *buffer) {
     uint32_t map_len;
     PARSER_CHECK(parse_uint32(buffer, &map_len))
     for (uint32_t i = 0; i < map_len; i++) {
@@ -773,7 +773,7 @@ bool read_scval_advance(buffer_t *buffer) {
             bool vec_exists;
             PARSER_CHECK(parse_bool(buffer, &vec_exists))
             if (vec_exists) {
-                read_scval_vec_advance(buffer);
+                PARSER_CHECK(read_scval_vec_advance(buffer));
             }
             break;
         }
@@ -781,7 +781,7 @@ bool read_scval_advance(buffer_t *buffer) {
             bool map_exists;
             PARSER_CHECK(parse_bool(buffer, &map_exists))
             if (map_exists) {
-                rad_scval_map_advance(buffer);
+                PARSER_CHECK(read_scval_map_advance(buffer));
             }
             break;
         }
@@ -795,7 +795,7 @@ bool read_scval_advance(buffer_t *buffer) {
             bool map_exists;
             PARSER_CHECK(parse_bool(buffer, &map_exists))
             if (map_exists) {
-                rad_scval_map_advance(buffer);
+                PARSER_CHECK(read_scval_map_advance(buffer));
             }
             break;
         }

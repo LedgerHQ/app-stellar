@@ -90,7 +90,7 @@ static void review_choice(bool confirm) {
 static void review_start(void) {
     nbgl_useCaseReviewStart(&C_icon_stellar_64px,
                             "Review hash signing",
-                            "",
+                            NULL,
                             "Reject hash",
                             review_continue,
                             reject_choice);
