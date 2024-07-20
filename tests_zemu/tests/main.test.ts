@@ -14,6 +14,7 @@ const settingToggleCustomContracts: INavElement = {
     x: 350,
     y: 115,
     delay: 0.25,
+    direction: 0
   }
 }
 
@@ -21,8 +22,9 @@ const settingToggleHashSigning: INavElement = {
   type: ActionKind.Touch,
   button: {
     x: 350,
-    y: 238,
+    y: 254,
     delay: 0.25,
+    direction: 0
   }
 }
 
@@ -30,8 +32,9 @@ const settingToggleSequence: INavElement = {
   type: ActionKind.Touch,
   button: {
     x: 350,
-    y: 362,
+    y: 394,
     delay: 0.25,
+    direction: 0
   }
 }
 
@@ -49,7 +52,7 @@ let defaultOptions = {
   X11: false,
 };
 
-test.each(models)("can start and stop container ($dev.name)", async ({ dev, startText }) => {
+test.concurrent.each(models)("can start and stop container ($dev.name)", async ({ dev, startText }) => {
   const sim = new Zemu(dev.path);
   try {
     await sim.start({ ...defaultOptions, model: dev.name, startText: startText });
@@ -59,7 +62,7 @@ test.each(models)("can start and stop container ($dev.name)", async ({ dev, star
 });
 
 describe("get public key", () => {
-  test.each(models)("get public key without confirmation ($dev.name)", async ({ dev, startText }) => {
+  test.concurrent.each(models)("get public key without confirmation ($dev.name)", async ({ dev, startText }) => {
     const sim = new Zemu(dev.path);
     try {
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText });
@@ -74,7 +77,7 @@ describe("get public key", () => {
     }
   });
 
-  test.each(models)("get public key with confirmation - approve ($dev.name)", async ({ dev, startText }) => {
+  test.concurrent.each(models)("get public key with confirmation - approve ($dev.name)", async ({ dev, startText }) => {
     const sim = new Zemu(dev.path);
     try {
       let confirmText = "Approve";
@@ -96,7 +99,7 @@ describe("get public key", () => {
     }
   });
 
-  test.each(models)("get public key with confirmation - reject ($dev.name)", async ({ dev, startText }) => {
+  test.concurrent.each(models)("get public key with confirmation - reject ($dev.name)", async ({ dev, startText }) => {
     const sim = new Zemu(dev.path);
     try {
       let confirmText = "Reject";
@@ -119,7 +122,7 @@ describe("get public key", () => {
 });
 
 describe("hash signing", () => {
-  test.each(models)("hash signing mode is not enabled ($dev.name)", async ({ dev, startText }) => {
+  test.concurrent.each(models)("hash signing mode is not enabled ($dev.name)", async ({ dev, startText }) => {
     const sim = new Zemu(dev.path);
     try {
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText });
@@ -132,7 +135,7 @@ describe("hash signing", () => {
     }
   });
 
-  test.each(models)("approve ($dev.name)", async ({ dev, startText }) => {
+  test.concurrent.each(models)("approve ($dev.name)", async ({ dev, startText }) => {
     const sim = new Zemu(dev.path);
     try {
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText });
@@ -142,9 +145,9 @@ describe("hash signing", () => {
       // enable hash signing
       if (dev.name == "stax") {
         const settingNav = [
-          ...new TouchNavigation([ButtonKind.InfoButton]).schedule,
+          ...new TouchNavigation("stax", [ButtonKind.InfoButton]).schedule,
           settingToggleHashSigning,
-          ...new TouchNavigation([ButtonKind.ConfirmYesButton]).schedule
+          ...new TouchNavigation("stax", [ButtonKind.ConfirmYesButton]).schedule
         ]
         await sim.navigate(".", `${dev.prefix.toLowerCase()}-hash-signing-approve`, settingNav, true, false);
       } else {
@@ -159,7 +162,7 @@ describe("hash signing", () => {
       await sim.waitForScreenChanges(events);
       let textToFind = "Sign Hash";
       if (dev.name == "stax") {
-        const acceptRisk = new TouchNavigation([
+        const acceptRisk = new TouchNavigation("stax", [
           ButtonKind.ConfirmNoButton,
           ButtonKind.ConfirmYesButton,
         ]);
@@ -174,7 +177,7 @@ describe("hash signing", () => {
     }
   });
 
-  test.each(models)("reject ($dev.name)", async ({ dev, startText }) => {
+  test.concurrent.each(models)("reject ($dev.name)", async ({ dev, startText }) => {
     const sim = new Zemu(dev.path);
     try {
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText, approveAction: ButtonKind.RejectButton });
@@ -186,9 +189,9 @@ describe("hash signing", () => {
       if (dev.name == "stax") {
         textToFind = "Hold to";
         const settingNav = [
-          ...new TouchNavigation([ButtonKind.InfoButton]).schedule,
+          ...new TouchNavigation("stax", [ButtonKind.InfoButton]).schedule,
           settingToggleHashSigning,
-          ...new TouchNavigation([ButtonKind.ConfirmYesButton]).schedule
+          ...new TouchNavigation("stax", [ButtonKind.ConfirmYesButton]).schedule
         ]
         await sim.navigate(".", `${dev.prefix.toLowerCase()}-hash-signing-reject`, settingNav, true, false);
       } else {
@@ -205,7 +208,7 @@ describe("hash signing", () => {
       await sim.waitForScreenChanges(events);
 
       if (dev.name == "stax") {
-        const acceptRisk = new TouchNavigation([
+        const acceptRisk = new TouchNavigation("stax", [
           ButtonKind.ConfirmNoButton,
           ButtonKind.ConfirmYesButton,
         ]);
@@ -213,7 +216,7 @@ describe("hash signing", () => {
       }
       await sim.navigateAndCompareUntilText(".", `${dev.prefix.toLowerCase()}-hash-signing-reject`, textToFind, true);
       if (dev.name == "stax") {
-        const settingNav = new TouchNavigation([ButtonKind.ApproveTapButton]);
+        const settingNav = new TouchNavigation("stax", [ButtonKind.ApproveTapButton]);
         await sim.navigate(".", `${dev.prefix.toLowerCase()}-hash-signing-reject`, settingNav.schedule, true, false);
       }
     } finally {
@@ -224,7 +227,7 @@ describe("hash signing", () => {
 
 describe("transactions", () => {
   describe.each(getTxTestCases())("$caseName", (c) => {
-    test.each(models)("device ($dev.name)", async ({ dev, startText }) => {
+    test.concurrent.each(models)("device ($dev.name)", async ({ dev, startText }) => {
       const tx = c.txFunction();
       const sim = new Zemu(dev.path);
       try {
@@ -233,10 +236,10 @@ describe("transactions", () => {
         const str = new Str(transport);
         if (dev.name == "stax") {
           const settingNav = [
-            ...new TouchNavigation([ButtonKind.InfoButton]).schedule,
+            ...new TouchNavigation("stax", [ButtonKind.InfoButton]).schedule,
             settingToggleCustomContracts,
-            ...new TouchNavigation([ButtonKind.ConfirmYesButton]).schedule,
-            // settingToggleSequence,
+            ...new TouchNavigation("stax", [ButtonKind.ConfirmYesButton]).schedule,
+            settingToggleSequence,
           ];
           await sim.navigate(".", `${dev.prefix.toLowerCase()}-${c.filePath}`, settingNav, true, true);
         } else {
@@ -261,7 +264,7 @@ describe("transactions", () => {
             && !c.caseName.includes("Xlm")
             && !c.caseName.includes("Usdc")
           ) {
-            const acceptRisk = new TouchNavigation([
+            const acceptRisk = new TouchNavigation("stax", [
               ButtonKind.ConfirmNoButton,
               ButtonKind.ConfirmYesButton,
             ]);
@@ -285,7 +288,7 @@ describe("transactions", () => {
     });
   });
 
-  test.each(models)("reject tx ($dev.name)", async ({ dev, startText }) => {
+  test.concurrent.each(models)("reject tx ($dev.name)", async ({ dev, startText }) => {
     const tx = testCasesFunction.txNetworkPublic();
     const sim = new Zemu(dev.path);
     try {
@@ -297,10 +300,10 @@ describe("transactions", () => {
       if (dev.name == "stax") {
         textToFind = "Hold to";
         const settingNav = [
-          ...new TouchNavigation([ButtonKind.InfoButton]).schedule,
+          ...new TouchNavigation("stax", [ButtonKind.InfoButton]).schedule,
           settingToggleCustomContracts,
-          ...new TouchNavigation([ButtonKind.ConfirmYesButton]).schedule,
-          // settingToggleSequence,
+          ...new TouchNavigation("stax", [ButtonKind.ConfirmYesButton]).schedule,
+          settingToggleSequence,
         ];
         await sim.navigate(".", `${dev.prefix.toLowerCase()}-tx-reject`, settingNav, true, false);
       } else {
@@ -325,7 +328,7 @@ describe("transactions", () => {
         1000 * 60 * 60
       );
       if (dev.name == "stax") {
-        const settingNav = new TouchNavigation([ButtonKind.ApproveTapButton]);
+        const settingNav = new TouchNavigation("stax", [ButtonKind.ApproveTapButton]);
         await sim.navigate(".", `${dev.prefix.toLowerCase()}-tx-reject`, settingNav.schedule, true, false);
       }
     } finally {
@@ -333,7 +336,7 @@ describe("transactions", () => {
     }
   });
 
-  test.each(models)("reject fee bump tx ($dev.name)", async ({ dev, startText }) => {
+  test.concurrent.each(models)("reject fee bump tx ($dev.name)", async ({ dev, startText }) => {
     const tx = testCasesFunction.feeBumpTx();
     const sim = new Zemu(dev.path);
     try {
@@ -346,10 +349,10 @@ describe("transactions", () => {
       if (dev.name == "stax") {
         textToFind = "Hold to";
         const settingNav = [
-          ...new TouchNavigation([ButtonKind.InfoButton]).schedule,
+          ...new TouchNavigation("stax", [ButtonKind.InfoButton]).schedule,
           settingToggleCustomContracts,
-          ...new TouchNavigation([ButtonKind.ConfirmYesButton]).schedule,
-          // settingToggleSequence,
+          ...new TouchNavigation("stax", [ButtonKind.ConfirmYesButton]).schedule,
+          settingToggleSequence,
         ];
         await sim.navigate(".", `${dev.prefix.toLowerCase()}-fee-bump-tx-reject`, settingNav, true, false);
       } else {
@@ -374,7 +377,7 @@ describe("transactions", () => {
         1000 * 60 * 60
       );
       if (dev.name == "stax") {
-        const settingNav = new TouchNavigation([ButtonKind.ApproveTapButton]);
+        const settingNav = new TouchNavigation("stax", [ButtonKind.ApproveTapButton]);
         await sim.navigate(".", `${dev.prefix.toLowerCase()}-fee-bump-tx-reject`, settingNav.schedule, true, false);
       }
     } finally {
@@ -382,7 +385,7 @@ describe("transactions", () => {
     }
   });
 
-  test.each(models)("hide sequence tx ($dev.name)", async ({ dev, startText }) => {
+  test.concurrent.each(models)("hide sequence tx ($dev.name)", async ({ dev, startText }) => {
     const tx = testCasesFunction.txNetworkPublic();
     const sim = new Zemu(dev.path);
     try {
@@ -413,7 +416,7 @@ describe("transactions", () => {
     }
   });
 
-  test.each(models)("hide sequence fee bump tx ($dev.name)", async ({ dev, startText }) => {
+  test.concurrent.each(models)("hide sequence fee bump tx ($dev.name)", async ({ dev, startText }) => {
     const tx = testCasesFunction.feeBumpTx();
     const sim = new Zemu(dev.path);
     try {
@@ -445,7 +448,7 @@ describe("transactions", () => {
     }
   });
 
-  test.each(models)("custom contracts mode is not enabled ($dev.name)", async ({ dev, startText }) => {
+  test.concurrent.each(models)("custom contracts mode is not enabled ($dev.name)", async ({ dev, startText }) => {
     const tx = testCasesFunction.opInvokeHostFunctionScvalsCase0();
     const sim = new Zemu(dev.path);
     try {
@@ -462,7 +465,7 @@ describe("transactions", () => {
 
 describe("soroban auth", () => {
   describe.each(getAuthTestCases())("$caseName", (c) => {
-    test.each(models)("device ($dev.name)", async ({ dev, startText }) => {
+    test.concurrent.each(models)("device ($dev.name)", async ({ dev, startText }) => {
       const hashIdPreimage = c.txFunction();
       const sim = new Zemu(dev.path);
       try {
@@ -472,9 +475,9 @@ describe("soroban auth", () => {
 
         if (dev.name == "stax") {
           const settingNav = [
-            ...new TouchNavigation([ButtonKind.InfoButton]).schedule,
+            ...new TouchNavigation("stax", [ButtonKind.InfoButton]).schedule,
             settingToggleCustomContracts,
-            ...new TouchNavigation([ButtonKind.ConfirmYesButton]).schedule
+            ...new TouchNavigation("stax", [ButtonKind.ConfirmYesButton]).schedule
           ];
           await sim.navigate(".", `${dev.prefix.toLowerCase()}-${c.filePath}`, settingNav, true, false);
         } else {
@@ -491,7 +494,7 @@ describe("soroban auth", () => {
           textToFind = /\bHold to\b/;
 
           if (!c.caseName.includes("Create")) {
-            const acceptRisk = new TouchNavigation([
+            const acceptRisk = new TouchNavigation("stax", [
               ButtonKind.ConfirmNoButton,
               ButtonKind.ConfirmYesButton,
             ]);
@@ -516,7 +519,7 @@ describe("soroban auth", () => {
     });
   });
 
-  test.each(models)("reject soroban auth ($dev.name)", async ({ dev, startText }) => {
+  test.concurrent.each(models)("reject soroban auth ($dev.name)", async ({ dev, startText }) => {
     const hashIdPreimage = testCasesFunction.sorobanAuthInvokeContract();
     const sim = new Zemu(dev.path);
     try {
@@ -526,9 +529,9 @@ describe("soroban auth", () => {
 
       if (dev.name == "stax") {
         const settingNav = [
-          ...new TouchNavigation([ButtonKind.InfoButton]).schedule,
+          ...new TouchNavigation("stax", [ButtonKind.InfoButton]).schedule,
           settingToggleCustomContracts,
-          ...new TouchNavigation([ButtonKind.ConfirmYesButton]).schedule
+          ...new TouchNavigation("stax", [ButtonKind.ConfirmYesButton]).schedule
         ];
         await sim.navigate(".", `${dev.prefix.toLowerCase()}-soroban-auth-reject`, settingNav, true, false);
       } else {
@@ -547,7 +550,7 @@ describe("soroban auth", () => {
       await sim.waitForScreenChanges(events);
 
       if (dev.name == "stax") {
-        const acceptRisk = new TouchNavigation([
+        const acceptRisk = new TouchNavigation("stax", [
           ButtonKind.ConfirmNoButton,
           ButtonKind.ConfirmYesButton,
         ]);
@@ -563,7 +566,7 @@ describe("soroban auth", () => {
         1000 * 60 * 60
       );
       if (dev.name == "stax") {
-        const settingNav = new TouchNavigation([ButtonKind.ApproveTapButton]);
+        const settingNav = new TouchNavigation("stax", [ButtonKind.ApproveTapButton]);
         await sim.navigate(".", `${dev.prefix.toLowerCase()}-soroban-auth-reject`, settingNav.schedule, true, false);
       }
     } finally {
@@ -571,7 +574,7 @@ describe("soroban auth", () => {
     }
   });
 
-  test.each(models)("custom contracts mode is not enabled ($dev.name)", async ({ dev, startText }) => {
+  test.concurrent.each(models)("custom contracts mode is not enabled ($dev.name)", async ({ dev, startText }) => {
     const hashIdPreimage = testCasesFunction.sorobanAuthInvokeContract();
     const sim = new Zemu(dev.path);
     try {
@@ -587,7 +590,7 @@ describe("soroban auth", () => {
 });
 
 describe("plugin", () => {
-  test.each(models)("invoke host function ($dev.name)", async ({ dev, startText, plugin_path }) => {
+  test.concurrent.each(models)("invoke host function ($dev.name)", async ({ dev, startText, plugin_path }) => {
     const tx = testCasesFunction.opInvokeHostFunctionTestPlugin();
     const sim = new Zemu(dev.path, {
       "StellarTest": plugin_path
@@ -619,7 +622,7 @@ describe("plugin", () => {
     }
   });
 
-  test.each(models)("reject tx ($dev.name)", async ({ dev, startText, plugin_path }) => {
+  test.concurrent.each(models)("reject tx ($dev.name)", async ({ dev, startText, plugin_path }) => {
     const tx = testCasesFunction.opInvokeHostFunctionTestPlugin();
     const sim = new Zemu(dev.path, {
       "StellarTest": plugin_path
@@ -642,7 +645,7 @@ describe("plugin", () => {
         1000 * 60 * 60
       );
       if (dev.name == "stax") {
-        const settingNav = new TouchNavigation([ButtonKind.ApproveTapButton]);
+        const settingNav = new TouchNavigation("stax", [ButtonKind.ApproveTapButton]);
         await sim.navigate(".", `${dev.prefix.toLowerCase()}-plugin-invoke-host-function-reject`, settingNav.schedule, true, false);
       }
     } finally {
@@ -651,7 +654,7 @@ describe("plugin", () => {
   });
 
 
-  test.each(models)("soroban auth ($dev.name)", async ({ dev, startText, plugin_path }) => {
+  test.concurrent.each(models)("soroban auth ($dev.name)", async ({ dev, startText, plugin_path }) => {
     const hashIdPreimage = testCasesFunction.sorobanAuthInvokeContractTestPlugin();
     const sim = new Zemu(dev.path, {
       "StellarTest": plugin_path
@@ -684,7 +687,7 @@ describe("plugin", () => {
   });
 
 
-  test.each(models)("reject soroban auth ($dev.name)", async ({ dev, startText, plugin_path }) => {
+  test.concurrent.each(models)("reject soroban auth ($dev.name)", async ({ dev, startText, plugin_path }) => {
     const hashIdPreimage = testCasesFunction.sorobanAuthInvokeContractTestPlugin();
     const sim = new Zemu(dev.path, {
       "StellarTest": plugin_path
@@ -710,7 +713,7 @@ describe("plugin", () => {
         1000 * 60 * 60
       );
       if (dev.name == "stax") {
-        const settingNav = new TouchNavigation([ButtonKind.ApproveTapButton]);
+        const settingNav = new TouchNavigation("stax", [ButtonKind.ApproveTapButton]);
         await sim.navigate(".", `${dev.prefix.toLowerCase()}-soroban-auth-reject`, settingNav.schedule, true, false);
       }
     } finally {
