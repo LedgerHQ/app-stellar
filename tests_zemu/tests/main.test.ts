@@ -99,7 +99,8 @@ describe("hash signing", () => {
     }
   });
 
-  test.concurrent.each(models)("approve ($dev.name)", async ({ dev, startText }) => {
+  // TODO: skip for now, see https://github.com/LedgerHQ/ledger-secure-sdk/issues/737
+  test.concurrent.each(models.filter(({ dev }) => dev.name !== "flex" && dev.name !== "stax"))("approve ($dev.name)", async ({ dev, startText }) => {
     const sim = new Zemu(dev.path);
     try {
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText });
@@ -149,7 +150,8 @@ describe("hash signing", () => {
     }
   });
 
-  test.concurrent.each(models)("reject ($dev.name)", async ({ dev, startText }) => {
+  // TODO: skip for now, see https://github.com/LedgerHQ/ledger-secure-sdk/issues/737
+  test.concurrent.each(models.filter(({ dev }) => dev.name !== "flex" && dev.name !== "stax"))("reject ($dev.name)", async ({ dev, startText }) => {
     const sim = new Zemu(dev.path);
     try {
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText, approveAction: ButtonKind.RejectButton });
