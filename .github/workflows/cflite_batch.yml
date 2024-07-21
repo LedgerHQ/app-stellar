@@ -48,6 +48,6 @@ jobs:
           fuzz-seconds: ${{ github.event.inputs.fuzz-seconds || '600' }} # Defaults to 10 minutes
           mode: ${{ matrix.mode }}
           sanitizer: ${{ matrix.sanitizer }}
-          storage-repo: https://${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/lightsail-network/app-stellar-fuzz-corpus
-          storage-repo-branch: main # Optional. Defaults to "main"
-          storage-repo-branch-coverage: gh-pages # Optional. Defaults to "gh-pages".
+          storage-repo: ${{ secrets.PERSONAL_ACCESS_TOKEN && format('https://{0}@github.com/lightsail-network/app-stellar-fuzz-corpus', secrets.PERSONAL_ACCESS_TOKEN) || '' }}
+          storage-repo-branch: ${{ secrets.PERSONAL_ACCESS_TOKEN && 'main' || '' }}
+          storage-repo-branch-coverage: ${{ secrets.PERSONAL_ACCESS_TOKEN && 'gh-pages' || '' }}
