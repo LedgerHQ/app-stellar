@@ -9,6 +9,17 @@
 #define DETAIL_CAPTION_MAX_LENGTH 21
 #define DETAIL_VALUE_MAX_LENGTH   105
 
+static bool plugin_check_presence(const uint8_t *contract_address);
+static stellar_plugin_result_t plugin_init_contract(const uint8_t *contract_address);
+static stellar_plugin_result_t plugin_query_data_pair_count(const uint8_t *contract_address,
+                                                            uint8_t *data_pair_count);
+static stellar_plugin_result_t plugin_query_data_pair(const uint8_t *contract_address,
+                                                      uint8_t data_pair_index,
+                                                      char *caption,
+                                                      uint8_t caption_len,
+                                                      char *value,
+                                                      uint8_t value_len);
+
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     envelope_t envelope;
     bool data_exists = true;
@@ -57,6 +68,10 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
             .caption_len = DETAIL_CAPTION_MAX_LENGTH,
             .value_len = DETAIL_VALUE_MAX_LENGTH,
             .display_sequence = true,
+            .plugin_check_presence = &plugin_check_presence,
+            .plugin_init_contract = &plugin_init_contract,
+            .plugin_query_data_pair_count = &plugin_query_data_pair_count,
+            .plugin_query_data_pair = &plugin_query_data_pair,
         };
 
         reset_formatter();
@@ -73,4 +88,57 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     }
 
     return 0;
+}
+
+static bool plugin_check_presence(const uint8_t *contract_address) {
+    uint8_t expected[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                          0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                          0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    return memcmp(contract_address, expected, 32) == 0;
+}
+
+stellar_plugin_result_t plugin_init_contract(const uint8_t *contract_address) {
+    // Build-in token plugin
+    if (plugin_check_presence(contract_address)) {
+        return STELLAR_PLUGIN_RESULT_OK;
+    }
+    return STELLAR_PLUGIN_RESULT_UNAVAILABLE;
+}
+
+stellar_plugin_result_t plugin_query_data_pair_count(const uint8_t *contract_address,
+                                                     uint8_t *data_pair_count) {
+    // Build-in token plugin
+    if (plugin_check_presence(contract_address)) {
+        *data_pair_count = 3;
+        return STELLAR_PLUGIN_RESULT_OK;
+    }
+    return STELLAR_PLUGIN_RESULT_UNAVAILABLE;
+}
+
+stellar_plugin_result_t plugin_query_data_pair(const uint8_t *contract_address,
+                                               uint8_t data_pair_index,
+                                               char *caption,
+                                               uint8_t caption_len,
+                                               char *value,
+                                               uint8_t value_len) {
+    if (!plugin_check_presence(contract_address)) {
+        return STELLAR_PLUGIN_RESULT_UNAVAILABLE;
+    }
+    switch (data_pair_index) {
+        case 0:
+            strncpy(caption, "caption 0", caption_len);
+            strncpy(value, "value 0", value_len);
+            break;
+        case 1:
+            strncpy(caption, "caption 1", caption_len);
+            strncpy(value, "value 1", value_len);
+            break;
+        case 2:
+            strncpy(caption, "caption 2", caption_len);
+            strncpy(value, "value 2", value_len);
+            break;
+        default:
+            return STELLAR_PLUGIN_RESULT_ERROR;
+    }
+    return STELLAR_PLUGIN_RESULT_OK;
 }
