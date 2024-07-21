@@ -1,6 +1,11 @@
 name: ClusterFuzzLite cron tasks
 on:
   workflow_dispatch:
+    inputs:
+      fuzz-seconds:
+        description: "Number of seconds to run fuzzers"
+        required: false
+        default: "600"
   push:
     branches:
       - develop # Use your actual default branch here.
@@ -40,9 +45,9 @@ jobs:
         uses: google/clusterfuzzlite/actions/run_fuzzers@v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          fuzz-seconds: 600 # 10 minutes
+          fuzz-seconds: ${{ github.event.inputs.fuzz-seconds || '600' }} # Defaults to 10 minutes
           mode: ${{ matrix.mode }}
           sanitizer: ${{ matrix.sanitizer }}
           storage-repo: https://${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/lightsail-network/app-stellar-fuzz-corpus
-          storage-repo-branch: main   # Optional. Defaults to "main"
-          storage-repo-branch-coverage: gh-pages  # Optional. Defaults to "gh-pages".
+          storage-repo-branch: main # Optional. Defaults to "main"
+          storage-repo-branch-coverage: gh-pages # Optional. Defaults to "gh-pages".
