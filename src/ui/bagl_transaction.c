@@ -39,6 +39,8 @@
 #include "stellar/formatter.h"
 #include "stellar/printer.h"
 
+static void start_review_flow(void);
+
 static action_validate_cb g_validate_callback;
 static bool data_exists;
 static formatter_data_t formatter_data;
@@ -187,6 +189,13 @@ UX_STEP_CB(ux_tx_reject_step,
                "Reject",
            });
 
+UX_STEP_NOCB(ux_transaction_approval_blind_signing_reminder_step,
+             pbb,
+             {
+                 &C_icon_warning,
+                 "You accepted",
+                 "the risks",
+             });
 // FLOW to display transaction information:
 // https://developers.ledger.com/docs/device-app/develop/ui/flows/advanced-display-management
 UX_FLOW(ux_tx_flow,
@@ -204,6 +213,107 @@ UX_FLOW(ux_auth_flow,
         &ux_tx_lower_delimiter,
         &ux_auth_approve_step,
         &ux_tx_reject_step);
+
+UX_FLOW(ux_tx_flow_with_reminder,
+        &ux_tx_review_step,
+        &ux_tx_upper_delimiter,
+        &ux_tx_generic,
+        &ux_tx_lower_delimiter,
+        &ux_transaction_approval_blind_signing_reminder_step,
+        &ux_tx_approve_step,
+        &ux_tx_reject_step);
+
+UX_FLOW(ux_auth_flow_with_reminder,
+        &ux_auth_review_step,
+        &ux_tx_upper_delimiter,
+        &ux_tx_generic,
+        &ux_tx_lower_delimiter,
+        &ux_transaction_approval_blind_signing_reminder_step,
+        &ux_auth_approve_step,
+        &ux_tx_reject_step);
+
+// clang-format off
+UX_STEP_NOCB(
+    ux_transaction_blind_signing_warning_step,
+    pbb,
+    {
+      &C_icon_warning,
+#ifdef TARGET_NANOS
+      "Transaction",
+      "not trusted",
+#else
+      "This transaction",
+      "cannot be trusted",
+#endif
+    });
+#ifndef TARGET_NANOS
+UX_STEP_NOCB(
+    ux_transaction_blind_signing_text1_step,
+    nnnn,
+    {
+      "Your Ledger cannot",
+      "decode this",
+      "transaction. If you",
+      "sign it, you could",
+    });
+UX_STEP_NOCB(
+    ux_transaction_blind_signing_text2_step,
+    nnnn,
+    {
+      "be authorizing",
+      "malicious actions",
+      "that can drain your",
+      "wallet.",
+    });
+#endif
+UX_STEP_NOCB(
+    ux_transaction_blind_signing_link_step,
+    nn,
+    {
+      "Learn more:",
+      "ledger.com/e8",
+    });
+UX_STEP_CB(
+    ux_transaction_blind_signing_accept_step,
+    pbb,
+    start_review_flow(),
+    {
+      &C_icon_validate_14,
+#ifdef TARGET_NANOS
+      "Accept risk",
+      "and review",
+#else
+      "Accept risk and",
+      "review transaction",
+#endif
+    });
+UX_STEP_CB(
+    ux_transaction_blind_signing_reject_step,
+    pb,
+    ui_action_validate_transaction(false),
+    {
+      &C_icon_crossmark,
+      "Reject",
+    });
+// clang-format on
+
+UX_FLOW(ux_transaction_blind_signing_flow,
+        &ux_transaction_blind_signing_warning_step,
+#ifndef TARGET_NANOS
+        &ux_transaction_blind_signing_text1_step,
+        &ux_transaction_blind_signing_text2_step,
+#endif
+        &ux_transaction_blind_signing_link_step,
+        &ux_transaction_blind_signing_accept_step,
+        &ux_transaction_blind_signing_reject_step);
+
+static void start_review_flow() {
+    if (G_context.req_type == CONFIRM_TRANSACTION) {
+        ux_flow_init(0, ux_tx_flow_with_reminder, NULL);
+    } else {
+        ux_flow_init(0, ux_auth_flow_with_reminder, NULL);
+    }
+}
 
 void prepare_display() {
     formatter_data_t fdata = {
@@ -236,7 +346,11 @@ int ui_display_transaction() {
         return io_send_sw(SW_BAD_STATE);
     }
     prepare_display();
-    ux_flow_init(0, ux_tx_flow, NULL);
+    if (G_context.unverified_contracts) {
+        ux_flow_init(0, ux_transaction_blind_signing_flow, NULL);
+    } else {
+        ux_flow_init(0, ux_tx_flow, NULL);
+    }
     return 0;
 }
 
@@ -246,7 +360,11 @@ int ui_display_auth() {
         return io_send_sw(SW_BAD_STATE);
     }
     prepare_display();
-    ux_flow_init(0, ux_auth_flow, NULL);
+    if (G_context.unverified_contracts) {
+        ux_flow_init(0, ux_transaction_blind_signing_flow, NULL);
+    } else {
+        ux_flow_init(0, ux_auth_flow, NULL);
+    }
     return 0;
 }
 #endif
