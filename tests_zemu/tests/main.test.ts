@@ -3,7 +3,7 @@ import { APP_SEED, models } from "./common";
 import * as testCasesFunction from "tests-common";
 import { Keypair, StrKey } from "@stellar/stellar-base";
 import Str from "@ledgerhq/hw-app-str";
-import { StellarUserRefusedError, StellarHashSigningNotEnabledError } from "@ledgerhq/hw-app-str";
+import { StellarUserRefusedError } from "@ledgerhq/hw-app-str";
 import Zemu from "@zondax/zemu";
 import { sha256 } from 'sha.js'
 import { ActionKind, TModel } from "@zondax/zemu/dist/types";
@@ -88,19 +88,6 @@ describe("get public key", () => {
 });
 
 describe("hash signing", () => {
-  test.concurrent.each(models)("hash signing mode is not enabled ($dev.name)", async ({ dev, startText }) => {
-    const sim = new Zemu(dev.path);
-    try {
-      await sim.start({ ...defaultOptions, model: dev.name, startText: startText });
-      const transport = await sim.getTransport();
-      const str = new Str(transport);
-      const hash = Buffer.from("3389e9f0f1a65f19736cacf544c2e825313e8447f569233bb8db39aa607c8889", "hex");
-      expect(() => str.signHash("44'/148'/0'", hash)).rejects.toThrow(StellarHashSigningNotEnabledError);
-    } finally {
-      await sim.close();
-    }
-  });
-
   // TODO: skip for now, see https://github.com/LedgerHQ/ledger-secure-sdk/issues/737
   test.concurrent.each(models.filter(({ dev }) => dev.name !== "flex" && dev.name !== "stax"))("approve ($dev.name)", async ({ dev, startText }) => {
     const sim = new Zemu(dev.path);
@@ -109,9 +96,6 @@ describe("hash signing", () => {
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText });
       const transport = await sim.getTransport();
       const str = new Str(transport);
-
-      // enable hash signing
-      await enableSettings(sim, dev.name, testCaseName, false, true, false);
 
       const hash = Buffer.from("3389e9f0f1a65f19736cacf544c2e825313e8447f569233bb8db39aa607c8889", "hex");
       const result = str.signHash("44'/148'/0'", hash);
@@ -138,9 +122,6 @@ describe("hash signing", () => {
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText, approveAction: ButtonKind.RejectButton });
       const transport = await sim.getTransport();
       const str = new Str(transport);
-
-      // enable hash signing
-      await enableSettings(sim, dev.name, testCaseName, false, true, false);
 
       const hash = Buffer.from("3389e9f0f1a65f19736cacf544c2e825313e8447f569233bb8db39aa607c8889", "hex");
       expect(() => str.signHash("44'/148'/0'", hash)).rejects.toThrow(StellarUserRefusedError);
@@ -169,9 +150,6 @@ describe("hash signing", () => {
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText, approveAction: ButtonKind.RejectButton });
       const transport = await sim.getTransport();
       const str = new Str(transport);
-
-      // enable hash signing
-      await enableSettings(sim, dev.name, testCaseName, false, true, false);
 
       const hash = Buffer.from("3389e9f0f1a65f19736cacf544c2e825313e8447f569233bb8db39aa607c8889", "hex");
       expect(() => str.signHash("44'/148'/0'", hash)).rejects.toThrow(StellarUserRefusedError);
@@ -211,7 +189,7 @@ describe("transactions", () => {
           "opInvokeHostFunctionWithoutArgs",
           "opInvokeHostFunctionWithoutAuthAndNoSource"
         ];
-        await enableSettings(sim, dev.name, testCaseName, testsNeedEnableCustomContracts.includes(c.caseName), false, true);
+        await enableSequence(sim, dev.name, testCaseName);
 
         const result = str.signTransaction("44'/148'/0'", tx.signatureBase());
         const events = await sim.getEvents();
@@ -251,8 +229,7 @@ describe("transactions", () => {
       const transport = await sim.getTransport();
       const str = new Str(transport);
 
-      // enable custom contracts and seqence number
-      await enableSettings(sim, dev.name, testCaseName, false, false, true);
+      await enableSequence(sim, dev.name, testCaseName);
 
       expect(() => str.signTransaction("44'/148'/0'", tx.signatureBase())).rejects.toThrow(StellarUserRefusedError);
 
@@ -284,9 +261,7 @@ describe("transactions", () => {
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText, approveAction: ButtonKind.RejectButton });
       const transport = await sim.getTransport();
       const str = new Str(transport);
-
-      // enable custom contracts and seqence number
-      await enableSettings(sim, dev.name, testCaseName, false, false, true);
+      await enableSequence(sim, dev.name, testCaseName);
 
       expect(() => str.signTransaction("44'/148'/0'", tx.signatureBase())).rejects.toThrow(StellarUserRefusedError);
 
@@ -369,20 +344,6 @@ describe("transactions", () => {
     }
   });
 
-  test.concurrent.each(models)("custom contracts mode is not enabled ($dev.name)", async ({ dev, startText }) => {
-    const tx = testCasesFunction.opInvokeHostFunctionScvalsCase0();
-    const sim = new Zemu(dev.path);
-    try {
-      await sim.start({ ...defaultOptions, model: dev.name, startText: startText });
-      const transport = await sim.getTransport();
-      const str = new Str(transport);
-      // TODO: Waiting for SDK update.
-      expect(() => str.signTransaction("44'/148'/0'", tx.signatureBase())).rejects.toThrow();
-    } finally {
-      await sim.close();
-    }
-  });
-
   test.concurrent.each(models)("refuse risk ($dev.name)", async ({ dev, startText }) => {
     const tx = testCasesFunction.opInvokeHostFunctionScvalsCase0();
     const sim = new Zemu(dev.path);
@@ -391,7 +352,6 @@ describe("transactions", () => {
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText });
       const transport = await sim.getTransport();
       const str = new Str(transport);
-      await enableSettings(sim, dev.name, testCaseName, true, false, false);
       expect(() => str.signTransaction("44'/148'/0'", tx.signatureBase())).rejects.toThrow(StellarUserRefusedError);
       const events = await sim.getEvents();
       await sim.waitForScreenChanges(events);
@@ -422,8 +382,6 @@ describe("soroban auth", () => {
           "sorobanAuthTestnet",
           "sorobanAuthUnknownNetwork"
         ];
-        await enableSettings(sim, dev.name, testCaseName, testsNeedEnableCustomContracts.includes(c.caseName), false, false);
-
         const result = str.signSorobanAuthorization("44'/148'/0'", hashIdPreimage.toXDR("raw"));
         const events = await sim.getEvents();
         await sim.waitForScreenChanges(events);
@@ -458,9 +416,6 @@ describe("soroban auth", () => {
       const transport = await sim.getTransport();
       const str = new Str(transport);
 
-      // enable custom contracts
-      await enableSettings(sim, dev.name, testCaseName, true, false, false);
-
       expect(() => str.signSorobanAuthorization("44'/148'/0'", hashIdPreimage.toXDR("raw"))).rejects.toThrow(StellarUserRefusedError);
 
       const events = await sim.getEvents();
@@ -486,20 +441,6 @@ describe("soroban auth", () => {
     }
   });
 
-  test.concurrent.each(models)("custom contracts mode is not enabled ($dev.name)", async ({ dev, startText }) => {
-    const hashIdPreimage = testCasesFunction.sorobanAuthInvokeContract();
-    const sim = new Zemu(dev.path);
-    try {
-      await sim.start({ ...defaultOptions, model: dev.name, startText: startText });
-      const transport = await sim.getTransport();
-      const str = new Str(transport);
-      // TODO: Waiting for SDK update.
-      expect(() => str.signSorobanAuthorization("44'/148'/0'", hashIdPreimage.toXDR("raw"))).rejects.toThrow();
-    } finally {
-      await sim.close();
-    }
-  });
-
   test.concurrent.each(models)("refuse risk ($dev.name)", async ({ dev, startText }) => {
     const hashIdPreimage = testCasesFunction.sorobanAuthInvokeContract();
     const sim = new Zemu(dev.path);
@@ -508,10 +449,6 @@ describe("soroban auth", () => {
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText, approveAction: ButtonKind.RejectButton });
       const transport = await sim.getTransport();
       const str = new Str(transport);
-
-      // enable custom contracts
-      await enableSettings(sim, dev.name, testCaseName, true, false, false);
-
       expect(() => str.signSorobanAuthorization("44'/148'/0'", hashIdPreimage.toXDR("raw"))).rejects.toThrow(StellarUserRefusedError);
       const events = await sim.getEvents();
       await sim.waitForScreenChanges(events);
@@ -691,56 +628,17 @@ function hash(data: Buffer) {
   return hasher.digest()
 }
 
-async function enableSettings(sim: Zemu, device: TModel, testCaseName: string, enableCustomContracts: boolean, enableHashSigning: boolean, enableSequence: boolean) {
-  if (device == "stax") {
-    const settingNav = [
-      ...new TouchNavigation("stax", [ButtonKind.InfoButton]).schedule,
-    ];
-    if (enableCustomContracts) {
-      settingNav.push(StaxSettingToggleCustomContracts);
-      settingNav.push(...new TouchNavigation("stax", [ButtonKind.ConfirmYesButton]).schedule);
-    }
-    if (enableHashSigning) {
-      settingNav.push(StaxSettingToggleHashSigning);
-      settingNav.push(...new TouchNavigation("stax", [ButtonKind.ConfirmYesButton]).schedule);
-    }
-    if (enableSequence) {
-      settingNav.push(StaxSettingToggleSequence);
-    }
-    await sim.navigate(".", testCaseName, settingNav, true, false);
-  } else if (device == "flex") {
-    const settingNav = [
-      ...new TouchNavigation("flex", [ButtonKind.InfoButton]).schedule,
-    ];
-    if (enableCustomContracts) {
-      settingNav.push(FlexSettingToggleCustomContracts);
-      settingNav.push(...new TouchNavigation("flex", [ButtonKind.ConfirmYesButton]).schedule);
-
-    }
-    if (enableHashSigning) {
-      settingNav.push(FlexSettingToggleHashSigning);
-      settingNav.push(...new TouchNavigation("flex", [ButtonKind.ConfirmYesButton]).schedule);
-    }
-    if (enableSequence) {
-      settingNav.push(...new TouchNavigation("flex", [ButtonKind.SettingsNavRightButton]).schedule);
-      settingNav.push(FlexSettingToggleSequence);
-    }
-    await sim.navigate(".", testCaseName, settingNav, true, false);
+async function enableSequence(sim: Zemu, device: TModel, testCaseName: string) {
+  if (device == "stax" || device == "flex") {
+    const settingNav = new TouchNavigation(device, [
+      ButtonKind.InfoButton,
+      ButtonKind.ToggleSettingButton1,
+    ]);
+    await sim.navigate(".", testCaseName, settingNav.schedule, true, false);
   } else {
-    // enter settings page
     await sim.clickRight(undefined, true);
     await sim.clickBoth(undefined, true);
-    if (enableCustomContracts) {
-      await sim.clickBoth(undefined, true);
-    }
-    await sim.clickRight();
-    if (enableHashSigning) {
-      await sim.clickBoth(undefined, true);
-    }
-    await sim.clickRight();
-    if (enableSequence) {
-      await sim.clickBoth(undefined, true);
-    }
+    await sim.clickBoth(undefined, true);
   }
 }
 
@@ -783,65 +681,5 @@ async function refuseRisk(sim: Zemu, device: TModel, testCaseName: string) {
     await sim.clickRight(undefined, true);
     await sim.clickRight(undefined, true);
     await sim.clickBoth(undefined, true);
-  }
-}
-
-const StaxSettingToggleCustomContracts: INavElement = {
-  type: ActionKind.Touch,
-  button: {
-    x: 350,
-    y: 115,
-    delay: 0.25,
-    direction: 0
-  }
-}
-
-const StaxSettingToggleHashSigning: INavElement = {
-  type: ActionKind.Touch,
-  button: {
-    x: 350,
-    y: 254,
-    delay: 0.25,
-    direction: 0
-  }
-}
-
-const StaxSettingToggleSequence: INavElement = {
-  type: ActionKind.Touch,
-  button: {
-    x: 350,
-    y: 394,
-    delay: 0.25,
-    direction: 0
-  }
-}
-
-const FlexSettingToggleCustomContracts: INavElement = {
-  type: ActionKind.Touch,
-  button: {
-    x: 380,
-    y: 123,
-    delay: 0.25,
-    direction: 0
-  }
-}
-
-const FlexSettingToggleHashSigning: INavElement = {
-  type: ActionKind.Touch,
-  button: {
-    x: 380,
-    y: 263,
-    delay: 0.25,
-    direction: 0
-  }
-}
-
-const FlexSettingToggleSequence: INavElement = {
-  type: ActionKind.Touch,
-  button: {
-    x: 380,
-    y: 123,
-    delay: 0.25,
-    direction: 0
   }
 }

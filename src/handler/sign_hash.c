@@ -31,15 +31,10 @@
 #include "types.h"
 #include "sw.h"
 #include "crypto.h"
-#include "settings.h"
 #include "ui/display.h"
 #include "helper/send_response.h"
 
 int handler_sign_hash(buffer_t *cdata) {
-    if (!HAS_SETTING(S_HASH_SIGNING_ENABLED)) {
-        return io_send_sw(SW_HASH_SIGNING_MODE_NOT_ENABLED);
-    }
-
     explicit_bzero(&G_context, sizeof(G_context));
     G_context.req_type = CONFIRM_HASH;
     G_context.state = STATE_NONE;

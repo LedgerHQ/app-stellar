@@ -88,8 +88,6 @@
 | 0x6985 | `SW_DENY`                                  | Rejected by user                                          |
 | 0x6A87 | `SW_WRONG_DATA_LENGTH`                     | `Lc` or minimum APDU lenght is incorrect                  |
 | 0x6B00 | `SW_WRONG_P1P2`                            | Either `P1` or `P2` is incorrect                          |
-| 0x6C66 | `SW_HASH_SIGNING_MODE_NOT_ENABLED`         | Hash signing model not enabled                            |
-| 0x6C77 | `SW_UNVERIFIED_CONTRACTS_MODE_NOT_ENABLED` | Unverified contracts (custom contracts) model not enabled |
 | 0x6D00 | `SW_INS_NOT_SUPPORTED`                     | No command exists with `INS`                              |
 | 0x6E00 | `SW_CLA_NOT_SUPPORTED`                     | Bad `CLA` used for this application                       |
 | 0xB002 | `SW_DISPLAY_ADDRESS_FAIL`                  | Failed to display address                                 |

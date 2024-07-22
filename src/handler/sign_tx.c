@@ -29,7 +29,6 @@
 #include "sw.h"
 #include "globals.h"
 #include "plugin.h"
-#include "settings.h"
 #include "ui/display.h"
 #include "crypto.h"
 #include "helper/send_response.h"
@@ -132,11 +131,6 @@ int handler_sign_tx(buffer_t *cdata, bool is_first_chunk, bool more) {
         }
 
         G_context.unverified_contracts = check_include_custom_contract();
-        PRINTF("G_context.unverified_contracts: %d\n", G_context.unverified_contracts);
-        if (G_context.unverified_contracts && !HAS_SETTING(S_UNVERIFIED_CONTRACTS_ENABLED)) {
-            return io_send_sw(SW_UNVERIFIED_CONTRACTS_MODE_NOT_ENABLED);
-        }
-
         return ui_display_transaction();
     }
 };

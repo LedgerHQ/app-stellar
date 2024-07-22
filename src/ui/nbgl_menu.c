@@ -38,23 +38,16 @@ void app_quit(void) {
 //  -----------------------------------------------------------
 //  --------------------- SETTINGS MENU -----------------------
 //  -----------------------------------------------------------
-#define SETTING_INFO_NB 3
+#define SETTING_INFO_NB 2
 static const char* const INFO_TYPES[SETTING_INFO_NB] = {"Version", "Developer"};
 static const char* const INFO_CONTENTS[SETTING_INFO_NB] = {APPVERSION, "overcat"};
 
 // settings switches definitions
 enum {
-    SWITCH_UNVERIFIED_CONTRACTS_SET_TOKEN = FIRST_USER_TOKEN,
-    SWITCH_HASH_SET_TOKEN,
-    SWITCH_SEQUENCE_SET_TOKEN,
+    SWITCH_SEQUENCE_SET_TOKEN = FIRST_USER_TOKEN,
 };
 
-enum {
-    SWITCH_UNVERIFIED_CONTRACTS_SET_ID = 0,
-    SWITCH_HASH_SET_ID,
-    SWITCH_SEQUENCE_SET_ID,
-    SETTINGS_SWITCHES_NB
-};
+enum { SWITCH_SEQUENCE_SET_ID = 0, SETTINGS_SWITCHES_NB };
 
 static nbgl_contentSwitch_t switches[SETTINGS_SWITCHES_NB] = {0};
 
@@ -65,8 +58,6 @@ static const nbgl_contentInfoList_t info_list = {
 };
 
 static uint8_t init_setting_page;
-static void review_warning_choice_hash_signing(bool confirm);
-static void review_warning_choice_unverified_contracts(bool confirm);
 static void controls_callback(int token, uint8_t index, int page);
 
 // settings menu definition
@@ -81,105 +72,22 @@ static const nbgl_genericContents_t setting_contents = {.callbackCallNeeded = fa
                                                         .contentsList = contents,
                                                         .nbContents = SETTING_CONTENTS_NB};
 
-// callback for setting warning choice
-static void review_warning_choice_hash_signing(bool confirm) {
-    if (confirm) {
-        switches[SWITCH_HASH_SET_ID].initState = ON_STATE;
-        // store the new setting value in NVM
-        SETTING_TOGGLE(S_HASH_SIGNING_ENABLED);
-    }
-
-    // Reset setting menu to the right page
-    nbgl_useCaseHomeAndSettings(APPNAME,
-                                &C_icon_stellar_64px,
-                                NULL,
-                                init_setting_page,
-                                &setting_contents,
-                                &info_list,
-                                NULL,
-                                app_quit);
-}
-
-// callback for setting warning choice
-static void review_warning_choice_unverified_contracts(bool confirm) {
-    if (confirm) {
-        switches[SWITCH_UNVERIFIED_CONTRACTS_SET_ID].initState = ON_STATE;
-        // store the new setting value in NVM
-        SETTING_TOGGLE(S_UNVERIFIED_CONTRACTS_ENABLED);
-    }
-
-    // Reset setting menu to the right page
-    nbgl_useCaseHomeAndSettings(APPNAME,
-                                &C_icon_stellar_64px,
-                                NULL,
-                                init_setting_page,
-                                &setting_contents,
-                                &info_list,
-                                NULL,
-                                app_quit);
-}
-
 static void controls_callback(int token, uint8_t index, int page) {
     UNUSED(index);
     init_setting_page = page;
 
-    if (token == SWITCH_HASH_SET_TOKEN) {
-        if (HAS_SETTING(S_HASH_SIGNING_ENABLED)) {
-            switches[SWITCH_HASH_SET_ID].initState = OFF_STATE;
-            SETTING_TOGGLE(S_HASH_SIGNING_ENABLED);
-        } else {
-            // Display the warning message and ask the user to confirm
-            nbgl_useCaseChoice(
-                &C_Warning_64px,
-                "Enable Hash Signing",
-                "Signing hashes is a dangerous operation that can put your wallet at serious risk. "
-                "Only enable this feature if you are sure you know what you are doing.",
-                "I understand, confirm",
-                "Cancel",
-                review_warning_choice_hash_signing);
-        }
-    } else if (token == SWITCH_SEQUENCE_SET_TOKEN) {
+    if (token == SWITCH_SEQUENCE_SET_TOKEN) {
         // toggle the switch value
         switches[SWITCH_SEQUENCE_SET_ID].initState =
             (!HAS_SETTING(S_SEQUENCE_NUMBER_ENABLED)) ? ON_STATE : OFF_STATE;
         // store the new setting value in NVM
         SETTING_TOGGLE(S_SEQUENCE_NUMBER_ENABLED);
-    } else if (token == SWITCH_UNVERIFIED_CONTRACTS_SET_TOKEN) {
-        if (HAS_SETTING(S_UNVERIFIED_CONTRACTS_ENABLED)) {
-            switches[SWITCH_UNVERIFIED_CONTRACTS_SET_ID].initState = OFF_STATE;
-            SETTING_TOGGLE(S_UNVERIFIED_CONTRACTS_ENABLED);
-        } else {
-            // Display the warning message and ask the user to confirm
-            nbgl_useCaseChoice(
-                &C_Warning_64px,
-                "Allow unverified contracts",
-                "Unverified contracts may not be displayed in a readable form on "
-                "your Ledger, so you need to examine them very carefully before sign them.",
-                "I understand, confirm",
-                "Cancel",
-                review_warning_choice_unverified_contracts);
-        }
     }
 }
 
 // home page definition
 void ui_menu_main(void) {
     // Initialize switches data
-
-    switches[SWITCH_UNVERIFIED_CONTRACTS_SET_ID].initState =
-        (HAS_SETTING(S_UNVERIFIED_CONTRACTS_ENABLED)) ? ON_STATE : OFF_STATE;
-    switches[SWITCH_UNVERIFIED_CONTRACTS_SET_ID].text = "Custom contracts";
-    switches[SWITCH_UNVERIFIED_CONTRACTS_SET_ID].subText = "Allow unverified contract";
-    switches[SWITCH_UNVERIFIED_CONTRACTS_SET_ID].token = SWITCH_UNVERIFIED_CONTRACTS_SET_TOKEN;
-    switches[SWITCH_UNVERIFIED_CONTRACTS_SET_ID].tuneId = TUNE_TAP_CASUAL;
-
-    switches[SWITCH_HASH_SET_ID].initState =
-        (HAS_SETTING(S_HASH_SIGNING_ENABLED)) ? ON_STATE : OFF_STATE;
-    switches[SWITCH_HASH_SET_ID].text = "Hash signing";
-    switches[SWITCH_HASH_SET_ID].subText = "Enable hash signing";
-    switches[SWITCH_HASH_SET_ID].token = SWITCH_HASH_SET_TOKEN;
-    switches[SWITCH_HASH_SET_ID].tuneId = TUNE_TAP_CASUAL;
-
     switches[SWITCH_SEQUENCE_SET_ID].initState =
         (HAS_SETTING(S_SEQUENCE_NUMBER_ENABLED)) ? ON_STATE : OFF_STATE;
     switches[SWITCH_SEQUENCE_SET_ID].text = "Sequence number";
