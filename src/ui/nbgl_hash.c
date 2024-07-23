@@ -39,15 +39,12 @@ static void ui_action_validate_transaction(bool choice) {
 
 // Globals
 static char str_values[TAG_VAL_LST_PAIR_NB][DETAIL_VALUE_MAX_LENGTH];
-static nbgl_pageInfoLongPress_t info_long_press;
 static nbgl_layoutTagValue_t caption_value_pairs[TAG_VAL_LST_PAIR_NB];
 static nbgl_layoutTagValueList_t pair_list;
 
 // Static functions declarations
 static void review_start(void);
-static void review_continue(void);
-static void reject_confirmation(void);
-static void reject_choice(void);
+static void review_choice(bool confirm);
 static void warning_choice2(bool confirm);
 static void warning_choice1(bool confirm);
 
@@ -63,50 +60,31 @@ static void prepare_page(void) {
         return;
     }
     caption_value_pairs[0].value = str_values[0];
-}
 
-static void reject_confirmation(void) {
-    nbgl_useCaseStatus("Hash rejected", false, ui_menu_main);
-    ui_action_validate_transaction(false);
-}
-
-static void reject_choice(void) {
-    nbgl_useCaseConfirm("Reject hash?",
-                        NULL,
-                        "Yes, reject",
-                        "Go back to hash",
-                        reject_confirmation);
+    pair_list.pairs = caption_value_pairs;
+    pair_list.nbPairs = TAG_VAL_LST_PAIR_NB;
 }
 
 static void review_choice(bool confirm) {
+    // Answer, display a status page and go back to main
     if (confirm) {
         nbgl_useCaseStatus("Hash signed", true, ui_menu_main);
-        ui_action_validate_transaction(true);
     } else {
-        reject_choice();
+        nbgl_useCaseStatus("Hash rejected", false, ui_menu_main);
     }
+    validate_transaction(confirm);
 }
 
 static void review_start(void) {
-    nbgl_useCaseReviewStart(&C_icon_stellar_64px,
-                            "Review hash signing",
-                            NULL,
-                            "Reject hash",
-                            review_continue,
-                            reject_choice);
-}
-
-static void review_continue(void) {
-    pair_list.pairs = caption_value_pairs;
-    pair_list.nbPairs = TAG_VAL_LST_PAIR_NB;
-
-    info_long_press.text = "Sign hash?";
-    info_long_press.icon = &C_icon_stellar_64px;
-    info_long_press.longPressText = "Hold to sign";
-    info_long_press.longPressToken = 0;
-    info_long_press.tuneId = TUNE_TAP_CASUAL;
-
-    nbgl_useCaseStaticReview(&pair_list, &info_long_press, "Reject hash", review_choice);
+    nbgl_operationType_t op_type = TYPE_TRANSACTION;
+    op_type |= BLIND_OPERATION;
+    nbgl_useCaseReview(op_type,
+                       &pair_list,
+                       &C_icon_stellar_64px,
+                       "Review hash signing",
+                       NULL,
+                       "Sign hash?",
+                       review_choice);
 }
 
 static void warning_choice2(bool confirm) {
@@ -125,10 +103,10 @@ static void warning_choice1(bool confirm) {
             NULL,
             "The hash cannot be trusted",
             "Your Ledger cannot verify the integrity of this hash. If you sign it, you could be "
-            "authorizing malicious actions that can drain your wallet.\n\nLearn more: "
+            "authorizing malicious actions that can drain your wallet.\nLearn more: "
             "ledger.com/e8",
             "I accept the risk",
-            "Reject transaction",
+            "Reject hash",
             warning_choice2);
     }
 }

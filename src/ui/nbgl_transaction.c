@@ -374,7 +374,7 @@ static void warning_choice_tx1(bool confirm) {
             NULL,
             "The transaction cannot be trusted",
             "Unverified contracts may not be displayed in a readable form on your Ledger, so you "
-            "need to examine them very carefully before sign them.",
+            "need to examine them very carefully before sign them.\nLearn more: ledger.com/e8",
             "I accept the risk",
             "Reject transaction",
             warning_choice_tx2);
@@ -398,9 +398,9 @@ static void warning_choice_auth1(bool confirm) {
             NULL,
             "The Soroban Authorization cannot be trusted",
             "Unverified contracts may not be displayed in a readable form on your Ledger, so you "
-            "need to examine them very carefully before sign them.",
+            "need to examine them very carefully before sign them.\nLearn more: ledger.com/e8",
             "I accept the risk",
-            "Reject transaction",
+            "Reject Soroban Auth",
             warning_choice_auth2);
     }
 }
