@@ -35,7 +35,11 @@
 #include "stellar/parser.h"
 
 // Macros
-#define TAG_VAL_LST_MAX_LINES_PER_PAGE     10
+#if defined(TARGET_STAX)
+#define TAG_VAL_LST_MAX_LINES_PER_PAGE 10
+#else
+#define TAG_VAL_LST_MAX_LINES_PER_PAGE 9
+#endif
 #define TAG_VAL_LST_MAX_PAIR_NB            TAG_VAL_LST_MAX_LINES_PER_PAGE / 2
 #define TAG_VAL_LST_ITEM_MAX_CHAR_PER_LINE 31
 #define TAG_VAL_LST_VAL_MAX_CHAR_PER_LINE  17
