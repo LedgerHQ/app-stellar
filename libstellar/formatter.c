@@ -911,6 +911,7 @@ static bool format_manage_sell_offer(formatter_data_t *fdata) {
                 fdata->value_len))
         } else {
             STRLCPY(fdata->caption, "Create Offer", fdata->caption_len);
+            STRLCPY(fdata->value, "New Offer", fdata->value_len);
         }
         FORMATTER_CHECK(push_to_formatter_stack(&format_manage_sell_offer_buy))
     }
@@ -965,6 +966,7 @@ static bool format_manage_buy_offer(formatter_data_t *fdata) {
             FORMATTER_CHECK(print_uint64_num(op->offer_id, fdata->value, fdata->value_len))
         } else {
             STRLCPY(fdata->caption, "Create Offer", fdata->caption_len);
+            STRLCPY(fdata->value, "New Offer", fdata->value_len);
         }
         FORMATTER_CHECK(push_to_formatter_stack(&format_manage_buy_offer_sell))
     }
