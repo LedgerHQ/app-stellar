@@ -231,8 +231,8 @@ static bool display_transaction_page(uint8_t page, nbgl_pageContent_t *content) 
 }
 
 static void reject_tx_confirmation(void) {
-    ui_action_validate_transaction(false);
     nbgl_useCaseReviewStatus(STATUS_TYPE_TRANSACTION_REJECTED, ui_menu_main);
+    ui_action_validate_transaction(false);
 }
 
 static void reject_tx_choice(void) {
@@ -245,8 +245,8 @@ static void reject_tx_choice(void) {
 
 static void review_tx_choice(bool confirm) {
     if (confirm) {
-        ui_action_validate_transaction(true);
         nbgl_useCaseReviewStatus(STATUS_TYPE_TRANSACTION_SIGNED, ui_menu_main);
+        ui_action_validate_transaction(true);
     } else {
         reject_tx_choice();
     }
@@ -271,8 +271,8 @@ static void review_tx_start(void) {
 }
 
 static void reject_auth_confirmation(void) {
-    ui_action_validate_transaction(false);
     nbgl_useCaseStatus("Soroban Auth rejected", false, ui_menu_main);
+    ui_action_validate_transaction(false);
 }
 
 static void reject_auth_choice(void) {
@@ -285,8 +285,8 @@ static void reject_auth_choice(void) {
 
 static void review_auth_choice(bool confirm) {
     if (confirm) {
-        ui_action_validate_transaction(true);
         nbgl_useCaseStatus("Soroban Auth signed", true, ui_menu_main);
+        ui_action_validate_transaction(true);
     } else {
         reject_auth_choice();
     }

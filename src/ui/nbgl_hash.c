@@ -66,8 +66,8 @@ static void prepare_page(void) {
 }
 
 static void reject_confirmation(void) {
-    ui_action_validate_transaction(false);
     nbgl_useCaseStatus("Hash rejected", false, ui_menu_main);
+    ui_action_validate_transaction(false);
 }
 
 static void reject_choice(void) {
@@ -80,8 +80,8 @@ static void reject_choice(void) {
 
 static void review_choice(bool confirm) {
     if (confirm) {
-        ui_action_validate_transaction(true);
         nbgl_useCaseStatus("Hash signed", true, ui_menu_main);
+        ui_action_validate_transaction(true);
     } else {
         reject_choice();
     }
