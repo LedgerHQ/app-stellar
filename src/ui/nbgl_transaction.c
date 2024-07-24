@@ -34,35 +34,28 @@
 #include "stellar/printer.h"
 #include "stellar/parser.h"
 
-// Macros
-#if defined(TARGET_STAX)
-#define TAG_VAL_LST_MAX_LINES_PER_PAGE 10
-#else
-#define TAG_VAL_LST_MAX_LINES_PER_PAGE 9
-#endif
-#define TAG_VAL_LST_MAX_PAIR_NB            TAG_VAL_LST_MAX_LINES_PER_PAGE / 2
-#define TAG_VAL_LST_ITEM_MAX_CHAR_PER_LINE 31
-#define TAG_VAL_LST_VAL_MAX_CHAR_PER_LINE  17
-#define TAG_VAL_LST_VAL_MAX_LEN_PER_PAGE                                 \
-    TAG_VAL_LST_VAL_MAX_CHAR_PER_LINE *(TAG_VAL_LST_MAX_LINES_PER_PAGE - \
-                                        1)  // -1 because at least one line is used by a tag item.
-#define MAX_NUMBER_OF_PAGES 40
-// Enums and Structs
-typedef struct {
-    uint8_t page_pair_nb;  // how many data pairs are on the page
-    bool centered_info;    // if true, only one caption/value pair is displayed on page, and it is
-                           // centered.
-    uint8_t data_idx;
-} page_infos_t;
+// The amount of data may be very large, in order to avoid insufficient memory, we load a certain
+// amount of data at most once.
+#define MAX_DATA_IN_SINGLE_FORMAT 32
 
 // Globals
-static uint8_t nb_pages;      // (nb_pages + 1) = Number of pages to display transaction.
-static int16_t current_page;  // start from 0, eht sign confirmation page is nb_pages + 1.
-nbgl_layoutTagValue_t caption_value_pairs[TAG_VAL_LST_MAX_PAIR_NB];
-static char str_values[TAG_VAL_LST_MAX_PAIR_NB][DETAIL_VALUE_MAX_LENGTH];
-static char str_captions[TAG_VAL_LST_MAX_PAIR_NB][DETAIL_CAPTION_MAX_LENGTH];
-static page_infos_t pages_infos[MAX_NUMBER_OF_PAGES];
+static char str_values[MAX_DATA_IN_SINGLE_FORMAT][DETAIL_VALUE_MAX_LENGTH];
+static char str_captions[MAX_DATA_IN_SINGLE_FORMAT][DETAIL_CAPTION_MAX_LENGTH];
+static nbgl_contentTagValue_t pairs[MAX_DATA_IN_SINGLE_FORMAT];
+static nbgl_contentTagValueList_t pairs_list;
+static uint32_t displayed_data = 0;
 static formatter_data_t formatter_data;
+
+static uint32_t more_data_to_send(void);
+static void review_prepare(void);
+static void review_start(void);
+static void review_continue(bool ask_more);
+static void review_choice(bool confirm);
+static void warning_choice_tx1(bool confirm);
+static void warning_choice_tx2(bool confirm);
+static void warning_choice_auth1(bool confirm);
+static void warning_choice_auth2(bool confirm);
+static void ui_action_validate_transaction(bool choice);
 
 // Validate/Invalidate transaction and go back to home
 static void ui_action_validate_transaction(bool choice) {
@@ -70,247 +63,120 @@ static void ui_action_validate_transaction(bool choice) {
     ui_menu_main();
 }
 
-static void review_tx_continue(void);
-static void review_tx_start(void);
-static void reject_tx_confirmation(void);
-static void reject_tx_choice(void);
-
-static void review_auth_continue(void);
-static void review_auth_start(void);
-static void reject_auth_confirmation(void);
-static void reject_auth_choice(void);
-
-static void warning_choice_tx1(bool confirm);
-static void warning_choice_tx2(bool confirm);
-static void warning_choice_auth1(bool confirm);
-static void warning_choice_auth2(bool confirm);
-
-// Functions definitions
-static inline void INCR_AND_CHECK_PAGE_NB(void) {
-    nb_pages++;
-    if (nb_pages >= MAX_NUMBER_OF_PAGES) {
-        THROW(SW_TOO_MANY_PAGES);
-    }
-}
-
-static void prepare_tx_pages_infos(void) {
-    PRINTF("prepare_tx_pages_infos\n");
-    uint8_t tag_line_nb = 0;
-    uint8_t tag_item_line_nb = 0;
-    uint8_t tag_value_line_nb = 0;
-    uint8_t page_line_nb = 0;
-    uint8_t field_len = 0;
-    uint8_t data_index = 0;
+static uint32_t more_data_to_send() {
     reset_formatter();
+    // the index of the current data
+    uint32_t current_data_index = 0;
+    // the number of data pairs filled in this round
+    uint32_t filled_count = 0;
 
-    // Reset globals.
-    nb_pages = 0;
-
-    explicit_bzero(pages_infos, sizeof(pages_infos));
-    pages_infos[0].data_idx = data_index;
-
-    while (true) {  // Execute loop until last tx formatter is reached.
+    while (true) {
         bool data_exists = true;
         bool is_op_header = false;
+
         if (!get_next_data(&formatter_data, true, &data_exists, &is_op_header)) {
             THROW(SW_FORMATTING_FAIL);
-        };
+        }
 
+        // if there is no more data to display, we break
         if (!data_exists) {
             break;
         }
-        PRINTF("Page %d - Item : %s - Value : %s\n",
-               nb_pages,
-               G.ui.detail_caption,
-               G.ui.detail_value);
 
-        // Compute number of lines filled by tag item string.
-        field_len = strlen(G.ui.detail_caption);
-        tag_item_line_nb = field_len / TAG_VAL_LST_ITEM_MAX_CHAR_PER_LINE;
-        tag_item_line_nb += (field_len % TAG_VAL_LST_ITEM_MAX_CHAR_PER_LINE != 0) ? 1 : 0;
-        // Compute number of lines filled by tag value string.
-        field_len = strlen(G.ui.detail_value);
-        tag_value_line_nb = field_len / TAG_VAL_LST_VAL_MAX_CHAR_PER_LINE;
-        tag_value_line_nb += (field_len % TAG_VAL_LST_VAL_MAX_CHAR_PER_LINE != 0) ? 1 : 0;
-        // Add number of screen lines occupied by tag pair to total lines occupied in page.
-        tag_line_nb = tag_value_line_nb + tag_item_line_nb;
-        page_line_nb += tag_line_nb;
-        // If there are multiple operations and a new operation is reached, create a
-        // special page with only one caption/value pair to display operation number.
-        if (is_op_header && G_context.envelope.tx_details.tx.operations_count > 1) {
-            INCR_AND_CHECK_PAGE_NB();
-            pages_infos[nb_pages].page_pair_nb = 1;
-            pages_infos[nb_pages].data_idx = data_index;
-            pages_infos[nb_pages].centered_info = true;
-            INCR_AND_CHECK_PAGE_NB();
-            page_line_nb = 0;
-            pages_infos[nb_pages].page_pair_nb = 0;
-            pages_infos[nb_pages].data_idx = data_index + 1;
+        // if we are checking the tx data, and it has more than one operation, and it is the op
+        // header (Operation i of n), we break
+        if (filled_count != 0 && G_context.envelope.type != ENVELOPE_TYPE_SOROBAN_AUTHORIZATION &&
+            G_context.envelope.tx_details.tx.operations_count > 1 && is_op_header) {
+            break;
         }
-        // Else if number of lines occupied on page > allowed max number of lines per page,
-        // go to next page.
-        else if (page_line_nb > TAG_VAL_LST_MAX_LINES_PER_PAGE) {
-            INCR_AND_CHECK_PAGE_NB();
-            page_line_nb = tag_line_nb;
-            pages_infos[nb_pages].page_pair_nb = 1;
-            pages_infos[nb_pages].data_idx = data_index;
-        } else
-        // Otherwise save number of pairs on current page
-        {
-            pages_infos[nb_pages].page_pair_nb++;
+
+        // if the current data index is less than the displayed data index, we skip it
+        if (current_data_index < displayed_data) {
+            current_data_index++;
+            continue;
         }
-        data_index++;
+
+        // if we have already full filled the data, we break
+        if (filled_count >= MAX_DATA_IN_SINGLE_FORMAT) {
+            break;
+        }
+
+        strncpy(str_captions[filled_count],
+                G.ui.detail_caption,
+                sizeof(str_captions[filled_count]));
+        strncpy(str_values[filled_count], G.ui.detail_value, sizeof(str_values[filled_count]));
+
+        filled_count++;
+        current_data_index++;
     }
 
-    INCR_AND_CHECK_PAGE_NB();
-
-    for (uint8_t i = 0; i < nb_pages; i++) {
-        PRINTF("Page %d - PairNb : %d - DataIdx : %d\n",
-               i,
-               pages_infos[i].page_pair_nb,
-               pages_infos[i].data_idx);
-    }
+    displayed_data += filled_count;
+    return filled_count;
 }
 
-static void prepare_page(uint8_t page) {
-    PRINTF("prepare_page, page: %d\n", page);
-    reset_formatter();
-    uint8_t data_start_index = pages_infos[page].data_idx;
-    bool data_exists = true;
-    bool is_op_header = false;
-
-    for (uint8_t i = 0; i < data_start_index; i++) {
-        if (!get_next_data(&formatter_data, true, &data_exists, &is_op_header)) {
-            THROW(SW_FORMATTING_FAIL);
-        };
-    }
-
-    for (uint8_t i = 0; i < pages_infos[page].page_pair_nb; i++) {
-        if (!get_next_data(&formatter_data, true, &data_exists, &is_op_header)) {
-            THROW(SW_FORMATTING_FAIL);
-        };
-        strncpy(str_captions[i], G.ui.detail_caption, sizeof(str_captions[i]));
-        strncpy(str_values[i], G.ui.detail_value, sizeof(str_values[i]));
-        caption_value_pairs[i].item = str_captions[i];
-        caption_value_pairs[i].value = str_values[i];
-    }
-}
-
-static bool display_transaction_page(uint8_t page, nbgl_pageContent_t *content) {
-    PRINTF("display_transaction_page, page: %d\n", page);
-    current_page = page;
-    if (page < nb_pages) {
-        prepare_page(page);
-        if (pages_infos[page].centered_info) {
-            content->type = CENTERED_INFO;
-            content->centeredInfo.style = LARGE_CASE_INFO;
-            content->centeredInfo.text1 = "Please review";
-            content->centeredInfo.text2 = caption_value_pairs[0].item;
-            content->centeredInfo.text3 = NULL;
-            content->centeredInfo.icon = &C_icon_stellar_64px;
-            content->centeredInfo.offsetY = 35;
-            content->centeredInfo.onTop = false;
+static void review_choice(bool confirm) {
+    // display a status page and go back to main
+    if (G_context.envelope.type == ENVELOPE_TYPE_SOROBAN_AUTHORIZATION) {
+        if (confirm) {
+            nbgl_useCaseStatus("Soroban Auth signed", true, ui_menu_main);
         } else {
-            content->type = TAG_VALUE_LIST;
-            content->tagValueList.nbPairs = pages_infos[page].page_pair_nb;
-            content->tagValueList.pairs = (nbgl_layoutTagValue_t *) &caption_value_pairs;
-            content->tagValueList.smallCaseForValue = false;
-            content->tagValueList.wrapping = true;
-            content->tagValueList.nbMaxLinesForValue = 0;
+            nbgl_useCaseStatus("Soroban Auth rejected", false, ui_menu_main);
         }
     } else {
-        if (formatter_data.envelope->type == ENVELOPE_TYPE_SOROBAN_AUTHORIZATION) {
-            content->infoLongPress.text = "Sign Soroban Auth?";
+        nbgl_useCaseReviewStatus(
+            confirm ? STATUS_TYPE_TRANSACTION_SIGNED : STATUS_TYPE_TRANSACTION_REJECTED,
+            ui_menu_main);
+    }
+    validate_transaction(confirm);
+}
+
+static void review_continue(bool ask_more) {
+    if (ask_more) {
+        uint32_t pair_cnt = more_data_to_send();
+
+        if (pair_cnt != 0) {
+            for (uint32_t i = 0; i < pair_cnt; i++) {
+                pairs[i].item = str_captions[i];
+                pairs[i].value = str_values[i];
+            }
+            pairs_list.nbPairs = pair_cnt;
+            pairs_list.pairs = pairs;
+            nbgl_useCaseReviewStreamingContinue(&pairs_list, review_continue);
         } else {
-            content->infoLongPress.text = "Sign transaction?";
+            if (formatter_data.envelope->type == ENVELOPE_TYPE_SOROBAN_AUTHORIZATION) {
+                nbgl_useCaseReviewStreamingFinish("Sign Soroban Auth?", review_choice);
+            } else {
+                nbgl_useCaseReviewStreamingFinish("Sign transaction?", review_choice);
+            }
         }
-        content->type = INFO_LONG_PRESS, content->infoLongPress.icon = &C_icon_stellar_64px;
-        content->infoLongPress.longPressText = "Hold to sign";
-    }
-    return true;
-}
-
-static void reject_tx_confirmation(void) {
-    nbgl_useCaseReviewStatus(STATUS_TYPE_TRANSACTION_REJECTED, ui_menu_main);
-    ui_action_validate_transaction(false);
-}
-
-static void reject_tx_choice(void) {
-    nbgl_useCaseConfirm("Reject transaction?",
-                        NULL,
-                        "Yes, Reject",
-                        "Go back to transaction",
-                        reject_tx_confirmation);
-}
-
-static void review_tx_choice(bool confirm) {
-    if (confirm) {
-        nbgl_useCaseReviewStatus(STATUS_TYPE_TRANSACTION_SIGNED, ui_menu_main);
-        ui_action_validate_transaction(true);
     } else {
-        reject_tx_choice();
+        review_choice(false);
     }
 }
 
-static void review_tx_continue(void) {
-    nbgl_useCaseRegularReview(current_page,
-                              nb_pages + 1,
-                              "Reject transaction",
-                              NULL,
-                              display_transaction_page,
-                              review_tx_choice);
-}
+static void review_start(void) {
+    nbgl_operationType_t op_type = TYPE_TRANSACTION;
+    // TODO: SDK bug, waiting for fix
+    // if (G_context.unverified_contracts) {
+    //     op_type |= BLIND_OPERATION;
+    // }
 
-static void review_tx_start(void) {
-    nbgl_useCaseReviewStart(&C_icon_stellar_64px,
-                            "Review transaction",
-                            NULL,
-                            "Reject transaction",
-                            review_tx_continue,
-                            reject_tx_choice);
-}
-
-static void reject_auth_confirmation(void) {
-    nbgl_useCaseStatus("Soroban Auth rejected", false, ui_menu_main);
-    ui_action_validate_transaction(false);
-}
-
-static void reject_auth_choice(void) {
-    nbgl_useCaseConfirm("Reject Soroban Auth?",
-                        NULL,
-                        "Yes, Reject",
-                        "Go back to Soroban Auth",
-                        reject_auth_confirmation);
-}
-
-static void review_auth_choice(bool confirm) {
-    if (confirm) {
-        nbgl_useCaseStatus("Soroban Auth signed", true, ui_menu_main);
-        ui_action_validate_transaction(true);
+    if (formatter_data.envelope->type == ENVELOPE_TYPE_SOROBAN_AUTHORIZATION) {
+        nbgl_useCaseReviewStreamingStart(op_type,
+                                         &C_icon_stellar_64px,
+                                         "Review Soroban Auth",
+                                         NULL,
+                                         review_continue);
     } else {
-        reject_auth_choice();
+        nbgl_useCaseReviewStreamingStart(op_type,
+                                         &C_icon_stellar_64px,
+                                         "Review transaction",
+                                         NULL,
+                                         review_continue);
     }
 }
 
-static void review_auth_continue(void) {
-    nbgl_useCaseRegularReview(current_page,
-                              nb_pages + 1,
-                              "Reject Soroban Auth",
-                              NULL,
-                              display_transaction_page,
-                              review_auth_choice);
-}
-
-static void review_auth_start(void) {
-    nbgl_useCaseReviewStart(&C_icon_stellar_64px,
-                            "Review Soroban Auth",
-                            NULL,
-                            "Reject Soroban Auth",
-                            review_auth_continue,
-                            reject_auth_choice);
-}
-
-static void prepare_display() {
+static void review_prepare() {
     formatter_data_t fdata = {
         .raw_data = G_context.raw,
         .raw_data_len = G_context.raw_size,
@@ -329,38 +195,15 @@ static void prepare_display() {
 
     // init formatter_data
     memcpy(&formatter_data, &fdata, sizeof(formatter_data_t));
-
-    current_page = 0;
-    prepare_tx_pages_infos();
-}
-
-int ui_display_transaction(void) {
-    if (G_context.req_type != CONFIRM_TRANSACTION || G_context.state != STATE_PARSED) {
-        G_context.state = STATE_NONE;
-        return io_send_sw(SW_BAD_STATE);
-    }
-
-    if (G_context.unverified_contracts) {
-        nbgl_useCaseChoice(&C_Warning_64px,
-                           "Security risk detected",
-                           "It may not be safe to sign this "
-                           "transaction. To continue, you'll "
-                           "need to review the risk.",
-                           "Back to safety",
-                           "Review the risk",
-                           warning_choice_tx1);
-    } else {
-        prepare_display();
-        review_tx_start();
-    }
-
-    return 0;
+    explicit_bzero(&pairs, sizeof(pairs));
+    explicit_bzero(&pairs_list, sizeof(pairs_list));
+    displayed_data = 0;
 }
 
 static void warning_choice_tx2(bool confirm) {
     if (confirm) {
-        prepare_display();
-        review_tx_start();
+        review_prepare();
+        review_start();
     } else {
         ui_action_validate_transaction(false);
     }
@@ -383,8 +226,7 @@ static void warning_choice_tx1(bool confirm) {
 
 static void warning_choice_auth2(bool confirm) {
     if (confirm) {
-        prepare_display();
-        review_auth_start();
+        review_start();
     } else {
         ui_action_validate_transaction(false);
     }
@@ -405,11 +247,34 @@ static void warning_choice_auth1(bool confirm) {
     }
 }
 
+int ui_display_transaction(void) {
+    if (G_context.req_type != CONFIRM_TRANSACTION || G_context.state != STATE_PARSED) {
+        G_context.state = STATE_NONE;
+        return io_send_sw(SW_BAD_STATE);
+    }
+    review_prepare();
+    if (G_context.unverified_contracts) {
+        nbgl_useCaseChoice(&C_Warning_64px,
+                           "Security risk detected",
+                           "It may not be safe to sign this "
+                           "transaction. To continue, you'll "
+                           "need to review the risk.",
+                           "Back to safety",
+                           "Review the risk",
+                           warning_choice_tx1);
+    } else {
+        review_start();
+    }
+
+    return 0;
+}
+
 int ui_display_auth() {
     if (G_context.req_type != CONFIRM_SOROBAN_AUTHORIZATION || G_context.state != STATE_PARSED) {
         G_context.state = STATE_NONE;
         return io_send_sw(SW_BAD_STATE);
     }
+    review_prepare();
     if (G_context.unverified_contracts) {
         nbgl_useCaseChoice(&C_Warning_64px,
                            "Security risk detected",
@@ -420,8 +285,7 @@ int ui_display_auth() {
                            "Review the risk",
                            warning_choice_auth1);
     } else {
-        prepare_display();
-        review_auth_start();
+        review_start();
     }
     return 0;
 }

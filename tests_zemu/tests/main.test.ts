@@ -136,7 +136,7 @@ describe("hash signing", () => {
       await sim.navigateAndCompareUntilText(".", testCaseName, textToFind, true);
       if (dev.name == "stax" || dev.name == "flex") {
         const settingNav = new TouchNavigation(dev.name, [ButtonKind.ApproveTapButton]);
-        await sim.navigate(".", testCaseName, settingNav.schedule, true);
+        await sim.navigate(".", testCaseName, settingNav.schedule, true, false);
       }
     } finally {
       await sim.close();
@@ -246,7 +246,7 @@ describe("transactions", () => {
       );
       if (dev.name == "stax" || dev.name == "flex") {
         const settingNav = new TouchNavigation(dev.name, [ButtonKind.ApproveTapButton]);
-        await sim.navigate(".", testCaseName, settingNav.schedule, true);
+        await sim.navigate(".", testCaseName, settingNav.schedule, true, false);
       }
     } finally {
       await sim.close();
@@ -278,7 +278,7 @@ describe("transactions", () => {
       );
       if (dev.name == "stax" || dev.name == "flex") {
         const settingNav = new TouchNavigation(dev.name, [ButtonKind.ApproveTapButton]);
-        await sim.navigate(".", testCaseName, settingNav.schedule, true);
+        await sim.navigate(".", testCaseName, settingNav.schedule, true, false);
       }
     } finally {
       await sim.close();
@@ -434,7 +434,7 @@ describe("soroban auth", () => {
       );
       if (dev.name == "stax" || dev.name == "flex") {
         const settingNav = new TouchNavigation(dev.name, [ButtonKind.ApproveTapButton]);
-        await sim.navigate(".", testCaseName, settingNav.schedule, true);
+        await sim.navigate(".", testCaseName, settingNav.schedule, true, false);
       }
     } finally {
       await sim.close();
@@ -514,7 +514,7 @@ describe("plugin", () => {
       );
       if (dev.name == "stax" || dev.name == "flex") {
         const settingNav = new TouchNavigation(dev.name, [ButtonKind.ApproveTapButton]);
-        await sim.navigate(".", testCaseName, settingNav.schedule, true);
+        await sim.navigate(".", testCaseName, settingNav.schedule, true, false);
       }
     } finally {
       await sim.close();
@@ -578,7 +578,7 @@ describe("plugin", () => {
       );
       if (dev.name == "stax" || dev.name == "flex") {
         const settingNav = new TouchNavigation(dev.name, [ButtonKind.ApproveTapButton]);
-        await sim.navigate(".", testCaseName, settingNav.schedule, true);
+        await sim.navigate(".", testCaseName, settingNav.schedule, true, false);
       }
     } finally {
       await sim.close();
@@ -648,7 +648,7 @@ async function acceptRisk(sim: Zemu, device: TModel, testCaseName: string) {
       ButtonKind.ConfirmNoButton,
       ButtonKind.ConfirmYesButton,
     ]);
-    await sim.navigate(".", testCaseName, acceptRisk.schedule, true);
+    await sim.navigate(".", testCaseName, acceptRisk.schedule, true, false);
   } else if (device == "nanos") {
     await sim.clickRight(undefined, true);
     await sim.clickRight(undefined, true);

@@ -2263,17 +2263,14 @@ static const format_function_t formatters[] = {&format_create_account,
 
 static bool format_confirm_operation(formatter_data_t *fdata) {
     if (fdata->envelope->tx_details.tx.operations_count > 1) {
-        size_t length;
-        STRLCPY(fdata->caption, "Operation ", fdata->caption_len);
-        length = strlen(fdata->caption);
+        STRLCPY(fdata->caption, "Operation", fdata->caption_len);
         FORMATTER_CHECK(print_uint64_num(fdata->envelope->tx_details.tx.operation_index + 1,
-                                         fdata->caption + length,
-                                         fdata->caption_len - length))
-        STRLCAT(fdata->caption, " of ", fdata->caption_len);
-        length = strlen(fdata->caption);
+                                         fdata->value,
+                                         fdata->value_len))
+        STRLCAT(fdata->value, " of ", fdata->value_len)
         FORMATTER_CHECK(print_uint64_num(fdata->envelope->tx_details.tx.operations_count,
-                                         fdata->caption + length,
-                                         fdata->caption_len - length))
+                                         fdata->value + strlen(fdata->value),
+                                         fdata->value_len - strlen(fdata->value)))
 
         FORMATTER_CHECK(push_to_formatter_stack(
             ((format_function_t) PIC(formatters[fdata->envelope->tx_details.tx.op_details.type]))));
