@@ -43,8 +43,11 @@ static const char* const INFO_TYPES[SETTING_INFO_NB] = {"Version", "Developer"};
 static const char* const INFO_CONTENTS[SETTING_INFO_NB] = {APPVERSION, "overcat"};
 
 // settings switches definitions
-enum { SWITCH_HASH_SET_TOKEN = FIRST_USER_TOKEN, SWITCH_SEQUENCE_SET_TOKEN };
-enum { SWITCH_HASH_SET_ID = 0, SWITCH_SEQUENCE_SET_ID, SETTINGS_SWITCHES_NB };
+enum {
+    SWITCH_SEQUENCE_SET_TOKEN = FIRST_USER_TOKEN,
+};
+
+enum { SWITCH_SEQUENCE_SET_ID = 0, SETTINGS_SWITCHES_NB };
 
 static nbgl_contentSwitch_t switches[SETTINGS_SWITCHES_NB] = {0};
 
@@ -54,6 +57,7 @@ static const nbgl_contentInfoList_t info_list = {
     .infoContents = INFO_CONTENTS,
 };
 
+static uint8_t init_setting_page;
 static void controls_callback(int token, uint8_t index, int page);
 
 // settings menu definition
@@ -70,15 +74,9 @@ static const nbgl_genericContents_t setting_contents = {.callbackCallNeeded = fa
 
 static void controls_callback(int token, uint8_t index, int page) {
     UNUSED(index);
-    UNUSED(page);
+    init_setting_page = page;
 
-    if (token == SWITCH_HASH_SET_TOKEN) {
-        // toggle the switch value
-        switches[SWITCH_HASH_SET_ID].initState =
-            (!HAS_SETTING(S_HASH_SIGNING_ENABLED)) ? ON_STATE : OFF_STATE;
-        // store the new setting value in NVM
-        SETTING_TOGGLE(S_HASH_SIGNING_ENABLED);
-    } else if (token == SWITCH_SEQUENCE_SET_TOKEN) {
+    if (token == SWITCH_SEQUENCE_SET_TOKEN) {
         // toggle the switch value
         switches[SWITCH_SEQUENCE_SET_ID].initState =
             (!HAS_SETTING(S_SEQUENCE_NUMBER_ENABLED)) ? ON_STATE : OFF_STATE;
@@ -90,13 +88,6 @@ static void controls_callback(int token, uint8_t index, int page) {
 // home page definition
 void ui_menu_main(void) {
     // Initialize switches data
-    switches[SWITCH_HASH_SET_ID].initState =
-        (HAS_SETTING(S_HASH_SIGNING_ENABLED)) ? ON_STATE : OFF_STATE;
-    switches[SWITCH_HASH_SET_ID].text = "Hash signing";
-    switches[SWITCH_HASH_SET_ID].subText = "Enable hash signing";
-    switches[SWITCH_HASH_SET_ID].token = SWITCH_HASH_SET_TOKEN;
-    switches[SWITCH_HASH_SET_ID].tuneId = TUNE_TAP_CASUAL;
-
     switches[SWITCH_SEQUENCE_SET_ID].initState =
         (HAS_SETTING(S_SEQUENCE_NUMBER_ENABLED)) ? ON_STATE : OFF_STATE;
     switches[SWITCH_SEQUENCE_SET_ID].text = "Sequence number";

@@ -28,12 +28,12 @@
 #include "action/validate.h"
 
 static void review_choice(bool confirm) {
-    validate_pubkey(confirm);
     if (confirm) {
         nbgl_useCaseReviewStatus(STATUS_TYPE_ADDRESS_VERIFIED, ui_menu_main);
     } else {
         nbgl_useCaseReviewStatus(STATUS_TYPE_ADDRESS_REJECTED, ui_menu_main);
     }
+    validate_pubkey(confirm);
 }
 
 int ui_display_address(void) {

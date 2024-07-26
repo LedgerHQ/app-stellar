@@ -87,7 +87,7 @@ bool encode_ed25519_signed_payload(const ed25519_signed_payload_t *signed_payloa
         buffer[i + 1] = signed_payload->ed25519[i];
     }
     buffer[36] = signed_payload->payload_len;
-    for (uint8_t i = 0; i < signed_payload->payload_len; i++) {
+    for (uint32_t i = 0; i < signed_payload->payload_len; i++) {
         buffer[i + 37] = signed_payload->payload[i];
     }
     uint16_t crc = crc16(buffer, data_len + 1);  // checksum

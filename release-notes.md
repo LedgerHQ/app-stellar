@@ -1,6 +1,11 @@
 # Release Notes
 
-## Unreleased
+## v5.5.0
+
+### Updated
+- Optimize the signing process and add necessary alerts.
+- Add support for more Soroban tokens.
+- Bug fixes.
 
 ## v5.4.1
 

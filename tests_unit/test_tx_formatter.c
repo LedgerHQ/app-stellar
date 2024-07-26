@@ -262,15 +262,15 @@ void test_formatter_forward(void **state) {
     // Sequence Num; 103720918407102568
     // Valid Before (UTC); 2022-12-12 04:12:12
     // Tx Source; GDUTHC..XM2FN7
-    // Operation 1 of 3;
+    // Operation; 1 of 3
     // Send; 922,337,203,685.4775807 XLM
     // Destination; GDRMNAIPTNIJWJSL6JOF76CJORN47TDVMWERTXO2G2WKOMXGNHUFL5QX
     // Op Source; GDUTHC..XM2FN7
-    // Operation 2 of 3;
+    // Operation; 2 of 3
     // Send; 922,337,203,685.4775807 BTC@GAT..MTCH
     // Destination; GDRMNAIPTNIJWJSL6JOF76CJORN47TDVMWERTXO2G2WKOMXGNHUFL5QX
     // Op Source; GDUTHC..XM2FN7
-    // Operation 3 of 3;
+    // Operation; 3 of 3
     // Operation Type; Set Options
     // Home Domain; stellar.org
 
@@ -309,7 +309,8 @@ void test_formatter_forward(void **state) {
     assert_true(get_next_data(&fdata, true, &data_exists, &is_op_header));
     assert_true(data_exists);
     assert_true(is_op_header);
-    assert_string_equal(fdata.caption, "Operation 1 of 3");
+    assert_string_equal(fdata.caption, "Operation");
+    assert_string_equal(fdata.value, "1 of 3");
     assert_true(get_next_data(&fdata, true, &data_exists, &is_op_header));
     assert_true(data_exists);
     assert_false(is_op_header);
@@ -326,7 +327,8 @@ void test_formatter_forward(void **state) {
     assert_true(get_next_data(&fdata, true, &data_exists, &is_op_header));
     assert_true(data_exists);
     assert_true(is_op_header);
-    assert_string_equal(fdata.caption, "Operation 2 of 3");
+    assert_string_equal(fdata.caption, "Operation");
+    assert_string_equal(fdata.value, "2 of 3");
     assert_true(get_next_data(&fdata, true, &data_exists, &is_op_header));
     assert_true(data_exists);
     assert_false(is_op_header);
@@ -343,7 +345,8 @@ void test_formatter_forward(void **state) {
     assert_true(get_next_data(&fdata, true, &data_exists, &is_op_header));
     assert_true(data_exists);
     assert_true(is_op_header);
-    assert_string_equal(fdata.caption, "Operation 3 of 3");
+    assert_string_equal(fdata.caption, "Operation");
+    assert_string_equal(fdata.value, "3 of 3");
     assert_true(get_next_data(&fdata, true, &data_exists, &is_op_header));
     assert_true(data_exists);
     assert_false(is_op_header);
@@ -356,17 +359,20 @@ void test_formatter_forward(void **state) {
     assert_true(get_next_data(&fdata, false, &data_exists, &is_op_header));
     assert_true(data_exists);
     assert_true(is_op_header);
-    assert_string_equal(fdata.caption, "Operation 3 of 3");
+    assert_string_equal(fdata.caption, "Operation");
+    assert_string_equal(fdata.value, "3 of 3");
 
     assert_true(get_next_data(&fdata, false, &data_exists, &is_op_header));
     assert_true(data_exists);
     assert_true(is_op_header);
-    assert_string_equal(fdata.caption, "Operation 2 of 3");
+    assert_string_equal(fdata.caption, "Operation");
+    assert_string_equal(fdata.value, "2 of 3");
 
     assert_true(get_next_data(&fdata, false, &data_exists, &is_op_header));
     assert_true(data_exists);
     assert_true(is_op_header);
-    assert_string_equal(fdata.caption, "Operation 1 of 3");
+    assert_string_equal(fdata.caption, "Operation");
+    assert_string_equal(fdata.value, "1 of 3");
 
     assert_true(get_next_data(&fdata, false, &data_exists, &is_op_header));
     assert_true(data_exists);

@@ -13,32 +13,27 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        sanitizer: [address, undefined, memory]
+        sanitizer: [address, undefined, memory] # Override this with the sanitizers you want.
     steps:
       - name: Build Fuzzers (${{ matrix.sanitizer }})
         id: build
         uses: google/clusterfuzzlite/actions/build_fuzzers@v1
         with:
-          language: c++
+          language: c # Change this to the language you are fuzzing.
           github-token: ${{ secrets.GITHUB_TOKEN }}
           sanitizer: ${{ matrix.sanitizer }}
-          # Optional but recommended: used to only run fuzzers that are affected
-          # by the PR.
-          # See later section on "Git repo for storage".
-          #storage-repo: https://${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/LedgerHQ/fuzzers-corpus.git
-          #storage-repo-branch: main   # Optional. Defaults to "main"
-          #storage-repo-branch-coverage: gh-pages  # Optional. Defaults to "gh-pages".
+          storage-repo: https://${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/lightsail-network/app-stellar-fuzz-corpus
+          storage-repo-branch: main
+          storage-repo-branch-coverage: gh-pages
       - name: Run Fuzzers (${{ matrix.sanitizer }})
         id: run
         uses: google/clusterfuzzlite/actions/run_fuzzers@v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          fuzz-seconds: 600 # 10 minutes
+          fuzz-seconds: 300 # 5 minutes
           mode: "code-change"
           sanitizer: ${{ matrix.sanitizer }}
-          # Optional but recommended: used to download the corpus produced by
-          # batch fuzzing.
-          # See later section on "Git repo for storage".
-          #storage-repo: https://${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/LedgerHQ/fuzzers-corpus.git
-          #storage-repo-branch: main   # Optional. Defaults to "main"
-          #storage-repo-branch-coverage: gh-pages  # Optional. Defaults to "gh-pages".
+          output-sarif: true
+          storage-repo: https://${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/lightsail-network/app-stellar-fuzz-corpus
+          storage-repo-branch: main
+          storage-repo-branch-coverage: gh-pages

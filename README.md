@@ -5,7 +5,7 @@
 
 ## Introduction
 
-This is the wallet app for the [Ledger Nano S](https://shop.ledger.com/products/ledger-nano-s), [Ledger Nano S Plus](https://shop.ledger.com/pages/ledger-nano-s-plus) and [Ledger Nano X](https://shop.ledger.com/pages/ledger-nano-x) that makes it possible to store [Stellar](https://www.stellar.org/)-based assets on those devices and generally sign any transaction for the Stellar network.
+This is the wallet app for the [Ledger hardware wallets](https://www.ledger.com/) that makes it possible to store [Stellar](https://www.stellar.org/)-based assets on those devices and generally sign any transaction for the Stellar network.
 
 ## Documentation
 
@@ -44,7 +44,7 @@ make delete
 
 ## Testing
 
-This project provides unit tests, integration tests and end-to-end tests, unit tests are located under the [`./tests_unit`](./tests_unit) folder, and the integration tests and end-to-end tests are located under the [`./tests_zemu`](./tests_zemu) folder. 
+This project provides unit tests, integration tests and end-to-end tests, unit tests are located under the [`./tests_unit`](./tests_unit) folder, and the integration tests and end-to-end tests are located under the [`./tests_zemu`](./tests_zemu) folder.
 
 During development, we recommend that you run the unit test first, as it takes less time to run, and then run the other tests after the unit test has run successfully.
 
@@ -67,9 +67,10 @@ make tests-unit
 ```
 
 ### Integration testing and end-to-end testing
+
 Testing is done via the open-source framework [zemu](https://github.com/Zondax/zemu).
 
-In order to run these tests, you need to install [Docker](https://www.docker.com/) in addition to the dependencies mentioned in *Unit testing*.
+In order to run these tests, you need to install [Docker](https://www.docker.com/) in addition to the dependencies mentioned in _Unit testing_.
 
 To build and execute the tests, run the following commands:
 

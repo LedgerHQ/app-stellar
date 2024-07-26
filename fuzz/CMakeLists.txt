@@ -19,6 +19,12 @@ if (NOT CMAKE_C_COMPILER_ID MATCHES "Clang")
     message(FATAL_ERROR "Fuzzer needs to be built with Clang")
 endif ()
 
+# Build with code coverage generation
+if(CODE_COVERAGE)
+    add_compile_options(-fprofile-instr-generate -fcoverage-mapping)
+    add_link_options(-fprofile-instr-generate -fcoverage-mapping)
+endif()
+
 include(CTest)
 ENABLE_TESTING()
 

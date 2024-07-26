@@ -82,22 +82,20 @@
 
 
 ## Status Words
-
-| SW     | SW name                               | Description                                             |
-| ------ | ------------------------------------- | ------------------------------------------------------- |
-| 0x6125 | `SW_FORMATTING_FAIL`                  | Failed to format the data                               |
-| 0x6985 | `SW_DENY`                             | Rejected by user                                        |
-| 0x6A87 | `SW_WRONG_DATA_LENGTH`                | `Lc` or minimum APDU lenght is incorrect                |
-| 0x6B00 | `SW_WRONG_P1P2`                       | Either `P1` or `P2` is incorrect                        |
-| 0x6C66 | `SW_HASH_SIGNING_MODE_NOT_ENABLED`    | Hash signing model not enabled                          |
-| 0x6D00 | `SW_INS_NOT_SUPPORTED`                | No command exists with `INS`                            |
-| 0x6E00 | `SW_CLA_NOT_SUPPORTED`                | Bad `CLA` used for this application                     |
-| 0xB002 | `SW_DISPLAY_ADDRESS_FAIL`             | Failed to display address                               |
-| 0xB003 | `SW_DISPLAY_TRANSACTION_HASH_FAIL`    | Failed to display transaction hash                      |
-| 0xB004 | `SW_DATA_TOO_LARGE`                   | The data is too large to be processed                   |
-| 0xB005 | `SW_DATA_PARSING_FAIL`                | Failed to parse raw data                                |
-| 0xB006 | `SW_DATA_HASH_FAIL`                   | Failed to compute hash digest of raw data               |
-| 0xB007 | `SW_BAD_STATE`                        | Security issue with bad state                           |
-| 0xB008 | `SW_SIGNATURE_FAIL`                   | Generating signature failed                             |
-| 0xB009 | `SW_SWAP_CHECKING_FAIL`               | Failed to check swap params (maybe the data is invalid) |
-| 0x9000 | `SW_OK`                               | Success                                                 |
+| SW     | SW name                                    | Description                                               |
+| ------ | ------------------------------------------ | --------------------------------------------------------- |
+| 0x6125 | `SW_FORMATTING_FAIL`                       | Failed to format the data                                 |
+| 0x6985 | `SW_DENY`                                  | Rejected by user                                          |
+| 0x6A87 | `SW_WRONG_DATA_LENGTH`                     | `Lc` or minimum APDU lenght is incorrect                  |
+| 0x6B00 | `SW_WRONG_P1P2`                            | Either `P1` or `P2` is incorrect                          |
+| 0x6D00 | `SW_INS_NOT_SUPPORTED`                     | No command exists with `INS`                              |
+| 0x6E00 | `SW_CLA_NOT_SUPPORTED`                     | Bad `CLA` used for this application                       |
+| 0xB002 | `SW_DISPLAY_ADDRESS_FAIL`                  | Failed to display address                                 |
+| 0xB003 | `SW_DISPLAY_TRANSACTION_HASH_FAIL`         | Failed to display transaction hash                        |
+| 0xB004 | `SW_DATA_TOO_LARGE`                        | The data is too large to be processed                     |
+| 0xB005 | `SW_DATA_PARSING_FAIL`                     | Failed to parse raw data                                  |
+| 0xB006 | `SW_DATA_HASH_FAIL`                        | Failed to compute hash digest of raw data                 |
+| 0xB007 | `SW_BAD_STATE`                             | Security issue with bad state                             |
+| 0xB008 | `SW_SIGNATURE_FAIL`                        | Generating signature failed                               |
+| 0xB009 | `SW_SWAP_CHECKING_FAIL`                    | Failed to check swap params (maybe the data is invalid)   |
+| 0x9000 | `SW_OK`                                    | Success                                                   |
