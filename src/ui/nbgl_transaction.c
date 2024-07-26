@@ -156,10 +156,9 @@ static void review_continue(bool ask_more) {
 
 static void review_start(void) {
     nbgl_operationType_t op_type = TYPE_TRANSACTION;
-    // TODO: SDK bug, waiting for fix
-    // if (G_context.unverified_contracts) {
-    //     op_type |= BLIND_OPERATION;
-    // }
+    if (G_context.unverified_contracts) {
+        op_type |= BLIND_OPERATION;
+    }
 
     if (formatter_data.envelope->type == ENVELOPE_TYPE_SOROBAN_AUTHORIZATION) {
         nbgl_useCaseReviewStreamingStart(op_type,
