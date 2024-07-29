@@ -1,21 +1,45 @@
+/*****************************************************************************
+ *   Ledger App Stellar.
+ *   (c) 2024 Ledger SAS.
+ *   (c) 2024 overcat.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *****************************************************************************/
+
 #include "os.h"
 #include "ux.h"
 #include "os_io_seproxyhal.h"
 
-#include "./swap_lib_calls.h"
-#include "handle_swap_commands.h"
-#include "../globals.h"
-#include "os.h"
-#include "../types.h"
+#include "swap.h"
 
-#ifdef HAVE_NBGL
-#include "nbgl_use_case.h"
-#endif
+#include "handle_swap_sign_transaction.h"
+#include "globals.h"
+#include "types.h"
+#include "stellar/printer.h"
+#include "stellar/parser.h"
+
+// #ifdef HAVE_NBGL
+// #include "nbgl_use_case.h"
+// #endif
 
 // Save the BSS address where we will write the return value when finished
 static uint8_t* G_swap_sign_return_value_address;
 
-bool copy_transaction_parameters(create_transaction_parameters_t* params) {
+/* Backup up transaction parameters and wipe BSS to avoid collusion with
+ * app-exchange BSS data.
+ *
+ * return false on error, true otherwise */
+bool swap_copy_transaction_parameters(create_transaction_parameters_t* params) {
     // first copy parameters to stack, and then to global data.
     // We need this "trick" as the input data position can overlap with btc-app globals
     swap_values_t stack_data;
@@ -47,29 +71,77 @@ bool copy_transaction_parameters(create_transaction_parameters_t* params) {
     // Keep the address at which we'll reply the signing status
     G_swap_sign_return_value_address = &params->result;
     // Commit the values read from exchange to the clean global space
-    memcpy(&G.swap.values, &stack_data, sizeof(stack_data));
+    memcpy(&G.swap_values, &stack_data, sizeof(stack_data));
     return true;
 }
 
-void __attribute__((noreturn)) finalize_exchange_sign_transaction(bool is_success) {
+void __attribute__((noreturn)) swap_finalize_exchange_sign_transaction(bool is_success) {
     *G_swap_sign_return_value_address = is_success;
     os_lib_end();
 }
 
-void handle_swap_sign_transaction(void) {
-    io_seproxyhal_init();
-    UX_INIT();
-#ifdef HAVE_NBGL
-    nbgl_useCaseSpinner("Signing");
-#endif  // HAVE_BAGL
-    USB_power(0);
-    USB_power(1);
-    PRINTF("USB power ON/OFF\n");
-#ifdef HAVE_BLE
-    // grab the current plane mode setting
-    G_io_app.plane_mode = os_setting_get(OS_SETTING_PLANEMODE, NULL, 0);
-    BLE_power(0, NULL);
-    BLE_power(1, NULL);
-#endif  // HAVE_BLE
-    app_main();
+bool swap_check() {
+    PRINTF("swap_check invoked.\n");
+
+    char tmp_buf[DETAIL_VALUE_MAX_LENGTH];
+
+    // tx type
+    if (G_context.envelope.type != ENVELOPE_TYPE_TX) {
+        return false;
+    }
+
+    // A XLM swap consist of only one "send" operation
+    if (G_context.envelope.tx_details.tx.operations_count != 1) {
+        return false;
+    }
+
+    // parse the payment op
+    if (!parse_transaction_operation(G_context.raw, G_context.raw_size, &G_context.envelope, 0)) {
+        return false;
+    }
+
+    // op type
+    if (G_context.envelope.tx_details.tx.op_details.type != OPERATION_TYPE_PAYMENT) {
+        return false;
+    }
+
+    // amount
+    if (G_context.envelope.tx_details.tx.op_details.payment_op.asset.type != ASSET_TYPE_NATIVE ||
+        G_context.envelope.tx_details.tx.op_details.payment_op.amount !=
+            (int64_t) G.swap_values.amount) {
+        return false;
+    }
+
+    // destination addr
+    if (!print_muxed_account(&G_context.envelope.tx_details.tx.op_details.payment_op.destination,
+                             tmp_buf,
+                             DETAIL_VALUE_MAX_LENGTH,
+                             0,
+                             0)) {
+        return false;
+    };
+
+    if (strcmp(tmp_buf, G.swap_values.destination) != 0) {
+        return false;
+    }
+
+    if (G_context.envelope.tx_details.tx.op_details.source_account_present) {
+        return false;
+    }
+
+    // memo
+    if (G_context.envelope.tx_details.tx.memo.type != MEMO_TEXT ||
+        strcmp((char*) G_context.envelope.tx_details.tx.memo.text.text, G.swap_values.memo) != 0) {
+        return false;
+    }
+
+    // fees
+    if (G_context.envelope.network != NETWORK_TYPE_PUBLIC ||
+        G_context.envelope.tx_details.tx.fee != G.swap_values.fees) {
+        return false;
+    }
+
+    // we don't do any check on "TX Source" field
+    // If we've reached this point without failure, we're good to go!
+    return true;
 }

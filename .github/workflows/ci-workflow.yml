@@ -4,12 +4,11 @@ on:
   workflow_dispatch:
   push:
     branches:
-    - master
-    - develop
+      - master
+      - develop
   pull_request:
 
 jobs:
-
   build_application:
     name: Build application
     uses: LedgerHQ/ledger-app-workflows/.github/workflows/reusable_build.yml@v1
@@ -33,7 +32,7 @@ jobs:
 
       - name: Build unit tests
         run: |
-          make tests-unit
+          CTEST_OUTPUT_ON_FAILURE=1 make tests-unit
 
       - name: Generate code coverage
         run: |
@@ -55,14 +54,14 @@ jobs:
           files: ./tests_unit/coverage.info
           flags: unittests
           name: codecov-app-stellar
-          fail_ci_if_error: true
+          fail_ci_if_error: false
           verbose: true
 
   e2e_tests:
     name: Stellar e2e tests
     strategy:
       matrix:
-        device: ["nanos", "nanox", "nanosp", "stax"]
+        device: ["nanos", "nanox", "nanosp", "stax", "flex"]
       fail-fast: false
     needs:
       - build_application
@@ -72,9 +71,9 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Install node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: "16"
+          node-version: "20"
 
       - name: Build common js
         run: cd tests_common_js && npm install && npm run build
@@ -83,10 +82,13 @@ jobs:
         run: cd tests_zemu && npm install
 
       - name: Download app binaries
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: compiled_app_binaries
           path: build
+
+      - name: Copy plugin
+        run: cp -r tests_zemu/plugin_elfs/* build/
 
       - name: Run zemu tests
         run: cd tests_zemu && npm run test -- -t "\(${{ matrix.device }}\)"

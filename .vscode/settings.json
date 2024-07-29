@@ -1,7 +1,19 @@
 {
     "files.associations": {
         "*.h": "c",
-        "random": "c"
+        "random": "c",
+        "array": "c",
+        "string": "c",
+        "string_view": "c",
+        "optional": "c",
+        "ostream": "c",
+        "system_error": "c",
+        "functional": "c",
+        "tuple": "c",
+        "type_traits": "c",
+        "utility": "c",
+        "ratio": "c",
+        "ranges": "c"
     },
     "C_Cpp.clang_format_path": "/usr/bin/clang-format",
     "editor.formatOnSave": true

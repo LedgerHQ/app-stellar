@@ -19,6 +19,12 @@ if (NOT CMAKE_C_COMPILER_ID MATCHES "Clang")
     message(FATAL_ERROR "Fuzzer needs to be built with Clang")
 endif ()
 
+# Build with code coverage generation
+if(CODE_COVERAGE)
+    add_compile_options(-fprofile-instr-generate -fcoverage-mapping)
+    add_link_options(-fprofile-instr-generate -fcoverage-mapping)
+endif()
+
 include(CTest)
 ENABLE_TESTING()
 
@@ -34,22 +40,36 @@ if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
 endif ()
 
 add_compile_definitions(TEST)
+add_compile_definitions(PRINTF=)
+
 add_definitions("-DIO_SEPROXYHAL_BUFFER_SIZE_B=128") # cmake -DIO_SEPROXYHAL_BUFFER_SIZE_B=128
 add_definitions("-DTARGET_NANOS=1")
 
-include_directories(../src)
-include_directories(../tests_unit/mock_includes)
-
 add_library(bsd STATIC IMPORTED)
-set_property(TARGET bsd PROPERTY IMPORTED_LOCATION /lib/x86_64-linux-gnu/libbsd.a)
+if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
+    set_property(TARGET bsd PROPERTY IMPORTED_LOCATION /lib/x86_64-linux-gnu/libbsd.a)
+elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
+    set_property(TARGET bsd PROPERTY IMPORTED_LOCATION /lib/aarch64-linux-gnu/libbsd.a)
+else()
+    message(FATAL_ERROR "Unsupported platform: ${CMAKE_SYSTEM_PROCESSOR}")
+endif()
 
-file(GLOB src_common "../src/common/*.c")
+include_directories(../libstellar/include)
+include_directories(${BOLOS_SDK}/lib_standard_app)
 
-add_library(common STATIC ${src_common})
-add_library(utils STATIC ../src/utils.c)
-add_library(globals STATIC ../src/globals.c)
-add_library(tx_parser STATIC ../src/transaction/transaction_parser.c)
-add_library(tx_formatter STATIC ../src/transaction/transaction_formatter.c)
+add_library(base58 STATIC ${BOLOS_SDK}/lib_standard_app/base58.c)
+add_library(bip32 STATIC ${BOLOS_SDK}/lib_standard_app/bip32.c)
+add_library(buffer STATIC ${BOLOS_SDK}/lib_standard_app/buffer.c)
+add_library(read STATIC ${BOLOS_SDK}/lib_standard_app/read.c)
+add_library(write STATIC ${BOLOS_SDK}/lib_standard_app/write.c)
+add_library(format STATIC ${BOLOS_SDK}/lib_standard_app/format.c)
+add_library(varint STATIC ${BOLOS_SDK}/lib_standard_app/varint.c)
+add_library(apdu_parser STATIC ${BOLOS_SDK}/lib_standard_app/parser.c)
+add_library(parser STATIC ../libstellar/parser.c)
+add_library(printer STATIC ../libstellar/printer.c)
+add_library(formatter STATIC ../libstellar/formatter.c)
+add_library(base32 STATIC ../libstellar/base32.c)
+add_library(base64 STATIC ../libstellar/base64.c)
 
 # compatible with ClusterFuzzLite
 if (NOT DEFINED ENV{LIB_FUZZING_ENGINE})
@@ -58,8 +78,10 @@ else ()
     set(COMPILATION_FLAGS_ "$ENV{LIB_FUZZING_ENGINE} $ENV{CXXFLAGS}")
 endif ()
 string(REPLACE " " ";" COMPILATION_FLAGS ${COMPILATION_FLAGS_})
+
 message(${COMPILATION_FLAGS})
+
 add_executable(fuzz_tx fuzz_tx.c)
 target_compile_options(fuzz_tx PRIVATE ${COMPILATION_FLAGS})
 target_link_options(fuzz_tx PRIVATE ${COMPILATION_FLAGS})
-target_link_libraries(fuzz_tx PRIVATE tx_parser tx_formatter utils common globals bsd)
+target_link_libraries(fuzz_tx PRIVATE formatter parser printer format base64 base32 buffer bip32 varint write read bsd)

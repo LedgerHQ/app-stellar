@@ -7,15 +7,20 @@
 #include <string.h>
 #include <cmocka.h>
 
-#include "transaction/transaction_parser.h"
-#include "transaction/transaction_formatter.h"
+#include "stellar/formatter.h"
+#include "stellar/parser.h"
 
-static const char *testcases[] = {
+#define MAX_ENVELOPE_SIZE 2048
+#define MAX_CAPTION_SIZE  21
+#define MAX_VALUE_SIZE    105
+
+const char *testcases[] = {
     "../testcases/opCreateAccount.raw",
     "../testcases/opPaymentAssetNative.raw",
     "../testcases/opPaymentAssetAlphanum4.raw",
     "../testcases/opPaymentAssetAlphanum12.raw",
     "../testcases/opPaymentWithMuxedDestination.raw",
+    "../testcases/opRestoreFootprint.raw",
     "../testcases/opPathPaymentStrictReceive.raw",
     "../testcases/opPathPaymentStrictReceiveWithEmptyPath.raw",
     "../testcases/opPathPaymentStrictReceiveWithMuxedDestination.raw",
@@ -43,6 +48,25 @@ static const char *testcases[] = {
     "../testcases/opAccountMerge.raw",
     "../testcases/opAccountMergeWithMuxedDestination.raw",
     "../testcases/opInflation.raw",
+    "../testcases/opInvokeHostFunctionAssetApprove.raw",
+    "../testcases/opInvokeHostFunctionScvalsCase0.raw",
+    "../testcases/opInvokeHostFunctionScvalsCase1.raw",
+    "../testcases/opInvokeHostFunctionScvalsCase2.raw",
+    "../testcases/opInvokeHostFunctionAssetTransfer.raw",
+    "../testcases/opInvokeHostFunctionCreateContractNewAsset.raw",
+    "../testcases/opInvokeHostFunctionCreateContractWasmId.raw",
+    "../testcases/opInvokeHostFunctionCreateContractWrapAsset.raw",
+    "../testcases/opInvokeHostFunctionWithoutArgs.raw",
+    "../testcases/opInvokeHostFunctionUploadWasm.raw",
+    "../testcases/opInvokeHostFunctionWithAuth.raw",
+    "../testcases/opInvokeHostFunctionWithAuthAndNoArgsAndNoSource.raw",
+    "../testcases/opInvokeHostFunctionWithAuthAndNoArgs.raw",
+    "../testcases/opInvokeHostFunctionWithoutAuthAndNoSource.raw",
+    "../testcases/opInvokeHostFunctionTransferXlm.raw",
+    "../testcases/opInvokeHostFunctionTransferUsdc.raw",
+    "../testcases/opInvokeHostFunctionApproveUsdc.raw",
+    "../testcases/opInvokeHostFunctionWithComplexSubInvocation.raw",
+    "../testcases/opInvokeHostFunctionTestPlugin.raw",
     "../testcases/opManageDataAdd.raw",
     "../testcases/opManageDataAddWithUnprintableData.raw",
     "../testcases/opManageDataRemove.raw",
@@ -57,6 +81,7 @@ static const char *testcases[] = {
     "../testcases/opClaimClaimableBalance.raw",
     "../testcases/opBeginSponsoringFutureReserves.raw",
     "../testcases/opEndSponsoringFutureReserves.raw",
+    "../testcases/opExtendFootprintTtl.raw",
     "../testcases/opRevokeSponsorshipAccount.raw",
     "../testcases/opRevokeSponsorshipTrustLineWithAsset.raw",
     "../testcases/opRevokeSponsorshipTrustLineWithLiquidityPoolId.raw",
@@ -123,13 +148,8 @@ static const char *testcases[] = {
     "../testcases/opSourceOmitTxMuxedSourceEqualOpSourceEqualSigner.raw",
 };
 
-static void load_transaction_data(const char *filename, tx_ctx_t *tx_ctx) {
-    FILE *f = fopen(filename, "rb");
-    assert_non_null(f);
-
-    tx_ctx->raw_size = fread(tx_ctx->raw, 1, RAW_TX_MAX_SIZE, f);
-    assert_int_not_equal(tx_ctx->raw_size, 0);
-    fclose(f);
+static bool is_string_empty(const char *str) {
+    return str == NULL || str[0] == '\0';
 }
 
 static void get_result_filename(const char *filename, char *path, size_t size) {
@@ -140,75 +160,243 @@ static void get_result_filename(const char *filename, char *path, size_t size) {
     memcpy(ext, ".txt", 4);
 }
 
-static void check_transaction_results(const char *filename) {
-    char path[1024];
-    char line[4096];
-    uint8_t op_cnt = G_context.tx_info.tx_details.operations_count;
-    G.ui.current_data_index = 0;
-    get_result_filename(filename, path, sizeof(path));
+void test_format_envelope(void **state) {
+    const char *filename = (char *) *state;
+    char result_filename[1024] = {0};
+    get_result_filename(filename, result_filename, sizeof(result_filename));
 
-    FILE *fp = fopen(path, "r");
-    assert_non_null(fp);
+    FILE *file = fopen(filename, "rb");
+    assert_non_null(file);
 
-    set_state_data(true);
+    envelope_t envelope;
 
-    while ((op_cnt != 0 && G.ui.current_data_index < op_cnt) ||
-           formatter_stack[formatter_index] != NULL) {
-        assert_non_null(fgets(line, sizeof(line), fp));
+    memset(&envelope, 0, sizeof(envelope_t));
+    uint8_t data[MAX_ENVELOPE_SIZE];
+    size_t read_count = fread(data, sizeof(char), MAX_ENVELOPE_SIZE, file);
 
-        char *expected_title = line;
-        char *expected_value = strstr(line, "; ");
-        assert_non_null(expected_value);
+    assert_true(parse_transaction_envelope(data, read_count, &envelope));
 
-        *expected_value = '\x00';
-        assert_string_equal(expected_title, G.ui.detail_caption);
+    char caption[MAX_CAPTION_SIZE];
+    char value[MAX_VALUE_SIZE];
+    uint8_t signing_key[] = {0xe9, 0x33, 0x88, 0xbb, 0xfd, 0x2f, 0xbd, 0x11, 0x80, 0x6d, 0xd0,
+                             0xbd, 0x59, 0xce, 0xa9, 0x7,  0x9e, 0x7c, 0xc7, 0xc,  0xe7, 0xb1,
+                             0xe1, 0x54, 0xf1, 0x14, 0xcd, 0xfe, 0x4e, 0x46, 0x6e, 0xcd};
 
-        expected_value += 2;
-        char *p = strchr(expected_value, '\n');
-        if (p != NULL) {
-            *p = '\x00';
+    formatter_data_t fdata = {.raw_data = data,
+                              .raw_data_len = read_count,
+                              .envelope = &envelope,
+                              .signing_key = signing_key,
+                              .caption = caption,
+                              .value = value,
+                              .value_len = MAX_VALUE_SIZE,
+                              .caption_len = MAX_CAPTION_SIZE,
+                              .display_sequence = true};
+
+    char output[4096] = {0};
+    bool data_exists = true;
+    bool is_op_header = false;
+    reset_formatter();
+    while (true) {
+        assert_true(get_next_data(&fdata, true, &data_exists, &is_op_header));
+        if (!data_exists) {
+            break;
         }
-        assert_string_equal(expected_title, G.ui.detail_caption);
-        assert_string_equal(expected_value, G.ui.detail_value);
-
-        formatter_index++;
-
-        if (formatter_stack[formatter_index] != NULL) {
-            set_state_data(true);
-        }
+        char temp[256] = {0};
+        sprintf(temp,
+                "%s;%s%s\n",
+                fdata.caption,
+                is_string_empty(fdata.value) ? "" : " ",
+                fdata.value);
+        strcat(output, temp);
     }
-    assert_int_equal(fgets(line, sizeof(line), fp), 0);
-    assert_int_equal(feof(fp), 1);
-    fclose(fp);
+
+    char expected_result[4096] = {0};
+    FILE *result_file = fopen(result_filename, "r");
+    assert_non_null(result_file);
+    fread(expected_result, sizeof(char), 4096, result_file);
+    assert_string_equal(output, expected_result);
+
+    fclose(file);
+    fclose(result_file);
 }
 
-static void test_tx(const char *filename) {
-    memset(&G_context.tx_info, 0, sizeof(G_context.tx_info));
-
-    load_transaction_data(filename, &G_context.tx_info);
-
-    // GDUTHCF37UX32EMANXIL2WOOVEDZ47GHBTT3DYKU6EKM37SOIZXM2FN7
-    uint8_t public_key[] = {0xe9, 0x33, 0x88, 0xbb, 0xfd, 0x2f, 0xbd, 0x11, 0x80, 0x6d, 0xd0,
-                            0xbd, 0x59, 0xce, 0xa9, 0x7,  0x9e, 0x7c, 0xc7, 0xc,  0xe7, 0xb1,
-                            0xe1, 0x54, 0xf1, 0x14, 0xcd, 0xfe, 0x4e, 0x46, 0x6e, 0xcd};
-    assert_true(
-        parse_tx_xdr(G_context.tx_info.raw, G_context.tx_info.raw_size, &G_context.tx_info));
-    memcpy(G_context.raw_public_key, public_key, sizeof(public_key));
-
-    check_transaction_results(filename);
-}
-
-void test_transactions(void **state) {
+void test_formatter_forward(void **state) {
     (void) state;
 
-    for (int i = 0; i < sizeof(testcases) / sizeof(testcases[0]); i++) {
-        test_tx(testcases[i]);
-    }
+    const char *filename = "../testcases/txMultiOperations.raw";
+
+    FILE *file = fopen(filename, "rb");
+    assert_non_null(file);
+
+    envelope_t envelope;
+
+    memset(&envelope, 0, sizeof(envelope_t));
+    uint8_t data[MAX_ENVELOPE_SIZE];
+    size_t read_count = fread(data, sizeof(char), MAX_ENVELOPE_SIZE, file);
+
+    assert_true(parse_transaction_envelope(data, read_count, &envelope));
+
+    char caption[MAX_CAPTION_SIZE];
+    char value[MAX_VALUE_SIZE];
+    uint8_t signing_key[] = {0xe9, 0x33, 0x88, 0xbb, 0xfd, 0x2f, 0xbd, 0x11, 0x80, 0x6d, 0xd0,
+                             0xbd, 0x59, 0xce, 0xa9, 0x7,  0x9e, 0x7c, 0xc7, 0xc,  0xe7, 0xb1,
+                             0xe1, 0x54, 0xf1, 0x14, 0xcd, 0xfe, 0x4e, 0x46, 0x6e, 0xcd};
+
+    formatter_data_t fdata = {.raw_data = data,
+                              .raw_data_len = read_count,
+                              .envelope = &envelope,
+                              .signing_key = signing_key,
+                              .caption = caption,
+                              .value = value,
+                              .value_len = MAX_VALUE_SIZE,
+                              .caption_len = MAX_CAPTION_SIZE,
+                              .display_sequence = true};
+
+    bool data_exists = false;
+    bool is_op_header = false;
+    reset_formatter();
+
+    // Flow:
+    // Memo Text; hello world
+    // Max Fee; 0.00003 XLM
+    // Sequence Num; 103720918407102568
+    // Valid Before (UTC); 2022-12-12 04:12:12
+    // Tx Source; GDUTHC..XM2FN7
+    // Operation; 1 of 3
+    // Send; 922,337,203,685.4775807 XLM
+    // Destination; GDRMNAIPTNIJWJSL6JOF76CJORN47TDVMWERTXO2G2WKOMXGNHUFL5QX
+    // Op Source; GDUTHC..XM2FN7
+    // Operation; 2 of 3
+    // Send; 922,337,203,685.4775807 BTC@GAT..MTCH
+    // Destination; GDRMNAIPTNIJWJSL6JOF76CJORN47TDVMWERTXO2G2WKOMXGNHUFL5QX
+    // Op Source; GDUTHC..XM2FN7
+    // Operation; 3 of 3
+    // Operation Type; Set Options
+    // Home Domain; stellar.org
+
+    assert_true(get_next_data(&fdata, true, &data_exists, &is_op_header));
+    assert_true(data_exists);
+    assert_false(is_op_header);
+    assert_string_equal(fdata.caption, "Memo Text");
+    assert_true(get_next_data(&fdata, true, &data_exists, &is_op_header));
+    assert_true(data_exists);
+    assert_false(is_op_header);
+    assert_string_equal(fdata.caption, "Max Fee");
+    assert_true(get_next_data(&fdata, true, &data_exists, &is_op_header));
+    assert_true(data_exists);
+    assert_false(is_op_header);
+    assert_string_equal(fdata.caption, "Sequence Num");
+    assert_true(get_next_data(&fdata, false, &data_exists, &is_op_header));
+    assert_true(data_exists);
+    assert_false(is_op_header);
+    assert_string_equal(fdata.caption, "Memo Text");
+    assert_true(get_next_data(&fdata, true, &data_exists, &is_op_header));
+    assert_true(data_exists);
+    assert_false(is_op_header);
+    assert_string_equal(fdata.caption, "Max Fee");
+    assert_true(get_next_data(&fdata, true, &data_exists, &is_op_header));
+    assert_true(data_exists);
+    assert_false(is_op_header);
+    assert_string_equal(fdata.caption, "Sequence Num");
+    assert_true(get_next_data(&fdata, true, &data_exists, &is_op_header));
+    assert_true(data_exists);
+    assert_false(is_op_header);
+    assert_string_equal(fdata.caption, "Valid Before (UTC)");
+    assert_true(get_next_data(&fdata, true, &data_exists, &is_op_header));
+    assert_true(data_exists);
+    assert_false(is_op_header);
+    assert_string_equal(fdata.caption, "Tx Source");
+    assert_true(get_next_data(&fdata, true, &data_exists, &is_op_header));
+    assert_true(data_exists);
+    assert_true(is_op_header);
+    assert_string_equal(fdata.caption, "Operation");
+    assert_string_equal(fdata.value, "1 of 3");
+    assert_true(get_next_data(&fdata, true, &data_exists, &is_op_header));
+    assert_true(data_exists);
+    assert_false(is_op_header);
+    assert_string_equal(fdata.caption, "Send");
+    assert_true(get_next_data(&fdata, true, &data_exists, &is_op_header));
+    assert_true(data_exists);
+    assert_false(is_op_header);
+    assert_string_equal(fdata.caption, "Destination");
+    assert_true(get_next_data(&fdata, true, &data_exists, &is_op_header));
+    assert_true(data_exists);
+    assert_false(is_op_header);
+    assert_string_equal(fdata.caption, "Op Source");
+
+    assert_true(get_next_data(&fdata, true, &data_exists, &is_op_header));
+    assert_true(data_exists);
+    assert_true(is_op_header);
+    assert_string_equal(fdata.caption, "Operation");
+    assert_string_equal(fdata.value, "2 of 3");
+    assert_true(get_next_data(&fdata, true, &data_exists, &is_op_header));
+    assert_true(data_exists);
+    assert_false(is_op_header);
+    assert_string_equal(fdata.caption, "Send");
+    assert_true(get_next_data(&fdata, true, &data_exists, &is_op_header));
+    assert_true(data_exists);
+    assert_false(is_op_header);
+    assert_string_equal(fdata.caption, "Destination");
+    assert_true(get_next_data(&fdata, true, &data_exists, &is_op_header));
+    assert_true(data_exists);
+    assert_false(is_op_header);
+    assert_string_equal(fdata.caption, "Op Source");
+
+    assert_true(get_next_data(&fdata, true, &data_exists, &is_op_header));
+    assert_true(data_exists);
+    assert_true(is_op_header);
+    assert_string_equal(fdata.caption, "Operation");
+    assert_string_equal(fdata.value, "3 of 3");
+    assert_true(get_next_data(&fdata, true, &data_exists, &is_op_header));
+    assert_true(data_exists);
+    assert_false(is_op_header);
+    assert_string_equal(fdata.caption, "Operation Type");
+    assert_true(get_next_data(&fdata, true, &data_exists, &is_op_header));
+    assert_true(data_exists);
+    assert_false(is_op_header);
+    assert_string_equal(fdata.caption, "Home Domain");
+
+    assert_true(get_next_data(&fdata, false, &data_exists, &is_op_header));
+    assert_true(data_exists);
+    assert_true(is_op_header);
+    assert_string_equal(fdata.caption, "Operation");
+    assert_string_equal(fdata.value, "3 of 3");
+
+    assert_true(get_next_data(&fdata, false, &data_exists, &is_op_header));
+    assert_true(data_exists);
+    assert_true(is_op_header);
+    assert_string_equal(fdata.caption, "Operation");
+    assert_string_equal(fdata.value, "2 of 3");
+
+    assert_true(get_next_data(&fdata, false, &data_exists, &is_op_header));
+    assert_true(data_exists);
+    assert_true(is_op_header);
+    assert_string_equal(fdata.caption, "Operation");
+    assert_string_equal(fdata.value, "1 of 3");
+
+    assert_true(get_next_data(&fdata, false, &data_exists, &is_op_header));
+    assert_true(data_exists);
+    assert_false(is_op_header);
+    assert_string_equal(fdata.caption, "Memo Text");
+
+    assert_true(get_next_data(&fdata, false, &data_exists, &is_op_header));
+    assert_false(data_exists);
 }
 
 int main() {
-    const struct CMUnitTest tests[] = {
-        cmocka_unit_test(test_transactions),
-    };
+    size_t testcases_len = sizeof(testcases) / sizeof(testcases[0]) + 1;
+    struct CMUnitTest tests[testcases_len];
+    for (int i = 0; i < testcases_len - 1; i++) {
+        tests[i].name = testcases[i];
+        tests[i].test_func = test_format_envelope;
+        tests[i].initial_state = (void *) testcases[i];
+        tests[i].setup_func = NULL;
+        tests[i].teardown_func = NULL;
+    }
+    tests[testcases_len - 1].name = "test_formatter_forward";
+    tests[testcases_len - 1].test_func = test_formatter_forward;
+    tests[testcases_len - 1].initial_state = NULL;
+    tests[testcases_len - 1].setup_func = NULL;
+    tests[testcases_len - 1].teardown_func = NULL;
     return cmocka_run_group_tests(tests, NULL, NULL);
 }

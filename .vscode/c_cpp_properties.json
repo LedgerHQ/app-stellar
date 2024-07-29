@@ -1,19 +1,24 @@
 {
     "env": {
-        "ARM_EMBEDDED_TOOLCHAIN": "/opt/gcc-arm-none-eabi-10.3-2021.10"
+        "BOLOS_SDK": "/opt/nanos-secure-sdk"
     },
     "configurations": [
         {
             "name": "Nano S",
             "includePath": [
-                "/usr/include/**",
-                "${workspaceFolder}/src/**",
-                "${env:BOLOS_SDK}/**"
+                "${workspaceFolder}/src",
+                "${workspaceFolder}/libstellar/include",
+                "/usr/include",
+                "${env:BOLOS_SDK}/include",
+                "${env:BOLOS_SDK}/lib_cxng/include",
+                "${env:BOLOS_SDK}/lib_ux/include",
+                "${env:BOLOS_SDK}/lib_standard_app",
             ],
             "defines": [
                 "TARGET_NANOS",
                 "OS_IO_SEPROXYHAL",
                 "HAVE_BAGL",
+                "HAVE_NBGL",
                 "HAVE_SPRINTF",
                 "HAVE_IO_USB",
                 "HAVE_L4_USBLIB",
@@ -22,7 +27,6 @@
                 "HAVE_USB_APDU",
                 "USB_SEGMENT_SIZE=64",
                 "UNUSED(x)=(void)x",
-                "APPVERSION=\"1.0.0\"",
                 "APPNAME=\"Stellar\"",
                 "MAJOR_VERSION=1",
                 "MINOR_VERSION=0",
@@ -31,16 +35,12 @@
                 "HAVE_UX_FLOW",
                 "DEBUG=1",
                 "HAVE_PRINTF",
-                "PRINTF=screen_printf",
-                "HAVE_ECC=1",
-                "HAVE_ECC_TWISTED_EDWARDS=1",
-                "HAVE_ED25519_CURVE=1",
-                "HAVE_HASH=1"
+                "PRINTF=screen_printf"
             ],
-            "compilerPath": "${env:ARM_EMBEDDED_TOOLCHAIN}/bin/arm-none-eabi-gcc",
-            "cStandard": "c11",
+            "compilerPath": "/opt/gcc-arm-none-eabi-10.3-2021.10/bin/arm-none-eabi-gcc",
+            "cStandard": "gnu17",
             "cppStandard": "c++17",
-            "intelliSenseMode": "gcc-arm",
+            "intelliSenseMode": "linux-gcc-arm",
             "browse": {
                 "limitSymbolsToIncludedHeaders": true,
                 "databaseFilename": ""
