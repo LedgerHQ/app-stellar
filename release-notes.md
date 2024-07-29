@@ -1,5 +1,10 @@
 # Release Notes
 
+## v5.5.1
+
+### Updated
+- Display a warning icon on the signing interface for unverified contracts.
+
 ## v5.5.0
 
 ### Updated
