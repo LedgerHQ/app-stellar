@@ -24,11 +24,14 @@ jobs:
 
     steps:
       - name: Clone
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
 
       - name: Install deps
         run: |
-          apk add --update nodejs npm libbsd-dev
+          apt-get update
+          apt-get install -y libbsd-dev
+          curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+          apt-get install -y nodejs
 
       - name: Build unit tests
         run: |
@@ -43,13 +46,13 @@ jobs:
           lcov --directory . -b "$(realpath build/)" --remove coverage.info '*/tests_unit/*' -o coverage.info && \
           genhtml coverage.info -o coverage
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: code-coverage
           path: tests_unit/coverage
 
       - name: Upload to codecov.io
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v5
         with:
           files: ./tests_unit/coverage.info
           flags: unittests
@@ -68,12 +71,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
 
       - name: Install node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
 
       - name: Build common js
         run: cd tests_common_js && npm install && npm run build
@@ -82,7 +85,7 @@ jobs:
         run: cd tests_zemu && npm install
 
       - name: Download app binaries
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: compiled_app_binaries
           path: build
@@ -95,7 +98,7 @@ jobs:
 
       - name: Upload snapshots
         if: failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.device }}-zemu-snapshots
           path: tests_zemu/snapshots-tmp/
