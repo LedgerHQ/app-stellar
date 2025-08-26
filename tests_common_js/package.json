@@ -25,7 +25,7 @@
   },
   "homepage": "https://github.com/LedgerHQ/app-stellar#readme",
   "dependencies": {
-    "@stellar/stellar-base": "^11.0.0"
+    "@stellar/stellar-base": "^14.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.12.12",

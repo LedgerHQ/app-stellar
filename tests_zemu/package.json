@@ -13,7 +13,7 @@
   "devDependencies": {
     "@ledgerhq/hw-app-str": "^7.0.0",
     "@ledgerhq/hw-transport-http": "^6.28.6",
-    "@stellar/stellar-base": "^11.0.0",
+    "@stellar/stellar-base": "^14.0.0",
     "@types/jest": "^29.2.1",
     "@types/sha.js": "^2.4.4",
     "@zondax/zemu": "^0.50.2",
