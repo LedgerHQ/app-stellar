@@ -11,12 +11,12 @@
     "test": "jest --maxWorkers=4"
   },
   "devDependencies": {
-    "@ledgerhq/hw-app-str": "^7.0.0",
-    "@ledgerhq/hw-transport-http": "^6.28.6",
+    "@ledgerhq/hw-app-str": "^7.2.5",
+    "@ledgerhq/hw-transport-http": "^6.30.9",
     "@stellar/stellar-base": "^14.0.0",
     "@types/jest": "^29.2.1",
     "@types/sha.js": "^2.4.4",
-    "@zondax/zemu": "^0.50.2",
+    "@zondax/zemu": "^0.61.11",
     "jest": "29.2.2",
     "sha.js": "^2.4.9",
     "tests-common": "file:../tests_common_js",
