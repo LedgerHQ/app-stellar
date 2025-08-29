@@ -3,14 +3,13 @@
 set -e
 
 # FILL THESE WITH YOUR OWN SDKs PATHS
-# NANOS_SDK=
 # NANOSP_SDK=
 # NANOX_SDK=
 # STAX_SDK=
 # FLEX_SDK=
 
 # list of SDKS
-DEVICE_SDKS=("$NANOS_SDK" "$NANOSP_SDK" "$NANOX_SDK" "$STAX_SDK" "$FLEX_SDK")
+DEVICE_SDKS=("$NANOSP_SDK" "$NANOX_SDK" "$STAX_SDK" "$FLEX_SDK")
 
 # Do it only now since before the cd command, we might not have been inside the repository
 GIT_REPO_ROOT=$(git rev-parse --show-toplevel)

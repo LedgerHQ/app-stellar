@@ -1,10 +1,10 @@
 {
     "env": {
-        "BOLOS_SDK": "/opt/nanos-secure-sdk"
+        "BOLOS_SDK": "/opt/nanosplus-secure-sdk"
     },
     "configurations": [
         {
-            "name": "Nano S",
+            "name": "Nano SP",
             "includePath": [
                 "${workspaceFolder}/src",
                 "${workspaceFolder}/libstellar/include",
@@ -15,7 +15,7 @@
                 "${env:BOLOS_SDK}/lib_standard_app",
             ],
             "defines": [
-                "TARGET_NANOS",
+                "TARGET_NANOSP",
                 "OS_IO_SEPROXYHAL",
                 "HAVE_BAGL",
                 "HAVE_NBGL",

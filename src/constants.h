@@ -31,8 +31,7 @@
  */
 #define DETAIL_VALUE_MAX_LENGTH 105
 
-#ifdef TARGET_NANOS
-#define RAW_DATA_MAX_SIZE 1536
-#else
+/**
+ * Maximum size of raw data (in bytes).
+ */
 #define RAW_DATA_MAX_SIZE 10240
-#endif

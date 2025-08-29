@@ -238,15 +238,9 @@ UX_STEP_NOCB(
     pbb,
     {
       &C_icon_warning,
-#ifdef TARGET_NANOS
-      "Transaction",
-      "not trusted",
-#else
       "This transaction",
       "cannot be trusted",
-#endif
     });
-#ifndef TARGET_NANOS
 UX_STEP_NOCB(
     ux_transaction_blind_signing_text1_step,
     nnnn,
@@ -265,7 +259,6 @@ UX_STEP_NOCB(
       "that can drain your",
       "wallet.",
     });
-#endif
 UX_STEP_NOCB(
     ux_transaction_blind_signing_link_step,
     nn,
@@ -279,13 +272,8 @@ UX_STEP_CB(
     start_review_flow(),
     {
       &C_icon_validate_14,
-#ifdef TARGET_NANOS
-      "Accept risk",
-      "and review",
-#else
       "Accept risk and",
       "review transaction",
-#endif
     });
 UX_STEP_CB(
     ux_transaction_blind_signing_reject_step,
@@ -299,10 +287,8 @@ UX_STEP_CB(
 
 UX_FLOW(ux_transaction_blind_signing_flow,
         &ux_transaction_blind_signing_warning_step,
-#ifndef TARGET_NANOS
         &ux_transaction_blind_signing_text1_step,
         &ux_transaction_blind_signing_text2_step,
-#endif
         &ux_transaction_blind_signing_link_step,
         &ux_transaction_blind_signing_accept_step,
         &ux_transaction_blind_signing_reject_step);

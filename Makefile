@@ -39,7 +39,6 @@ APP_SOURCE_PATH += src
 
 # Application icons following guidelines:
 # https://developers.ledger.com/docs/embedded-app/design-requirements/#device-icon
-ICON_NANOS = icons/nanos_app_stellar.gif
 ICON_NANOX = icons/nanox_app_stellar.gif
 ICON_NANOSP = icons/nanox_app_stellar.gif
 ICON_STAX = icons/stax_app_stellar.gif
@@ -118,10 +117,10 @@ endif
 
 include $(BOLOS_SDK)/Makefile.standard_app
 
-ifeq ($(TARGET_NAME), TARGET_NANOS)
-APP_FLAGS_APP_LOAD_PARAMS = 0x800  # APPLICATION_FLAG_LIBRARY
-else
 APP_FLAGS_APP_LOAD_PARAMS = 0xa00  # APPLICATION_FLAG_LIBRARY + APPLICATION_FLAG_BOLOS_SETTINGS
+
+ifeq ($(TARGET_NAME), TARGET_NANOS)
+    $(error The Ledger Nano S will not receive updates, and the last supported version is 5.5.0)
 endif
 
 tests-unit:
@@ -137,4 +136,5 @@ tests-zemu:
 build-installer:
 	rm -rf installer
 	make clean && make BOLOS_SDK=$(NANOSP_SDK) && python scripts/installer_generator.py
-	make clean && make BOLOS_SDK=$(NANOS_SDK) && python scripts/installer_generator.py
+	make clean && make BOLOS_SDK=$(FLEX_SDK) && python scripts/installer_generator.py
+	make clean && make BOLOS_SDK=$(STAX_SDK) && python scripts/installer_generator.py

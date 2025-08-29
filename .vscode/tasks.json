@@ -64,10 +64,10 @@
             "type": "pickString",
             "description": "Which SDK to you want to use ?",
             "options": [
-                "$NANOS_SDK TARGET=nanos",
                 "$NANOX_SDK TARGET=nanox",
                 "$NANOSP_SDK TARGET=nanos2",
                 "$STAX_SDK TARGET=stax",
+                "$FLEX_SDK TARGET=flex",
             ]
         },
         {
@@ -75,10 +75,10 @@
             "type": "pickString",
             "description": "Which model to run speculos for ?",
             "options": [
-                "nanos",
                 "nanox",
                 "nanosp",
                 "stax",
+                "flex",
             ]
         }
     ]

@@ -7,8 +7,9 @@
 > You need to perform the following steps on Linux or MacOS. You may be able to run these steps on Windows via WSL, but we have not tested it.
 
 ## Supported Devices
-- Ledger Nano S
 - Ledger Nano S Plus
+- Ledger Stax
+- Ledger Flex
 
 Ledger Nano X does not support sideloading apps, Ledger Stax has not been officially delivered yet, so here, these two devices will not be provided with sideloading scripts for the time being.
 
@@ -38,18 +39,12 @@ If you encounter any connection issues, please refer to [the guide](https://supp
 This step is not mandatory, but this will make it more convenient for you to use side-loaded apps, please follow steps 1-4 of [this article](https://developers.ledger.com/docs/device-app/develop/tools#ledgerblue) to complete it. Finally, make sure that running `echo $SCP_PRIVKEY` correctly outputs your private key.
 
 > [!NOTE]
-> If you are using a more recent firmware, the target for Ledger Nano S is `0x33100004`, for Ledger Nano S Plus, it is `0x33100004`.
+> If you are using a more recent firmware, the target for Ledger Nano S Plus, it is `0x33100004`.
 
 ### 4. Download and execute the installation script
 Download the installation script from [GitHub release page](https://github.com/lightsail-network/app-stellar/releases) and place it in the `~/ledger` directory, make it executable, and run it.
 
-For Ledger Nano S:
-```shell
-chmod +x installer_nano_s.sh
-./installer_nano_s.sh load
-```
-
-For Leder Nano S Plus:
+For Ledger Nano S Plus:
 ```shell
 chmod +x installer_nano_s_plus.sh
 ./installer_nano_s_plus.sh load

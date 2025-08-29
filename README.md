@@ -22,7 +22,7 @@ You can communicate with the app through the following libraries:
 
 If not for development purposes, you should install this app via [Ledger Live](https://www.ledger.com/ledger-live).
 
-To build and install the app on your Nano S or Nano S Plus you must set up the Ledger build environments. Please follow [the load the application instructions](https://developers.ledger.com/docs/nano-app/load/) at the Ledger developer portal.
+To build and install the app on your Nano Plus, Flex or Stax you must set up the Ledger build environments. Please follow [the load the application instructions](https://developers.ledger.com/docs/nano-app/load/) at the Ledger developer portal.
 
 Additionaly, install this dependency:
 

@@ -27,16 +27,6 @@ static void switch_settings_sequence_number();
 // FLOW for the settings menu:
 // #1 screen: enable sequence number
 // #2 screen: quit
-#if defined(TARGET_NANOS)
-
-UX_STEP_CB(ux_settings_sequence_number_step,
-           bnnn_paging,
-           switch_settings_sequence_number(),
-           {
-               .title = "Sequence Number",
-               .text = G.ui.detail_value,
-           });
-#else
 UX_STEP_CB(ux_settings_sequence_number_step,
            bnnn,
            switch_settings_sequence_number(),
@@ -47,7 +37,6 @@ UX_STEP_CB(ux_settings_sequence_number_step,
                G.ui.detail_value,
            });
 
-#endif
 UX_STEP_CB(ux_settings_exit_step,
            pb,
            ui_idle(),

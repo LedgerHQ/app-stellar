@@ -43,7 +43,7 @@ add_compile_definitions(TEST)
 add_compile_definitions(PRINTF=)
 
 add_definitions("-DIO_SEPROXYHAL_BUFFER_SIZE_B=128") # cmake -DIO_SEPROXYHAL_BUFFER_SIZE_B=128
-add_definitions("-DTARGET_NANOS=1")
+add_definitions("-DTARGET_NANOSP=1")
 
 add_library(bsd STATIC IMPORTED)
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")

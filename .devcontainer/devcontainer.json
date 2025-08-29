@@ -3,9 +3,9 @@
 	"name": "ledgerdev",
 	"image": "ghcr.io/lightsail-network/ledger-devcontainer:latest",
 	// https://code.visualstudio.com/remote/advancedcontainers/environment-variables
-	// BOLOS_SDK can be one of NANOS_SDK, NANOSP_SDK, NANOX_SDK, STAX_SDK and FLEX_SDK
+	// BOLOS_SDK can be one of NANOSP_SDK, NANOX_SDK, STAX_SDK and FLEX_SDK
 	"remoteEnv": {
-		"BOLOS_SDK": "${containerEnv:NANOS_SDK}",
+		"BOLOS_SDK": "${containerEnv:NANOSP_SDK}",
 		"MNEMONIC": "${localEnv:MNEMONIC}" // you can set this in your local environment to avoid typing it in every time
 	},
 	"forwardPorts": [

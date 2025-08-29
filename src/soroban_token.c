@@ -32,7 +32,6 @@ typedef struct {
 } soroban_token_t;
 
 // This list is generated based on the data from scripts/gen_token_list.py
-// Due to storage space limitations, on the NANO S we only support XLM and USDC.
 static const soroban_token_t tokens[] = {
     // CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA
     {{
@@ -50,7 +49,6 @@ static const soroban_token_t tokens[] = {
         },
         "USDC",
     },
-#ifndef TARGET_NANOS
     // CBVDRT5474OBUEXF5MJB3UGQ5CG7CKGCAH5M4RV5NBCDJUBZ5OXHJLOU
     {{
          0x6a, 0x38, 0xcf, 0xbc, 0xff, 0x1c, 0x1a, 0x12, 0xe5, 0xeb, 0x12,
@@ -247,7 +245,6 @@ static const soroban_token_t tokens[] = {
          0x2b, 0x89, 0xac, 0x49, 0xa0, 0xad, 0xf1, 0xfd, 0x9a, 0x30,
      },
      "SHX"},
-#endif
 };
 
 // get token name if by contract address
