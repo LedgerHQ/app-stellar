@@ -2801,6 +2801,126 @@ void test_add_decimal_point() {
         "-0.00115792089237316195423570985008687907853269984665640564039457584007913129639935");
 }
 
+void test_print_raw_bytes() {
+    char out[100];
+
+    // Test with printable ASCII characters
+    uint8_t printable_data[] = "Hello World";
+    assert_true(print_raw_bytes(printable_data, strlen((char *) printable_data), out, sizeof(out)));
+    assert_string_equal(out, "Hello World");
+
+    // Test with non-printable characters
+    uint8_t non_printable_data[] = {0x01, 0x02, 0x03, 0x1F, 0x7F, 0xFF};
+    assert_true(print_raw_bytes(non_printable_data, sizeof(non_printable_data), out, sizeof(out)));
+    assert_string_equal(out, "\\x01\\x02\\x03\\x1f\\x7f\\xff");
+
+    // Test with mixed printable and non-printable
+    uint8_t mixed_data[] = {'H', 'i', 0x00, '!', 0xFF};
+    assert_true(print_raw_bytes(mixed_data, sizeof(mixed_data), out, sizeof(out)));
+    assert_string_equal(out, "Hi\\x00!\\xff");
+
+    // Test with empty data
+    assert_true(print_raw_bytes(NULL, 0, out, sizeof(out)));
+    assert_string_equal(out, "");
+
+    // Test with boundary characters (space and DEL)
+    uint8_t boundary_data[] = {0x1F, 0x20, 0x7E, 0x7F};
+    assert_true(print_raw_bytes(boundary_data, sizeof(boundary_data), out, sizeof(out)));
+    assert_string_equal(out, "\\x1f ~\\x7f");
+
+    // Test with special characters that need escaping
+    uint8_t special_data[] = {0x5C, 0x0A, 0x09, 0x0D};
+    assert_true(print_raw_bytes(special_data, sizeof(special_data), out, sizeof(out)));
+    assert_string_equal(
+        out,
+        "\\\\x0a\\x09\\x0d");  // 0x5C is printable backslash, others are hex-escaped
+
+    // Test with buffer too small (should fail)
+    char small_out[5];
+    uint8_t large_data[] = "Hello World";
+    assert_false(
+        print_raw_bytes(large_data, strlen((char *) large_data), small_out, sizeof(small_out)));
+
+    // Test with buffer barely fitting hex escape
+    char tiny_out[5];  // Space for "\\x01" + null terminator
+    uint8_t hex_data[] = {0x01};
+    assert_true(print_raw_bytes(hex_data, sizeof(hex_data), tiny_out, sizeof(tiny_out)));
+    assert_string_equal(tiny_out, "\\x01");
+
+    // Test with buffer too small for complete hex escape
+    char micro_out[3];  // Not enough space for "\\x01"
+    assert_false(print_raw_bytes(hex_data, sizeof(hex_data), micro_out, sizeof(micro_out)));
+
+    // Test with NULL parameters
+    assert_false(print_raw_bytes(NULL, 5, out, sizeof(out)));
+    assert_false(print_raw_bytes(printable_data, 5, NULL, sizeof(out)));
+    assert_false(print_raw_bytes(printable_data, 5, out, 0));
+
+    // Test with all printable ASCII range
+    uint8_t ascii_range[95];
+    for (int i = 0; i < 95; i++) {
+        ascii_range[i] = 0x20 + i;  // Space to tilde
+    }
+    char large_out[96];
+    assert_true(print_raw_bytes(ascii_range, sizeof(ascii_range), large_out, sizeof(large_out)));
+    assert_int_equal(strlen(large_out), 95);  // Should be exactly 95 printable characters
+
+    // Test with zero byte in middle
+    uint8_t zero_data[] = {'A', 0x00, 'B'};
+    assert_true(print_raw_bytes(zero_data, sizeof(zero_data), out, sizeof(out)));
+    assert_string_equal(out, "A\\x00B");
+}
+
+void test_calculate_safe_chunk_size() {
+    // Test all printable characters
+    uint8_t printable_data[] = "Hello World!";
+    size_t printable_len = strlen((char *) printable_data);
+
+    // With large buffer, should fit all characters
+    assert_int_equal(calculate_safe_chunk_size(printable_data, printable_len, 100), printable_len);
+
+    // With exact size buffer (plus null terminator space)
+    assert_int_equal(calculate_safe_chunk_size(printable_data, printable_len, printable_len + 1),
+                     printable_len);
+
+    // With small buffer, should fit partial characters
+    assert_int_equal(calculate_safe_chunk_size(printable_data, printable_len, 6),
+                     5);  // "Hello" fits in 6 bytes (5 chars + null)
+
+    // Test mixed printable and non-printable
+    uint8_t mixed_data[] = {'A', 0x00, 'B', 0x01, 'C'};  // A + null + B + 0x01 + C
+    // Expected output: "A\\x00B\\x01C" = 1+4+1+4+1 = 11 chars + null = 12 bytes needed
+    assert_int_equal(calculate_safe_chunk_size(mixed_data, 5, 12), 5);  // All data fits
+    assert_int_equal(calculate_safe_chunk_size(mixed_data, 5, 10),
+                     3);  // Only "A\x00B" fits (1+4+1 = 6 chars)
+    assert_int_equal(calculate_safe_chunk_size(mixed_data, 5, 6),
+                     2);  // Only "A\x00" fits (1+4 = 5 chars)
+
+    // Test all non-printable characters
+    uint8_t nonprint_data[] = {0x00, 0x01, 0x02};
+    // Each needs 4 chars: \x00\x01\x02 = 12 chars + null = 13 bytes needed
+    assert_int_equal(calculate_safe_chunk_size(nonprint_data, 3, 13), 3);  // All fit
+    assert_int_equal(calculate_safe_chunk_size(nonprint_data, 3, 9),
+                     2);  // Only 2 fit (8 chars + null)
+    assert_int_equal(calculate_safe_chunk_size(nonprint_data, 3, 5),
+                     1);  // Only 1 fits (4 chars + null)
+    assert_int_equal(calculate_safe_chunk_size(nonprint_data, 3, 4),
+                     0);  // None fit (need at least 5 bytes)
+
+    // Test edge cases
+    assert_int_equal(calculate_safe_chunk_size(NULL, 5, 10), 0);            // NULL data
+    assert_int_equal(calculate_safe_chunk_size(printable_data, 5, 0), 0);   // Zero output size
+    assert_int_equal(calculate_safe_chunk_size(printable_data, 0, 10), 0);  // Zero input length
+
+    // Test exact boundary conditions
+    uint8_t boundary_data[] = "AB";
+    assert_int_equal(calculate_safe_chunk_size(boundary_data, 2, 3),
+                     2);  // Exactly fits: 2 chars + null
+    assert_int_equal(calculate_safe_chunk_size(boundary_data, 2, 2), 1);  // Only 1 char fits + null
+    assert_int_equal(calculate_safe_chunk_size(boundary_data, 2, 1),
+                     0);  // No chars fit, need space for null
+}
+
 int main() {
     const struct CMUnitTest tests[] = {
         cmocka_unit_test(test_print_account_id),
@@ -2837,6 +2957,8 @@ int main() {
         cmocka_unit_test(test_add_separator_to_float_positive),
         cmocka_unit_test(test_add_separator_to_float_negative),
         cmocka_unit_test(test_add_decimal_point),
+        cmocka_unit_test(test_print_raw_bytes),
+        cmocka_unit_test(test_calculate_safe_chunk_size),
     };
     return cmocka_run_group_tests(tests, NULL, NULL);
 }

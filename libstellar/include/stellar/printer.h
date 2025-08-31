@@ -192,6 +192,34 @@ bool print_account_flags(uint32_t flags, char *out, size_t out_len);
 bool print_trust_line_flags(uint32_t flags, char *out, size_t out_len);
 
 /**
+ * Print raw bytes as a mix of printable characters and hex escape sequences.
+ * Printable characters (0x20-0x7E) are displayed as-is, while non-printable
+ * characters are displayed as \xHH hex escape sequences.
+ *
+ * @param data The raw bytes to print.
+ * @param data_len The length of the raw bytes.
+ * @param out The output buffer.
+ * @param out_len The length of the output buffer.
+ *
+ * @return True if the raw bytes were printed successfully, false otherwise.
+ */
+bool print_raw_bytes(const uint8_t *data, size_t data_len, char *out, size_t out_len);
+
+/**
+ * Calculate how many raw bytes can be safely encoded in the given output buffer.
+ * This function considers that printable characters (0x20-0x7E) need 1 character
+ * of output space, while non-printable characters need 4 characters (\xHH format).
+ * The calculation ensures space is reserved for the null terminator.
+ *
+ * @param data The raw bytes to analyze.
+ * @param data_len The length of the raw bytes.
+ * @param output_size The size of the available output buffer.
+ *
+ * @return The number of input bytes that can be safely encoded.
+ */
+size_t calculate_safe_chunk_size(const uint8_t *data, size_t data_len, size_t output_size);
+
+/**
  * Print allow trust flags in a human-readable format.
  *
  * @param flag The allow trust flag to print.

@@ -11,8 +11,8 @@
     "test": "jest --maxWorkers=4"
   },
   "devDependencies": {
-    "@ledgerhq/hw-app-str": "^7.2.5",
     "@ledgerhq/hw-transport-http": "^6.30.9",
+    "@overcat/hw-app-str": "^7.2.5",
     "@stellar/stellar-base": "^14.0.0",
     "@types/jest": "^29.2.1",
     "@types/sha.js": "^2.4.4",
@@ -21,6 +21,7 @@
     "sha.js": "^2.4.9",
     "tests-common": "file:../tests_common_js",
     "ts-jest": "^29.0.3",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "@types/node": "^24.3.0"
   }
 }

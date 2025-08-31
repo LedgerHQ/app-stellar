@@ -1,12 +1,12 @@
-import { DEFAULT_START_OPTIONS, ButtonKind, TouchNavigation, INavElement } from "@zondax/zemu";
+import { DEFAULT_START_OPTIONS, ButtonKind, TouchNavigation } from "@zondax/zemu";
 import { APP_SEED, models } from "./common";
 import * as testCasesFunction from "tests-common";
 import { Keypair, StrKey } from "@stellar/stellar-base";
-import Str from "@ledgerhq/hw-app-str";
-import { StellarUserRefusedError } from "@ledgerhq/hw-app-str";
+import Str from "@overcat/hw-app-str"; // TODO: After the relevant features are merged, we will switch to @ledgerhq/hw-app-str
+import { StellarUserRefusedError } from "@overcat/hw-app-str";
 import Zemu from "@zondax/zemu";
 import { sha256 } from 'sha.js'
-import { ActionKind, TModel } from "@zondax/zemu/dist/types";
+import { TModel } from "@zondax/zemu/dist/types";
 
 
 beforeAll(async () => {
@@ -114,7 +114,6 @@ describe("hash signing", () => {
     }
   });
 
-  // TODO: skip for now, see https://github.com/LedgerHQ/ledger-secure-sdk/issues/737
   test.concurrent.each(models)("reject ($dev.name)", async ({ dev, startText }) => {
     const sim = new Zemu(dev.path);
     const testCaseName = `${dev.prefix.toLowerCase()}-hash-signing-reject`;
@@ -129,7 +128,6 @@ describe("hash signing", () => {
       const events = await sim.getEvents();
       await sim.waitForScreenChanges(events);
 
-      // accept risk
       await acceptRisk(sim, dev.name, testCaseName);
       await sim.deleteEvents();
       const textToFind = dev.name.startsWith("nano") ? "Reject" : "Hold to";
@@ -459,6 +457,124 @@ describe("soroban auth", () => {
   });
 });
 
+describe("message signing", () => {
+  const header = Buffer.from("Stellar Signed Message:\n");
+
+  test.concurrent.each(models)("sign short message ($dev.name)", async ({ dev, startText }) => {
+    const message = Buffer.from("hello");
+    const sim = new Zemu(dev.path);
+    const testCaseName = `${dev.prefix.toLowerCase()}-message-signing-short`;
+    try {
+      await sim.start({ ...defaultOptions, model: dev.name, startText: startText });
+      const transport = await sim.getTransport();
+      const str = new Str(transport);
+      const result = str.signMessage("44'/148'/0'", message);
+      const events = await sim.getEvents();
+      await sim.waitForScreenChanges(events);
+      const textToFind = dev.name.startsWith("nano") ? /\bSign\b/ : /\bHold to\b/;
+      await sim.navigateAndCompareUntilText(
+        ".",
+        testCaseName,
+        textToFind,
+        true,
+        undefined,
+        1000 * 60 * 60
+      );
+      const kp = Keypair.fromSecret("SAIYWGGWU2WMXYDSK33UBQBMBDKU4TTJVY3ZIFF24H2KQDR7RQW5KAEK");
+      const signature = kp.sign(hash(Buffer.concat([header, message])));
+      console.log("sign short message ($dev.name)")
+      console.log((await result).signature);
+      console.log(signature)
+      expect((await result).signature).toStrictEqual(signature);
+    } finally {
+      await sim.close();
+    }
+  });
+
+  test.concurrent.each(models)("sign long message ($dev.name)", async ({ dev, startText }) => {
+    const message = Buffer.from(Array.from({length: 2000}, (_, i) => i + 1).join('-'))
+    const sim = new Zemu(dev.path);
+    const testCaseName = `${dev.prefix.toLowerCase()}-message-signing-long`;
+    try {
+      await sim.start({ ...defaultOptions, model: dev.name, startText: startText });
+      const transport = await sim.getTransport();
+      const str = new Str(transport);
+      const result = str.signMessage("44'/148'/0'", message);
+      const events = await sim.getEvents();
+      await sim.waitForScreenChanges(events);
+      const textToFind = dev.name.startsWith("nano") ? /\bSign\b/ : /\bHold to\b/;
+      await sim.navigateAndCompareUntilText(
+        ".",
+        testCaseName,
+        textToFind,
+        true,
+        undefined,
+        1000 * 60 * 60
+      );
+      const kp = Keypair.fromSecret("SAIYWGGWU2WMXYDSK33UBQBMBDKU4TTJVY3ZIFF24H2KQDR7RQW5KAEK");
+      const signature = kp.sign(hash(Buffer.concat([header, message])));
+      expect((await result).signature).toStrictEqual(signature);
+    } finally {
+      await sim.close();
+    }
+  });
+
+  test.concurrent.each(models)("sign message with unprintable data ($dev.name)", async ({ dev, startText }) => {
+    const message = Buffer.from("d2548450c98073d29afc345aa48d81a58e3221544791cf7fee290785dd0fc67e", "hex");
+    const sim = new Zemu(dev.path);
+    const testCaseName = `${dev.prefix.toLowerCase()}-message-signing-unprintable-data`;
+    try {
+      await sim.start({ ...defaultOptions, model: dev.name, startText: startText });
+      const transport = await sim.getTransport();
+      const str = new Str(transport);
+      const result = str.signMessage("44'/148'/0'", message);
+      const events = await sim.getEvents();
+      await sim.waitForScreenChanges(events);
+      const textToFind = dev.name.startsWith("nano") ? /\bSign\b/ : /\bHold to\b/;
+      await sim.navigateAndCompareUntilText(
+        ".",
+        testCaseName,
+        textToFind,
+        true,
+        undefined,
+        1000 * 60 * 60
+      );
+      const kp = Keypair.fromSecret("SAIYWGGWU2WMXYDSK33UBQBMBDKU4TTJVY3ZIFF24H2KQDR7RQW5KAEK");
+      const signature = kp.sign(hash(Buffer.concat([header, message])));
+      console.log("sign short message ($dev.name)")
+      console.log((await result).signature);
+      console.log(signature)
+      expect((await result).signature).toStrictEqual(signature);
+    } finally {
+      await sim.close();
+    }
+  });
+
+  test.concurrent.each(models)("reject ($dev.name)", async ({ dev, startText }) => {
+    const message = Buffer.from("hello");
+    const sim = new Zemu(dev.path);
+    const testCaseName = `${dev.prefix.toLowerCase()}-message-signing-reject`;
+    try {
+      await sim.start({ ...defaultOptions, model: dev.name, startText: startText });
+      const transport = await sim.getTransport();
+      const str = new Str(transport);
+
+      expect(() => str.signMessage("44'/148'/0'", message)).rejects.toThrow(StellarUserRefusedError);
+
+      const events = await sim.getEvents();
+      await sim.waitForScreenChanges(events);
+      if (dev.name.startsWith("nano")) {
+        await sim.navigateAndCompareUntilText(".", testCaseName, "Reject", true);
+      } else {
+        const settingNav = new TouchNavigation(dev.name, [ButtonKind.RejectButton, ButtonKind.ApproveTapButton]);
+        await sim.navigate(".", testCaseName, settingNav.schedule, true, true);
+      }
+    } finally {
+      await sim.close();
+    }
+  });
+});
+
 describe("plugin", () => {
   test.concurrent.each(models)("invoke host function ($dev.name)", async ({ dev, startText, plugin_path }) => {
     const tx = testCasesFunction.opInvokeHostFunctionTestPlugin();
@@ -585,8 +701,6 @@ describe("plugin", () => {
     }
   });
 });
-
-
 
 function camelToFilePath(str: string) {
   return str.replace(/([A-Z])/g, "-$1").toLowerCase();

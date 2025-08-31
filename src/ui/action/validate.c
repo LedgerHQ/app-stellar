@@ -32,7 +32,7 @@ void validate_pubkey(bool choice) {
     }
 }
 
-void validate_transaction(bool choice) {
+static void validate_signing_request(bool choice) {
     if (choice) {
         G_context.state = STATE_APPROVED;
         uint8_t signature[SIGNATURE_SIZE];
@@ -51,4 +51,12 @@ void validate_transaction(bool choice) {
         G_context.state = STATE_NONE;
         io_send_sw(SW_DENY);
     }
+}
+
+void validate_transaction(bool choice) {
+    validate_signing_request(choice);
+}
+
+void validate_message(bool choice) {
+    validate_signing_request(choice);
 }

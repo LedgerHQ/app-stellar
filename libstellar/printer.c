@@ -447,6 +447,49 @@ bool print_account_flags(uint32_t flags, char *out, size_t out_len) {
     return true;
 }
 
+bool print_raw_bytes(const uint8_t *data, size_t data_len, char *out, size_t out_len) {
+    if (out == NULL || out_len == 0) {
+        return false;
+    }
+
+    if (data == NULL && data_len > 0) {
+        return false;
+    }
+
+    size_t output_pos = 0;
+
+    for (size_t i = 0; i < data_len; i++) {
+        uint8_t byte = data[i];
+
+        if (byte >= 0x20 && byte <= 0x7E) {
+            // Printable character - add directly
+            if (output_pos + 1 >= out_len) {
+                return false;  // Not enough space
+            }
+            out[output_pos++] = byte;
+        } else {
+            // Non-printable - add as \xHH
+            if (output_pos + 4 >= out_len) {
+                return false;  // Not enough space for \xHH + null terminator
+            }
+            out[output_pos++] = '\\';
+            out[output_pos++] = 'x';
+
+            // Convert to hex
+            uint8_t high_nibble = (byte >> 4) & 0x0F;
+            uint8_t low_nibble = byte & 0x0F;
+
+            out[output_pos++] =
+                (high_nibble < 10) ? ('0' + high_nibble) : ('a' + high_nibble - 10);
+            out[output_pos++] =
+                (low_nibble < 10) ? ('0' + low_nibble) : ('a' + low_nibble - 10);
+        }
+    }
+
+    out[output_pos] = '\0';
+    return true;
+}
+
 bool print_trust_line_flags(uint32_t flags, char *out, size_t out_len) {
     explicit_bzero(out, out_len);
     if (flags & AUTHORIZED_FLAG) {
@@ -977,4 +1020,33 @@ bool print_price(const price_t *price,
         }
     }
     return true;
+}
+
+size_t calculate_safe_chunk_size(const uint8_t *data, size_t data_len, size_t output_size) {
+    if (data == NULL || output_size == 0) {
+        return 0;
+    }
+
+    size_t output_pos = 0;
+    size_t safe_bytes = 0;
+
+    for (size_t i = 0; i < data_len; i++) {
+        uint8_t byte = data[i];
+        size_t needed;
+
+        if (byte >= 0x20 && byte <= 0x7E) {
+            needed = 1;  // Printable character needs 1 char
+        } else {
+            needed = 4;  // Non-printable character needs 4 chars (\xHH)
+        }
+
+        if (output_pos + needed > output_size - 1) {
+            break;  // This byte won't fit, stop here
+        }
+
+        output_pos += needed;
+        safe_bytes++;
+    }
+
+    return safe_bytes;
 }

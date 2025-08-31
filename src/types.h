@@ -17,6 +17,7 @@ typedef enum {
     INS_GET_APP_CONFIGURATION = 0x06,       // app configuration of the application
     INS_SIGN_HASH = 0x08,                   // sign transaction in hash mode
     INS_SIGN_SOROBAN_AUTHORIZATION = 0x0a,  // sign soroban authorization
+    INS_SIGN_MESSAGE = 0x0c                 // sign SEP-0053 message
 } command_e;
 
 /**
@@ -32,10 +33,11 @@ typedef enum {
  * Enumeration with user request type.
  */
 typedef enum {
-    CONFIRM_ADDRESS,               // confirm address derived from public key
-    CONFIRM_TRANSACTION,           // confirm transaction information
-    CONFIRM_HASH,                  // confirm hash information
-    CONFIRM_SOROBAN_AUTHORIZATION  // confirm soroban authorization information
+    CONFIRM_ADDRESS,                // confirm address derived from public key
+    CONFIRM_TRANSACTION,            // confirm transaction information
+    CONFIRM_HASH,                   // confirm hash information
+    CONFIRM_SOROBAN_AUTHORIZATION,  // confirm soroban authorization information
+    CONFIRM_MESSAGE                 // confirm SEP-0053 message
 } request_type_e;
 
 enum e_state {
