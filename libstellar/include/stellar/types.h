@@ -8,19 +8,23 @@
 //                       TRANSACTION PARSING CONSTANTS                       //
 // ------------------------------------------------------------------------- //
 
-#define ENCODED_ED25519_PUBLIC_KEY_LENGTH  57
-#define ENCODED_CONTRACT_KEY_LENGTH        57
-#define ENCODED_ED25519_PRIVATE_KEY_LENGTH 57
-#define ENCODED_HASH_X_KEY_LENGTH          57
-#define ENCODED_PRE_AUTH_TX_KEY_LENGTH     57
-#define ENCODED_MUXED_ACCOUNT_KEY_LENGTH   70
+#define ENCODED_ED25519_PUBLIC_KEY_LENGTH    57
+#define ENCODED_CONTRACT_KEY_LENGTH          57
+#define ENCODED_ED25519_PRIVATE_KEY_LENGTH   57
+#define ENCODED_HASH_X_KEY_LENGTH            57
+#define ENCODED_PRE_AUTH_TX_KEY_LENGTH       57
+#define ENCODED_MUXED_ACCOUNT_KEY_LENGTH     70
+#define ENCODED_CLAIMABLE_BALANCE_KEY_LENGTH 59
+#define ENCODED_LIQUIDITY_POOL_KEY_LENGTH    57
 
-#define RAW_ED25519_PUBLIC_KEY_SIZE  32
-#define RAW_ED25519_PRIVATE_KEY_SIZE 32
-#define RAW_HASH_X_KEY_SIZE          32
-#define RAW_PRE_AUTH_TX_KEY_SIZE     32
-#define RAW_CONTRACT_KEY_SIZE        32
-#define RAW_MUXED_ACCOUNT_KEY_SIZE   40
+#define RAW_ED25519_PUBLIC_KEY_SIZE    32
+#define RAW_ED25519_PRIVATE_KEY_SIZE   32
+#define RAW_HASH_X_KEY_SIZE            32
+#define RAW_PRE_AUTH_TX_KEY_SIZE       32
+#define RAW_CONTRACT_KEY_SIZE          32
+#define RAW_MUXED_ACCOUNT_KEY_SIZE     40
+#define RAW_CLAIMABLE_BALANCE_KEY_SIZE 36
+#define RAW_LIQUIDITY_POOL_KEY_SIZE    32
 
 #define VERSION_BYTE_ED25519_PUBLIC_KEY     6 << 3
 #define VERSION_BYTE_ED25519_SECRET_SEED    18 << 3
@@ -29,6 +33,8 @@
 #define VERSION_BYTE_MUXED_ACCOUNT          12 << 3
 #define VERSION_BYTE_ED25519_SIGNED_PAYLOAD 15 << 3
 #define VERSION_BYTE_CONTRACT               2 << 3
+#define VERSION_BYTE_LIQUIDITY_POOL         11 << 3
+#define VERSION_BYTE_CLAIMABLE_BALANCE      1 << 3
 
 #define ASSET_CODE_MAX_LENGTH         13
 #define CLAIMANTS_MAX_LENGTH          10
@@ -526,11 +532,17 @@ typedef struct {
     const uint8_t *string;
 } scv_string_t;
 
-typedef enum { SC_ADDRESS_TYPE_ACCOUNT = 0, SC_ADDRESS_TYPE_CONTRACT = 1 } sc_address_type_t;
+typedef enum {
+    SC_ADDRESS_TYPE_ACCOUNT = 0,
+    SC_ADDRESS_TYPE_CONTRACT = 1,
+    SC_ADDRESS_TYPE_MUXED_ACCOUNT = 2,
+    SC_ADDRESS_TYPE_CLAIMABLE_BALANCE = 3,
+    SC_ADDRESS_TYPE_LIQUIDITY_POOL = 4
+} sc_address_type_t;
 
 typedef struct {
-    uint32_t type;           // sc_address_type_t
-    const uint8_t *address;  // account id or contract id, 32
+    uint32_t type;  // sc_address_type_t
+    const uint8_t *address;
 } sc_address_t;
 
 typedef enum {

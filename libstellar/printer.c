@@ -11,6 +11,7 @@
 #define BINARY_MAX_SIZE                   36
 #define ED25519_SIGNED_PAYLOAD_MAX_LENGTH 166  // include the null terminator
 #define NUMBER_WITH_COMMAS_MAX_LENGTH     105
+#define CLAIMABLE_BALANCE_STRKEY_SIZE     33
 
 uint16_t crc16(const uint8_t *input_str, uint32_t num_bytes) {
     uint16_t crc = 0;
@@ -31,15 +32,15 @@ bool encode_key(const uint8_t *in, uint8_t version_byte, char *out, uint8_t out_
     if (in == NULL || out_len < 56 + 1) {
         return false;
     }
-    uint8_t buffer[35] = {0};
+    uint8_t buffer[32 + 1 + 2] = {0};
     buffer[0] = version_byte;
     for (uint8_t i = 0; i < 32; i++) {
         buffer[i + 1] = in[i];
     }
-    uint16_t crc = crc16(buffer, 33);  // checksum
+    uint16_t crc = crc16(buffer, 32 + 1);  // checksum
     buffer[33] = crc;
     buffer[34] = crc >> 8;
-    if (base32_encode(buffer, 35, (uint8_t *) out, 56) == -1) {
+    if (base32_encode(buffer, sizeof(buffer), (uint8_t *) out, 56) == -1) {
         return false;
     }
     out[56] = '\0';
@@ -68,6 +69,60 @@ bool encode_contract(const uint8_t raw_contract[static RAW_CONTRACT_KEY_SIZE],
                      char *out,
                      size_t out_len) {
     return encode_key(raw_contract, VERSION_BYTE_CONTRACT, out, out_len);
+}
+
+bool encode_med25519_key(const uint8_t raw_med25519_key[static RAW_MUXED_ACCOUNT_KEY_SIZE],
+                         char *out,
+                         size_t out_len) {
+    if (out_len < ENCODED_MUXED_ACCOUNT_KEY_LENGTH) {
+        return false;
+    }
+
+    uint8_t buffer[RAW_MUXED_ACCOUNT_KEY_SIZE + 1 + 2] = {0};
+    buffer[0] = VERSION_BYTE_MUXED_ACCOUNT;
+    // public key
+    memcpy(buffer + 1, raw_med25519_key + 8, RAW_ED25519_PUBLIC_KEY_SIZE);
+    // id
+    memcpy(buffer + 1 + RAW_ED25519_PUBLIC_KEY_SIZE, raw_med25519_key, 8);
+    uint16_t crc = crc16(buffer, RAW_MUXED_ACCOUNT_KEY_SIZE + 1);  // checksum
+    buffer[41] = crc;
+    buffer[42] = crc >> 8;
+    if (base32_encode(buffer, sizeof(buffer), (uint8_t *) out, ENCODED_MUXED_ACCOUNT_KEY_LENGTH) ==
+        -1) {
+        return false;
+    }
+    out[ENCODED_MUXED_ACCOUNT_KEY_LENGTH - 1] = '\0';
+    return true;
+}
+
+bool encode_liquidity_pool(const uint8_t raw_liquidity_pool[static RAW_LIQUIDITY_POOL_KEY_SIZE],
+                           char *out,
+                           size_t out_len) {
+    return encode_key(raw_liquidity_pool, VERSION_BYTE_LIQUIDITY_POOL, out, out_len);
+}
+
+bool encode_claimable_balance(
+    const uint8_t raw_claimable_balance[static RAW_CLAIMABLE_BALANCE_KEY_SIZE],
+    char *out,
+    size_t out_len) {
+    if (out_len < ENCODED_CLAIMABLE_BALANCE_KEY_LENGTH) {
+        return false;
+    }
+
+    uint8_t buffer[CLAIMABLE_BALANCE_STRKEY_SIZE + 1 + 2] = {0};
+    buffer[0] = VERSION_BYTE_CLAIMABLE_BALANCE;
+    memcpy(buffer + 1, raw_claimable_balance + 3, CLAIMABLE_BALANCE_STRKEY_SIZE);
+    uint16_t crc = crc16(buffer, CLAIMABLE_BALANCE_STRKEY_SIZE + 1);  // checksum
+    buffer[34] = crc;
+    buffer[35] = crc >> 8;
+    if (base32_encode(buffer,
+                      sizeof(buffer),
+                      (uint8_t *) out,
+                      ENCODED_CLAIMABLE_BALANCE_KEY_LENGTH) == -1) {
+        return false;
+    }
+    out[ENCODED_CLAIMABLE_BALANCE_KEY_LENGTH - 1] = '\0';
+    return true;
 }
 
 bool encode_ed25519_signed_payload(const ed25519_signed_payload_t *signed_payload,
@@ -230,6 +285,52 @@ bool print_pre_auth_x_key(const uint8_t raw_pre_auth_tx[static RAW_PRE_AUTH_TX_K
     return encode_pre_auth_x_key(raw_pre_auth_tx, out, out_len);
 }
 
+bool print_med25519_key(const uint8_t raw_med25519_key[static RAW_MUXED_ACCOUNT_KEY_SIZE],
+                        char *out,
+                        size_t out_len,
+                        uint8_t num_chars_l,
+                        uint8_t num_chars_r) {
+    if (num_chars_l > 0) {
+        char buffer[ENCODED_MUXED_ACCOUNT_KEY_LENGTH];
+        if (!encode_med25519_key(raw_med25519_key, buffer, sizeof(buffer))) {
+            return false;
+        }
+        return print_summary(buffer, out, out_len, num_chars_l, num_chars_r);
+    }
+    return encode_med25519_key(raw_med25519_key, out, out_len);
+}
+
+bool print_claimable_balance(
+    const uint8_t raw_claimable_balance[static RAW_CLAIMABLE_BALANCE_KEY_SIZE],
+    char *out,
+    size_t out_len,
+    uint8_t num_chars_l,
+    uint8_t num_chars_r) {
+    if (num_chars_l > 0) {
+        char buffer[ENCODED_CLAIMABLE_BALANCE_KEY_LENGTH];
+        if (!encode_claimable_balance(raw_claimable_balance, buffer, sizeof(buffer))) {
+            return false;
+        }
+        return print_summary(buffer, out, out_len, num_chars_l, num_chars_r);
+    }
+    return encode_claimable_balance(raw_claimable_balance, out, out_len);
+}
+
+bool print_liquidity_pool(const uint8_t raw_liquidity_pool[static RAW_LIQUIDITY_POOL_KEY_SIZE],
+                          char *out,
+                          size_t out_len,
+                          uint8_t num_chars_l,
+                          uint8_t num_chars_r) {
+    if (num_chars_l > 0) {
+        char buffer[ENCODED_LIQUIDITY_POOL_KEY_LENGTH];
+        if (!encode_liquidity_pool(raw_liquidity_pool, buffer, sizeof(buffer))) {
+            return false;
+        }
+        return print_summary(buffer, out, out_len, num_chars_l, num_chars_r);
+    }
+    return encode_liquidity_pool(raw_liquidity_pool, out, out_len);
+}
+
 bool print_ed25519_signed_payload(const ed25519_signed_payload_t *signed_payload,
                                   char *out,
                                   size_t out_len,
@@ -260,10 +361,17 @@ bool print_sc_address(const sc_address_t *sc_address,
                       uint8_t num_chars_r) {
     if (sc_address->type == SC_ADDRESS_TYPE_ACCOUNT) {
         return print_account_id(sc_address->address, out, out_len, num_chars_l, num_chars_r);
-    } else {
+    } else if (sc_address->type == SC_ADDRESS_TYPE_CONTRACT) {
         return print_contract_id(sc_address->address, out, out_len, num_chars_l, num_chars_r);
+    } else if (sc_address->type == SC_ADDRESS_TYPE_MUXED_ACCOUNT) {
+        return print_med25519_key(sc_address->address, out, out_len, num_chars_l, num_chars_r);
+    } else if (sc_address->type == SC_ADDRESS_TYPE_CLAIMABLE_BALANCE) {
+        return print_claimable_balance(sc_address->address, out, out_len, num_chars_l, num_chars_r);
+    } else if (sc_address->type == SC_ADDRESS_TYPE_LIQUIDITY_POOL) {
+        return print_liquidity_pool(sc_address->address, out, out_len, num_chars_l, num_chars_r);
+    } else {
+        return false;
     }
-    return true;
 }
 
 bool print_muxed_account(const muxed_account_t *muxed_account,
@@ -479,10 +587,8 @@ bool print_raw_bytes(const uint8_t *data, size_t data_len, char *out, size_t out
             uint8_t high_nibble = (byte >> 4) & 0x0F;
             uint8_t low_nibble = byte & 0x0F;
 
-            out[output_pos++] =
-                (high_nibble < 10) ? ('0' + high_nibble) : ('a' + high_nibble - 10);
-            out[output_pos++] =
-                (low_nibble < 10) ? ('0' + low_nibble) : ('a' + low_nibble - 10);
+            out[output_pos++] = (high_nibble < 10) ? ('0' + high_nibble) : ('a' + high_nibble - 10);
+            out[output_pos++] = (low_nibble < 10) ? ('0' + low_nibble) : ('a' + low_nibble - 10);
         }
     }
 

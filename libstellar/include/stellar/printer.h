@@ -57,6 +57,60 @@ bool print_pre_auth_x_key(const uint8_t raw_pre_auth_tx[static RAW_PRE_AUTH_TX_K
                           uint8_t num_chars_r);
 
 /**
+ * Print a muxed account key (MED25519).
+ *
+ * @param raw_med25519_key The raw muxed account key to print.
+ * @param out The output buffer.
+ * @param out_len The length of the output buffer.
+ * @param num_chars_l The number of characters to print on the left side. Set to 0 to print the full
+ * key.
+ * @param num_chars_r The number of characters to print on the right side.
+ *
+ * @return True if the key was printed successfully, false otherwise.
+ */
+bool print_med25519_key(const uint8_t raw_med25519_key[static RAW_MUXED_ACCOUNT_KEY_SIZE],
+                        char *out,
+                        size_t out_len,
+                        uint8_t num_chars_l,
+                        uint8_t num_chars_r);
+
+/**
+ * Print a claimable balance key.
+ *
+ * @param raw_claimable_balance The raw claimable balance key to print.
+ * @param out The output buffer.
+ * @param out_len The length of the output buffer.
+ * @param num_chars_l The number of characters to print on the left side. Set to 0 to print the full
+ * key.
+ * @param num_chars_r The number of characters to print on the right side.
+ *
+ * @return True if the key was printed successfully, false otherwise.
+ */
+bool print_claimable_balance(const uint8_t raw_claimable_balance[static RAW_CLAIMABLE_BALANCE_KEY_SIZE],
+                             char *out,
+                             size_t out_len,
+                             uint8_t num_chars_l,
+                             uint8_t num_chars_r);
+
+/**
+ * Print a liquidity pool key.
+ *
+ * @param raw_liquidity_pool The raw liquidity pool key to print.
+ * @param out The output buffer.
+ * @param out_len The length of the output buffer.
+ * @param num_chars_l The number of characters to print on the left side. Set to 0 to print the full
+ * key.
+ * @param num_chars_r The number of characters to print on the right side.
+ *
+ * @return True if the key was printed successfully, false otherwise.
+ */
+bool print_liquidity_pool(const uint8_t raw_liquidity_pool[static RAW_LIQUIDITY_POOL_KEY_SIZE],
+                          char *out,
+                          size_t out_len,
+                          uint8_t num_chars_l,
+                          uint8_t num_chars_r);
+
+/**
  * Print a muxed account.
  *
  * @param muxed_account The muxed account to print.

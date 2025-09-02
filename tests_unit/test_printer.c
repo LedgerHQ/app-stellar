@@ -113,6 +113,65 @@ void test_print_sc_address() {
     assert_string_equal(out, "CDUTHCF37UX3..37SOIZXM3BIG");
 }
 
+void test_print_med25519_key() {
+    uint8_t raw_key[] = {
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // id (8 bytes)
+        0x3f, 0x0c, 0x34, 0xbf, 0x93, 0xad, 0x0d, 0x99,  // ed25519 public key (32 bytes)
+        0x71, 0xd0, 0x4c, 0xcc, 0x90, 0xf7, 0x05, 0x51, 0x1c, 0x83, 0x8a, 0xad,
+        0x97, 0x34, 0xa4, 0xa2, 0xfb, 0x0d, 0x7a, 0x03, 0xfc, 0x7f, 0xe8, 0x9a};
+    char *encoded_key = "MA7QYNF7SOWQ3GLR2BGMZEHXAVIRZA4KVWLTJJFC7MGXUA74P7UJUAAAAAAAAAAAACJUQ";
+    char out[ENCODED_MUXED_ACCOUNT_KEY_LENGTH];
+    size_t out_len = sizeof(out);
+    assert_true(print_med25519_key(raw_key, out, out_len, 0, 0));
+    assert_string_equal(out, encoded_key);
+
+    assert_true(print_med25519_key(raw_key, out, out_len, 7, 9));
+    assert_string_equal(out, "MA7QYNF..AAAAACJUQ");
+
+    // Test with large ID value (9223372036854775808)
+    uint8_t raw_key_large[] = {
+        0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // id (8 bytes) - 9223372036854775808
+        0x3f, 0x0c, 0x34, 0xbf, 0x93, 0xad, 0x0d, 0x99,  // ed25519 public key (32 bytes)
+        0x71, 0xd0, 0x4c, 0xcc, 0x90, 0xf7, 0x05, 0x51, 0x1c, 0x83, 0x8a, 0xad,
+        0x97, 0x34, 0xa4, 0xa2, 0xfb, 0x0d, 0x7a, 0x03, 0xfc, 0x7f, 0xe8, 0x9a};
+    char *encoded_key_large =
+        "MA7QYNF7SOWQ3GLR2BGMZEHXAVIRZA4KVWLTJJFC7MGXUA74P7UJVAAAAAAAAAAAAAJLK";
+    assert_true(print_med25519_key(raw_key_large, out, out_len, 0, 0));
+    assert_string_equal(out, encoded_key_large);
+
+    assert_true(print_med25519_key(raw_key_large, out, out_len, 7, 9));
+    assert_string_equal(out, "MA7QYNF..AAAAAAJLK");
+}
+
+void test_print_claimable_balance() {
+    uint8_t raw_key[] = {0x00, 0x00, 0x00, 0x00,  // version (4 bytes, v0)
+                         0xe9, 0x33, 0x88, 0xbb, 0xfd, 0x2f, 0xbd, 0x11, 0x80, 0x6d, 0xd0,
+                         0xbd, 0x59, 0xce, 0xa9, 0x07, 0x9e, 0x7c, 0xc7, 0x0c, 0xe7, 0xb1,
+                         0xe1, 0x54, 0xf1, 0x14, 0xcd, 0xfe, 0x4e, 0x46, 0x6e, 0xcd, 0x00};
+    char *encoded_key = "BAAOSM4IXP6S7PIRQBW5BPKZZ2UQPHT4Y4GOPMPBKTYRJTP6JZDG5TPB7M";
+    char out[ENCODED_CLAIMABLE_BALANCE_KEY_LENGTH + 1];
+    size_t out_len = sizeof(out);
+    assert_true(print_claimable_balance(raw_key, out, out_len, 0, 0));
+    assert_string_equal(out, encoded_key);
+
+    assert_true(print_claimable_balance(raw_key, out, out_len, 7, 9));
+    assert_string_equal(out, "BAAOSM4..ZDG5TPB7M");
+}
+
+void test_print_liquidity_pool() {
+    uint8_t raw_key[] = {0xe9, 0x33, 0x88, 0xbb, 0xfd, 0x2f, 0xbd, 0x11, 0x80, 0x6d, 0xd0,
+                         0xbd, 0x59, 0xce, 0xa9, 0x07, 0x9e, 0x7c, 0xc7, 0x0c, 0xe7, 0xb1,
+                         0xe1, 0x54, 0xf1, 0x14, 0xcd, 0xfe, 0x4e, 0x46, 0x6e, 0xcd};
+    char *encoded_key = "LDUTHCF37UX32EMANXIL2WOOVEDZ47GHBTT3DYKU6EKM37SOIZXM3YCL";
+    char out[ENCODED_LIQUIDITY_POOL_KEY_LENGTH];
+    size_t out_len = sizeof(out);
+    assert_true(print_liquidity_pool(raw_key, out, out_len, 0, 0));
+    assert_string_equal(out, encoded_key);
+
+    assert_true(print_liquidity_pool(raw_key, out, out_len, 7, 9));
+    assert_string_equal(out, "LDUTHCF..OIZXM3YCL");
+}
+
 void test_print_ed25519_signed_payload() {
     char out[166];
     uint8_t raw_key[] = {0x3f, 0xc,  0x34, 0xbf, 0x93, 0xad, 0xd,  0x99, 0x71, 0xd0, 0x4c,
@@ -2928,6 +2987,9 @@ int main() {
         cmocka_unit_test(test_print_pre_auth_x_key),
         cmocka_unit_test(test_print_muxed_account),
         cmocka_unit_test(test_print_sc_address),
+        cmocka_unit_test(test_print_med25519_key),
+        cmocka_unit_test(test_print_claimable_balance),
+        cmocka_unit_test(test_print_liquidity_pool),
         cmocka_unit_test(test_print_ed25519_signed_payload),
         cmocka_unit_test(test_print_asset),
         cmocka_unit_test(test_print_amount_asset_native),

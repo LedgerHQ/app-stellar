@@ -690,6 +690,23 @@ bool parse_sc_address(buffer_t *buffer, sc_address_t *sc_address) {
         case SC_ADDRESS_TYPE_CONTRACT:
             PARSER_CHECK(buffer_read_bytes(buffer, &sc_address->address, RAW_CONTRACT_KEY_SIZE))
             return true;
+        case SC_ADDRESS_TYPE_MUXED_ACCOUNT:
+            PARSER_CHECK(
+                buffer_read_bytes(buffer, &sc_address->address, RAW_MUXED_ACCOUNT_KEY_SIZE))
+            return true;
+        case SC_ADDRESS_TYPE_CLAIMABLE_BALANCE: {
+            PARSER_CHECK(
+                buffer_read_bytes(buffer, &sc_address->address, RAW_CLAIMABLE_BALANCE_KEY_SIZE))
+            if (memcmp(sc_address->address, "\0\0\0\0", 4) != 0) {
+                // Only supports v0
+                return false;
+            }
+            return true;
+        }
+        case SC_ADDRESS_TYPE_LIQUIDITY_POOL:
+            PARSER_CHECK(
+                buffer_read_bytes(buffer, &sc_address->address, RAW_LIQUIDITY_POOL_KEY_SIZE))
+            return true;
         default:
             return false;
     }

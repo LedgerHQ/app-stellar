@@ -179,6 +179,7 @@ describe("transactions", () => {
           "opInvokeHostFunctionScvalsCase0",
           "opInvokeHostFunctionScvalsCase1",
           "opInvokeHostFunctionScvalsCase2",
+          "opInvokeHostFunctionScvalsCase3",
           "opInvokeHostFunctionTestPlugin",
           "opInvokeHostFunctionWithAuth",
           "opInvokeHostFunctionWithAuthAndNoArgs",

@@ -2366,6 +2366,30 @@ export function opInvokeHostFunctionScvalsCase2() {
   return TransactionBuilder.fromXDR(raw, Networks.TESTNET);
 }
 
+export function opInvokeHostFunctionScvalsCase3() {
+  // from stellar_sdk import *
+  // kp0 = Keypair.from_secret("SAIYWGGWU2WMXYDSK33UBQBMBDKU4TTJVY3ZIFF24H2KQDR7RQW5KAEK")
+  // source = Account(kp0.public_key, 1234567890)
+  // scvals = [
+  //     scval.to_address("MAUPUK7AMSD6JHZCDVIOZQ2O4IHDVCLAJMKXZHOR6UOOT7T3ZFJV2AAAAAAAAAPA6OEF6"),
+  //     scval.to_address("BAAD6DBUX6J22DMZOHIEZTEQ64CVCHEDRKWZONFEUL5Q26QD7R76RGR4TU"),
+  //     scval.to_address("LA7QYNF7SOWQ3GLR2BGMZEHXAVIRZA4KVWLTJJFC7MGXUA74P7UJUPJN")
+  // ]
+  // tx = (
+  //     TransactionBuilder(source, Network.TESTNET_NETWORK_PASSPHRASE, 500)
+  //     .append_invoke_contract_function_op(
+  //         contract_id="CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC",
+  //         function_name="test",
+  //         parameters=scvals,
+  //     )
+  //     .add_time_bounds(0, 0)
+  //     .build()
+  // )
+  // print(tx.to_xdr())
+  const raw = "AAAAAgAAAADpM4i7/S+9EYBt0L1ZzqkHnnzHDOex4VTxFM3+TkZuzQAAAfQAAAAASZYC0wAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAGAAAAAAAAAAB15KLcsJwPM/q9+uf9O9NUEpVqLl5/JtFDqLIQrTRzmEAAAAEdGVzdAAAAAMAAAASAAAAAgAAAAAAAeDzKPor4GSH5J8iHVDsw07iDjqJYEsVfJ3R9Rzp/nvJU10AAAASAAAAAwAAAAA/DDS/k60NmXHQTMyQ9wVRHIOKrZc0pKL7DXoD/H/omgAAABIAAAAEPww0v5OtDZlx0EzMkPcFURyDiq2XNKSi+w16A/x/6JoAAAAAAAAAAAAAAAA="
+  return TransactionBuilder.fromXDR(raw, Networks.TESTNET);
+}
+
 export function opExtendFootprintTtl() {
   /**
    * soroban --very-verbose contract bump --ledgers-to-expire 130816 \
