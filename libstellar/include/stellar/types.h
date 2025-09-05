@@ -563,18 +563,21 @@ typedef struct {
 typedef enum {
     HOST_FUNCTION_TYPE_INVOKE_CONTRACT = 0,
     HOST_FUNCTION_TYPE_CREATE_CONTRACT = 1,
-    HOST_FUNCTION_TYPE_UPLOAD_CONTRACT_WASM = 2
+    HOST_FUNCTION_TYPE_UPLOAD_CONTRACT_WASM = 2,
+    HOST_FUNCTION_TYPE_CREATE_CONTRACT_V2 = 3
 } host_function_type_t;
 
 typedef enum {
     SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN = 0,
-    SOROBAN_AUTHORIZED_FUNCTION_TYPE_CREATE_CONTRACT_HOST_FN = 1
+    SOROBAN_AUTHORIZED_FUNCTION_TYPE_CREATE_CONTRACT_HOST_FN = 1,
+    SOROBAN_AUTHORIZED_FUNCTION_TYPE_CREATE_CONTRACT_V2_HOST_FN = 2
 } soroban_authorization_function_type_t;
 
 typedef struct {
     uint32_t host_function_type;  // host_function_type_t
     invoke_contract_args_t
         invoke_contract_args;  // exists if host_function_type == HOST_FUNCTION_TYPE_INVOKE_CONTRACT
+                               // ||  host_function_type == HOST_FUNCTION_TYPE_CREATE_CONTRACT_V2;
     uint32_t auth_function_type;  // soroban_authorization_function_type_t
     size_t sub_invocation_positions[MAX_SUB_INVOCATIONS_SIZE];
     uint8_t sub_invocations_count;

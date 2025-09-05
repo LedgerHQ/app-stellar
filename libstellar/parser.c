@@ -976,6 +976,28 @@ static bool read_create_contract_args_advance(buffer_t *buffer) {
     return true;
 }
 
+static bool parse_create_contract_args_v2(buffer_t *buffer, invoke_contract_args_t *args) {
+    PARSER_CHECK(read_create_contract_args_advance(buffer))
+
+    // constructorArgs
+    uint32_t args_len;
+    PARSER_CHECK(parse_uint32(buffer, &args_len))
+
+    args->parameters_length = args_len;
+    args->parameters_position = buffer->offset;
+
+    if (args_len > HOST_FUNCTION_ARGS_MAX_LENGTH) {
+        // We dont support more than 10 arguments
+        return false;
+    }
+
+    for (uint32_t i = 0; i < args_len; i++) {
+        PARSER_CHECK(read_scval_advance(buffer))
+    }
+
+    return true;
+}
+
 static bool parse_invoke_contract_args(buffer_t *buffer, invoke_contract_args_t *args) {
     // contractAddress
     PARSER_CHECK(parse_sc_address(buffer, &args->address))
@@ -1022,6 +1044,12 @@ static bool read_soroban_authorized_function_advance(buffer_t *buffer) {
             // createContractHostFn
             PARSER_CHECK(read_create_contract_args_advance(buffer));
             break;
+        case SOROBAN_AUTHORIZED_FUNCTION_TYPE_CREATE_CONTRACT_V2_HOST_FN: {
+            // createContractV2HostFn
+            invoke_contract_args_t args;
+            PARSER_CHECK(parse_create_contract_args_v2(buffer, &args));
+            break;
+        }
         default:
             return false;
     }
@@ -1067,6 +1095,9 @@ static bool parse_invoke_host_function(buffer_t *buffer, invoke_host_function_op
             PARSER_CHECK(buffer_advance(buffer, data_size))
             break;
         }
+        case HOST_FUNCTION_TYPE_CREATE_CONTRACT_V2:
+            PARSER_CHECK(parse_create_contract_args_v2(buffer, &op->invoke_contract_args))
+            break;
         default:
             return false;
     }
@@ -1388,6 +1419,11 @@ bool parse_auth_function(buffer_t *buffer, uint32_t *type, invoke_contract_args_
             // createContractHostFn
             PARSER_CHECK(read_create_contract_args_advance(buffer))
             break;
+        case SOROBAN_AUTHORIZED_FUNCTION_TYPE_CREATE_CONTRACT_V2_HOST_FN: {
+            // createContractV2HostFn
+            PARSER_CHECK(parse_create_contract_args_v2(buffer, args))
+            break;
+        }
         default:
             return false;
     }

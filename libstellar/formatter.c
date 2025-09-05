@@ -14,7 +14,6 @@
 #include "stellar/printer.h"
 #include "stellar/plugin.h"
 
-
 /*
  * the formatter prints the details and defines the order of the details
  * by setting the next formatter to be called
@@ -1927,6 +1926,24 @@ static bool format_sub_invocation_auth_function(formatter_data_t *fdata) {
             STRLCPY(fdata->value, "Create Smart Contract", fdata->value_len);
             FORMATTER_CHECK(format_next_sub_invocation(fdata));
             break;
+        case SOROBAN_AUTHORIZED_FUNCTION_TYPE_CREATE_CONTRACT_V2_HOST_FN:
+            STRLCPY(fdata->caption, "Soroban", fdata->caption_len);
+            STRLCPY(fdata->value, "Create Smart Contract", fdata->value_len);
+            invoke_contract_args_t invoke_contract_args;
+            if (fdata->envelope->type == ENVELOPE_TYPE_SOROBAN_AUTHORIZATION) {
+                invoke_contract_args = fdata->envelope->soroban_authorization.invoke_contract_args;
+            } else {
+                invoke_contract_args = fdata->envelope->tx_details.tx.op_details
+                                           .invoke_host_function_op.invoke_contract_args;
+            }
+            if (invoke_contract_args.parameters_length == 0) {
+                return format_next_sub_invocation(fdata);
+            } else {
+                parameters_index = 0;
+                FORMATTER_CHECK(
+                    push_to_formatter_stack(&format_sub_invocation_invoke_host_function_args))
+            }
+            break;
         default:
             return false;
     }
@@ -2164,6 +2181,23 @@ static bool format_invoke_host_function_contract_id(formatter_data_t *fdata) {
     return true;
 }
 
+static bool format_create_contract_v2_args(formatter_data_t *fdata) {
+    invoke_contract_args_t invoke_contract_args;
+    if (fdata->envelope->type == ENVELOPE_TYPE_SOROBAN_AUTHORIZATION) {
+        invoke_contract_args = fdata->envelope->soroban_authorization.invoke_contract_args;
+    } else {
+        invoke_contract_args =
+            fdata->envelope->tx_details.tx.op_details.invoke_host_function_op.invoke_contract_args;
+    }
+    if (invoke_contract_args.parameters_length == 0) {
+        return format_operation_source_prepare_for_invoke_host_function_op(fdata);
+    } else {
+        parameters_index = 0;
+        FORMATTER_CHECK(push_to_formatter_stack(&format_invoke_host_function_args))
+    }
+    return true;
+}
+
 static bool format_invoke_host_function(formatter_data_t *fdata) {
     // avoid the host function op be overwritten by the sub-invocation
     if (fdata->envelope->tx_details.tx.op_details.invoke_host_function_op.sub_invocations_count) {
@@ -2185,12 +2219,14 @@ static bool format_invoke_host_function(formatter_data_t *fdata) {
             STRLCPY(fdata->value, "Create Smart Contract", fdata->value_len);
             // we dont need to care the sub-invocation here
             return format_operation_source_prepare(fdata);
-            break;
         case HOST_FUNCTION_TYPE_UPLOAD_CONTRACT_WASM:
             STRLCPY(fdata->caption, "Soroban", fdata->caption_len);
             STRLCPY(fdata->value, "Upload Smart Contract Wasm", fdata->value_len);
             return format_operation_source_prepare(fdata);
-            break;
+        case HOST_FUNCTION_TYPE_CREATE_CONTRACT_V2:
+            STRLCPY(fdata->caption, "Soroban", fdata->caption_len);
+            STRLCPY(fdata->value, "Create Smart Contract", fdata->value_len);
+            return format_create_contract_v2_args(fdata);
         default:
             return false;
     }
@@ -2210,6 +2246,10 @@ static bool format_auth_function(formatter_data_t *fdata) {
             // we dont need to care the sub-invocation here
             FORMATTER_CHECK(push_to_formatter_stack(NULL))
             break;
+        case SOROBAN_AUTHORIZED_FUNCTION_TYPE_CREATE_CONTRACT_V2_HOST_FN:
+            STRLCPY(fdata->caption, "Soroban", fdata->caption_len);
+            STRLCPY(fdata->value, "Create Smart Contract", fdata->value_len);
+            return format_create_contract_v2_args(fdata);
         default:
             return false;
     }

@@ -1239,6 +1239,11 @@ export function opInvokeHostFunctionCreateContractWasmId() {
   return TransactionBuilder.fromXDR(raw, Networks.TESTNET);
 }
 
+export function opInvokeHostFunctionCreateContractV2WasmId() {
+  const raw = "AAAAAgAAAADBPp7TMinJylnn+6dQXJACNc15LF+aJ2Py1BaR4P10JAAD8S0AASA+AAAACgAAAAEAAAAAAAAAAAAAAABoup5qAAAAAAAAAAEAAAAAAAAAGAAAAAMAAAAAAAAAAAAAAADBPp7TMinJylnn+6dQXJACNc15LF+aJ2Py1BaR4P10JAOxFva83LybI/D3Gt4Fc51tE7iov2QvYmUjtOnhBEMEAAAAAJauxXika7rfqGNdERxf2IpO+orjJK7EostLJJygIWnPAAAAAwAAABIAAAAAAAAAAME+ntMyKcnKWef7p1BckAI1zXksX5onY/LUFpHg/XQkAAAAEgAAAAHXkotywnA8z+r365/0701QSlWouXn8m0UOoshCtNHOYQAAAAoAAAAAAAAAAAAAAAAAAYagAAAAAQAAAAAAAAACAAAAAAAAAAAAAAAAwT6e0zIpycpZ5/unUFyQAjXNeSxfmidj8tQWkeD9dCQDsRb2vNy8myPw9xreBXOdbRO4qL9kL2JlI7Tp4QRDBAAAAACWrsV4pGu636hjXREcX9iKTvqK4ySuxKLLSyScoCFpzwAAAAMAAAASAAAAAAAAAADBPp7TMinJylnn+6dQXJACNc15LF+aJ2Py1BaR4P10JAAAABIAAAAB15KLcsJwPM/q9+uf9O9NUEpVqLl5/JtFDqLIQrTRzmEAAAAKAAAAAAAAAAAAAAAAAAGGoAAAAAEAAAAAAAAAAToXCSpKl5MnTUbZZRSy4m//Ui0ICra4hpizTUSJtHRcAAAADV9fY29uc3RydWN0b3IAAAAAAAADAAAAEgAAAAAAAAAAwT6e0zIpycpZ5/unUFyQAjXNeSxfmidj8tQWkeD9dCQAAAASAAAAAdeSi3LCcDzP6vfrn/TvTVBKVai5efybRQ6iyEK00c5hAAAACgAAAAAAAAAAAAAAAAABhqAAAAABAAAAAAAAAAHXkotywnA8z+r365/0701QSlWouXn8m0UOoshCtNHOYQAAAAh0cmFuc2ZlcgAAAAMAAAASAAAAAAAAAADBPp7TMinJylnn+6dQXJACNc15LF+aJ2Py1BaR4P10JAAAABIAAAABOhcJKkqXkydNRtllFLLib/9SLQgKtriGmLNNRIm0dFwAAAAKAAAAAAAAAAAAAAAAAAGGoAAAAAAAAAABAAAAAAAAAAIAAAAGAAAAAdeSi3LCcDzP6vfrn/TvTVBKVai5efybRQ6iyEK00c5hAAAAFAAAAAEAAAAHlq7FeKRrut+oY10RHF/Yik76iuMkrsSiy0sknKAhac8AAAADAAAAAAAAAADBPp7TMinJylnn+6dQXJACNc15LF+aJ2Py1BaR4P10JAAAAAYAAAABOhcJKkqXkydNRtllFLLib/9SLQgKtriGmLNNRIm0dFwAAAAUAAAAAQAAAAYAAAAB15KLcsJwPM/q9+uf9O9NUEpVqLl5/JtFDqLIQrTRzmEAAAAQAAAAAQAAAAIAAAAPAAAAB0JhbGFuY2UAAAAAEgAAAAE6FwkqSpeTJ01G2WUUsuJv/1ItCAq2uIaYs01EibR0XAAAAAEADkMVAAAAkAAAAhgAAAAAAAPwyQAAAAA=";
+  return TransactionBuilder.fromXDR(raw, Networks.TESTNET);
+}
+
 export function opInvokeHostFunctionCreateContractNewAsset() {
   // import time
 
@@ -1407,7 +1412,7 @@ export function opInvokeHostFunctionWithComplexSubInvocation() {
   //                                     ).to_xdr_sc_address(),
   //                                     function_name=scval.to_symbol("func0").sym,
   //                                     args=[
-  //                                         scval.to_int128(103560 * 10**5),
+  //                                         scval.to_int128(103560 * 10 ** 5),
   //                                     ],
   //                                 ),
   //                             ),
@@ -1461,6 +1466,46 @@ export function opInvokeHostFunctionWithComplexSubInvocation() {
   //                                                 ),
   //                                             ),
   //                                             sub_invocations=[
+  //                                                 xdr.SorobanAuthorizedInvocation(function=xdr.SorobanAuthorizedFunction(
+  //                                                     xdr.SorobanAuthorizedFunctionType.SOROBAN_AUTHORIZED_FUNCTION_TYPE_CREATE_CONTRACT_V2_HOST_FN,
+  //                                                     create_contract_v2_host_fn=stellar_xdr.CreateContractArgsV2(
+  //                                                         contract_id_preimage=stellar_xdr.ContractIDPreimage(
+  //                                                             stellar_xdr.ContractIDPreimageType.CONTRACT_ID_PREIMAGE_FROM_ADDRESS,
+  //                                                             from_address=stellar_xdr.ContractIDPreimageFromAddress(
+  //                                                                 address=Address(
+  //                                                                     "GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34").to_xdr_sc_address(),
+  //                                                                 salt=stellar_xdr.Uint256(
+  //                                                                     b"\xd9\x9f\x1f\xee4N\xeb\xd80}\xeb\x9f\xf4$W\xd8\xdb\x12\xeeS')\x18\xfe48\x02q\xc1\xd4\x10\n"),
+  //                                                             ),
+  //                                                         ),
+  //                                                         executable=stellar_xdr.ContractExecutable(
+  //                                                             stellar_xdr.ContractExecutableType.CONTRACT_EXECUTABLE_WASM,
+  //                                                             stellar_xdr.Hash(
+  //                                                                 b"\xd9\x9f\x1f\xee4N\xeb\xd80}\xeb\x9f\xf4$W\xd8\xdb\x12\xeeS')\x18\xfe48\x02q\xc1\xd4\x10\n"),
+  //                                                         ),
+  //                                                         constructor_args=[
+  //                                                             scval.to_address(
+  //                                                                 "GDAT5HWTGIU4TSSZ4752OUC4SABDLTLZFRPZUJ3D6LKBNEPA7V2CIG54"),
+  //                                                             scval.to_int128(12000000)
+  //                                                         ]
+  //                                                     )), sub_invocations=[
+  //                                                     xdr.SorobanAuthorizedInvocation(
+  //                                                         function=xdr.SorobanAuthorizedFunction(
+  //                                                             xdr.SorobanAuthorizedFunctionType.SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN,
+  //                                                             contract_fn=xdr.InvokeContractArgs(
+  //                                                                 Address(
+  //                                                                     "GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34").to_xdr_sc_address(),
+  //                                                                 scval.to_symbol("__constructor").sym,
+  //                                                                 [
+  //                                                                     scval.to_address(
+  //                                                                         "GDAT5HWTGIU4TSSZ4752OUC4SABDLTLZFRPZUJ3D6LKBNEPA7V2CIG54"),
+  //                                                                     scval.to_int128(12000000)
+  //                                                                 ]
+  //                                                             )
+  //                                                         ),
+  //                                                         sub_invocations=[]
+  //                                                     )
+  //                                                 ]),
   //                                                 xdr.SorobanAuthorizedInvocation(
   //                                                     function=xdr.SorobanAuthorizedFunction(
   //                                                         xdr.SorobanAuthorizedFunctionType.SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN,
@@ -1559,7 +1604,8 @@ export function opInvokeHostFunctionWithComplexSubInvocation() {
   //     .build()
   // )
   // print(tx.to_xdr())
-  const raw = "AAAAAgAAAADpM4i7/S+9EYBt0L1ZzqkHnnzHDOex4VTxFM3+TkZuzQAAAfQAAAAASZYC0wAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAABAAAAAOkziLv9L70RgG3QvVnOqQeefMcM57HhVPEUzf5ORm7NAAAAGAAAAAAAAAABNh70VKwE/guWubBuo0QfwYJ4BWpDrsi3vWxiVftdKzYAAAAIcm9vdGZ1bmMAAAADAAAACQAAAAAAAAAAAAAAAAAAAAEAAAAKAAAAAAAAAAAAAAAAAAAAAgAAAAsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAEAAAAAAAAAAAAAAAE2HvRUrAT+C5a5sG6jRB/BgngFakOuyLe9bGJV+10rNgAAAAhyb290ZnVuYwAAAAMAAAAJAAAAAAAAAAAAAAAAAAAAAQAAAAoAAAAAAAAAAAAAAAAAAAACAAAACwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAAAAQAAAAAAAAABNh70VKwE/guWubBuo0QfwYJ4BWpDrsi3vWxiVftdKzYAAAAFZnVuYzAAAAAAAAABAAAACgAAAAAAAAAAAAAAAmlEBQAAAAACAAAAAAAAAAHXkotywnA8z+r365/0701QSlWouXn8m0UOoshCtNHOYQAAAAVmdW5jMQAAAAAAAAAAAAAAAAAAAAAAAAHXkotywnA8z+r365/0701QSlWouXn8m0UOoshCtNHOYQAAAAVmdW5jMgAAAAAAAAAAAAABAAAAAQAAAAAAAAAAAAAAAHmloTuvVXFjeiFXxq/7dJHXxEVO7NKwt+QOZwI/CW+s2Z8f7jRO69gwfeuf9CRX2NsS7lMnKRj+NDgCccHUEAoAAAAA2Z8f7jRO69gwfeuf9CRX2NsS7lMnKRj+NDgCccHUEAoAAAACAAAAAAAAAAHXkotywnA8z+r365/0701QSlWouXn8m0UOoshCtNHOYQAAAAVmdW5jNAAAAAAAAAAAAAAAAAAAAAAAAAHXkotywnA8z+r365/0701QSlWouXn8m0UOoshCtNHOYQAAAAVmdW5jNQAAAAAAAAEAAAABAAAAAQAAAAAAAAAB15KLcsJwPM/q9+uf9O9NUEpVqLl5/JtFDqLIQrTRzmEAAAAFZnVuYzYAAAAAAAABAAAAAQAAAAIAAAAAAAAAAdeSi3LCcDzP6vfrn/TvTVBKVai5efybRQ6iyEK00c5hAAAABWZ1bmM3AAAAAAAAAQAAAAEAAAAAAAAAAAAAAAHXkotywnA8z+r365/0701QSlWouXn8m0UOoshCtNHOYQAAAAVmdW5jOAAAAAAAAAEAAAABAAAAAAAAAAAAAAAA"
+
+  const raw = "AAAAAgAAAADpM4i7/S+9EYBt0L1ZzqkHnnzHDOex4VTxFM3+TkZuzQAAAfQAAAAASZYC0wAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAABAAAAAOkziLv9L70RgG3QvVnOqQeefMcM57HhVPEUzf5ORm7NAAAAGAAAAAAAAAABNh70VKwE/guWubBuo0QfwYJ4BWpDrsi3vWxiVftdKzYAAAAIcm9vdGZ1bmMAAAADAAAACQAAAAAAAAAAAAAAAAAAAAEAAAAKAAAAAAAAAAAAAAAAAAAAAgAAAAsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAEAAAAAAAAAAAAAAAE2HvRUrAT+C5a5sG6jRB/BgngFakOuyLe9bGJV+10rNgAAAAhyb290ZnVuYwAAAAMAAAAJAAAAAAAAAAAAAAAAAAAAAQAAAAoAAAAAAAAAAAAAAAAAAAACAAAACwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAAAAQAAAAAAAAABNh70VKwE/guWubBuo0QfwYJ4BWpDrsi3vWxiVftdKzYAAAAFZnVuYzAAAAAAAAABAAAACgAAAAAAAAAAAAAAAmlEBQAAAAACAAAAAAAAAAHXkotywnA8z+r365/0701QSlWouXn8m0UOoshCtNHOYQAAAAVmdW5jMQAAAAAAAAAAAAAAAAAAAAAAAAHXkotywnA8z+r365/0701QSlWouXn8m0UOoshCtNHOYQAAAAVmdW5jMgAAAAAAAAAAAAABAAAAAQAAAAAAAAAAAAAAAHmloTuvVXFjeiFXxq/7dJHXxEVO7NKwt+QOZwI/CW+s2Z8f7jRO69gwfeuf9CRX2NsS7lMnKRj+NDgCccHUEAoAAAAA2Z8f7jRO69gwfeuf9CRX2NsS7lMnKRj+NDgCccHUEAoAAAADAAAAAgAAAAAAAAAAAAAAAHmloTuvVXFjeiFXxq/7dJHXxEVO7NKwt+QOZwI/CW+s2Z8f7jRO69gwfeuf9CRX2NsS7lMnKRj+NDgCccHUEAoAAAAA2Z8f7jRO69gwfeuf9CRX2NsS7lMnKRj+NDgCccHUEAoAAAACAAAAEgAAAAAAAAAAwT6e0zIpycpZ5/unUFyQAjXNeSxfmidj8tQWkeD9dCQAAAAKAAAAAAAAAAAAAAAAALcbAAAAAAEAAAAAAAAAAAAAAAB5paE7r1VxY3ohV8av+3SR18RFTuzSsLfkDmcCPwlvrAAAAA1fX2NvbnN0cnVjdG9yAAAAAAAAAgAAABIAAAAAAAAAAME+ntMyKcnKWef7p1BckAI1zXksX5onY/LUFpHg/XQkAAAACgAAAAAAAAAAAAAAAAC3GwAAAAAAAAAAAAAAAAHXkotywnA8z+r365/0701QSlWouXn8m0UOoshCtNHOYQAAAAVmdW5jNAAAAAAAAAAAAAAAAAAAAAAAAAHXkotywnA8z+r365/0701QSlWouXn8m0UOoshCtNHOYQAAAAVmdW5jNQAAAAAAAAEAAAABAAAAAQAAAAAAAAAB15KLcsJwPM/q9+uf9O9NUEpVqLl5/JtFDqLIQrTRzmEAAAAFZnVuYzYAAAAAAAABAAAAAQAAAAIAAAAAAAAAAdeSi3LCcDzP6vfrn/TvTVBKVai5efybRQ6iyEK00c5hAAAABWZ1bmM3AAAAAAAAAQAAAAEAAAAAAAAAAAAAAAHXkotywnA8z+r365/0701QSlWouXn8m0UOoshCtNHOYQAAAAVmdW5jOAAAAAAAAAEAAAABAAAAAAAAAAAAAAAA"
   return TransactionBuilder.fromXDR(raw, Networks.TESTNET);
 }
 
@@ -3588,6 +3634,58 @@ export function sorobanAuthCreateSmartContract() {
 
   // print(data.to_xdr())
   const raw = "AAAACXrDOZdUTjF10ma9AiQ5sizbFlCMARY/JuXLKj4QRal5AAAAAEl1bUUCEMifAAAAAQAAAAAAAAAAAAAAAHmloTuvVXFjeiFXxq/7dJHXxEVO7NKwt+QOZwI/CW+s2Z8f7jRO69gwfeuf9CRX2NsS7lMnKRj+NDgCccHUEAoAAAAA2Z8f7jRO69gwfeuf9CRX2NsS7lMnKRj+NDgCccHUEAoAAAAA";
+  return xdr.HashIdPreimage.fromXDR(raw, "base64");
+}
+
+export function sorobanAuthCreateSmartContractV2() {
+  // from stellar_sdk import *
+  // from stellar_sdk import xdr
+  // create_contract = stellar_xdr.CreateContractArgsV2(
+  //     contract_id_preimage=stellar_xdr.ContractIDPreimage(
+  //         stellar_xdr.ContractIDPreimageType.CONTRACT_ID_PREIMAGE_FROM_ADDRESS,
+  //         from_address=stellar_xdr.ContractIDPreimageFromAddress(
+  //             address=Address("GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34").to_xdr_sc_address(),
+  //             salt=stellar_xdr.Uint256(
+  //                 b"\xd9\x9f\x1f\xee4N\xeb\xd80}\xeb\x9f\xf4$W\xd8\xdb\x12\xeeS')\x18\xfe48\x02q\xc1\xd4\x10\n"),
+  //         ),
+  //     ),
+  //     executable=stellar_xdr.ContractExecutable(
+  //         stellar_xdr.ContractExecutableType.CONTRACT_EXECUTABLE_WASM,
+  //         stellar_xdr.Hash(b"\xd9\x9f\x1f\xee4N\xeb\xd80}\xeb\x9f\xf4$W\xd8\xdb\x12\xeeS')\x18\xfe48\x02q\xc1\xd4\x10\n"),
+  //     ),
+  //     constructor_args=[
+  //         scval.to_address("GDAT5HWTGIU4TSSZ4752OUC4SABDLTLZFRPZUJ3D6LKBNEPA7V2CIG54"),
+  //         scval.to_int128(12000000)
+  //     ]
+  // )
+  // data = xdr.HashIDPreimage(
+  //     xdr.EnvelopeType.ENVELOPE_TYPE_SOROBAN_AUTHORIZATION,
+  //     soroban_authorization=xdr.HashIDPreimageSorobanAuthorization(
+  //         network_id=xdr.Hash(Network(Network.PUBLIC_NETWORK_PASSPHRASE).network_id()),
+  //         nonce=xdr.Int64(1232432453),
+  //         signature_expiration_ledger=xdr.Uint32(34654367),
+  //         invocation=xdr.SorobanAuthorizedInvocation(function=xdr.SorobanAuthorizedFunction(
+  //             xdr.SorobanAuthorizedFunctionType.SOROBAN_AUTHORIZED_FUNCTION_TYPE_CREATE_CONTRACT_V2_HOST_FN,
+  //             create_contract_v2_host_fn=create_contract), sub_invocations=[
+  //                 xdr.SorobanAuthorizedInvocation(
+  //                     function=xdr.SorobanAuthorizedFunction(
+  //                         xdr.SorobanAuthorizedFunctionType.SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN,
+  //                         contract_fn=xdr.InvokeContractArgs(
+  //                             Address("GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34").to_xdr_sc_address(),
+  //                             scval.to_symbol("__constructor").sym,
+  //                             [
+  //                                 scval.to_address("GDAT5HWTGIU4TSSZ4752OUC4SABDLTLZFRPZUJ3D6LKBNEPA7V2CIG54"),
+  //                                 scval.to_int128(12000000)
+  //                             ]
+  //                         )
+  //                     ),
+  //                     sub_invocations=[]
+  //                 )
+  //         ])
+  //     )
+  // )
+  // print(data.to_xdr())
+  const raw = "AAAACXrDOZdUTjF10ma9AiQ5sizbFlCMARY/JuXLKj4QRal5AAAAAEl1bUUCEMifAAAAAgAAAAAAAAAAAAAAAHmloTuvVXFjeiFXxq/7dJHXxEVO7NKwt+QOZwI/CW+s2Z8f7jRO69gwfeuf9CRX2NsS7lMnKRj+NDgCccHUEAoAAAAA2Z8f7jRO69gwfeuf9CRX2NsS7lMnKRj+NDgCccHUEAoAAAACAAAAEgAAAAAAAAAAwT6e0zIpycpZ5/unUFyQAjXNeSxfmidj8tQWkeD9dCQAAAAKAAAAAAAAAAAAAAAAALcbAAAAAAEAAAAAAAAAAAAAAAB5paE7r1VxY3ohV8av+3SR18RFTuzSsLfkDmcCPwlvrAAAAA1fX2NvbnN0cnVjdG9yAAAAAAAAAgAAABIAAAAAAAAAAME+ntMyKcnKWef7p1BckAI1zXksX5onY/LUFpHg/XQkAAAACgAAAAAAAAAAAAAAAAC3GwAAAAAA";
   return xdr.HashIdPreimage.fromXDR(raw, "base64");
 }
 

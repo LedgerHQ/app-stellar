@@ -56,6 +56,7 @@ const char *testcases[] = {
     "../testcases/opInvokeHostFunctionAssetTransfer.raw",
     "../testcases/opInvokeHostFunctionCreateContractNewAsset.raw",
     "../testcases/opInvokeHostFunctionCreateContractWasmId.raw",
+    "../testcases/opInvokeHostFunctionCreateContractV2WasmId.raw",
     "../testcases/opInvokeHostFunctionCreateContractWrapAsset.raw",
     "../testcases/opInvokeHostFunctionWithoutArgs.raw",
     "../testcases/opInvokeHostFunctionUploadWasm.raw",
