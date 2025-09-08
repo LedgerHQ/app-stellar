@@ -172,7 +172,7 @@ describe("transactions", () => {
         const transport = await sim.getTransport();
         const str = new Str(transport);
 
-        // enable custom contracts and seqence number
+        // enable custom contracts and sequence number
         const testsNeedEnableCustomContracts = [
           "opInvokeHostFunctionAssetApprove",
           "opInvokeHostFunctionAssetTransfer",

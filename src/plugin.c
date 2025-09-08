@@ -47,7 +47,7 @@ static const char *get_app_name(const uint8_t *contract_address) {
 };
 
 bool plugin_check_presence(const uint8_t *contract_address) {
-    // Build-in token plugin
+    // Built-in token plugin
     if (token_plugin_check_presence(contract_address)) {
         return true;
     }
@@ -78,7 +78,7 @@ bool plugin_check_presence(const uint8_t *contract_address) {
 };
 
 stellar_plugin_result_t plugin_init_contract(const uint8_t *contract_address) {
-    // Build-in token plugin
+    // Built-in token plugin
     if (token_plugin_check_presence(contract_address)) {
         return STELLAR_PLUGIN_RESULT_OK;
     }
@@ -107,7 +107,7 @@ stellar_plugin_result_t plugin_init_contract(const uint8_t *contract_address) {
 
 stellar_plugin_result_t plugin_query_data_pair_count(const uint8_t *contract_address,
                                                      uint8_t *data_pair_count) {
-    // Build-in token plugin
+    // Built-in token plugin
     if (token_plugin_check_presence(contract_address)) {
         return token_plugin_query_data_pair_count(contract_address, data_pair_count);
     }
@@ -141,7 +141,7 @@ stellar_plugin_result_t plugin_query_data_pair(const uint8_t *contract_address,
                                                uint8_t caption_len,
                                                char *value,
                                                uint8_t value_len) {
-    // Build-in token plugin
+    // Built-in token plugin
     if (token_plugin_check_presence(contract_address)) {
         return token_plugin_query_data_pair(contract_address,
                                             data_pair_index,

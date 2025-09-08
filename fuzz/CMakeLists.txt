@@ -7,7 +7,7 @@ endif ()
 # project information
 project(tests_unit
         VERSION 0.1
-        DESCRIPTION "Fuzzing of transaction parser and foramtter"
+        DESCRIPTION "Fuzzing of transaction parser and formatter"
         LANGUAGES C)
 
 # guard against bad build-type strings

@@ -6,6 +6,6 @@ module.exports = {
   testEnvironment: 'node',
   transformIgnorePatterns: ['^.+\\.js$'],
   // globalSetup: "<rootDir>/tests/globalsetup.ts",
-  // Stop immediatly when a test fail
+  // Stop immediately when a test fail
   bail: false,
 };

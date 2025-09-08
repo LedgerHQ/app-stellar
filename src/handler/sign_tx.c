@@ -81,7 +81,7 @@ int handler_sign_tx(buffer_t *cdata, bool is_first_chunk, bool more) {
     G_context.state = STATE_PARSED;
     PRINTF("tx parsed.\n");
 
-    // We have been called from the Exchange app that has already vaidated the TX in the UI
+    // We have been called from the Exchange app that has already validated the TX in the UI
     if (G_called_from_swap) {
         if (G_swap_response_ready) {
             // Safety against trying to make the app sign multiple TX

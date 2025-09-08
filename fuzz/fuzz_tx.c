@@ -98,7 +98,7 @@ static bool plugin_check_presence(const uint8_t *contract_address) {
 }
 
 stellar_plugin_result_t plugin_init_contract(const uint8_t *contract_address) {
-    // Build-in token plugin
+    // Built-in token plugin
     if (plugin_check_presence(contract_address)) {
         return STELLAR_PLUGIN_RESULT_OK;
     }
@@ -107,7 +107,7 @@ stellar_plugin_result_t plugin_init_contract(const uint8_t *contract_address) {
 
 stellar_plugin_result_t plugin_query_data_pair_count(const uint8_t *contract_address,
                                                      uint8_t *data_pair_count) {
-    // Build-in token plugin
+    // Built-in token plugin
     if (plugin_check_presence(contract_address)) {
         *data_pair_count = 3;
         return STELLAR_PLUGIN_RESULT_OK;
