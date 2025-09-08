@@ -8,18 +8,24 @@ on:
       - main
       - develop
   pull_request:
+    # Excluded path: add the paths you want to ignore instead of deleting the workflow
+    paths-ignore:
+      - ".github/workflows/*.yml"
+      - "unit_tests/**"
 
 jobs:
   analyse:
     name: Analyse
     strategy:
+      fail-fast: false
       matrix:
-        sdk: ["$NANOX_SDK", "$NANOSP_SDK", "$STAX_SDK", "$FLEX_SDK"]
-        #'cpp' covers C and C++
+        sdk:
+          ["$NANOX_SDK", "$NANOSP_SDK", "$STAX_SDK", "$FLEX_SDK"]
+        # 'cpp' covers C and C++
         language: ["cpp"]
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder-legacy:latest
+      image: ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder-lite:latest
 
     steps:
       - name: Clone

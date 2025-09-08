@@ -34,8 +34,8 @@ jobs:
         id: build
         uses: google/clusterfuzzlite/actions/build_fuzzers@v1
         with:
-          language: c # Change this to the language you are fuzzing.
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          language: c # Change this to the language you are fuzzing.
           sanitizer: ${{ matrix.sanitizer }}
           storage-repo: https://${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/lightsail-network/app-stellar-fuzz-corpus
           storage-repo-branch: main
