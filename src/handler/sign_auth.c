@@ -127,5 +127,10 @@ static bool check_include_custom_contract() {
             return true;
         }
     }
+
+    if (G_context.envelope.soroban_authorization.auth_function_type ==
+        SOROBAN_AUTHORIZED_FUNCTION_TYPE_CREATE_CONTRACT_V2_HOST_FN) {
+        return true;
+    }
     return false;
 }

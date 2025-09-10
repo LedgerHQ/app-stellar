@@ -173,6 +173,12 @@ static bool check_include_custom_contract() {
                 return true;
             }
         }
+
+        if (G_context.envelope.tx_details.tx.op_details.type == OPERATION_INVOKE_HOST_FUNCTION &&
+            G_context.envelope.tx_details.tx.op_details.invoke_host_function_op
+                    .host_function_type == HOST_FUNCTION_TYPE_CREATE_CONTRACT_V2) {
+            return true;
+        }
     }
     return false;
 }
