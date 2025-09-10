@@ -26,10 +26,9 @@
 #define DETAIL_CAPTION_MAX_LENGTH 21
 
 /*
- * DETAIL_VALUE_MAX_LENGTH value of 105 is chosen to fit the maximum length of 2**256 - 1 with
- * commas and decimals.
+ * Value can scroll, so we can afford to have a larger capacity.
  */
-#define DETAIL_VALUE_MAX_LENGTH 105
+#define DETAIL_VALUE_MAX_LENGTH 255
 
 /**
  * Maximum size of raw data (in bytes).
