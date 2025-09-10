@@ -1,7 +1,7 @@
 # Ledger Stellar App
 
-[![Compilation & tests](https://github.com/LedgerHQ/app-stellar/actions/workflows/ci-workflow.yml/badge.svg?branch=develop)](https://github.com/LedgerHQ/app-stellar/actions/workflows/ci-workflow.yml)
-[![Swap function tests](https://github.com/LedgerHQ/app-stellar/actions/workflows/swap-ci-workflow.yml/badge.svg?branch=develop)](https://github.com/LedgerHQ/app-stellar/actions/workflows/swap-ci-workflow.yml)
+[![Build and tests](https://github.com/LedgerHQ/app-stellar/actions/workflows/build_and_tests.yml/badge.svg?branch=develop)](https://github.com/LedgerHQ/app-stellar/actions/workflows/build_and_tests.yml)
+[![Swap function tests](https://github.com/LedgerHQ/app-stellar/actions/workflows/swap_tests.yml/badge.svg?branch=develop)](https://github.com/LedgerHQ/app-stellar/actions/workflows/swap_tests.yml)
 
 ## Introduction
 
