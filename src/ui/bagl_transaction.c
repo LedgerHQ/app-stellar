@@ -180,7 +180,7 @@ UX_STEP_CB(ux_tx_and_auth_blind_signing_approve_step,
 
 // Step with approve button
 UX_STEP_CB(ux_tx_approve_step,
-           pnn,
+           pbb,
            (*g_validate_callback)(true),
            {
                &C_icon_validate_14,
@@ -188,7 +188,7 @@ UX_STEP_CB(ux_tx_approve_step,
                "Transaction",
            });
 UX_STEP_CB(ux_auth_approve_step,
-           pnn,
+           pbb,
            (*g_validate_callback)(true),
            {
                &C_icon_validate_14,
