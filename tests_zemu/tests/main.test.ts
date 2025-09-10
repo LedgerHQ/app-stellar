@@ -181,7 +181,6 @@ describe("transactions", () => {
         const transport = sim.getTransport();
         const str = new Str(transport);
 
-        // enable blind signing and sequence number
         const testsNeedEnableBlindSigning = [
           "opInvokeHostFunctionAssetApprove",
           "opInvokeHostFunctionAssetTransfer",
@@ -195,7 +194,8 @@ describe("transactions", () => {
           "opInvokeHostFunctionWithAuthAndNoArgsAndNoSource",
           "opInvokeHostFunctionWithComplexSubInvocation",
           "opInvokeHostFunctionWithoutArgs",
-          "opInvokeHostFunctionWithoutAuthAndNoSource"
+          "opInvokeHostFunctionWithoutAuthAndNoSource",
+          "opInvokeHostFunctionCreateContractV2WasmId"
         ];
         await enableBlindSigningAndSequence(sim, dev.name, testCaseName);
 
@@ -394,7 +394,8 @@ describe("soroban auth", () => {
           "sorobanAuthInvokeContractWithoutArgs",
           "sorobanAuthPublic",
           "sorobanAuthTestnet",
-          "sorobanAuthUnknownNetwork"
+          "sorobanAuthUnknownNetwork",
+          "sorobanAuthCreateSmartContractV2"
         ];
         const result = str.signSorobanAuthorization("44'/148'/0'", hashIdPreimage.toXDR("raw"));
         const events = await sim.getEvents();
