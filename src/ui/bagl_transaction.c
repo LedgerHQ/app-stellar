@@ -39,8 +39,6 @@
 #include "stellar/formatter.h"
 #include "stellar/printer.h"
 
-static void start_review_flow(void);
-
 static action_validate_cb g_validate_callback;
 static bool data_exists;
 static formatter_data_t formatter_data;
@@ -48,7 +46,7 @@ static formatter_data_t formatter_data;
 // Validate/Invalidate transaction and go back to home
 static void ui_action_validate_transaction(bool choice) {
     validate_transaction(choice);
-    ui_menu_main();
+    ui_idle();
 }
 
 static void bnnn_paging_edgecase() {
@@ -162,8 +160,25 @@ UX_STEP_INIT(ux_tx_lower_delimiter, NULL, NULL, {
     display_next_state(false);
 });
 
-// Step with approve button
+// Step for blind signing warning at the beginning of the flow
+UX_STEP_NOCB(ux_tx_and_auth_blind_signing_reminder_step,
+             pbb,
+             {
+                 &C_icon_warning,
+                 "Blind",
+                 "signing",
+             });
+// Step for blind signing warning at the signing step
+UX_STEP_CB(ux_tx_and_auth_blind_signing_approve_step,
+           pbb,
+           (*g_validate_callback)(true),
+           {
+               &C_icon_validate_14,
+               "Accept risk",
+               "and sign",
+           });
 
+// Step with approve button
 UX_STEP_CB(ux_tx_approve_step,
            pnn,
            (*g_validate_callback)(true),
@@ -188,14 +203,6 @@ UX_STEP_CB(ux_tx_reject_step,
                &C_icon_crossmark,
                "Reject",
            });
-
-UX_STEP_NOCB(ux_transaction_approval_blind_signing_reminder_step,
-             pbb,
-             {
-                 &C_icon_warning,
-                 "You accepted",
-                 "the risks",
-             });
 // FLOW to display transaction information:
 // https://developers.ledger.com/docs/device-app/develop/ui/flows/advanced-display-management
 UX_FLOW(ux_tx_flow,
@@ -215,91 +222,22 @@ UX_FLOW(ux_auth_flow,
         &ux_tx_reject_step);
 
 UX_FLOW(ux_tx_flow_with_reminder,
+        &ux_tx_and_auth_blind_signing_reminder_step,
         &ux_tx_review_step,
         &ux_tx_upper_delimiter,
         &ux_tx_generic,
         &ux_tx_lower_delimiter,
-        &ux_transaction_approval_blind_signing_reminder_step,
-        &ux_tx_approve_step,
+        &ux_tx_and_auth_blind_signing_approve_step,
         &ux_tx_reject_step);
 
 UX_FLOW(ux_auth_flow_with_reminder,
+        &ux_tx_and_auth_blind_signing_reminder_step,
         &ux_auth_review_step,
         &ux_tx_upper_delimiter,
         &ux_tx_generic,
         &ux_tx_lower_delimiter,
-        &ux_transaction_approval_blind_signing_reminder_step,
-        &ux_auth_approve_step,
+        &ux_tx_and_auth_blind_signing_approve_step,
         &ux_tx_reject_step);
-
-// clang-format off
-UX_STEP_NOCB(
-    ux_transaction_blind_signing_warning_step,
-    pbb,
-    {
-      &C_icon_warning,
-      "This transaction",
-      "cannot be trusted",
-    });
-UX_STEP_NOCB(
-    ux_transaction_blind_signing_text1_step,
-    nnnn,
-    {
-      "Your Ledger cannot",
-      "decode this",
-      "transaction. If you",
-      "sign it, you could",
-    });
-UX_STEP_NOCB(
-    ux_transaction_blind_signing_text2_step,
-    nnnn,
-    {
-      "be authorizing",
-      "malicious actions",
-      "that can drain your",
-      "wallet.",
-    });
-UX_STEP_NOCB(
-    ux_transaction_blind_signing_link_step,
-    nn,
-    {
-      "Learn more:",
-      "ledger.com/e8",
-    });
-UX_STEP_CB(
-    ux_transaction_blind_signing_accept_step,
-    pbb,
-    start_review_flow(),
-    {
-      &C_icon_validate_14,
-      "Accept risk and",
-      "review transaction",
-    });
-UX_STEP_CB(
-    ux_transaction_blind_signing_reject_step,
-    pb,
-    ui_action_validate_transaction(false),
-    {
-      &C_icon_crossmark,
-      "Reject",
-    });
-// clang-format on
-
-UX_FLOW(ux_transaction_blind_signing_flow,
-        &ux_transaction_blind_signing_warning_step,
-        &ux_transaction_blind_signing_text1_step,
-        &ux_transaction_blind_signing_text2_step,
-        &ux_transaction_blind_signing_link_step,
-        &ux_transaction_blind_signing_accept_step,
-        &ux_transaction_blind_signing_reject_step);
-
-static void start_review_flow() {
-    if (G_context.req_type == CONFIRM_TRANSACTION) {
-        ux_flow_init(0, ux_tx_flow_with_reminder, NULL);
-    } else {
-        ux_flow_init(0, ux_auth_flow_with_reminder, NULL);
-    }
-}
 
 void prepare_display() {
     formatter_data_t fdata = {
@@ -333,7 +271,7 @@ int ui_display_transaction() {
     }
     prepare_display();
     if (G_context.unverified_contracts) {
-        ux_flow_init(0, ux_transaction_blind_signing_flow, NULL);
+        ux_flow_init(0, ux_tx_flow_with_reminder, NULL);
     } else {
         ux_flow_init(0, ux_tx_flow, NULL);
     }
@@ -347,7 +285,7 @@ int ui_display_auth() {
     }
     prepare_display();
     if (G_context.unverified_contracts) {
-        ux_flow_init(0, ux_transaction_blind_signing_flow, NULL);
+        ux_flow_init(0, ux_auth_flow_with_reminder, NULL);
     } else {
         ux_flow_init(0, ux_auth_flow, NULL);
     }

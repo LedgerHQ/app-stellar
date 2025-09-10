@@ -45,9 +45,10 @@ static const char* const INFO_CONTENTS[SETTING_INFO_NB] = {APPVERSION, "overcat"
 // settings switches definitions
 enum {
     SWITCH_SEQUENCE_SET_TOKEN = FIRST_USER_TOKEN,
+    SWITCH_BLIND_SIGNING_SET_TOKEN,
 };
 
-enum { SWITCH_SEQUENCE_SET_ID = 0, SETTINGS_SWITCHES_NB };
+enum { SWITCH_BLIND_SIGNING_SET_ID = 0, SWITCH_SEQUENCE_SET_ID, SETTINGS_SWITCHES_NB };
 
 static nbgl_contentSwitch_t switches[SETTINGS_SWITCHES_NB] = {0};
 
@@ -83,11 +84,25 @@ static void controls_callback(int token, uint8_t index, int page) {
         // store the new setting value in NVM
         SETTING_TOGGLE(S_SEQUENCE_NUMBER_ENABLED);
     }
+    if (token == SWITCH_BLIND_SIGNING_SET_TOKEN) {
+        // toggle the switch value
+        switches[SWITCH_BLIND_SIGNING_SET_ID].initState =
+            (!HAS_SETTING(S_BLIND_SIGNING_ENABLED)) ? ON_STATE : OFF_STATE;
+        // store the new setting value in NVM
+        SETTING_TOGGLE(S_BLIND_SIGNING_ENABLED);
+    }
 }
 
 // home page definition
-void ui_menu_main(void) {
+void ui_menu_main(uint8_t page) {
     // Initialize switches data
+    switches[SWITCH_BLIND_SIGNING_SET_ID].initState =
+        (HAS_SETTING(S_BLIND_SIGNING_ENABLED)) ? ON_STATE : OFF_STATE;
+    switches[SWITCH_BLIND_SIGNING_SET_ID].text = "Blind signing";
+    switches[SWITCH_BLIND_SIGNING_SET_ID].subText = "Enable blind signing";
+    switches[SWITCH_BLIND_SIGNING_SET_ID].token = SWITCH_BLIND_SIGNING_SET_TOKEN;
+    switches[SWITCH_BLIND_SIGNING_SET_ID].tuneId = TUNE_TAP_CASUAL;
+
     switches[SWITCH_SEQUENCE_SET_ID].initState =
         (HAS_SETTING(S_SEQUENCE_NUMBER_ENABLED)) ? ON_STATE : OFF_STATE;
     switches[SWITCH_SEQUENCE_SET_ID].text = "Sequence number";
@@ -98,10 +113,24 @@ void ui_menu_main(void) {
     nbgl_useCaseHomeAndSettings(APPNAME,
                                 &C_icon_stellar_64px,
                                 NULL,
-                                INIT_HOME_PAGE,
+                                page,
                                 &setting_contents,
                                 &info_list,
                                 NULL,
                                 app_quit);
+}
+
+/**
+ * Go to home screen
+ */
+void ui_idle(void) {
+    ui_menu_main(INIT_HOME_PAGE);
+}
+
+/**
+ * Go to settings screen
+ */
+void ui_settings(void) {
+    ui_menu_main(0);
 }
 #endif  // HAVE_NBGL

@@ -33,6 +33,7 @@
 #include "crypto.h"
 #include "ui/display.h"
 #include "helper/send_response.h"
+#include "settings.h"
 
 int handler_sign_hash(buffer_t *cdata) {
     explicit_bzero(&G_context, sizeof(G_context));
@@ -56,6 +57,12 @@ int handler_sign_hash(buffer_t *cdata) {
                                               G_context.bip32_path_len);
     if (error != CX_OK) {
         return io_send_sw(error);
+    }
+
+    if (!HAS_SETTING(S_BLIND_SIGNING_ENABLED)) {
+        // if hash signing is not enabled
+        ui_error_blind_signing();
+        return io_send_sw(SW_BLIND_SIGNING_MODE_NOT_ENABLED);
     }
 
     return ui_display_hash();

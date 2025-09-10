@@ -26,5 +26,6 @@ extern const internal_storage_t N_storage_real;
 #define HAS_SETTING(k) ((N_settings & (1 << (k))) >> (k))
 
 #define S_SEQUENCE_NUMBER_ENABLED 0
+#define S_BLIND_SIGNING_ENABLED   1
 
 #define S_INITIALIZED 7

@@ -93,7 +93,7 @@ static void ui_action_message_next(bool choice) {
 // Validate/Invalidate message and go back to home
 static void ui_action_validate_message(bool choice) {
     validate_message(choice);
-    ui_menu_main();
+    ui_idle();
 }
 
 UX_STEP_NOCB(ux_message_display_confirm_step, pnn, {&C_icon_eye, "Review", "Message"});

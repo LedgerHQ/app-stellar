@@ -28,10 +28,7 @@
 #include "constants.h"
 #include "sw.h"
 #include "types.h"
-
-// For compatibility with old clients.
-// We no longer need to enable it in the settings.
-#define HASH_SIGNING_ENABLED 1
+#include "settings.h"
 
 int handler_get_app_configuration() {
     PRINTF("handler_get_app_configuration invoked\n");
@@ -46,7 +43,7 @@ int handler_get_app_configuration() {
     _Static_assert(RAW_DATA_MAX_SIZE >= 0 && RAW_DATA_MAX_SIZE <= UINT16_MAX,
                    "RAW_DATA_MAX_SIZE must be between 0 and 65535!");
 
-    uint8_t config[] = {HASH_SIGNING_ENABLED,
+    uint8_t config[] = {HAS_SETTING(S_BLIND_SIGNING_ENABLED),
                         MAJOR_VERSION,
                         MINOR_VERSION,
                         PATCH_VERSION,

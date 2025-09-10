@@ -36,7 +36,7 @@ describe("get public key", () => {
     const sim = new Zemu(dev.path);
     try {
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText });
-      const transport = await sim.getTransport();
+      const transport = sim.getTransport();
       const str = new Str(transport);
       const { rawPublicKey } = await str.getPublicKey("44'/148'/0'", false);
       const result = StrKey.encodeEd25519PublicKey(rawPublicKey);
@@ -53,7 +53,7 @@ describe("get public key", () => {
     try {
       const confirmText = dev.name.startsWith("nano") ? "Approve" : "Confirm";
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText, approveAction: ButtonKind.ApproveTapButton });
-      const transport = await sim.getTransport();
+      const transport = sim.getTransport();
       const str = new Str(transport);
       const result = str.getPublicKey("44'/148'/0'", true);
       const kp = Keypair.fromSecret("SAIYWGGWU2WMXYDSK33UBQBMBDKU4TTJVY3ZIFF24H2KQDR7RQW5KAEK");
@@ -73,7 +73,7 @@ describe("get public key", () => {
     try {
       const confirmText = dev.name.startsWith("nano") ? "Reject" : "Confirm";
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText, approveAction: ButtonKind.RejectButton });
-      const transport = await sim.getTransport();
+      const transport = sim.getTransport();
       const str = new Str(transport);
 
       expect(() => str.getPublicKey("44'/148'/0'", true)).rejects.toThrow(StellarUserRefusedError);
@@ -88,24 +88,25 @@ describe("get public key", () => {
 });
 
 describe("hash signing", () => {
-  // TODO: skip for now, see https://github.com/LedgerHQ/ledger-secure-sdk/issues/737
   test.concurrent.each(models)("approve ($dev.name)", async ({ dev, startText }) => {
     const sim = new Zemu(dev.path);
     const testCaseName = `${dev.prefix.toLowerCase()}-hash-signing-approve`;
     try {
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText });
-      const transport = await sim.getTransport();
+      const transport = sim.getTransport();
       const str = new Str(transport);
+      await enableBlindSigningAndSequence(sim, dev.name, testCaseName);
 
       const hash = Buffer.from("3389e9f0f1a65f19736cacf544c2e825313e8447f569233bb8db39aa607c8889", "hex");
       const result = str.signHash("44'/148'/0'", hash);
       const events = await sim.getEvents();
       await sim.waitForScreenChanges(events);
-      // accept risk
-      await acceptRisk(sim, dev.name, testCaseName);
-      await sim.deleteEvents();
-
-      const textToFind = dev.name.startsWith("nano") ? "Sign Hash" : "Hold to";
+      if (!dev.name.startsWith("nano")) {
+        // accept risk
+        await acceptRisk(sim, dev.name, testCaseName);
+        await sim.deleteEvents();
+      }
+      const textToFind = dev.name.startsWith("nano") ? "Accept Risk" : "Hold to";
       await sim.navigateAndCompareUntilText(".", testCaseName, textToFind, true);
       const kp = Keypair.fromSecret("SAIYWGGWU2WMXYDSK33UBQBMBDKU4TTJVY3ZIFF24H2KQDR7RQW5KAEK");
       expect((await result).signature).toStrictEqual(kp.sign(hash));
@@ -119,17 +120,20 @@ describe("hash signing", () => {
     const testCaseName = `${dev.prefix.toLowerCase()}-hash-signing-reject`;
     try {
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText, approveAction: ButtonKind.RejectButton });
-      const transport = await sim.getTransport();
+      const transport = sim.getTransport();
       const str = new Str(transport);
+      await enableBlindSigningAndSequence(sim, dev.name, testCaseName);
 
       const hash = Buffer.from("3389e9f0f1a65f19736cacf544c2e825313e8447f569233bb8db39aa607c8889", "hex");
       expect(() => str.signHash("44'/148'/0'", hash)).rejects.toThrow(StellarUserRefusedError);
 
       const events = await sim.getEvents();
       await sim.waitForScreenChanges(events);
-
-      await acceptRisk(sim, dev.name, testCaseName);
-      await sim.deleteEvents();
+      if (!dev.name.startsWith("nano")) {
+        // accept risk
+        await acceptRisk(sim, dev.name, testCaseName);
+        await sim.deleteEvents();
+      }
       const textToFind = dev.name.startsWith("nano") ? "Reject" : "Hold to";
       await sim.navigateAndCompareUntilText(".", testCaseName, textToFind, true);
       if (dev.name == "stax" || dev.name == "flex") {
@@ -142,12 +146,17 @@ describe("hash signing", () => {
   });
 
   test.concurrent.each(models)("refuse risk ($dev.name)", async ({ dev, startText }) => {
+    if (dev.name.startsWith("nano")) {
+      // Nano devices do not have a refuse risk option
+      return;
+    }
     const sim = new Zemu(dev.path);
     const testCaseName = `${dev.prefix.toLowerCase()}-hash-signing-refuse-risk`;
     try {
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText, approveAction: ButtonKind.RejectButton });
-      const transport = await sim.getTransport();
+      const transport = sim.getTransport();
       const str = new Str(transport);
+      await enableBlindSigningAndSequence(sim, dev.name, testCaseName);
 
       const hash = Buffer.from("3389e9f0f1a65f19736cacf544c2e825313e8447f569233bb8db39aa607c8889", "hex");
       expect(() => str.signHash("44'/148'/0'", hash)).rejects.toThrow(StellarUserRefusedError);
@@ -169,11 +178,11 @@ describe("transactions", () => {
       const testCaseName = `${dev.prefix.toLowerCase()}-${c.filePath}`;
       try {
         await sim.start({ ...defaultOptions, model: dev.name, startText: startText });
-        const transport = await sim.getTransport();
+        const transport = sim.getTransport();
         const str = new Str(transport);
 
-        // enable custom contracts and sequence number
-        const testsNeedEnableCustomContracts = [
+        // enable blind signing and sequence number
+        const testsNeedEnableBlindSigning = [
           "opInvokeHostFunctionAssetApprove",
           "opInvokeHostFunctionAssetTransfer",
           "opInvokeHostFunctionScvalsCase0",
@@ -188,16 +197,18 @@ describe("transactions", () => {
           "opInvokeHostFunctionWithoutArgs",
           "opInvokeHostFunctionWithoutAuthAndNoSource"
         ];
-        await enableSequence(sim, dev.name, testCaseName);
+        await enableBlindSigningAndSequence(sim, dev.name, testCaseName);
 
         const result = str.signTransaction("44'/148'/0'", tx.signatureBase());
         const events = await sim.getEvents();
         await sim.waitForScreenChanges(events);
 
-        // accept risk
-        if (testsNeedEnableCustomContracts.includes(c.caseName)) {
-          await acceptRisk(sim, dev.name, testCaseName);
-          await sim.deleteEvents();
+        if (testsNeedEnableBlindSigning.includes(c.caseName) && !dev.name.startsWith("nano")) {
+          if (!dev.name.startsWith("nano")) {
+            // accept risk
+            await acceptRisk(sim, dev.name, testCaseName);
+            await sim.deleteEvents();
+          }
         }
 
         // TODO: If set to Sign, it will not pass the test. Is this a bug in Zemu?
@@ -225,10 +236,9 @@ describe("transactions", () => {
     const testCaseName = `${dev.prefix.toLowerCase()}-tx-reject`;
     try {
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText, approveAction: ButtonKind.RejectButton });
-      const transport = await sim.getTransport();
+      const transport = sim.getTransport();
       const str = new Str(transport);
-
-      await enableSequence(sim, dev.name, testCaseName);
+      await enableBlindSigningAndSequence(sim, dev.name, testCaseName);
 
       expect(() => str.signTransaction("44'/148'/0'", tx.signatureBase())).rejects.toThrow(StellarUserRefusedError);
 
@@ -258,9 +268,9 @@ describe("transactions", () => {
     const testCaseName = `${dev.prefix.toLowerCase()}-fee-bump-tx-reject`;
     try {
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText, approveAction: ButtonKind.RejectButton });
-      const transport = await sim.getTransport();
+      const transport = sim.getTransport();
       const str = new Str(transport);
-      await enableSequence(sim, dev.name, testCaseName);
+      await enableBlindSigningAndSequence(sim, dev.name, testCaseName);
 
       expect(() => str.signTransaction("44'/148'/0'", tx.signatureBase())).rejects.toThrow(StellarUserRefusedError);
 
@@ -290,7 +300,7 @@ describe("transactions", () => {
     const testCaseName = `${dev.prefix.toLowerCase()}-tx-hide-sequence`;
     try {
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText });
-      const transport = await sim.getTransport();
+      const transport = sim.getTransport();
       const str = new Str(transport);
 
       const result = str.signTransaction("44'/148'/0'", tx.signatureBase());
@@ -319,7 +329,7 @@ describe("transactions", () => {
     const testCaseName = `${dev.prefix.toLowerCase()}-fee-bump-tx-hide-sequence`;
     try {
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText });
-      const transport = await sim.getTransport();
+      const transport = sim.getTransport();
       const str = new Str(transport);
 
       const result = str.signTransaction("44'/148'/0'", tx.signatureBase());
@@ -344,13 +354,18 @@ describe("transactions", () => {
   });
 
   test.concurrent.each(models)("refuse risk ($dev.name)", async ({ dev, startText }) => {
+    if (dev.name.startsWith("nano")) {
+      // Nano devices do not have a refuse risk option
+      return;
+    }
     const tx = testCasesFunction.opInvokeHostFunctionScvalsCase0();
     const sim = new Zemu(dev.path);
     const testCaseName = `${dev.prefix.toLowerCase()}-tx-refuse-risk`;
     try {
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText });
-      const transport = await sim.getTransport();
+      const transport = sim.getTransport();
       const str = new Str(transport);
+      await enableBlindSigningAndSequence(sim, dev.name, testCaseName);
       expect(() => str.signTransaction("44'/148'/0'", tx.signatureBase())).rejects.toThrow(StellarUserRefusedError);
       const events = await sim.getEvents();
       await sim.waitForScreenChanges(events);
@@ -369,11 +384,11 @@ describe("soroban auth", () => {
       const testCaseName = `${dev.prefix.toLowerCase()}-${c.filePath}`;
       try {
         await sim.start({ ...defaultOptions, model: dev.name, startText: startText });
-        const transport = await sim.getTransport();
+        const transport = sim.getTransport();
         const str = new Str(transport);
+        await enableBlindSigningAndSequence(sim, dev.name, testCaseName);
 
-        // enable custom contracts
-        const testsNeedEnableCustomContracts = [
+        const testsNeedEnableBlindSigning = [
           "sorobanAuthInvokeContract",
           "sorobanAuthInvokeContractWithComplexSubInvocation",
           "sorobanAuthInvokeContractWithoutArgs",
@@ -384,7 +399,7 @@ describe("soroban auth", () => {
         const result = str.signSorobanAuthorization("44'/148'/0'", hashIdPreimage.toXDR("raw"));
         const events = await sim.getEvents();
         await sim.waitForScreenChanges(events);
-        if (testsNeedEnableCustomContracts.includes(c.caseName)) {
+        if (testsNeedEnableBlindSigning.includes(c.caseName) && !dev.name.startsWith("nano")) {
           await acceptRisk(sim, dev.name, testCaseName);
           await sim.deleteEvents();
         }
@@ -412,16 +427,19 @@ describe("soroban auth", () => {
     const testCaseName = `${dev.prefix.toLowerCase()}-soroban-auth-reject`;
     try {
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText, approveAction: ButtonKind.RejectButton });
-      const transport = await sim.getTransport();
+      const transport = sim.getTransport();
       const str = new Str(transport);
+      await enableBlindSigningAndSequence(sim, dev.name, testCaseName);
 
       expect(() => str.signSorobanAuthorization("44'/148'/0'", hashIdPreimage.toXDR("raw"))).rejects.toThrow(StellarUserRefusedError);
 
       const events = await sim.getEvents();
       await sim.waitForScreenChanges(events);
-
-      await acceptRisk(sim, dev.name, testCaseName);
-      await sim.deleteEvents();
+      if (!dev.name.startsWith("nano")) {
+        // accept risk
+        await acceptRisk(sim, dev.name, testCaseName);
+        await sim.deleteEvents();
+      }
       const textToFind = dev.name.startsWith("nano") ? "Reject" : "Sign Soroban Auth?";
       await sim.navigateAndCompareUntilText(
         ".",
@@ -441,13 +459,18 @@ describe("soroban auth", () => {
   });
 
   test.concurrent.each(models)("refuse risk ($dev.name)", async ({ dev, startText }) => {
+    if (dev.name.startsWith("nano")) {
+      // Nano devices do not have a refuse risk option
+      return;
+    }
     const hashIdPreimage = testCasesFunction.sorobanAuthInvokeContract();
     const sim = new Zemu(dev.path);
     const testCaseName = `${dev.prefix.toLowerCase()}-soroban-auth-refuse-risk`;
     try {
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText, approveAction: ButtonKind.RejectButton });
-      const transport = await sim.getTransport();
+      const transport = sim.getTransport();
       const str = new Str(transport);
+      await enableBlindSigningAndSequence(sim, dev.name, testCaseName);
       expect(() => str.signSorobanAuthorization("44'/148'/0'", hashIdPreimage.toXDR("raw"))).rejects.toThrow(StellarUserRefusedError);
       const events = await sim.getEvents();
       await sim.waitForScreenChanges(events);
@@ -467,7 +490,7 @@ describe("message signing", () => {
     const testCaseName = `${dev.prefix.toLowerCase()}-message-signing-short`;
     try {
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText });
-      const transport = await sim.getTransport();
+      const transport = sim.getTransport();
       const str = new Str(transport);
       const result = str.signMessage("44'/148'/0'", message);
       const events = await sim.getEvents();
@@ -498,7 +521,7 @@ describe("message signing", () => {
     const testCaseName = `${dev.prefix.toLowerCase()}-message-signing-long`;
     try {
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText });
-      const transport = await sim.getTransport();
+      const transport = sim.getTransport();
       const str = new Str(transport);
       const result = str.signMessage("44'/148'/0'", message);
       const events = await sim.getEvents();
@@ -526,7 +549,7 @@ describe("message signing", () => {
     const testCaseName = `${dev.prefix.toLowerCase()}-message-signing-unprintable-data`;
     try {
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText });
-      const transport = await sim.getTransport();
+      const transport = sim.getTransport();
       const str = new Str(transport);
       const result = str.signMessage("44'/148'/0'", message);
       const events = await sim.getEvents();
@@ -557,7 +580,7 @@ describe("message signing", () => {
     const testCaseName = `${dev.prefix.toLowerCase()}-message-signing-reject`;
     try {
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText });
-      const transport = await sim.getTransport();
+      const transport = sim.getTransport();
       const str = new Str(transport);
 
       expect(() => str.signMessage("44'/148'/0'", message)).rejects.toThrow(StellarUserRefusedError);
@@ -585,7 +608,7 @@ describe("plugin", () => {
     const testCaseName = `${dev.prefix.toLowerCase()}-plugin-invoke-host-function`;
     try {
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText });
-      const transport = await sim.getTransport();
+      const transport = sim.getTransport();
       const str = new Str(transport);
       const result = str.signTransaction("44'/148'/0'", tx.signatureBase());
       const events = await sim.getEvents();
@@ -615,7 +638,7 @@ describe("plugin", () => {
     });
     try {
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText, approveAction: ButtonKind.RejectButton });
-      const transport = await sim.getTransport();
+      const transport = sim.getTransport();
       const str = new Str(transport);
       expect(() => str.signTransaction("44'/148'/0'", tx.signatureBase())).rejects.toThrow(StellarUserRefusedError);
       const events = await sim.getEvents();
@@ -647,7 +670,7 @@ describe("plugin", () => {
     const testCaseName = `${dev.prefix.toLowerCase()}-plugin-soroban-auth`;
     try {
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText });
-      const transport = await sim.getTransport();
+      const transport = sim.getTransport();
       const str = new Str(transport);
       const result = str.signSorobanAuthorization("44'/148'/0'", hashIdPreimage.toXDR("raw"));
       const events = await sim.getEvents();
@@ -678,7 +701,7 @@ describe("plugin", () => {
     });
     try {
       await sim.start({ ...defaultOptions, model: dev.name, startText: startText, approveAction: ButtonKind.RejectButton });
-      const transport = await sim.getTransport();
+      const transport = sim.getTransport();
       const str = new Str(transport);
       expect(() => str.signSorobanAuthorization("44'/148'/0'", hashIdPreimage.toXDR("raw"))).rejects.toThrow(StellarUserRefusedError);
 
@@ -743,49 +766,33 @@ function hash(data: Buffer) {
   return hasher.digest()
 }
 
-async function enableSequence(sim: Zemu, device: TModel, testCaseName: string) {
-  if (device == "stax" || device == "flex") {
-    const settingNav = new TouchNavigation(device, [
-      ButtonKind.InfoButton,
-      ButtonKind.ToggleSettingButton1,
-    ]);
-    await sim.navigate(".", testCaseName, settingNav.schedule, true, false);
-  } else {
+async function enableBlindSigningAndSequence(sim: Zemu, device: TModel, testCaseName: string) {
+  if (device.startsWith("nano")) {
     await sim.clickRight(undefined, true);
     await sim.clickBoth(undefined, true);
     await sim.clickBoth(undefined, true);
+    await sim.clickRight(undefined, true);
+    await sim.clickBoth(undefined, true);
+  } else {
+    const settingNav = new TouchNavigation(device, [
+      ButtonKind.InfoButton,
+      ButtonKind.ToggleSettingButton1,
+      ButtonKind.ToggleSettingButton2,
+    ]);
+    await sim.navigate(".", testCaseName, settingNav.schedule, true, false);
   }
 }
 
 async function acceptRisk(sim: Zemu, device: TModel, testCaseName: string) {
-  if (device == "stax" || device == "flex") {
-    const acceptRisk = new TouchNavigation(device, [
+  const acceptRisk = new TouchNavigation(device, [
       ButtonKind.ConfirmNoButton,
-      ButtonKind.ConfirmYesButton,
-    ]);
-    await sim.navigate(".", testCaseName, acceptRisk.schedule, true, false);
-  } else {
-    await sim.clickRight(undefined, true);
-    await sim.clickRight(undefined, true);
-    await sim.clickRight(undefined, true);
-    await sim.clickRight(undefined, true);
-    await sim.clickBoth(undefined, true);
-  }
+  ]);
+  await sim.navigate(".", testCaseName, acceptRisk.schedule, true, false);
 }
 
 async function refuseRisk(sim: Zemu, device: TModel, testCaseName: string) {
-  if (device == "stax" || device == "flex") {
-    const acceptRisk = new TouchNavigation(device, [
-      ButtonKind.ConfirmNoButton,
-      ButtonKind.ConfirmNoButton,
-    ]);
-    await sim.navigate(".", testCaseName, acceptRisk.schedule, true, false);
-  } else {
-    await sim.clickRight(undefined, true);
-    await sim.clickRight(undefined, true);
-    await sim.clickRight(undefined, true);
-    await sim.clickRight(undefined, true);
-    await sim.clickRight(undefined, true);
-    await sim.clickBoth(undefined, true);
-  }
+  const acceptRisk = new TouchNavigation(device, [
+      ButtonKind.ConfirmYesButton,
+  ]);
+  await sim.navigate(".", testCaseName, acceptRisk.schedule, true, false);
 }

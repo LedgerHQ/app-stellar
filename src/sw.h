@@ -21,6 +21,10 @@
  */
 #define SW_WRONG_P1P2 0x6B00
 /**
+ * Status word for blind signing model not enabled.
+ */
+#define SW_BLIND_SIGNING_MODE_NOT_ENABLED 0x6C66
+/**
  * Status word for unknown command with this INS.
  */
 #define SW_INS_NOT_SUPPORTED 0x6D00

@@ -82,7 +82,7 @@ static void streaming_continue(bool confirm) {
             nbgl_useCaseReviewStreamingFinish("Sign Stellar message", review_choice);
         }
     } else {
-        nbgl_useCaseReviewStatus(STATUS_TYPE_MESSAGE_REJECTED, ui_menu_main);
+        nbgl_useCaseReviewStatus(STATUS_TYPE_MESSAGE_REJECTED, ui_idle);
         validate_message(false);
     }
 }
@@ -110,16 +110,16 @@ static void streaming_start(bool confirm) {
             nbgl_useCaseReviewStreamingFinish("Sign Stellar message", review_choice);
         }
     } else {
-        nbgl_useCaseReviewStatus(STATUS_TYPE_MESSAGE_REJECTED, ui_menu_main);
+        nbgl_useCaseReviewStatus(STATUS_TYPE_MESSAGE_REJECTED, ui_idle);
         validate_message(false);
     }
 }
 
 static void review_choice(bool confirm) {
     if (confirm) {
-        nbgl_useCaseReviewStatus(STATUS_TYPE_MESSAGE_SIGNED, ui_menu_main);
+        nbgl_useCaseReviewStatus(STATUS_TYPE_MESSAGE_SIGNED, ui_idle);
     } else {
-        nbgl_useCaseReviewStatus(STATUS_TYPE_MESSAGE_REJECTED, ui_menu_main);
+        nbgl_useCaseReviewStatus(STATUS_TYPE_MESSAGE_REJECTED, ui_idle);
     }
     validate_message(confirm);
 }

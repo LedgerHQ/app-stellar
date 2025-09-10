@@ -59,7 +59,7 @@ void app_main() {
     io_init();
 
     if (!G_called_from_swap) {
-        ui_menu_main();
+        ui_idle();
     }
 
     // Reset context

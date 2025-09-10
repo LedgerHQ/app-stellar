@@ -18,6 +18,7 @@
 #ifdef HAVE_NBGL
 #include <stdbool.h>  // bool
 #include <string.h>   // memset
+#include "format.h"
 
 #include "nbgl_use_case.h"
 
@@ -27,36 +28,20 @@
 #include "stellar/printer.h"
 #include "action/validate.h"
 
-static void review_choice(bool confirm) {
+static void ui_error_blind_signing_choice(bool confirm) {
     if (confirm) {
-        nbgl_useCaseReviewStatus(STATUS_TYPE_ADDRESS_VERIFIED, ui_idle);
+        ui_settings();
     } else {
-        nbgl_useCaseReviewStatus(STATUS_TYPE_ADDRESS_REJECTED, ui_idle);
+        ui_idle();
     }
-    validate_pubkey(confirm);
 }
 
-int ui_display_address(void) {
-    if (G_context.req_type != CONFIRM_ADDRESS || G_context.state != STATE_NONE) {
-        G_context.state = STATE_NONE;
-        return io_send_sw(SW_BAD_STATE);
-    }
-
-    explicit_bzero(G.ui.detail_value, DETAIL_VALUE_MAX_LENGTH);
-    if (!print_account_id(G_context.raw_public_key,
-                          G.ui.detail_value,
-                          DETAIL_VALUE_MAX_LENGTH,
-                          0,
-                          0)) {
-        return io_send_sw(SW_DISPLAY_ADDRESS_FAIL);
-    }
-
-    nbgl_useCaseAddressReview(G.ui.detail_value,
-                              NULL,
-                              &C_icon_stellar_64px,
-                              "Verify Stellar address",
-                              NULL,
-                              review_choice);
-    return 0;
+void ui_error_blind_signing() {
+    nbgl_useCaseChoice(&C_Warning_64px,
+                       "This transaction cannot be clear-signed",
+                       "Enable blind signing in the settings to sign this transaction.",
+                       "Go to settings",
+                       "Reject transaction",
+                       ui_error_blind_signing_choice);
 }
 #endif  // HAVE_NBGL

@@ -27,6 +27,7 @@
 
 #include "sign_tx.h"
 #include "sw.h"
+#include "settings.h"
 #include "globals.h"
 #include "plugin.h"
 #include "ui/display.h"
@@ -96,6 +97,13 @@ int handler_sign_auth(buffer_t *cdata, bool is_first_chunk, bool more) {
     }
 
     G_context.unverified_contracts = check_include_custom_contract();
+
+    if (G_context.unverified_contracts && !HAS_SETTING(S_BLIND_SIGNING_ENABLED)) {
+        // if blind signing is not enabled and the contract is unverified
+        ui_error_blind_signing();
+        return io_send_sw(SW_BLIND_SIGNING_MODE_NOT_ENABLED);
+    }
+
     return ui_display_auth();
 };
 

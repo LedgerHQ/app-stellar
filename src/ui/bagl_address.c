@@ -37,7 +37,7 @@ static action_validate_cb g_validate_callback;
 // Validate/Invalidate public key and go back to home
 static void ui_action_validate_pubkey(bool choice) {
     validate_pubkey(choice);
-    ui_menu_main();
+    ui_idle();
 }
 
 // Step with icon and text

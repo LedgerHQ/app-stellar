@@ -51,17 +51,6 @@ static void review_prepare(void);
 static void review_start(void);
 static void review_continue(bool ask_more);
 static void review_choice(bool confirm);
-static void warning_choice_tx1(bool confirm);
-static void warning_choice_tx2(bool confirm);
-static void warning_choice_auth1(bool confirm);
-static void warning_choice_auth2(bool confirm);
-static void ui_action_validate_transaction(bool choice);
-
-// Validate/Invalidate transaction and go back to home
-static void ui_action_validate_transaction(bool choice) {
-    validate_transaction(choice);
-    ui_menu_main();
-}
 
 static uint32_t more_data_to_send() {
     reset_formatter();
@@ -118,14 +107,14 @@ static void review_choice(bool confirm) {
     // display a status page and go back to main
     if (G_context.envelope.type == ENVELOPE_TYPE_SOROBAN_AUTHORIZATION) {
         if (confirm) {
-            nbgl_useCaseStatus("Soroban Auth signed", true, ui_menu_main);
+            nbgl_useCaseStatus("Soroban Auth signed", true, ui_idle);
         } else {
-            nbgl_useCaseStatus("Soroban Auth rejected", false, ui_menu_main);
+            nbgl_useCaseStatus("Soroban Auth rejected", false, ui_idle);
         }
     } else {
         nbgl_useCaseReviewStatus(
             confirm ? STATUS_TYPE_TRANSACTION_SIGNED : STATUS_TYPE_TRANSACTION_REJECTED,
-            ui_menu_main);
+            ui_idle);
     }
     validate_transaction(confirm);
 }
@@ -161,17 +150,33 @@ static void review_start(void) {
     }
 
     if (formatter_data.envelope->type == ENVELOPE_TYPE_SOROBAN_AUTHORIZATION) {
-        nbgl_useCaseReviewStreamingStart(op_type,
-                                         &C_icon_stellar_64px,
-                                         "Review Soroban Auth",
-                                         NULL,
-                                         review_continue);
+        if (G_context.unverified_contracts) {
+            nbgl_useCaseReviewStreamingBlindSigningStart(op_type,
+                                                         &C_icon_stellar_64px,
+                                                         "Review Soroban Auth",
+                                                         NULL,
+                                                         review_continue);
+        } else {
+            nbgl_useCaseReviewStreamingStart(op_type,
+                                             &C_icon_stellar_64px,
+                                             "Review Soroban Auth",
+                                             NULL,
+                                             review_continue);
+        }
     } else {
-        nbgl_useCaseReviewStreamingStart(op_type,
-                                         &C_icon_stellar_64px,
-                                         "Review transaction",
-                                         NULL,
-                                         review_continue);
+        if (G_context.unverified_contracts) {
+            nbgl_useCaseReviewStreamingBlindSigningStart(op_type,
+                                                         &C_icon_stellar_64px,
+                                                         "Review transaction",
+                                                         NULL,
+                                                         review_continue);
+        } else {
+            nbgl_useCaseReviewStreamingStart(op_type,
+                                             &C_icon_stellar_64px,
+                                             "Review transaction",
+                                             NULL,
+                                             review_continue);
+        }
     }
 }
 
@@ -199,72 +204,13 @@ static void review_prepare() {
     displayed_data = 0;
 }
 
-static void warning_choice_tx2(bool confirm) {
-    if (confirm) {
-        review_prepare();
-        review_start();
-    } else {
-        ui_action_validate_transaction(false);
-    }
-}
-
-static void warning_choice_tx1(bool confirm) {
-    if (confirm) {
-        ui_action_validate_transaction(false);
-    } else {
-        nbgl_useCaseChoice(
-            NULL,
-            "The transaction cannot be trusted",
-            "Unverified contracts may not be displayed in a readable form on your Ledger, so you "
-            "need to examine them very carefully before sign them.\nLearn more: ledger.com/e8",
-            "I accept the risk",
-            "Reject transaction",
-            warning_choice_tx2);
-    }
-}
-
-static void warning_choice_auth2(bool confirm) {
-    if (confirm) {
-        review_start();
-    } else {
-        ui_action_validate_transaction(false);
-    }
-}
-
-static void warning_choice_auth1(bool confirm) {
-    if (confirm) {
-        ui_action_validate_transaction(false);
-    } else {
-        nbgl_useCaseChoice(
-            NULL,
-            "The Soroban Authorization cannot be trusted",
-            "Unverified contracts may not be displayed in a readable form on your Ledger, so you "
-            "need to examine them very carefully before sign them.\nLearn more: ledger.com/e8",
-            "I accept the risk",
-            "Reject Soroban Auth",
-            warning_choice_auth2);
-    }
-}
-
 int ui_display_transaction(void) {
     if (G_context.req_type != CONFIRM_TRANSACTION || G_context.state != STATE_PARSED) {
         G_context.state = STATE_NONE;
         return io_send_sw(SW_BAD_STATE);
     }
     review_prepare();
-    if (G_context.unverified_contracts) {
-        nbgl_useCaseChoice(&C_Warning_64px,
-                           "Security risk detected",
-                           "It may not be safe to sign this "
-                           "transaction. To continue, you'll "
-                           "need to review the risk.",
-                           "Back to safety",
-                           "Review the risk",
-                           warning_choice_tx1);
-    } else {
-        review_start();
-    }
-
+    review_start();
     return 0;
 }
 
@@ -274,18 +220,7 @@ int ui_display_auth() {
         return io_send_sw(SW_BAD_STATE);
     }
     review_prepare();
-    if (G_context.unverified_contracts) {
-        nbgl_useCaseChoice(&C_Warning_64px,
-                           "Security risk detected",
-                           "It may not be safe to sign this "
-                           "transaction. To continue, you'll "
-                           "need to review the risk.",
-                           "Back to safety",
-                           "Review the risk",
-                           warning_choice_auth1);
-    } else {
-        review_start();
-    }
+    review_start();
     return 0;
 }
 #endif  // HAVE_NBGL

@@ -31,12 +31,6 @@
 // Macros
 #define TAG_VAL_LST_PAIR_NB 1
 
-// Validate/Invalidate transaction and go back to home
-static void ui_action_validate_transaction(bool choice) {
-    validate_transaction(choice);
-    ui_menu_main();
-}
-
 // Globals
 static char str_values[TAG_VAL_LST_PAIR_NB][DETAIL_VALUE_MAX_LENGTH];
 static nbgl_layoutTagValue_t caption_value_pairs[TAG_VAL_LST_PAIR_NB];
@@ -45,8 +39,6 @@ static nbgl_layoutTagValueList_t pair_list;
 // Static functions declarations
 static void review_start(void);
 static void review_choice(bool confirm);
-static void warning_choice2(bool confirm);
-static void warning_choice1(bool confirm);
 
 // Functions definitions
 static void prepare_page(void) {
@@ -68,47 +60,23 @@ static void prepare_page(void) {
 static void review_choice(bool confirm) {
     // Answer, display a status page and go back to main
     if (confirm) {
-        nbgl_useCaseStatus("Hash signed", true, ui_menu_main);
+        nbgl_useCaseStatus("Hash signed", true, ui_idle);
     } else {
-        nbgl_useCaseStatus("Hash rejected", false, ui_menu_main);
+        nbgl_useCaseStatus("Hash rejected", false, ui_idle);
     }
     validate_transaction(confirm);
 }
 
 static void review_start(void) {
     nbgl_operationType_t op_type = TYPE_TRANSACTION;
-    op_type |= BLIND_OPERATION;
-    nbgl_useCaseReview(op_type,
-                       &pair_list,
-                       &C_icon_stellar_64px,
-                       "Review hash signing",
-                       NULL,
-                       "Sign hash?",
-                       review_choice);
-}
-
-static void warning_choice2(bool confirm) {
-    if (confirm) {
-        review_start();
-    } else {
-        ui_action_validate_transaction(false);
-    }
-}
-
-static void warning_choice1(bool confirm) {
-    if (confirm) {
-        ui_action_validate_transaction(false);
-    } else {
-        nbgl_useCaseChoice(
-            NULL,
-            "The hash cannot be trusted",
-            "Your Ledger cannot verify the integrity of this hash. If you sign it, you could be "
-            "authorizing malicious actions that can drain your wallet.\nLearn more: "
-            "ledger.com/e8",
-            "I accept the risk",
-            "Reject hash",
-            warning_choice2);
-    }
+    nbgl_useCaseReviewBlindSigning(op_type,
+                                   &pair_list,
+                                   &C_icon_stellar_64px,
+                                   "Review hash signing",
+                                   NULL,
+                                   "Sign hash?",
+                                   NULL,
+                                   review_choice);
 }
 
 int ui_display_hash() {
@@ -118,15 +86,7 @@ int ui_display_hash() {
     }
 
     prepare_page();
-
-    nbgl_useCaseChoice(&C_Warning_64px,
-                       "Security risk detected",
-                       "It may not be safe to sign this "
-                       "transaction. To continue, you'll "
-                       "need to review the risk.",
-                       "Back to safety",
-                       "Review the risk",
-                       warning_choice1);
+    review_start();
     return 0;
 }
 #endif  // HAVE_NBGL
