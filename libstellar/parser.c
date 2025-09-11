@@ -1148,17 +1148,21 @@ static bool parse_extend_footprint_ttl(buffer_t *buffer, extend_footprint_ttl_op
 
 static bool parse_operation(buffer_t *buffer, operation_t *operation) {
     PRINTF("parse_operation: offset=%d\n", buffer->offset);
+    // Initialize operation structure to zero for clean state
     explicit_bzero(operation, sizeof(operation_t));
 
+    // Parse optional source account (may be different from transaction source)
     PARSER_CHECK(parse_optional_type(buffer,
                                      (xdr_type_reader) parse_muxed_account,
                                      &operation->source_account,
                                      &operation->source_account_present))
     PRINTF("operation->source_account_present: %d\n", operation->source_account_present);
 
+    // Parse operation type to determine which operation-specific parser to use
     PARSER_CHECK(parse_uint32(buffer, &operation->type))
     PRINTF("sizeof operation->type: %d\n", sizeof(operation->type));
 
+    // Dispatch to appropriate operation-specific parser based on type
     switch (operation->type) {
         case OPERATION_TYPE_CREATE_ACCOUNT: {
             return parse_create_account(buffer, &operation->create_account_op);

@@ -272,6 +272,10 @@ stellar_plugin_result_t token_plugin_query_data_pair_count(const uint8_t *contra
             : G_context.envelope.tx_details.tx.op_details.invoke_host_function_op
                   .invoke_contract_args;
     char function_name[SCV_SYMBOL_MAX_SIZE + 1] = {0};
+    // Ensure name_size doesn't exceed buffer bounds to prevent overflow
+    if (invoke_contract_args.function.name_size > SCV_SYMBOL_MAX_SIZE) {
+        return STELLAR_PLUGIN_RESULT_ERROR;
+    }
     memcpy(function_name,
            invoke_contract_args.function.name,
            invoke_contract_args.function.name_size);
@@ -288,29 +292,42 @@ stellar_plugin_result_t token_plugin_query_data_pair_count(const uint8_t *contra
     return STELLAR_PLUGIN_RESULT_UNAVAILABLE;
 }
 
+/**
+ * Queries and formats data pairs for Soroban token contract operations display.
+ * This function extracts human-readable information from token contract calls
+ * (transfer, approve) for user verification.
+ */
 stellar_plugin_result_t token_plugin_query_data_pair(const uint8_t *contract_address,
                                                      uint8_t data_pair_index,
                                                      char *caption,
                                                      uint8_t caption_len,
                                                      char *value,
                                                      uint8_t value_len) {
+    // Verify this is a recognized token contract
     const char *token_name = get_token_name(contract_address);
     if (token_name == NULL) {
         return STELLAR_PLUGIN_RESULT_UNAVAILABLE;
     }
 
+    // Extract contract invocation details from transaction context
+    // Handle both direct invocations and authorization contexts
     invoke_contract_args_t invoke_contract_args =
         G_context.envelope.type == ENVELOPE_TYPE_SOROBAN_AUTHORIZATION
             ? G_context.envelope.soroban_authorization.invoke_contract_args
             : G_context.envelope.tx_details.tx.op_details.invoke_host_function_op
                   .invoke_contract_args;
+
+    // Extract and validate the function name being called
     char function_name[SCV_SYMBOL_MAX_SIZE + 1] = {0};
     memcpy(function_name,
            invoke_contract_args.function.name,
            invoke_contract_args.function.name_size);
+
+    // Initialize buffer for parsing function parameters
     buffer_t buffer = {.ptr = G_context.raw,
                        .size = G_context.raw_size,
                        .offset = invoke_contract_args.parameters_position};
+    // Handle transfer function: transfer(env: Env, from: Address, to: Address, amount: i128)
     if (strcmp(function_name, "transfer") == 0) {
         switch (data_pair_index) {
             case 0: {
@@ -365,6 +382,8 @@ stellar_plugin_result_t token_plugin_query_data_pair(const uint8_t *contract_add
         }
     }
 
+    // Handle approve function: approve(env: Env, from: Address, spender: Address, amount: i128,
+    // expiration_ledger: u32)
     if (strcmp(function_name, "approve") == 0) {
         switch (data_pair_index) {
             case 0: {
