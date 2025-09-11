@@ -35,8 +35,10 @@ for record in resp["_embedded"]["records"]:
         asset = Asset(asset_code, asset_issuer)
         stellar_expert_tokens.add(asset)
 
-# Find the common tokens
-common_tokens = lobstr_tokens & soroswap_tokens & stellar_expert_tokens
+# Find tokens that are common to at least two of the lists.
+tokens_in_at_least_two = (lobstr_tokens & soroswap_tokens) | \
+                         (lobstr_tokens & stellar_expert_tokens) | \
+                         (soroswap_tokens & stellar_expert_tokens)
 
 
 def get_asset_contract_id(asset: Asset, network_passphrase: str) -> bytes:
@@ -62,5 +64,6 @@ def print_asset(asset):
     print(f'{{{{{"".join([f"0x{x:02x}," for x in contract_id])}}}, "{asset.code}"}},')
 
 
-for asset in common_tokens:
+# Sort the set of assets alphabetically by their code before printing.
+for asset in sorted(tokens_in_at_least_two, key=lambda asset: asset.code):
     print_asset(asset)
