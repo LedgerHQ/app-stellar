@@ -63,20 +63,29 @@ version = (
     subprocess.check_output("git rev-parse --short HEAD", shell=True).decode().strip()
 )
 
-model = "nano_s"
+APP_FLAG = "0x00"
+API_LEVEL = 24
+
+model = "nano_s_plus"
 with open("debug/app.map") as f:
     content = f.read()
-    if "nanos2" in content:
-        model = "nano_s_plus"
+    if "stax" in content:
+        model = "stax"
+    elif "flex" in content:
+        model = "flex"
 
-if model == "nano_s":
-    target_id = "0x31100004"
-    app_flags = "0x800"
-    extra_params = ""
-elif model == "nano_s_plus":
+if model == "nano_s_plus":
     target_id = "0x33100004"
-    app_flags = "0xa00"
-    extra_params = "--apiLevel 5"
+    app_flags = APP_FLAG
+    extra_params = f"--apiLevel {API_LEVEL}"
+elif model == "stax":
+    target_id = "0x33200004"
+    app_flags = APP_FLAG
+    extra_params = f"--apiLevel {API_LEVEL}"
+elif model == "flex":
+    target_id = "0x33300004"
+    app_flags = APP_FLAG
+    extra_params = f"--apiLevel {API_LEVEL}"
 
 with open("bin/app.hex") as f:
     app_hex = f.read()
