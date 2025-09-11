@@ -40,6 +40,11 @@ int apdu_dispatcher(const command_t *cmd) {
         return io_send_sw(SW_CLA_NOT_SUPPORTED);
     }
 
+    // Check for potential data pointer issues when data is expected
+    if (cmd->lc > 0 && !cmd->data) {
+        return io_send_sw(SW_WRONG_DATA_LENGTH);
+    }
+
     if (G_called_from_swap) {
         if (cmd->ins != INS_GET_PUBLIC_KEY && cmd->ins != INS_SIGN_TX) {
             PRINTF("Only GET_PUBLIC_KEY and SIGN_TX can be called during swap\n");

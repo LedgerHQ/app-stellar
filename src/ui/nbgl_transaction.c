@@ -90,10 +90,10 @@ static uint32_t more_data_to_send() {
             break;
         }
 
-        strncpy(str_captions[filled_count],
+        strlcpy(str_captions[filled_count],
                 G.ui.detail_caption,
                 sizeof(str_captions[filled_count]));
-        strncpy(str_values[filled_count], G.ui.detail_value, sizeof(str_values[filled_count]));
+        strlcpy(str_values[filled_count], G.ui.detail_value, sizeof(str_values[filled_count]));
 
         filled_count++;
         current_data_index++;

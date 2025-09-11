@@ -99,9 +99,8 @@ static bool num_bytes(size_t size, size_t *out_size) {
 }
 
 static bool check_padding(const uint8_t *buffer, size_t offset, size_t length) {
-    size_t i;
-    for (i = 0; i < length - offset; i++) {
-        if (buffer[offset + i] != 0x00) {
+    for (size_t i = offset; i < length; i++) {
+        if (buffer[i] != 0x00) {
             return false;
         }
     }
@@ -651,7 +650,7 @@ static bool parse_create_claimable_balance(buffer_t *buffer, create_claimable_ba
         return false;
     }
     op->claimant_len = claimant_len;
-    for (int i = 0; i < op->claimant_len; i++) {
+    for (uint32_t i = 0; i < op->claimant_len; i++) {
         PARSER_CHECK(parse_claimant(buffer, &op->claimants[i]))
     }
     return true;

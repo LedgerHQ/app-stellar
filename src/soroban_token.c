@@ -366,6 +366,10 @@ stellar_plugin_result_t token_plugin_query_data_pair(const uint8_t *contract_add
 
     // Extract and validate the function name being called
     char function_name[SCV_SYMBOL_MAX_SIZE + 1] = {0};
+    // Ensure name_size doesn't exceed buffer bounds to prevent overflow
+    if (invoke_contract_args.function.name_size > SCV_SYMBOL_MAX_SIZE) {
+        return STELLAR_PLUGIN_RESULT_ERROR;
+    }
     memcpy(function_name,
            invoke_contract_args.function.name,
            invoke_contract_args.function.name_size);

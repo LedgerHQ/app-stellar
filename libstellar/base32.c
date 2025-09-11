@@ -20,6 +20,10 @@
 #include "base32.h"
 
 int base32_decode(const uint8_t *encoded, uint8_t *result, int buf_size) {
+    if (!encoded || !result || buf_size <= 0) {
+        return -1;
+    }
+
     int buffer = 0;
     int bits_left = 0;
     int count = 0;
@@ -51,6 +55,9 @@ int base32_decode(const uint8_t *encoded, uint8_t *result, int buf_size) {
         buffer |= ch;
         bits_left += 5;
         if (bits_left >= 8) {
+            if (count >= buf_size) {
+                return -1;
+            }
             result[count++] = buffer >> (bits_left - 8);
             bits_left -= 8;
         }
@@ -62,7 +69,7 @@ int base32_decode(const uint8_t *encoded, uint8_t *result, int buf_size) {
 }
 
 int base32_encode(const uint8_t *data, int length, uint8_t *result, int buf_size) {
-    if (length < 0 || length > (1 << 28)) {
+    if (!data || !result || length < 0 || length > (1 << 28) || buf_size <= 0) {
         return -1;
     }
     int count = 0;

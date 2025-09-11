@@ -9,6 +9,10 @@ static const char BASE64_ALPHABET[] =
 static int BASE64_MOD_TABLE[] = {0, 2, 1};
 
 bool base64_encode(const uint8_t *data, size_t in_len, char *out, size_t out_len) {
+    if (!data || !out || out_len == 0) {
+        return false;
+    }
+
     size_t encoded_len = 4 * ((in_len + 2) / 3);
     if (encoded_len > out_len) {
         return false;
