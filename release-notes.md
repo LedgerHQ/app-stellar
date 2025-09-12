@@ -1,6 +1,8 @@
 # Release Notes
 
 ## v5.6.0
+
+### Updated
 - Added support for Stellar Whisk Protocol (23).
 - Added support for signing SEP-0053 messages.
 - Updated the Soroban token list.
