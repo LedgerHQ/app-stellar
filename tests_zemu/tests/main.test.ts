@@ -649,10 +649,6 @@ async function acceptRisk(sim: Zemu, device: TModel, testCaseName: string) {
       ButtonKind.ConfirmYesButton,
     ]);
     await sim.navigate(".", testCaseName, acceptRisk.schedule, true, false);
-  } else if (device == "nanos") {
-    await sim.clickRight(undefined, true);
-    await sim.clickRight(undefined, true);
-    await sim.clickBoth(undefined, true);
   } else {
     await sim.clickRight(undefined, true);
     await sim.clickRight(undefined, true);
@@ -669,11 +665,6 @@ async function refuseRisk(sim: Zemu, device: TModel, testCaseName: string) {
       ButtonKind.ConfirmNoButton,
     ]);
     await sim.navigate(".", testCaseName, acceptRisk.schedule, true, false);
-  } else if (device == "nanos") {
-    await sim.clickRight(undefined, true);
-    await sim.clickRight(undefined, true);
-    await sim.clickRight(undefined, true);
-    await sim.clickBoth(undefined, true);
   } else {
     await sim.clickRight(undefined, true);
     await sim.clickRight(undefined, true);

@@ -1,3 +1,4 @@
+
 #pragma once
 #include <stdbool.h>
 
@@ -39,3 +40,9 @@ int ui_display_hash();
  * @return 0 if success, negative integer otherwise.
  */
 int ui_display_auth();
+
+#if defined(TARGET_STAX) || defined(TARGET_FLEX)
+#define ICON_APP_HOME C_icon_stellar_64px
+#elif defined(TARGET_APEX_P)
+#define ICON_APP_HOME C_icon_stellar_48px
+#endif

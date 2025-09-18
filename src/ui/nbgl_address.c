@@ -53,7 +53,7 @@ int ui_display_address(void) {
 
     nbgl_useCaseAddressReview(G.ui.detail_value,
                               NULL,
-                              &C_icon_stellar_64px,
+                              &ICON_APP_HOME,
                               "Verify Stellar address",
                               NULL,
                               review_choice);

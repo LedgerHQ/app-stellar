@@ -163,13 +163,13 @@ static void review_start(void) {
 
     if (formatter_data.envelope->type == ENVELOPE_TYPE_SOROBAN_AUTHORIZATION) {
         nbgl_useCaseReviewStreamingStart(op_type,
-                                         &C_icon_stellar_64px,
+                                         &ICON_APP_HOME,
                                          "Review Soroban Auth",
                                          NULL,
                                          review_continue);
     } else {
         nbgl_useCaseReviewStreamingStart(op_type,
-                                         &C_icon_stellar_64px,
+                                         &ICON_APP_HOME,
                                          "Review transaction",
                                          NULL,
                                          review_continue);
@@ -254,7 +254,7 @@ int ui_display_transaction(void) {
     }
     review_prepare();
     if (G_context.unverified_contracts) {
-        nbgl_useCaseChoice(&C_Warning_64px,
+        nbgl_useCaseChoice(&LARGE_WARNING_ICON,
                            "Security risk detected",
                            "It may not be safe to sign this "
                            "transaction. To continue, you'll "
@@ -276,7 +276,7 @@ int ui_display_auth() {
     }
     review_prepare();
     if (G_context.unverified_contracts) {
-        nbgl_useCaseChoice(&C_Warning_64px,
+        nbgl_useCaseChoice(&LARGE_WARNING_ICON,
                            "Security risk detected",
                            "It may not be safe to sign this "
                            "transaction. To continue, you'll "
