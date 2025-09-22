@@ -24,11 +24,11 @@ jobs:
 
     steps:
       - name: Clone
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Install deps
         run: |
-          apk add --update nodejs npm libbsd-dev
+          apt install -y nodejs npm libbsd-dev
 
       - name: Build unit tests
         run: |
@@ -43,7 +43,7 @@ jobs:
           lcov --directory . -b "$(realpath build/)" --remove coverage.info '*/tests_unit/*' -o coverage.info && \
           genhtml coverage.info -o coverage
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: code-coverage
           path: tests_unit/coverage
@@ -61,14 +61,14 @@ jobs:
     name: Stellar e2e tests
     strategy:
       matrix:
-        device: ["nanos", "nanox", "nanosp", "stax", "flex"]
+        device: ["nanox", "nanosp", "stax", "flex", "apex_p"]
       fail-fast: false
     needs:
       - build_application
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Install node
         uses: actions/setup-node@v4
@@ -95,7 +95,7 @@ jobs:
 
       - name: Upload snapshots
         if: failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.device }}-zemu-snapshots
           path: tests_zemu/snapshots-tmp/

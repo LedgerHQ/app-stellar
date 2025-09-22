@@ -1,5 +1,13 @@
 # Release Notes
 
+## v5.6.0
+
+### Added
+- Apex p support.
+
+### Removed
+- NanoS support
+
 ## v5.5.0
 
 ### Updated

@@ -14,11 +14,7 @@
 #include "stellar/printer.h"
 #include "stellar/plugin.h"
 
-#if defined(TARGET_NANOS)
-#define INVOKE_SMART_CONTRACT "Invoke Contract"
-#else
 #define INVOKE_SMART_CONTRACT "Invoke Smart Contract"
-#endif
 
 /*
  * the formatter prints the details and defines the order of the details
