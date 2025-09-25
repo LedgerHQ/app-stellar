@@ -1,14 +1,21 @@
 # Release Notes
 
-## v5.6.0
+## v5.7.0
 
 ### Updated
 - Added support for Stellar Whisk Protocol (23).
 - Added support for signing SEP-0053 messages.
 - Updated the Soroban token list.
 - Updated the signing process for blind signing transactions to support the latest design specifications.
-- Dropped support for Ledger Nano S.
 - Bug fixes and performance improvements.
+
+## v5.6.0
+
+### Added
+- Apex p support.
+
+### Removed
+- Nano S support
 
 ## v5.5.1
 

@@ -71,7 +71,7 @@ static void review_start(void) {
     nbgl_operationType_t op_type = TYPE_TRANSACTION;
     nbgl_useCaseReviewBlindSigning(op_type,
                                    &pair_list,
-                                   &C_icon_stellar_64px,
+                                   &ICON_APP_HOME,
                                    "Review hash signing",
                                    NULL,
                                    "Sign hash?",

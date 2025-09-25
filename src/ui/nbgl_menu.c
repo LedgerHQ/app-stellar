@@ -16,7 +16,6 @@
  *  limitations under the License.
  *****************************************************************************/
 #ifdef HAVE_NBGL
-#include "display.h"
 
 #include "os.h"
 #include "os_io_seproxyhal.h"
@@ -26,6 +25,7 @@
 
 #include "settings.h"
 #include "globals.h"
+#include "display.h"
 
 //  -----------------------------------------------------------
 //  ----------------------- HOME PAGE -------------------------
@@ -111,7 +111,7 @@ void ui_menu_main(uint8_t page) {
     switches[SWITCH_SEQUENCE_SET_ID].tuneId = TUNE_TAP_CASUAL;
 
     nbgl_useCaseHomeAndSettings(APPNAME,
-                                &C_icon_stellar_64px,
+                                &ICON_APP_HOME,
                                 NULL,
                                 page,
                                 &setting_contents,

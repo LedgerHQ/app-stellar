@@ -152,13 +152,13 @@ static void review_start(void) {
     if (formatter_data.envelope->type == ENVELOPE_TYPE_SOROBAN_AUTHORIZATION) {
         if (G_context.unverified_contracts) {
             nbgl_useCaseReviewStreamingBlindSigningStart(op_type,
-                                                         &C_icon_stellar_64px,
+                                                         &ICON_APP_HOME,
                                                          "Review Soroban Auth",
                                                          NULL,
                                                          review_continue);
         } else {
             nbgl_useCaseReviewStreamingStart(op_type,
-                                             &C_icon_stellar_64px,
+                                             &ICON_APP_HOME,
                                              "Review Soroban Auth",
                                              NULL,
                                              review_continue);
@@ -166,13 +166,13 @@ static void review_start(void) {
     } else {
         if (G_context.unverified_contracts) {
             nbgl_useCaseReviewStreamingBlindSigningStart(op_type,
-                                                         &C_icon_stellar_64px,
+                                                         &ICON_APP_HOME,
                                                          "Review transaction",
                                                          NULL,
                                                          review_continue);
         } else {
             nbgl_useCaseReviewStreamingStart(op_type,
-                                             &C_icon_stellar_64px,
+                                             &ICON_APP_HOME,
                                              "Review transaction",
                                              NULL,
                                              review_continue);

@@ -166,7 +166,7 @@ int ui_display_message(void) {
         // Use standard review - NBGL will automatically handle content
         nbgl_useCaseReview(TYPE_MESSAGE,
                            &tagValueList,
-                           &C_icon_stellar_64px,
+                           &ICON_APP_HOME,
                            "Sign Stellar message",
                            NULL,
                            "Sign message?",
@@ -175,7 +175,7 @@ int ui_display_message(void) {
         // Long message - use streaming review for complete display
         g_message_offset = 0;
         nbgl_useCaseReviewStreamingStart(TYPE_MESSAGE,
-                                         &C_icon_stellar_64px,
+                                         &ICON_APP_HOME,
                                          "Sign Stellar message",
                                          NULL,
                                          streaming_start);

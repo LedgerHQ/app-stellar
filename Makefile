@@ -20,7 +20,7 @@ ifeq ($(BOLOS_SDK),)
 $(error Environment variable BOLOS_SDK is not set)
 endif
 
-include $(BOLOS_SDK)/Makefile.defines
+include $(BOLOS_SDK)/Makefile.target
 
 ########################################
 #        Mandatory configuration       #
@@ -43,6 +43,7 @@ ICON_NANOX = icons/nanox_app_stellar.gif
 ICON_NANOSP = icons/nanox_app_stellar.gif
 ICON_STAX = icons/stax_app_stellar.gif
 ICON_FLEX = icons/flex_app_stellar.gif
+ICON_APEX_P = icons/apex_app_stellar.png
 
 # Application allowed derivation curves.
 # Possibles curves are: secp256k1, secp256r1, ed25519 and bls12381g1
@@ -76,7 +77,7 @@ DEBUG = 0
 # See SDK `include/appflags.h` for the purpose of each permission
 #HAVE_APPLICATION_FLAG_DERIVE_MASTER = 1
 #HAVE_APPLICATION_FLAG_GLOBAL_PIN = 1
-#HAVE_APPLICATION_FLAG_BOLOS_SETTINGS = 1
+HAVE_APPLICATION_FLAG_BOLOS_SETTINGS = 1
 #HAVE_APPLICATION_FLAG_LIBRARY = 1
 
 ########################################
@@ -116,8 +117,6 @@ ifneq ($(WITH_LIBSTELLAR),0)
 endif
 
 include $(BOLOS_SDK)/Makefile.standard_app
-
-APP_FLAGS_APP_LOAD_PARAMS = 0xa00  # APPLICATION_FLAG_LIBRARY + APPLICATION_FLAG_BOLOS_SETTINGS
 
 ifeq ($(TARGET_NAME), TARGET_NANOS)
     $(error The Ledger Nano S will not receive updates, and the last supported version is 5.5.0)

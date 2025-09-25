@@ -58,3 +58,9 @@ void ui_idle(void);
  */
 void ui_settings(void);
 #endif  // HAVE_NBGL
+
+#if defined(TARGET_STAX) || defined(TARGET_FLEX)
+#define ICON_APP_HOME C_icon_stellar_64px
+#elif defined(TARGET_APEX_P)
+#define ICON_APP_HOME C_icon_stellar_48px
+#endif
