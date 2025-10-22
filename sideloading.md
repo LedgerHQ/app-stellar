@@ -7,10 +7,8 @@
 > You need to perform the following steps on Linux or MacOS. You may be able to run these steps on Windows via WSL, but we have not tested it.
 
 ## Supported Devices
-- Ledger Nano S
-- Ledger Nano S Plus
 
-Ledger Nano X does not support sideloading apps, Ledger Stax has not been officially delivered yet, so here, these two devices will not be provided with sideloading scripts for the time being.
+All except the Ledger Nano X.
 
 ## Steps
 ### 1. Install required tools

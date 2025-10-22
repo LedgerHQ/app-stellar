@@ -20,7 +20,7 @@ ifeq ($(BOLOS_SDK),)
 $(error Environment variable BOLOS_SDK is not set)
 endif
 
-include $(BOLOS_SDK)/Makefile.defines
+include $(BOLOS_SDK)/Makefile.target
 
 ########################################
 #        Mandatory configuration       #
@@ -30,7 +30,7 @@ APPNAME = "Stellar"
 
 # Application version
 APPVERSION_M = 5
-APPVERSION_N = 5
+APPVERSION_N = 6
 APPVERSION_P = 0
 APPVERSION = "$(APPVERSION_M).$(APPVERSION_N).$(APPVERSION_P)"
 
@@ -39,11 +39,11 @@ APP_SOURCE_PATH += src
 
 # Application icons following guidelines:
 # https://developers.ledger.com/docs/embedded-app/design-requirements/#device-icon
-ICON_NANOS = icons/nanos_app_stellar.gif
 ICON_NANOX = icons/nanox_app_stellar.gif
 ICON_NANOSP = icons/nanox_app_stellar.gif
 ICON_STAX = icons/stax_app_stellar.gif
 ICON_FLEX = icons/flex_app_stellar.gif
+ICON_APEX_P = icons/apex_app_stellar.png
 
 # Application allowed derivation curves.
 # Possibles curves are: secp256k1, secp256r1, ed25519 and bls12381g1
@@ -77,7 +77,7 @@ DEBUG = 0
 # See SDK `include/appflags.h` for the purpose of each permission
 #HAVE_APPLICATION_FLAG_DERIVE_MASTER = 1
 #HAVE_APPLICATION_FLAG_GLOBAL_PIN = 1
-#HAVE_APPLICATION_FLAG_BOLOS_SETTINGS = 1
+HAVE_APPLICATION_FLAG_BOLOS_SETTINGS = 1
 #HAVE_APPLICATION_FLAG_LIBRARY = 1
 
 ########################################
@@ -118,12 +118,6 @@ endif
 
 include $(BOLOS_SDK)/Makefile.standard_app
 
-ifeq ($(TARGET_NAME), TARGET_NANOS)
-APP_FLAGS_APP_LOAD_PARAMS = 0x800  # APPLICATION_FLAG_LIBRARY
-else
-APP_FLAGS_APP_LOAD_PARAMS = 0xa00  # APPLICATION_FLAG_LIBRARY + APPLICATION_FLAG_BOLOS_SETTINGS
-endif
-
 tests-unit:
 	cd tests_common_js && npm install && npm run build
 	cd tests_generate_binary && npm install && npm run generate unit
@@ -137,4 +131,3 @@ tests-zemu:
 build-installer:
 	rm -rf installer
 	make clean && make BOLOS_SDK=$(NANOSP_SDK) && python scripts/installer_generator.py
-	make clean && make BOLOS_SDK=$(NANOS_SDK) && python scripts/installer_generator.py

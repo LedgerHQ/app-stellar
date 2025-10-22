@@ -80,7 +80,7 @@ static void review_start(void) {
     op_type |= BLIND_OPERATION;
     nbgl_useCaseReview(op_type,
                        &pair_list,
-                       &C_icon_stellar_64px,
+                       &ICON_APP_HOME,
                        "Review hash signing",
                        NULL,
                        "Sign hash?",
@@ -119,7 +119,7 @@ int ui_display_hash() {
 
     prepare_page();
 
-    nbgl_useCaseChoice(&C_Warning_64px,
+    nbgl_useCaseChoice(&LARGE_WARNING_ICON,
                        "Security risk detected",
                        "It may not be safe to sign this "
                        "transaction. To continue, you'll "
