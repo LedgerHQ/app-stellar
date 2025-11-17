@@ -1,0 +1,12 @@
+[project]
+name = "dataset"
+version = "0.1.0"
+description = "Includes the dataset required for testing."
+readme = "README.md"
+authors = [{ name = "overcat", email = "4catcode@gmail.com" }]
+requires-python = ">=3.10"
+dependencies = ["stellar-sdk>=13.1.0"]
+
+[build-system]
+requires = ["flit-core>=3.3.0"]
+build-backend = "flit_core.buildapi"

@@ -1,0 +1,48 @@
+[package]
+name = "stellar"
+version = "6.0.0"
+authors = ["overcat"]
+edition = "2021"
+
+[dependencies]
+escape-bytes = { version = "0.1.1", default-features = false }
+hex = { version = "0.4.3", default-features = false, features = ["alloc"] }
+include_gif = "1.2.4"
+ledger_device_sdk = { version = "1.28.0" }
+stellarlib = { path = "./stellarlib" }
+stellar-strkey = { version = "0.0.14", default-features = false }
+swap-utils = { path = "./swap-utils" }
+
+[profile.release]
+opt-level = 'z'
+lto = true
+
+[features]
+default = ["ledger_device_sdk/nano_nbgl"]
+debug = ["ledger_device_sdk/debug"]
+
+[package.metadata.ledger]
+curve = ["ed25519"]
+flags = "0xa00"
+path = ["44'/148'"]
+name = "Stellar"
+
+[package.metadata.ledger.nanox]
+icon = "icons/stellar_14x14.gif"
+
+[package.metadata.ledger.nanosplus]
+icon = "icons/stellar_14x14.gif"
+
+[package.metadata.ledger.stax]
+icon = "icons/stellar_32x32.gif"
+
+[package.metadata.ledger.flex]
+icon = "icons/stellar_40x40.gif"
+
+[package.metadata.ledger.apex_p]
+icon = "icons/stellar_32x32.png"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = [
+    'cfg(target_os, values("apex_p", "stax", "flex", "nanos", "nanox", "nanosplus"))',
+] }
