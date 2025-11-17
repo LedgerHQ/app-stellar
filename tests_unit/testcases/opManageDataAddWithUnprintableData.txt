@@ -1,8 +1,0 @@
-Memo Text; hello world
-Max Fee; 0.00001 XLM
-Sequence Num; 103720918407102568
-Valid Before (UTC); 2022-12-12 04:12:12
-Tx Source; GDUTHC..XM2FN7
-Set Data; Ledger Stellar App abcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcda
-Data Value; Base64: 6L+Z5piv5LiA5p2h5rWL6K+V5raI5oGvIGhleQ==
-Op Source; GDUTHC..XM2FN7

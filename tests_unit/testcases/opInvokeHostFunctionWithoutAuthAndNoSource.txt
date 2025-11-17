@@ -1,6 +1,0 @@
-Max Fee; 0.00005 XLM
-Sequence Num; 1234567891
-Tx Source; GDUTHC..XM2FN7
-Soroban; Invoke Smart Contract
-Contract ID; CA3B55CUVQCP4C4WXGYG5I2ED7AYE6AFNJB25SFXXVWGEVP3LUVTN7ND
-Function; testfunc
