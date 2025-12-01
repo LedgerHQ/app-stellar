@@ -8,7 +8,7 @@ edition = "2021"
 escape-bytes = { version = "0.1.1", default-features = false }
 hex = { version = "0.4.3", default-features = false, features = ["alloc"] }
 include_gif = "1.2.4"
-ledger_device_sdk = { version = "1.28.0" }
+ledger_device_sdk = { version = "1.29.1" }
 stellarlib = { path = "./stellarlib" }
 stellar-strkey = { version = "0.0.14", default-features = false }
 swap-utils = { path = "./swap-utils" }
