@@ -187,6 +187,6 @@ def handle_risk_warning(navigator, device, accept: bool = True) -> None:
 
     navigator.navigate(
         instructions,
-        screen_change_before_first_instruction=False,
+        screen_change_before_first_instruction=True,
         screen_change_after_last_instruction=False,
     )
