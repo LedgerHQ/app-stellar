@@ -1,3 +1,0 @@
-Nonce; 1232432453
-Sig Exp Ledger; 34654367
-Soroban; Create Smart Contract

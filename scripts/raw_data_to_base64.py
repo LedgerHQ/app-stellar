@@ -1,4 +1,4 @@
-"""A script is used to parse the raw data under the `./tests_unit/testcases/` folder into Base64 XDR data."""
+"""A script is used to parse the raw data into Base64 XDR data."""
 
 from stellar_sdk import (
     FeeBumpTransaction,

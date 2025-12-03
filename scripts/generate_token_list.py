@@ -1,6 +1,6 @@
 import requests
 
-from stellar_sdk import Asset, Network, Address, utils
+from stellar_sdk import Asset, Network, utils
 from stellar_sdk import xdr as stellar_xdr
 
 LOBSTR_TOKEN_API_URL = "https://lobstr.co/api/v1/sep/assets/curated.json"
@@ -8,7 +8,7 @@ SOROSWAP_TOKEN_API_URL = (
     "https://raw.githubusercontent.com/soroswap/token-list/main/tokenList.json"
 )
 STELLAR_EXPERT_TOKEN_API_URL = (
-    "https://api.stellar.expert/explorer/public/asset/?limit=50&order=desc&sort=rating"
+    "https://api.stellar.expert/explorer/public/asset/?limit=200&order=desc&sort=rating"
 )
 
 lobstr_tokens = set()
@@ -35,8 +35,12 @@ for record in resp["_embedded"]["records"]:
         asset = Asset(asset_code, asset_issuer)
         stellar_expert_tokens.add(asset)
 
-# Find the common tokens
-common_tokens = lobstr_tokens & soroswap_tokens & stellar_expert_tokens
+# Find tokens that are common to at least two of the lists.
+tokens_in_at_least_two = (
+    (lobstr_tokens & soroswap_tokens)
+    | (lobstr_tokens & stellar_expert_tokens)
+    | (soroswap_tokens & stellar_expert_tokens)
+)
 
 
 def get_asset_contract_id(asset: Asset, network_passphrase: str) -> bytes:
@@ -58,9 +62,16 @@ def get_asset_contract_id(asset: Asset, network_passphrase: str) -> bytes:
 
 def print_asset(asset):
     contract_id = get_asset_contract_id(asset, Network.PUBLIC_NETWORK_PASSPHRASE)
-    print(f"// {Address.from_raw_contract(contract_id).address}")
-    print(f'{{{{{"".join([f"0x{x:02x}," for x in contract_id])}}}, "{asset.code}"}},')
+    print(f"// {asset.code}-{asset.issuer}")
+    print("TokenInfo {")
+    print("    contract_address: [")
+    print("        " + "".join([f"0x{x:02x}, " for x in contract_id]))
+    print("    ],")
+    print(f'    symbol: "{asset.code}",')
+    print("    decimals: 7,")
+    print("},")
 
 
-for asset in common_tokens:
+# Sort the set of assets alphabetically by their code before printing.
+for asset in sorted(tokens_in_at_least_two, key=lambda asset: asset.code):
     print_asset(asset)
