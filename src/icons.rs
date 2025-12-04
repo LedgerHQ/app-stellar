@@ -15,7 +15,7 @@
  *  limitations under the License.
  *****************************************************************************/
 
-use include_gif::include_gif;
+use ledger_device_sdk::include_gif;
 use ledger_device_sdk::nbgl::NbglGlyph;
 
 #[cfg(target_os = "apex_p")]
