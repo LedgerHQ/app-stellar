@@ -635,11 +635,10 @@ checksum = "67b1b7a3b5fe4f1376887184045fcf45c69e92af734b7aaddc05fb777b6fbd03"
 
 [[package]]
 name = "stellar"
-version = "6.0.0"
+version = "6.0.1"
 dependencies = [
  "escape-bytes",
  "hex",
- "include_gif",
  "ledger_device_sdk",
  "stellar-strkey 0.0.14",
  "stellarlib",
