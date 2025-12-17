@@ -1,16 +1,38 @@
 # Release Notes
 
+## v6.0.0
+
+### Updated
+
+- Display request intent on the first page (e.g., `Sign transaction to send USDC`).
+- Add support for all SCVal types.
+- Improved display for Path Payment operations when used for swaps, now clearly indicating swap operations rather than account-to-account transfers.
+- Add support for `STRKEY_LIQUIDITY_POOL` and `STRKEY_CLAIMABLE_BALANCE` address types introduced in SEP-0023 v1.3.0.
+- Add support for sign message requests as defined in SEP-0053.
+- Display complete Claimant information for `CreateClaimableBalanceOperation`.
+- Precondition information (TimeBounds, LedgerBounds, etc.) is now hidden by default and can be enabled in settings.
+- Sequence Number and Nonce are now hidden by default and can be enabled in settings.
+- Transaction account is now hidden by default when it matches the signing account and can be enabled in settings.
+- Add setting to disable Nested Authorization display to reduce confirmation steps (enabled by default).
+- Add full support for Stellar Asset Token interface with significantly expanded token coverage, including most commonly used tokens in the ecosystem.
+- Blind signing option has been re-added to settings and is disabled by default. If you need to use blind signing, please enable this option in settings. Warning messages for blind signing have also been improved.
+- Removed plugin system due to low usage rates.
+- Other UX improvements and bug fixes.
+
 ## v5.6.0
 
 ### Added
+
 - Apex p support.
 
 ### Removed
+
 - NanoS support
 
 ## v5.5.0
 
 ### Updated
+
 - Optimize the signing process and add necessary alerts.
 - Add support for more Soroban tokens.
 - Bug fixes.
@@ -18,12 +40,14 @@
 ## v5.4.1
 
 ### Updated
+
 - Optimize interactive prompt messages.
 - Optimize the flow for confirming addresses on Stax.
 
 ## v5.4.0
 
 ### Updated
+
 - `GET_APP_CONFIGURATION` will return the maximum size of the transaction's signature base that the device can process.
 - The maximum transaction size limit has been increased to 1,536 bytes. (Ledger Nano S)
 - The maximum transaction size limit has been increased to 10,240 bytes. (Ledger Nano S Plus, Ledger Nano X and Ledger Stax)
@@ -31,32 +55,38 @@
 ## v5.3.4
 
 ### Updated
+
 - Optimize information display.
 
 ## v5.3.3
 
 ### Updated
+
 - Fix bugs.
 
 ## v5.3.2
 
 ### Updated
+
 - Optimize information display.
 
 ## v5.3.1
 
 ### Updated
+
 - Check the validity of the transaction before starting the review.
 
 ## v5.3.0
 
 ### Updated
+
 - Support displaying nested authorization.
 - Add built-in XLM and USDC Soroban Token plugin.
 
 ## v5.2.0
 
 ### Updated
+
 - Add support for Stellar Soroban.
 - Add support for plugins.
 - Fix bugs.
@@ -64,6 +94,7 @@
 ## v4.0.0
 
 ### Updated
+
 - Added a `Sequence Number` setting: `Displayed` or `NOT Displayed`, default to `NOT Displayed`.
 - Optimized the display of amount. (ex. `10000000 XLM` -> `10,000,000 XLM`)
 - Optimized the display of offer price.
@@ -76,16 +107,17 @@
 - Added APDU documentation.
 
 ### Breaking Changes
+
 - Removed keypair validation in `GET_PUBLIC_KEY` command. If necessary, we recommend that you ask the user to confirm the address on the device.
 - Removed support for the `KEEP_ALIVE` command at the app layer.
 
 ## v3.0 Multi-operation details support and U2F connection keep-alive
 
-Support for showing details of multi-operation transactions has been added. Previously, multi-operation transactions could only be signed using the hash-signing method. Transaction envelopes of up to 1.5kb in size are supported*, covering most Stellar usage scenarios.
+Support for showing details of multi-operation transactions has been added. Previously, multi-operation transactions could only be signed using the hash-signing method. Transaction envelopes of up to 1.5kb in size are supported\*, covering most Stellar usage scenarios.
 
 A U2F connection keep-alive has been implemented to prevent connections from timing out after 30 seconds when using Chrome.
 
-Transaction details now include operation source (if specified), transaction source, transaction time bounds (if specified), sequence number, memo type, base64-encoded managed data values. Detail display for set options has been improved: flags are now in human readable format, thresholds and master weight are represented separately, and add and remove signer is more descriptive too with the pre-auth and hash(x) signer keys shown in their base32-encoded form. 
+Transaction details now include operation source (if specified), transaction source, transaction time bounds (if specified), sequence number, memo type, base64-encoded managed data values. Detail display for set options has been improved: flags are now in human readable format, thresholds and master weight are represented separately, and add and remove signer is more descriptive too with the pre-auth and hash(x) signer keys shown in their base32-encoded form.
 
 Support for new Stellar operation 'Bump Sequence' was added.
 
@@ -110,4 +142,5 @@ Operations added are: path payment, create passive offer, set options, allow/rev
 - Fix 'Price is not correctly qualified for Offer operations'
 
 ## v1.1
+
 Initial release

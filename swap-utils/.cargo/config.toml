@@ -1,0 +1,9 @@
+# COMPLETE OVERRIDE of parent configuration
+# This project uses standard Rust toolchain
+
+[build]
+target = "x86_64-unknown-linux-gnu"
+
+# CRITICAL: Disable all unstable features inherited from parent
+[unstable]
+# Do NOT set build-std - use prebuilt standard library

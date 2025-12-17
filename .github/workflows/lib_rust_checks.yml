@@ -1,0 +1,47 @@
+name: Library Rust Checks
+
+# This workflow runs unit tests and clippy checks for the library modules (stellarlib and swap-utils).
+# It ensures code quality and correctness of the core parsing, formatting, and utility functions.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+      - main
+      - develop
+  pull_request:
+
+jobs:
+  test:
+    name: Run unit tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run stellarlib tests
+        run: cd stellarlib && cargo test -- --nocapture --test-threads=1
+
+      - name: Run swap-utils tests
+        run: cd swap-utils && cargo test
+
+  clippy:
+    name: Run clippy checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain with clippy
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Run clippy on stellarlib
+        run: cd stellarlib && cargo clippy --all-targets -- -Dwarnings
+
+      - name: Run clippy on swap-utils
+        run: cd swap-utils && cargo clippy --all-targets -- -Dwarnings
