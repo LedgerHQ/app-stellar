@@ -38,7 +38,7 @@ impl Bip32Path {
     /// # Arguments
     ///
     /// * `data` - Raw BIP32 path data. Must be at least `ALLOWED_PATH_LEN * BYTES_PER_SEGMENT` bytes (12 bytes).
-    ///            Only the first 12 bytes will be used.
+    ///   Only the first 12 bytes will be used.
     ///
     /// # Returns
     ///

@@ -355,9 +355,9 @@ checksum = "7a79a3332a6609480d7d0c9eab957bca6b455b91bb84e66d19f5ff66294b85b8"
 
 [[package]]
 name = "ledger_device_sdk"
-version = "1.29.1"
+version = "1.30.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "92a4c9f96f2885791b16bb9346a930238287499a1811d01a4ab20a4e6af19629"
+checksum = "41c1588f1d6e99ed03534edb661977f5853e4af14ca3397aa2f69447d25f093d"
 dependencies = [
  "const-zero",
  "include_gif",
@@ -370,9 +370,9 @@ dependencies = [
 
 [[package]]
 name = "ledger_secure_sdk_sys"
-version = "1.12.1"
+version = "1.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b1dc431c4628c6556e269a6a15e379a3fb8fac94f571a90bb7cd4e054eb63074"
+checksum = "38075ebc426861a7768328783e0dc4c4bac1026b1aafca052c6795b8cf398a91"
 dependencies = [
  "bindgen",
  "cc",
@@ -635,11 +635,10 @@ checksum = "67b1b7a3b5fe4f1376887184045fcf45c69e92af734b7aaddc05fb777b6fbd03"
 
 [[package]]
 name = "stellar"
-version = "6.0.0"
+version = "6.0.1"
 dependencies = [
  "escape-bytes",
  "hex",
- "include_gif",
  "ledger_device_sdk",
  "stellar-strkey 0.0.14",
  "stellarlib",
