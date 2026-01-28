@@ -4,16 +4,16 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-stellar-strkey = "0.0.13"
+stellar-strkey = "0.0.15"
 ethnum = { version = "1.5.0" }
 escape-bytes = { version = "0.1.1", default-features = false, features = [
     "alloc",
 ] }
 serde = { version = "1.0.225", default-features = false, features = ["alloc"] }
-serde_json = { version = "1.0.145", default-features = false, features = [
+serde_json = { version = "1.0.149", default-features = false, features = [
     "alloc",
 ] }
-chrono = { version = "0.4", default-features = false, features = ["alloc"] }
+chrono = { version = "0.4.43", default-features = false, features = ["alloc"] }
 hex = { version = "0.4.3", default-features = false, features = ["alloc"] }
 
 [dev-dependencies]

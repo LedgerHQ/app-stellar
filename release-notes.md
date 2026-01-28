@@ -1,5 +1,11 @@
 # Release Notes
 
+## v6.0.2
+
+### Updated
+
+- Add support for SolvBTC and xSolvBTC tokens.
+
 ## v6.0.0
 
 ### Updated
