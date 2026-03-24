@@ -3,7 +3,7 @@ use stellarlib::parser::{
     SCContractInstance, SCError, SCErrorCode, ScAddress, ScMapEntry, ScVal, StringM, UInt128Parts,
     UInt256Parts, Uint256, VecM,
 };
-use stellarlib::serialize::scval_to_key_string;
+use stellarlib::serialize::{scval_to_key_string, ToJson};
 
 // ============================================================================
 // Basic Types Tests
@@ -12,18 +12,18 @@ use stellarlib::serialize::scval_to_key_string;
 #[test]
 fn test_serialize_bool() {
     let val_true = ScVal::Bool(true);
-    let json = serde_json::to_string(&val_true).unwrap();
+    let json = val_true.to_json();
     assert_eq!(json, "true");
 
     let val_false = ScVal::Bool(false);
-    let json = serde_json::to_string(&val_false).unwrap();
+    let json = val_false.to_json();
     assert_eq!(json, "false");
 }
 
 #[test]
 fn test_serialize_void() {
     let val = ScVal::Void;
-    let json = serde_json::to_string(&val).unwrap();
+    let json = val.to_json();
     assert_eq!(json, "null");
 
     // Test as map key
@@ -35,12 +35,12 @@ fn test_serialize_void() {
 fn test_serialize_u32() {
     // Small number
     let val = ScVal::U32(42);
-    let json = serde_json::to_string(&val).unwrap();
+    let json = val.to_json();
     assert_eq!(json, r#""42""#);
 
     // Large number with commas
     let val = ScVal::U32(1234567);
-    let json = serde_json::to_string(&val).unwrap();
+    let json = val.to_json();
     assert_eq!(json, r#""1,234,567""#);
 
     // Test as map key
@@ -52,12 +52,12 @@ fn test_serialize_u32() {
 fn test_serialize_i32() {
     // Positive
     let val = ScVal::I32(42);
-    let json = serde_json::to_string(&val).unwrap();
+    let json = val.to_json();
     assert_eq!(json, r#""42""#);
 
     // Negative with commas
     let val = ScVal::I32(-1234567);
-    let json = serde_json::to_string(&val).unwrap();
+    let json = val.to_json();
     assert_eq!(json, r#""-1,234,567""#);
 
     // Test as map key
@@ -68,22 +68,22 @@ fn test_serialize_i32() {
 #[test]
 fn test_serialize_u64() {
     let val = ScVal::U64(1000000000);
-    let json = serde_json::to_string(&val).unwrap();
+    let json = val.to_json();
     assert_eq!(json, r#""1,000,000,000""#);
 
     let val = ScVal::U64(u64::MAX);
-    let json = serde_json::to_string(&val).unwrap();
+    let json = val.to_json();
     assert_eq!(json, r#""18,446,744,073,709,551,615""#);
 }
 
 #[test]
 fn test_serialize_i64() {
     let val = ScVal::I64(-1000000000);
-    let json = serde_json::to_string(&val).unwrap();
+    let json = val.to_json();
     assert_eq!(json, r#""-1,000,000,000""#);
 
     let val = ScVal::I64(i64::MIN);
-    let json = serde_json::to_string(&val).unwrap();
+    let json = val.to_json();
     assert_eq!(json, r#""-9,223,372,036,854,775,808""#);
 }
 
@@ -91,7 +91,7 @@ fn test_serialize_i64() {
 fn test_serialize_timepoint() {
     // Unix timestamp for 2025-10-21 08:19:03 UTC
     let val = ScVal::Timepoint(1761034743);
-    let json = serde_json::to_string(&val).unwrap();
+    let json = val.to_json();
     assert_eq!(json, r#""2025-10-21 08:19:03 UTC""#);
 }
 
@@ -99,7 +99,7 @@ fn test_serialize_timepoint() {
 fn test_serialize_duration() {
     // 4 days, 5 hours, 41 minutes, 51 seconds
     let val = ScVal::Duration(366111);
-    let json = serde_json::to_string(&val).unwrap();
+    let json = val.to_json();
     assert_eq!(json, r#""4d 5h 41m 51s""#);
 }
 
@@ -113,12 +113,12 @@ fn test_serialize_u128() {
         hi: 0,
         lo: 123456789012345,
     });
-    let json = serde_json::to_string(&val).unwrap();
+    let json = val.to_json();
     assert_eq!(json, r#""123,456,789,012,345""#);
 
     // Large number
     let val = ScVal::U128(UInt128Parts { hi: 1, lo: 0 });
-    let json = serde_json::to_string(&val).unwrap();
+    let json = val.to_json();
     assert_eq!(json, r#""18,446,744,073,709,551,616""#);
 }
 
@@ -128,7 +128,7 @@ fn test_serialize_i128() {
         hi: 0,
         lo: 987654321098765,
     });
-    let json = serde_json::to_string(&val).unwrap();
+    let json = val.to_json();
     assert_eq!(json, r#""987,654,321,098,765""#);
 
     // Negative number
@@ -136,7 +136,7 @@ fn test_serialize_i128() {
         hi: -1,
         lo: u64::MAX - 999999,
     });
-    let json = serde_json::to_string(&val).unwrap();
+    let json = val.to_json();
     assert!(json.starts_with(r#""-"#));
 }
 
@@ -148,7 +148,7 @@ fn test_serialize_u256() {
         lo_hi: 0,
         lo_lo: 999999999999999,
     });
-    let json = serde_json::to_string(&val).unwrap();
+    let json = val.to_json();
     assert_eq!(json, r#""999,999,999,999,999""#);
 }
 
@@ -160,7 +160,7 @@ fn test_serialize_i256() {
         lo_hi: 0,
         lo_lo: 555555555555555,
     });
-    let json = serde_json::to_string(&val).unwrap();
+    let json = val.to_json();
     assert_eq!(json, r#""555,555,555,555,555""#);
 }
 
@@ -173,14 +173,14 @@ fn test_serialize_string() {
     let string_data = b"Hello, World!";
     let sc_string = StringM::<{ u32::MAX as usize }>::new(string_data);
     let val = ScVal::String(sc_string);
-    let json = serde_json::to_string(&val).unwrap();
+    let json = val.to_json();
     assert_eq!(json, r#""Hello, World!""#);
 
     // Test with special characters (UTF-8 "你好\nHello\t👋")
     let string_data = b"\xE4\xBD\xA0\xE5\xA5\xBD\nHello\t\xF0\x9F\x91\x8B";
     let sc_string = StringM::<{ u32::MAX as usize }>::new(string_data);
     let val = ScVal::String(sc_string);
-    let json = serde_json::to_string(&val).unwrap();
+    let json = val.to_json();
     assert_eq!(
         json,
         r#""\\xe4\\xbd\\xa0\\xe5\\xa5\\xbd\\nHello\\t\\xf0\\x9f\\x91\\x8b""#
@@ -192,7 +192,7 @@ fn test_serialize_symbol() {
     let symbol_data = b"TRANSFER";
     let sc_symbol = StringM::<32>::new(symbol_data);
     let val = ScVal::Symbol(sc_symbol);
-    let json = serde_json::to_string(&val).unwrap();
+    let json = val.to_json();
     assert_eq!(json, r#""TRANSFER""#);
 }
 
@@ -201,7 +201,7 @@ fn test_serialize_bytes() {
     let bytes_data = b"\x00\x01\x02\x03\xFF";
     let sc_bytes = BytesM::<{ u32::MAX as usize }>::new(bytes_data);
     let val = ScVal::Bytes(sc_bytes);
-    let json = serde_json::to_string(&val).unwrap();
+    let json = val.to_json();
     // Bytes are displayed using escape_bytes format
     assert_eq!(json, "\"\\\\0\\\\x01\\\\x02\\\\x03\\\\xff\"");
 }
@@ -214,19 +214,19 @@ fn test_serialize_bytes() {
 fn test_serialize_error() {
     // Contract error
     let val = ScVal::Error(SCError::SceContract(12345));
-    let json = serde_json::to_string(&val).unwrap();
+    let json = val.to_json();
     let expected_json = r#"{"error_type":"Contract","error_value":12345}"#;
     assert_eq!(json, expected_json);
 
     // WasmVm error
     let val = ScVal::Error(SCError::SceWasmVm(SCErrorCode::ScecIndexBounds));
-    let json = serde_json::to_string(&val).unwrap();
+    let json = val.to_json();
     let expected_json = r#"{"error_type":"WasmVm","error_value":"IndexBounds"}"#;
     assert_eq!(json, expected_json);
 
     // Context error with enum code
     let val = ScVal::Error(SCError::SceContext(SCErrorCode::ScecArithDomain));
-    let json = serde_json::to_string(&val).unwrap();
+    let json = val.to_json();
     let expected_json = r#"{"error_type":"Context","error_value":"ArithDomain"}"#;
     assert_eq!(json, expected_json);
 }
@@ -244,12 +244,12 @@ fn test_serialize_vec_basic() {
         ScVal::U32(1000),
     ];
     let val = ScVal::Vec(Some(VecM::new(vec_data)));
-    let json = serde_json::to_string(&val).unwrap();
+    let json = val.to_json();
     assert_eq!(json, r#"["1","2","3","1,000"]"#);
 
     // Test None vec
     let val: ScVal = ScVal::Vec(None);
-    let json = serde_json::to_string(&val).unwrap();
+    let json = val.to_json();
     assert_eq!(json, "null");
 }
 
@@ -262,7 +262,7 @@ fn test_serialize_vec_mixed_types() {
         ScVal::Void,
     ];
     let val = ScVal::Vec(Some(VecM::new(vec_data)));
-    let json = serde_json::to_string(&val).unwrap();
+    let json = val.to_json();
     assert_eq!(json, r#"[true,"42","text",null]"#);
 }
 
@@ -283,13 +283,11 @@ fn test_serialize_map_basic() {
         },
     ];
     let val = ScVal::Map(Some(VecM::new(map_data)));
-    let json = serde_json::to_string(&val).unwrap();
+    let json = val.to_json();
 
-    // Expected JSON - need to parse to handle key ordering
+    // Our serialization preserves order
     let expected_json = r#"{"name":"Alice","age":"30","balance":"1,000,000"}"#;
-    let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
-    let expected_parsed: serde_json::Value = serde_json::from_str(expected_json).unwrap();
-    assert_eq!(parsed, expected_parsed);
+    assert_eq!(json, expected_json);
 }
 
 #[test]
@@ -310,13 +308,11 @@ fn test_serialize_map_non_string_keys() {
         },
     ];
     let val = ScVal::Map(Some(VecM::new(map_data)));
-    let json = serde_json::to_string(&val).unwrap();
+    let json = val.to_json();
 
-    // Expected JSON - need to parse to handle key ordering
+    // Our serialization preserves order
     let expected_json = r#"{"100":"hundred","true":"yes","[void]":"nothing"}"#;
-    let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
-    let expected_parsed: serde_json::Value = serde_json::from_str(expected_json).unwrap();
-    assert_eq!(parsed, expected_parsed);
+    assert_eq!(json, expected_json);
 }
 
 // ============================================================================
@@ -334,7 +330,7 @@ fn test_serialize_nested_vec() {
         ScVal::String(StringM::<{ u32::MAX as usize }>::new(b"end")),
     ];
     let val = ScVal::Vec(Some(VecM::new(outer_vec)));
-    let json = serde_json::to_string(&val).unwrap();
+    let json = val.to_json();
     assert_eq!(json, r#"["start",["1","2"],"end"]"#);
 }
 
@@ -363,13 +359,11 @@ fn test_serialize_nested_map() {
         },
     ];
     let val = ScVal::Map(Some(VecM::new(outer_map)));
-    let json = serde_json::to_string(&val).unwrap();
+    let json = val.to_json();
 
-    // Expected JSON - need to parse to handle key ordering
+    // Our serialization preserves order
     let expected_json = r#"{"coordinates":{"x":"10","y":"20"},"label":"Point A"}"#;
-    let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
-    let expected_parsed: serde_json::Value = serde_json::from_str(expected_json).unwrap();
-    assert_eq!(parsed, expected_parsed);
+    assert_eq!(json, expected_json);
 }
 
 #[test]
@@ -415,13 +409,11 @@ fn test_serialize_complex_structure() {
         },
     ])));
 
-    let json = serde_json::to_string(&user_data).unwrap();
+    let json = user_data.to_json();
 
-    // Expected JSON - need to parse to handle key ordering
+    // Our serialization preserves order
     let expected_json = r#"{"id":"123,456,789","username":"alice_doe","scores":["95","87","92","100"],"metadata":{"created_at":"2024-01-01 00:00:00 UTC","premium":true,"balance":"999,999,999,999"}}"#;
-    let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
-    let expected_parsed: serde_json::Value = serde_json::from_str(expected_json).unwrap();
-    assert_eq!(parsed, expected_parsed);
+    assert_eq!(json, expected_json);
 }
 
 // ============================================================================
@@ -435,7 +427,7 @@ fn test_serialize_address() {
     let public_key = PublicKey::PublicKeyTypeEd25519(Uint256(&account_bytes));
     let account_addr = ScAddress::ScAddressTypeAccount(public_key);
     let val = ScVal::Address(account_addr);
-    let json = serde_json::to_string(&val).unwrap();
+    let json = val.to_json();
     // Account addresses use stellar_strkey::ed25519::PublicKey encoding (starts with 'G')
     assert_eq!(
         json,
@@ -451,7 +443,7 @@ fn test_serialize_address() {
     let contract_id = Uint256(&contract_bytes);
     let contract_addr = ScAddress::ScAddressTypeContract(contract_id);
     let val = ScVal::Address(contract_addr);
-    let json = serde_json::to_string(&val).unwrap();
+    let json = val.to_json();
     // Contract addresses use stellar_strkey::Contract encoding (starts with 'C')
     assert!(json.starts_with(r#""C"#));
     assert!(json.ends_with(r#"""#));
@@ -465,14 +457,14 @@ fn test_serialize_contract_instance() {
         executable: ContractExecutable::StellarAsset,
         storage: None,
     });
-    let json = serde_json::to_string(&val).unwrap();
+    let json = val.to_json();
     assert_eq!(json, r#""[ContractInstance]""#);
 }
 
 #[test]
 fn test_serialize_ledger_key_contract_instance() {
     let val = ScVal::LedgerKeyContractInstance;
-    let json = serde_json::to_string(&val).unwrap();
+    let json = val.to_json();
     assert_eq!(json, r#""[LedgerKeyContractInstance]""#);
 }
 
@@ -484,12 +476,12 @@ fn test_serialize_ledger_key_contract_instance() {
 fn test_serialize_empty_collections() {
     // Empty Vec
     let val = ScVal::Vec(Some(VecM::new(vec![])));
-    let json = serde_json::to_string(&val).unwrap();
+    let json = val.to_json();
     assert_eq!(json, "[]");
 
     // Empty Map
     let val = ScVal::Map(Some(VecM::new(vec![])));
-    let json = serde_json::to_string(&val).unwrap();
+    let json = val.to_json();
     assert_eq!(json, "{}");
 }
 
@@ -516,21 +508,21 @@ fn test_map_key_conversion() {
 #[test]
 fn test_serialize_claim_predicate_unconditional() {
     let predicate = ClaimPredicate::Unconditional;
-    let json = serde_json::to_string(&predicate).unwrap();
+    let json = predicate.to_json();
     assert_eq!(json, r#""unconditional""#);
 }
 
 #[test]
 fn test_serialize_claim_predicate_before_absolute_time() {
     let predicate = ClaimPredicate::BeforeAbsoluteTime(1629344902);
-    let json = serde_json::to_string(&predicate).unwrap();
+    let json = predicate.to_json();
     assert_eq!(json, r#"{"before_absolute_time":"1629344902"}"#);
 }
 
 #[test]
 fn test_serialize_claim_predicate_before_relative_time() {
     let predicate = ClaimPredicate::BeforeRelativeTime(180);
-    let json = serde_json::to_string(&predicate).unwrap();
+    let json = predicate.to_json();
     assert_eq!(json, r#"{"before_relative_time":"180"}"#);
 }
 
@@ -538,7 +530,7 @@ fn test_serialize_claim_predicate_before_relative_time() {
 fn test_serialize_claim_predicate_not() {
     let inner = ClaimPredicate::BeforeRelativeTime(180);
     let predicate = ClaimPredicate::Not(Box::new(inner));
-    let json = serde_json::to_string(&predicate).unwrap();
+    let json = predicate.to_json();
     assert_eq!(json, r#"{"not":{"before_relative_time":"180"}}"#);
 }
 
@@ -548,7 +540,7 @@ fn test_serialize_claim_predicate_and() {
     let pred2 = ClaimPredicate::BeforeRelativeTime(180);
     let predicates = VecM::new(vec![pred1, pred2]);
     let predicate = ClaimPredicate::And(predicates);
-    let json = serde_json::to_string(&predicate).unwrap();
+    let json = predicate.to_json();
     assert_eq!(
         json,
         r#"{"and":[{"before_absolute_time":"1629344902"},{"before_relative_time":"180"}]}"#
@@ -561,7 +553,7 @@ fn test_serialize_claim_predicate_or() {
     let pred2 = ClaimPredicate::BeforeAbsoluteTime(1629300000);
     let predicates = VecM::new(vec![pred1, pred2]);
     let predicate = ClaimPredicate::Or(predicates);
-    let json = serde_json::to_string(&predicate).unwrap();
+    let json = predicate.to_json();
     assert_eq!(
         json,
         r#"{"or":[{"before_absolute_time":"1629344902"},{"before_absolute_time":"1629300000"}]}"#
@@ -582,7 +574,7 @@ fn test_serialize_claim_predicate_complex_nested() {
     let and_predicates = VecM::new(vec![or_pred, not_pred]);
     let predicate = ClaimPredicate::And(and_predicates);
 
-    let json = serde_json::to_string(&predicate).unwrap();
+    let json = predicate.to_json();
     assert_eq!(
         json,
         r#"{"and":[{"or":[{"before_absolute_time":"1629344902"},{"before_absolute_time":"1629300000"}]},{"not":{"before_relative_time":"180"}}]}"#

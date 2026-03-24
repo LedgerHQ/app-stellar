@@ -9,10 +9,6 @@ ethnum = { version = "1.5.0" }
 escape-bytes = { version = "0.1.1", default-features = false, features = [
     "alloc",
 ] }
-serde = { version = "1.0.225", default-features = false, features = ["alloc"] }
-serde_json = { version = "1.0.149", default-features = false, features = [
-    "alloc",
-] }
 hex = { version = "0.4.3", default-features = false, features = ["alloc"] }
 
 [dev-dependencies]

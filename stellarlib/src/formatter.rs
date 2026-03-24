@@ -10,7 +10,7 @@ use crate::display::{
     format_unix_timestamp, STELLAR_NATIVE_DECIMAL_PLACES,
 };
 use crate::parser::*;
-use crate::serialize::scval_to_key_string;
+use crate::serialize::{scval_to_key_string, ToJson};
 use alloc::format;
 use alloc::string::{String, ToString};
 use alloc::vec;
@@ -1082,8 +1082,7 @@ fn format_create_claimable_balance_op(op: &CreateClaimableBalanceOp) -> Vec<Data
     for (index, claimant) in op.claimants.iter().enumerate() {
         entries.push(DataEntry::new(
             &format!("Claimant {}", index + 1),
-            serde_json::to_string(&claimant)
-                .unwrap_or_else(|_| "[unserializable data]".to_string()),
+            claimant.to_json(),
         ));
     }
     entries
