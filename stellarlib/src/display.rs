@@ -8,7 +8,6 @@ use crate::parser::{
     UInt128Parts, UInt256Parts, Uint256,
 };
 use alloc::string::ToString;
-use chrono::DateTime;
 use core::fmt;
 
 use alloc::format;
@@ -482,19 +481,66 @@ pub fn format_number_with_commas(decimal_str: &str) -> alloc::string::String {
 /// assert_eq!(format_unix_timestamp(1703335871), "2023-12-23 12:51:11 UTC");
 /// ```
 pub fn format_unix_timestamp(timestamp: u64) -> alloc::string::String {
-    // Check if timestamp exceeds i64::MAX to avoid overflow
-    if timestamp > i64::MAX as u64 {
-        // Fallback to timestamp string if too large
+    // Constants for time calculations
+    const SECS_PER_MIN: u64 = 60;
+    const SECS_PER_HOUR: u64 = 3600;
+    const SECS_PER_DAY: u64 = 86400;
+
+    // Days in each month (non-leap year)
+    const DAYS_IN_MONTH: [u64; 12] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+    // Check for unreasonable timestamps (beyond year 9999)
+    // Year 9999 is approximately timestamp 253402300799
+    if timestamp > 253402300799 {
         return timestamp.to_string();
     }
 
-    // Convert to DateTime<Utc>
-    if let Some(datetime) = DateTime::from_timestamp(timestamp as i64, 0) {
-        datetime.to_string()
-    } else {
-        // Fallback to timestamp string if conversion fails
-        timestamp.to_string()
+    // Calculate time components
+    let secs = timestamp % SECS_PER_MIN;
+    let mins = (timestamp / SECS_PER_MIN) % 60;
+    let hours = (timestamp / SECS_PER_HOUR) % 24;
+
+    // Calculate days since Unix epoch (1970-01-01)
+    let mut days = timestamp / SECS_PER_DAY;
+
+    // Calculate year
+    let mut year: u64 = 1970;
+    loop {
+        let days_in_year = if is_leap_year(year) { 366 } else { 365 };
+        if days < days_in_year {
+            break;
+        }
+        days -= days_in_year;
+        year += 1;
     }
+
+    // Calculate month and day
+    let is_leap = is_leap_year(year);
+    let mut month: u64 = 1;
+    for (i, &days_in_month) in DAYS_IN_MONTH.iter().enumerate() {
+        let dim = if i == 1 && is_leap {
+            days_in_month + 1
+        } else {
+            days_in_month
+        };
+        if days < dim {
+            break;
+        }
+        days -= dim;
+        month += 1;
+    }
+    let day = days + 1;
+
+    format!(
+        "{:04}-{:02}-{:02} {:02}:{:02}:{:02} UTC",
+        year, month, day, hours, mins, secs
+    )
+}
+
+/// Check if a year is a leap year
+#[inline]
+fn is_leap_year(year: u64) -> bool {
+    (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)
 }
 
 /// Formats a duration in seconds to a human-readable string
