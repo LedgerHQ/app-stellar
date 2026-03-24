@@ -22,7 +22,6 @@ use ledger_device_sdk::{
         self,
         swap::{self},
     },
-    testing::debug_print,
 };
 
 mod apdu;
@@ -31,7 +30,7 @@ mod validation;
 use swap_utils::format_printable_amount;
 
 pub fn swap_main<const MAX: usize>(arg0: u32, ctx: &mut AppContext<MAX>) {
-    debug_print("[swap] invoke swap_main\n");
+    ledger_device_sdk::log::debug!("[swap] invoke swap_main");
 
     match libcall::get_command(arg0) {
         libcall::LibCallCommand::SwapCheckAddress => handle_check_address_command(arg0),
@@ -41,16 +40,14 @@ pub fn swap_main<const MAX: usize>(arg0: u32, ctx: &mut AppContext<MAX>) {
 }
 
 fn handle_check_address_command(arg0: u32) {
-    debug_print("[swap] invoke handle_check_address_command\n");
+    ledger_device_sdk::log::debug!("[swap] invoke handle_check_address_command");
 
     let mut params = swap::get_check_address_params(arg0);
 
     let result = match validation::check_address(&params) {
         Ok(_) => 1,
         Err(err) => {
-            debug_print("[swap] Error checking address: ");
-            debug_print(err);
-            debug_print("\n");
+            ledger_device_sdk::log::error!("[swap] Error checking address: {}", err);
             0
         }
     };
@@ -59,7 +56,7 @@ fn handle_check_address_command(arg0: u32) {
 }
 
 fn handle_printable_amount_command(arg0: u32) {
-    debug_print("[swap] invoke handle_printable_amount_command\n");
+    ledger_device_sdk::log::debug!("[swap] invoke handle_printable_amount_command");
 
     // Use default buffer sizes from SDK
     let mut params: swap::PrintableAmountParams = swap::get_printable_amount_params(arg0);
@@ -76,14 +73,14 @@ fn handle_printable_amount_command(arg0: u32) {
         )),
         Err(_) => {
             // will not happen, but just in case
-            debug_print("[swap] Error formatting amount\n");
+            ledger_device_sdk::log::error!("[swap] Error formatting amount");
             swap::swap_return(swap::SwapResult::PrintableAmountResult(&mut params, "0"))
         }
     }
 }
 
 fn handle_sign_transaction_command<const MAX: usize>(arg0: u32, ctx: &mut AppContext<MAX>) {
-    debug_print("[swap] invoke handle_sign_transaction_command\n");
+    ledger_device_sdk::log::debug!("[swap] invoke handle_sign_transaction_command");
 
     let mut params = swap::sign_tx_params(arg0);
     let mut comm = Comm::new().set_expected_cla(0xe0);
