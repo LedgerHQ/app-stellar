@@ -1,15 +1,15 @@
 [package]
 name = "stellar"
-version = "6.0.2"
+version = "6.0.3"
 authors = ["overcat"]
 edition = "2021"
 
 [dependencies]
 escape-bytes = { version = "0.1.1", default-features = false }
 hex = { version = "0.4.3", default-features = false, features = ["alloc"] }
-ledger_device_sdk = { version = "1.31.0" }
+ledger_device_sdk = { version = "1.34.0" }
 stellarlib = { path = "./stellarlib" }
-stellar-strkey = { version = "0.0.15", default-features = false }
+stellar-strkey = { version = "0.0.16", default-features = false }
 swap-utils = { path = "./swap-utils" }
 
 [profile.release]
@@ -18,7 +18,7 @@ lto = true
 
 [features]
 default = ["ledger_device_sdk/nano_nbgl"]
-debug = ["ledger_device_sdk/debug"]
+debug = ["ledger_device_sdk/debug", "ledger_device_sdk/log_debug"]
 
 [package.metadata.ledger]
 curve = ["ed25519"]

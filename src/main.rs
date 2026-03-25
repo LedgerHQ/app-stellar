@@ -30,7 +30,6 @@ mod settings;
 mod sw;
 mod swap;
 
-use alloc::format;
 use app_ui::menu::ui_menu_main;
 use handlers::{
     get_configuration::handler_get_configuration, get_public_key::handler_get_public_key,
@@ -45,7 +44,6 @@ use crate::app_ui::blind_signing::ui_blind_signing;
 use crate::context::{AppContext, MAX_RAW_DATA_LEN, SWAP_MAX_RAW_DATA_LEN};
 use crate::sw::AppSW;
 use ledger_device_sdk::nbgl::{init_comm, NbglReviewStatus, PageIndex, StatusType};
-use ledger_device_sdk::testing::debug_print;
 
 // Application specific INS codes.
 const INS_GET_PK: u8 = 0x02;
@@ -93,12 +91,12 @@ impl TryFrom<ApduHeader> for Instruction {
     /// Note that CLA is not checked here. Instead the method [`Comm::set_expected_cla`] is used in
     /// [`sample_main`] to have this verification automatically performed by the SDK.
     fn try_from(value: ApduHeader) -> Result<Self, Self::Error> {
-        debug_print(
-            format!(
-                "APDU received: CLA={:02x} INS={:02x} P1={:02x} P2={:02x}\n",
-                value.cla, value.ins, value.p1, value.p2
-            )
-            .as_str(),
+        ledger_device_sdk::log::debug!(
+            "APDU received: CLA={:02x} INS={:02x} P1={:02x} P2={:02x}",
+            value.cla,
+            value.ins,
+            value.p1,
+            value.p2
         );
         match (value.ins, value.p1, value.p2) {
             // GET_PK instruction
@@ -149,7 +147,7 @@ fn show_status_and_home_if_needed(
     home: &mut ledger_device_sdk::nbgl::NbglHomeAndSettings,
     status: &AppSW,
 ) {
-    debug_print("show_status_and_home_if_needed\n");
+    ledger_device_sdk::log::debug!("show_status_and_home_if_needed");
     if status == &AppSW::BlindSigningModeNotEnabled {
         if ui_blind_signing() {
             home.set_start_page(PageIndex::Settings(0));
