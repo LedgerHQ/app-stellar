@@ -21,11 +21,9 @@ use crate::{
     sw::AppSW,
     Instruction,
 };
-use alloc::format;
 use ledger_device_sdk::{
     io::Comm,
     libcall::swap::{self, CreateTxParams},
-    testing::debug_print,
 };
 
 use super::validation;
@@ -36,7 +34,7 @@ pub fn handle_swap_apdu<const MAX: usize>(
     tx_params: &mut CreateTxParams,
     ctx: &mut AppContext<MAX>,
 ) {
-    debug_print("[swap] invoke handle_swap_apdu\n");
+    ledger_device_sdk::log::debug!("[swap] invoke handle_swap_apdu");
 
     match ins {
         Instruction::SignTx { first, more } => {
@@ -56,14 +54,14 @@ pub fn handle_swap_apdu<const MAX: usize>(
                 }
                 Err(sw) => {
                     // Error occurred
-                    debug_print("[swap] Error during swap transaction handling\n");
+                    ledger_device_sdk::log::error!("[swap] Error during swap transaction handling");
                     comm.swap_reply(sw);
                     swap::swap_return(swap::SwapResult::CreateTxResult(tx_params, 0));
                 }
             }
         }
         Instruction::GetPubkey { display } => {
-            debug_print("[swap] handle_swap_apdu => GetPubkey\n");
+            ledger_device_sdk::log::debug!("[swap] handle_swap_apdu => GetPubkey");
 
             // Display is not supported in swap mode
             if display {
@@ -87,18 +85,20 @@ fn handle_swap_sign_tx<const MAX: usize>(
     tx_params: &CreateTxParams,
     ctx: &mut AppContext<MAX>,
 ) -> Result<Option<[u8; 64]>, AppSW> {
-    debug_print(&format!(
-        "[swap] handle_swap_sign_tx called, first: {first}, more: {more}\n"
-    ));
+    ledger_device_sdk::log::debug!(
+        "[swap] handle_swap_sign_tx called, first: {}, more: {}",
+        first,
+        more
+    );
     ctx.handle_chunk(comm, first)?;
 
     // If more data expected, return None
     if more {
-        debug_print("[swap] More swap payload expected\n");
+        ledger_device_sdk::log::debug!("[swap] More swap payload expected");
         return Ok(None);
     }
 
-    debug_print("[swap] All data received, validating swap transaction\n");
+    ledger_device_sdk::log::debug!("[swap] All data received, validating swap transaction");
 
     let signer = get_public_key(&ctx.path)?;
     let signer = stellar_strkey::ed25519::PublicKey::from_payload(&signer)
@@ -107,11 +107,11 @@ fn handle_swap_sign_tx<const MAX: usize>(
 
     // Validate the swap transaction
     if let Err(msg) = validation::validate_swap_transaction(&ctx.raw_data, tx_params, &signer) {
-        debug_print(&format!("[swap] {msg}\n"));
+        ledger_device_sdk::log::error!("[swap] {}", msg);
         return Err(AppSW::SwapCheckFail);
     }
 
-    debug_print("[swap] Swap transaction validated, signing\n");
+    ledger_device_sdk::log::debug!("[swap] Swap transaction validated, signing");
 
     // Sign the transaction
     let hash_value = hash(&ctx.raw_data)?;
