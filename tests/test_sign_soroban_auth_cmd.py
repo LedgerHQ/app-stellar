@@ -71,9 +71,7 @@ def test_sign_soroban_auth_with_nested_authorization_disabled(
 ):
     keypair = Keypair.from_mnemonic_phrase(MNEMONIC, index=0)
     path = "m/44'/148'/0'"
-    preimage = (
-        SignSorobanAuthorizationTestCases.soroban_auth_invoke_contract_with_complex_sub_invocation()
-    )
+    preimage = SignSorobanAuthorizationTestCases.soroban_auth_invoke_contract_with_complex_sub_invocation()
     client = StellarCommandSender(backend)
     configure_device_settings(
         navigator,

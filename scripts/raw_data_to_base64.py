@@ -28,7 +28,7 @@ def parse_tx_from_raw_xdr(raw_xdr: bytes):
     try:
         tx = Transaction.from_xdr(tx)
         return TransactionEnvelope(tx, network_passphrase)
-    except Exception as e:
+    except Exception:
         tx = FeeBumpTransaction.from_xdr(tx, network_passphrase)
         return FeeBumpTransactionEnvelope(tx, network_passphrase)
 
@@ -57,7 +57,7 @@ def main():
         tx_envelope = parse_tx_from_raw_xdr(raw_data)
         print(tx_envelope.to_xdr())
         return
-    except Exception as e:
+    except Exception:
         pass
 
     try:
