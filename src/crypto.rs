@@ -76,6 +76,31 @@ pub fn hash(data: &[u8]) -> Result<[u8; HASH_LEN], AppSW> {
     Ok(hash)
 }
 
+/// Computes the SHA-256 hash of multiple input parts as one continuous stream.
+///
+/// Produces the same digest as hashing the concatenation of `parts`, without
+/// allocating a contiguous copy of the data.
+///
+/// # Arguments
+///
+/// * `parts` - The byte slices to hash, in order
+///
+/// # Returns
+///
+/// * `Ok([u8; 32])` - The 32-byte SHA-256 hash on success
+/// * `Err(AppSW::DataHashFail)` - If the hashing operation fails
+pub fn hash_parts(parts: &[&[u8]]) -> Result<[u8; HASH_LEN], AppSW> {
+    let mut hasher = Sha2_256::new();
+    for part in parts {
+        hasher.update(part).map_err(|_| AppSW::DataHashFail)?;
+    }
+    let mut hash: [u8; HASH_LEN] = [0u8; HASH_LEN];
+    hasher
+        .finalize(&mut hash)
+        .map_err(|_| AppSW::DataHashFail)?;
+    Ok(hash)
+}
+
 /// Signs data using Ed25519 with a key derived from the given BIP32 path.
 ///
 /// This function derives a private key using SLIP-10 derivation from the provided BIP32 path

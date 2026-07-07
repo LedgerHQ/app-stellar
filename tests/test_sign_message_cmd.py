@@ -54,10 +54,15 @@ def test_sign_message_reject(backend, scenario_navigator):
     assert len(e.value.data) == 0
 
 
-def test_sign_message_data_too_large(backend):
+@pytest.mark.parametrize(
+    "size",
+    [1024 * 10, 2049],
+    ids=["exceeds_buffer", "exceeds_message_limit"],
+)
+def test_sign_message_data_too_large(backend, size):
     path = "m/44'/148'/0'"
     client = StellarCommandSender(backend)
-    message = b"A" * 1024 * 10
+    message = b"A" * size
 
     with pytest.raises(ExceptionRAPDU) as e:
         with client.sign_message(path=path, message=message):
