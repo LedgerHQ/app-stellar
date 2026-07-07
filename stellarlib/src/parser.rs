@@ -107,6 +107,12 @@ impl<'a> Parser<'a> {
         self.offset.saturating_add(n) <= self.data.len()
     }
 
+    /// Number of bytes left to read
+    #[inline]
+    fn remaining(&self) -> usize {
+        self.data.len().saturating_sub(self.offset)
+    }
+
     /// Read raw bytes without copying (zero-copy)
     fn read_bytes(&mut self, size: usize) -> Result<&'a [u8], ParseError> {
         if !self.can_read(size) {
@@ -401,7 +407,12 @@ impl<'a, T: XdrParse<'a>, const MAX: u32> XdrParse<'a> for VecM<T, MAX> {
         // Enter recursion context for VecM parsing
         parser.enter_recursion()?;
 
-        let mut items = Vec::with_capacity(len as usize);
+        // `len` is attacker-controlled and unbounded for types using the default
+        // MAX (u32::MAX), so pre-allocating from it directly can abort the app
+        // inside the allocator. Every XDR element occupies at least 4 bytes, so
+        // the remaining input bounds how many elements can actually follow.
+        let capacity = (len as usize).min(parser.remaining() / 4);
+        let mut items = Vec::with_capacity(capacity);
         for _ in 0..len {
             let item = T::parse(parser)?;
             items.push(item);
