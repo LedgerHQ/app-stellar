@@ -102,7 +102,7 @@ fn handle_swap_sign_tx<const MAX: usize>(
 
     let signer = get_public_key(&ctx.path)?;
     let signer = stellar_strkey::ed25519::PublicKey::from_payload(&signer)
-        .expect("caller guarantees 32-byte Stellar public key")
+        .map_err(|_| AppSW::KeyDeriveFail)?
         .to_string();
 
     // Validate the swap transaction
