@@ -105,6 +105,19 @@ pub fn validate_swap_transaction(
     // Validate transaction fee
     validate_fee(&envelope, tx_params)?;
 
+    // The whole buffer is hashed and signed, so every byte must have been
+    // validated: after the single operation only a void `ext` (0) may
+    // follow, and nothing after it.
+    let ext = parser
+        .parse_uint32()
+        .map_err(|_| "Failed to parse transaction ext")?;
+    if ext != 0 {
+        return Err("Swap transaction ext must be void");
+    }
+    if parser.offset() != raw_data.len() {
+        return Err("Trailing bytes after swap transaction");
+    }
+
     Ok(())
 }
 
