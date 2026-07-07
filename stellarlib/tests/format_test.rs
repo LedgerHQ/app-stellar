@@ -70,7 +70,7 @@ fn test_sign_tx_format_case(case_name: &str) {
     let config = FormatConfig {
         show_sequence_and_nonce: true,
         show_preconditions: true,
-        show_nested_authorization: true,
+        show_authorization_details: true,
         show_tx_source_if_matches_signer: true,
     };
 
@@ -126,7 +126,7 @@ fn test_soroban_auth_format_case(case_name: &str) {
     let config = FormatConfig {
         show_sequence_and_nonce: true,
         show_preconditions: true,
-        show_nested_authorization: true,
+        show_authorization_details: true,
         show_tx_source_if_matches_signer: false,
     };
 

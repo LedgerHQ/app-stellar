@@ -66,7 +66,7 @@ def test_sign_soroban_auth_with_nonce_enabled(
     assert response == expected_signature
 
 
-def test_sign_soroban_auth_with_nested_authorization_disabled(
+def test_sign_soroban_auth_with_authorization_details_disabled(
     backend, scenario_navigator, device, navigator
 ):
     keypair = Keypair.from_mnemonic_phrase(MNEMONIC, index=0)
@@ -78,7 +78,7 @@ def test_sign_soroban_auth_with_nested_authorization_disabled(
     configure_device_settings(
         navigator,
         device,
-        SettingsId.DISABLE_NESTED_AUTHORIZATION | SettingsId.ENABLE_BLIND_SIGNING,
+        SettingsId.DISABLE_AUTHORIZATION_DETAILS | SettingsId.ENABLE_BLIND_SIGNING,
     )
     with client.sign_soroban_auth(
         path=path, soroban_authorization=preimage.to_xdr_bytes()

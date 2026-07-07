@@ -58,8 +58,8 @@ pub struct FormatConfig {
     pub show_sequence_and_nonce: bool,
     /// Whether to show transaction preconditions
     pub show_preconditions: bool,
-    /// Whether to show nested Soroban authorization details
-    pub show_nested_authorization: bool,
+    /// Whether to show authorization details (authorized invocation trees)
+    pub show_authorization_details: bool,
     /// Whether to show transaction source when it matches the signer address
     pub show_tx_source_if_matches_signer: bool,
 }
@@ -69,7 +69,7 @@ impl Default for FormatConfig {
         Self {
             show_sequence_and_nonce: true,
             show_preconditions: true,
-            show_nested_authorization: true,
+            show_authorization_details: true,
             show_tx_source_if_matches_signer: false,
         }
     }
@@ -1318,7 +1318,7 @@ fn format_invoke_contract_args(args: &InvokeContractArgs) -> Vec<DataEntry> {
 ///
 /// # Arguments
 /// * `invocation` - The Soroban authorized invocation to format
-/// * `parent_index` - Optional parent index for nested invocations (e.g., "1.2")
+/// * `parent_index` - Optional parent index for nested invocations (e.g., "1-2")
 ///
 /// # Returns
 /// A vector of data entries containing the invocation details and any sub-invocations
@@ -1329,7 +1329,7 @@ fn format_invoke_contract_args(args: &InvokeContractArgs) -> Vec<DataEntry> {
 /// let entries = format_soroban_authorized_invocation(&invocation, None);
 ///
 /// // Nested invocation with parent index
-/// let entries = format_soroban_authorized_invocation(&invocation, Some("1.2"));
+/// let entries = format_soroban_authorized_invocation(&invocation, Some("1-2"));
 /// ```
 fn format_soroban_authorized_invocation(
     invocation: &SorobanAuthorizedInvocation,
@@ -1349,14 +1349,14 @@ fn format_soroban_authorized_invocation(
         }
     }
 
-    if config.show_nested_authorization {
+    if config.show_authorization_details {
         for (i, sub_invocation) in invocation.sub_invocations.iter().enumerate() {
             let nested_index = match parent_index {
                 None => (i + 1).to_string(),
                 Some(parent) => format!("{}-{}", parent, i + 1),
             };
 
-            entries.push(DataEntry::new("Nested Authorization", nested_index.clone()));
+            entries.push(DataEntry::new("Authorization", nested_index.clone()));
             entries.extend(format_soroban_authorized_invocation(
                 sub_invocation,
                 Some(&nested_index),
@@ -1396,22 +1396,24 @@ fn format_invoke_host_function_op(
     // the invoked host function (it may authorize a completely different call), so
     // each tree must be shown from its root. An operation can also carry several
     // such entries; number them so the user can tell the trees apart.
-    let mut auth_index = 1;
-    for auth in op.auth.iter() {
-        match &auth.credentials {
-            SorobanCredentials::SourceAccount => {
-                let index = auth_index.to_string();
-                entries.push(DataEntry::new("Authorization", index.clone()));
-                entries.extend(format_soroban_authorized_invocation(
-                    &auth.root_invocation,
-                    Some(&index),
-                    config,
-                ));
-                auth_index += 1;
-            }
-            SorobanCredentials::Address(_) => {
-                // skip, these are not related to the current signatories,
-                // and we will not authorize these things.
+    if config.show_authorization_details {
+        let mut auth_index = 1;
+        for auth in op.auth.iter() {
+            match &auth.credentials {
+                SorobanCredentials::SourceAccount => {
+                    let index = auth_index.to_string();
+                    entries.push(DataEntry::new("Authorization", index.clone()));
+                    entries.extend(format_soroban_authorized_invocation(
+                        &auth.root_invocation,
+                        Some(&index),
+                        config,
+                    ));
+                    auth_index += 1;
+                }
+                SorobanCredentials::Address(_) => {
+                    // skip, these are not related to the current signatories,
+                    // and we will not authorize these things.
+                }
             }
         }
     }
