@@ -21,7 +21,7 @@ use ledger_device_sdk::nbgl::NbglAddressReview;
 
 pub fn ui_get_public_key(public_key: &[u8]) -> Result<bool, AppSW> {
     let address = stellar_strkey::ed25519::PublicKey::from_payload(public_key)
-        .expect("caller guarantees 32-byte Stellar public key")
+        .map_err(|_| AppSW::KeyDeriveFail)?
         .to_string();
 
     // Display the address confirmation screen.
