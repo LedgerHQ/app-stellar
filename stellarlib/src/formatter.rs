@@ -19,8 +19,26 @@ use alloc::vec::Vec;
 /// Number of stroops per XLM (10^7)
 const STROOPS_PER_XLM: u64 = 10_000_000;
 
-/// Liquidity pool fees are expressed in basis points (1/100 of a percent)
-const BASIS_POINTS_TO_PERCENT: f64 = 100.0;
+/// Formats a fee expressed in basis points (1/100 of a percent) as a percent
+/// string, e.g. `30` -> `"0.3%"`, `125` -> `"1.25%"`.
+///
+/// Integer-only on purpose: this used to be the sole `f64` in the app, and the
+/// division pulled soft-float and float-formatting machinery into the binary.
+/// The output matches `format!("{}%", fee as f64 / 100.0)` for every `i32`
+/// (trailing zeros trimmed, no fraction when it is zero).
+fn format_basis_points_as_percent(fee: i32) -> String {
+    let sign = if fee < 0 { "-" } else { "" };
+    let abs = fee.unsigned_abs();
+    let whole = abs / 100;
+    let frac = abs % 100;
+    if frac == 0 {
+        format!("{}{}%", sign, whole)
+    } else if frac.is_multiple_of(10) {
+        format!("{}{}.{}%", sign, whole, frac / 10)
+    } else {
+        format!("{}{}.{:02}%", sign, whole, frac)
+    }
+}
 
 /// Represents a formatted data entry with a title and content
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -940,10 +958,8 @@ fn format_change_trust_op(op: &ChangeTrustOp) -> Vec<DataEntry> {
                     ));
                     entries.push(DataEntry::new(
                         "Pool Fee Rate",
-                        format!(
-                            "{}%",
-                            liquidity_pool_constant_product_parameters.fee as f64
-                                / BASIS_POINTS_TO_PERCENT
+                        format_basis_points_as_percent(
+                            liquidity_pool_constant_product_parameters.fee,
                         ),
                     ));
                 }
@@ -1433,4 +1449,34 @@ fn format_restore_footprint_op(_op: &RestoreFootprintOp) -> Vec<DataEntry> {
         "Operation Type",
         "Restore Footprint".to_string(),
     )]
+}
+
+#[cfg(test)]
+mod tests {
+    use super::format_basis_points_as_percent;
+    use alloc::format;
+
+    #[test]
+    fn test_format_basis_points_as_percent() {
+        assert_eq!(format_basis_points_as_percent(0), "0%");
+        assert_eq!(format_basis_points_as_percent(30), "0.3%");
+        assert_eq!(format_basis_points_as_percent(100), "1%");
+        assert_eq!(format_basis_points_as_percent(125), "1.25%");
+        assert_eq!(format_basis_points_as_percent(5), "0.05%");
+        assert_eq!(format_basis_points_as_percent(-30), "-0.3%");
+    }
+
+    /// The integer formatter must reproduce the old `f64` output exactly.
+    #[test]
+    fn test_matches_f64_display() {
+        let edge_cases = [i32::MIN, i32::MIN + 1, i32::MAX, i32::MAX - 1];
+        for fee in (-1_000_000..=1_000_000).chain(edge_cases) {
+            assert_eq!(
+                format_basis_points_as_percent(fee),
+                format!("{}%", fee as f64 / 100.0),
+                "mismatch for fee={}",
+                fee
+            );
+        }
+    }
 }
