@@ -139,7 +139,7 @@ pub fn format_transaction_signature_payload(
             entries.push(DataEntry::new("Fee Source", tx.fee_source.to_string()));
             entries.push(DataEntry::new(
                 "Max Fee",
-                format!("{} XLM", format_native_amount(tx.fee)),
+                format!("{} XLM", format_native_amount(tx.fee.into())),
             ));
             entries.push(DataEntry::new(
                 "Inner Tx",
@@ -234,7 +234,7 @@ fn format_price(price: &Price) -> Result<String, FormatError> {
 
     let result = scaled_numerator / denominator_u64;
 
-    let decimal_str = format_decimal(result, STELLAR_NATIVE_DECIMAL_PLACES);
+    let decimal_str = format_decimal(result.into(), STELLAR_NATIVE_DECIMAL_PLACES);
     let formatted = format_number_with_commas(&decimal_str);
 
     Ok(formatted)
@@ -292,7 +292,7 @@ fn format_transaction(
 
     entries.push(DataEntry::new(
         "Max Fee",
-        format!("{} XLM", format_native_amount(transaction.fee)),
+        format!("{} XLM", format_native_amount(transaction.fee.into())),
     ));
 
     if config.show_sequence_and_nonce {
@@ -642,11 +642,12 @@ fn add_network_info_if_needed(entries: &mut Vec<DataEntry>, network_id: &Hash) {
 /// let asset = Asset::Native;
 /// assert_eq!(format_amount_with_asset(10000000u64, &asset), "1 XLM");
 /// ```
-fn format_amount_with_asset<T>(amount: T, asset: &Asset) -> String
-where
-    T: ToString + Copy,
-{
-    format!("{} {}", format_native_amount(amount), format_asset(asset))
+fn format_amount_with_asset(amount: i64, asset: &Asset) -> String {
+    format!(
+        "{} {}",
+        format_native_amount(amount.into()),
+        format_asset(asset)
+    )
 }
 
 /// Formats an issuer address by showing first 3 and last 4 characters
@@ -749,7 +750,7 @@ fn format_create_account_op(op: &CreateAccountOp) -> Vec<DataEntry> {
 
     entries.push(DataEntry::new(
         "Send",
-        format!("{} XLM", format_native_amount(op.starting_balance)),
+        format!("{} XLM", format_native_amount(op.starting_balance.into())),
     ));
     entries.push(DataEntry::new("To", op.destination.to_string()));
 
@@ -973,7 +974,7 @@ fn format_change_trust_op(op: &ChangeTrustOp) -> Vec<DataEntry> {
         } else {
             entries.push(DataEntry::new(
                 "Trust Limit",
-                format_native_amount(op.limit),
+                format_native_amount(op.limit.into()),
             ));
         }
     }
@@ -1231,11 +1232,11 @@ fn format_liquidity_pool_deposit_op(
         DataEntry::new("Pool ID", format_pool_id(&op.liquidity_pool_id)),
         DataEntry::new(
             "Max Amount A",
-            format_native_amount(op.max_amount_a).to_string(),
+            format_native_amount(op.max_amount_a.into()).to_string(),
         ),
         DataEntry::new(
             "Max Amount B",
-            format_native_amount(op.max_amount_b).to_string(),
+            format_native_amount(op.max_amount_b.into()).to_string(),
         ),
         DataEntry::new("Min Price", format_price(&op.min_price)?),
         DataEntry::new("Max Price", format_price(&op.max_price)?),
@@ -1246,14 +1247,14 @@ fn format_liquidity_pool_withdraw_op(op: &LiquidityPoolWithdrawOp) -> Vec<DataEn
     vec![
         DataEntry::new("Operation Type", "Liquidity Pool Withdraw".to_string()),
         DataEntry::new("Pool ID", format_pool_id(&op.liquidity_pool_id)),
-        DataEntry::new("Amount", format_native_amount(op.amount).to_string()),
+        DataEntry::new("Amount", format_native_amount(op.amount.into()).to_string()),
         DataEntry::new(
             "Min Amount A",
-            format_native_amount(op.min_amount_a).to_string(),
+            format_native_amount(op.min_amount_a.into()).to_string(),
         ),
         DataEntry::new(
             "Min Amount B",
-            format_native_amount(op.min_amount_b).to_string(),
+            format_native_amount(op.min_amount_b.into()).to_string(),
         ),
     ]
 }
