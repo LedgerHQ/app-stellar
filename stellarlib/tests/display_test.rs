@@ -97,6 +97,42 @@ fn test_format_unix_timestamp() {
     );
 }
 
+// Boundary cases around leap rules and the year-9999 cutoff. Expected values
+// computed with Python's `datetime` (UTC), the same reference the algorithm
+// was originally fuzz-verified against.
+#[test]
+fn test_format_unix_timestamp_leap_boundaries() {
+    // Leap day itself, and the transitions around it in a leap year
+    assert_eq!(format_unix_timestamp(1709210096), "2024-02-29 12:34:56 UTC");
+    assert_eq!(format_unix_timestamp(1709164799), "2024-02-28 23:59:59 UTC");
+    assert_eq!(format_unix_timestamp(1709251200), "2024-03-01 00:00:00 UTC");
+
+    // Feb 28 -> Mar 1 in a non-leap year (no Feb 29 in between)
+    assert_eq!(format_unix_timestamp(1677628799), "2023-02-28 23:59:59 UTC");
+    assert_eq!(format_unix_timestamp(1677628800), "2023-03-01 00:00:00 UTC");
+
+    // Day 366 of a leap year, and the first second of the following year
+    assert_eq!(format_unix_timestamp(1735689599), "2024-12-31 23:59:59 UTC");
+    assert_eq!(format_unix_timestamp(1735689600), "2025-01-01 00:00:00 UTC");
+
+    // Gregorian century rule: 2000 is a leap year (divisible by 400),
+    // 2100 is not (divisible by 100 but not 400)
+    assert_eq!(format_unix_timestamp(951782400), "2000-02-29 00:00:00 UTC");
+    assert_eq!(format_unix_timestamp(4107542399), "2100-02-28 23:59:59 UTC");
+    assert_eq!(format_unix_timestamp(4107542400), "2100-03-01 00:00:00 UTC");
+}
+
+#[test]
+fn test_format_unix_timestamp_year_9999_cutoff() {
+    // Last representable second is formatted; one past it falls back to the
+    // raw number
+    assert_eq!(
+        format_unix_timestamp(253402300799),
+        "9999-12-31 23:59:59 UTC"
+    );
+    assert_eq!(format_unix_timestamp(253402300800), "253402300800");
+}
+
 #[test]
 fn test_format_duration() {
     // Basic cases
