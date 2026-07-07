@@ -220,6 +220,20 @@ extern "C" fn sample_main(arg0: u32) {
                 }
             };
             show_status_and_home_if_needed(&ins, &mut app_ctx, &mut home, &status);
+
+            // Reset accumulated state after every terminal result (success or
+            // error) so nothing stale can leak into the next command. Only a
+            // successful mid-stream chunk keeps the context alive.
+            let mid_stream = status == AppSW::Ok
+                && matches!(
+                    ins,
+                    Instruction::SignTx { more: true, .. }
+                        | Instruction::SignSorobanAuth { more: true, .. }
+                        | Instruction::SignMessage { more: true, .. }
+                );
+            if !mid_stream {
+                app_ctx.reset();
+            }
         }
     }
 }
