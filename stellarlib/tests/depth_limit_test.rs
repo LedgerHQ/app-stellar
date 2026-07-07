@@ -12,7 +12,7 @@ fn test_depth_limit_scval_vec() {
     // Each level: type (4 bytes) + optional flag (4 bytes) + array length (4 bytes)
     for _ in 0..35 {
         // Try to exceed MAX_PARSE_DEPTH (32)
-        data.extend_from_slice(&[0, 0, 0, 17]); // ScValType::ScvVec
+        data.extend_from_slice(&[0, 0, 0, 16]); // ScValType::ScvVec
         data.extend_from_slice(&[0, 0, 0, 1]); // Optional: present
         data.extend_from_slice(&[0, 0, 0, 1]); // Array length: 1
     }
