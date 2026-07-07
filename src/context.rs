@@ -105,6 +105,9 @@ pub struct AppContext<const MAX: usize> {
     pub path: Bip32Path,
     pub raw_data: RawDataBuffer<MAX>,
     pub review_finished: bool,
+    /// Whether a first chunk has been received and a multi-chunk transfer is
+    /// in progress. Continuation chunks are rejected while this is false.
+    chunk_started: bool,
 }
 
 impl<const MAX: usize> AppContext<MAX> {
@@ -122,6 +125,7 @@ impl<const MAX: usize> AppContext<MAX> {
         self.raw_data.clear();
         self.path = Default::default();
         self.review_finished = false;
+        self.chunk_started = false;
     }
 
     /// Handles multi-chunk data reception for handlers that accumulate data across multiple APDUs.
@@ -137,7 +141,8 @@ impl<const MAX: usize> AppContext<MAX> {
     ///
     /// # Returns
     /// * `Ok(())` if the chunk was successfully processed
-    /// * `Err(AppSW)` if an error occurred (wrong length, data too large, etc.)
+    /// * `Err(AppSW)` if an error occurred (wrong length, data too large,
+    ///   continuation chunk without a first chunk, etc.)
     pub fn handle_chunk(&mut self, comm: &mut Comm, first: bool) -> Result<(), AppSW> {
         let data = comm.get_data().map_err(|_| AppSW::WrongApduLength)?;
         if first {
@@ -154,7 +159,15 @@ impl<const MAX: usize> AppContext<MAX> {
 
             // extend_from_slice now handles the size check internally
             self.raw_data.extend_from_slice(remaining_data)?;
+
+            self.chunk_started = true;
         } else {
+            // A continuation without a preceding first chunk would otherwise
+            // proceed with the default path and whatever the buffer holds.
+            if !self.chunk_started {
+                return Err(AppSW::DataParsingFail);
+            }
+
             // extend_from_slice now handles the size check internally
             self.raw_data.extend_from_slice(data)?;
         }

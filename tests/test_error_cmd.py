@@ -29,3 +29,18 @@ def test_wrong_p1p2(backend):
             cla=CLA, ins=InsType.GET_CONF, p1=P1.FIRST_APDU, p2=P2.MORE_APDU
         )
     assert e.value.status == Errors.SW_WRONG_P1_P2
+
+
+# Ensure a continuation chunk without a preceding first chunk is rejected
+# instead of proceeding with the default derivation path and empty state
+@pytest.mark.parametrize(
+    "ins",
+    [InsType.SIGN_TX, InsType.SIGN_SOROBAN_AUTH, InsType.SIGN_MESSAGE],
+    ids=["sign_tx", "sign_soroban_auth", "sign_message"],
+)
+def test_continuation_without_first_chunk(backend, ins):
+    with pytest.raises(ExceptionRAPDU) as e:
+        backend.exchange(
+            cla=CLA, ins=ins, p1=P1.MORE_APDU, p2=P2.LAST_APDU, data=b"\x00" * 8
+        )
+    assert e.value.status == Errors.SW_DATA_PARSING_FAIL
