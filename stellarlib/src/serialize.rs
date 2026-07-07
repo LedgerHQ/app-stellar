@@ -166,11 +166,13 @@ impl ToJson for ClaimPredicate {
         match self {
             ClaimPredicate::Unconditional => escape_json_string("unconditional"),
             ClaimPredicate::And(predicates) => {
-                let items: Vec<String> = predicates.as_slice().iter().map(|p| p.to_json()).collect();
+                let items: Vec<String> =
+                    predicates.as_slice().iter().map(|p| p.to_json()).collect();
                 format!("{{\"and\":[{}]}}", items.join(","))
             }
             ClaimPredicate::Or(predicates) => {
-                let items: Vec<String> = predicates.as_slice().iter().map(|p| p.to_json()).collect();
+                let items: Vec<String> =
+                    predicates.as_slice().iter().map(|p| p.to_json()).collect();
                 format!("{{\"or\":[{}]}}", items.join(","))
             }
             ClaimPredicate::Not(predicate) => {
