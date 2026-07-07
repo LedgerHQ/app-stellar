@@ -2319,6 +2319,216 @@ class SignTxTestCases:
         return tx
 
     @staticmethod
+    def op_invoke_host_function_with_auth_root_differs_from_host_function() -> (
+        TransactionEnvelope
+    ):
+        # The root invocation of a source-account authorization entry is independent
+        # of the invoked host function, so it must be displayed from its root.
+        tx = (
+            common_builder(base_fee=500)
+            .append_invoke_contract_function_op(
+                contract_id="CA3B55CUVQCP4C4WXGYG5I2ED7AYE6AFNJB25SFXXVWGEVP3LUVTN7ND",
+                function_name="testfunc",
+                parameters=None,
+                source=kp0.public_key,
+                auth=[
+                    stellar_xdr.SorobanAuthorizationEntry(
+                        stellar_xdr.SorobanCredentials(
+                            stellar_xdr.SorobanCredentialsType.SOROBAN_CREDENTIALS_SOURCE_ACCOUNT
+                        ),
+                        stellar_xdr.SorobanAuthorizedInvocation(
+                            function=stellar_xdr.SorobanAuthorizedFunction(
+                                stellar_xdr.SorobanAuthorizedFunctionType.SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN,
+                                contract_fn=stellar_xdr.InvokeContractArgs(
+                                    contract_address=Address(
+                                        "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
+                                    ).to_xdr_sc_address(),
+                                    function_name=stellar_xdr.SCSymbol(
+                                        "unrelated_fn".encode()
+                                    ),
+                                    args=[
+                                        scval.to_address(
+                                            "GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"
+                                        ),
+                                        scval.to_int128(999 * 10**5),
+                                    ],
+                                ),
+                            ),
+                            sub_invocations=[
+                                stellar_xdr.SorobanAuthorizedInvocation(
+                                    function=stellar_xdr.SorobanAuthorizedFunction(
+                                        stellar_xdr.SorobanAuthorizedFunctionType.SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN,
+                                        contract_fn=stellar_xdr.InvokeContractArgs(
+                                            contract_address=Address(
+                                                "CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75"
+                                            ).to_xdr_sc_address(),
+                                            function_name=stellar_xdr.SCSymbol(
+                                                "transfer".encode()
+                                            ),
+                                            args=[
+                                                scval.to_address(
+                                                    "GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"
+                                                ),  # from
+                                                scval.to_address(
+                                                    "GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"
+                                                ),  # to
+                                                scval.to_int128(399 * 10**5),
+                                            ],
+                                        ),
+                                    ),
+                                    sub_invocations=[],
+                                ),
+                            ],
+                        ),
+                    ),
+                ],
+            )
+            .add_time_bounds(0, 0)
+            .build()
+        )
+        return tx
+
+    @staticmethod
+    def op_invoke_host_function_with_multiple_source_account_auth() -> (
+        TransactionEnvelope
+    ):
+        # A single operation can carry several authorization entries with
+        # source-account credentials; each tree must be displayed separately.
+        tx = (
+            common_builder(base_fee=500)
+            .append_invoke_contract_function_op(
+                contract_id="CA3B55CUVQCP4C4WXGYG5I2ED7AYE6AFNJB25SFXXVWGEVP3LUVTN7ND",
+                function_name="testfunc",
+                parameters=None,
+                source=kp0.public_key,
+                auth=[
+                    stellar_xdr.SorobanAuthorizationEntry(
+                        stellar_xdr.SorobanCredentials(
+                            stellar_xdr.SorobanCredentialsType.SOROBAN_CREDENTIALS_SOURCE_ACCOUNT
+                        ),
+                        stellar_xdr.SorobanAuthorizedInvocation(
+                            function=stellar_xdr.SorobanAuthorizedFunction(
+                                stellar_xdr.SorobanAuthorizedFunctionType.SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN,
+                                contract_fn=stellar_xdr.InvokeContractArgs(
+                                    contract_address=Address(
+                                        "CA3B55CUVQCP4C4WXGYG5I2ED7AYE6AFNJB25SFXXVWGEVP3LUVTN7ND"
+                                    ).to_xdr_sc_address(),
+                                    function_name=stellar_xdr.SCSymbol(
+                                        "testfunc".encode()
+                                    ),
+                                    args=[],
+                                ),
+                            ),
+                            sub_invocations=[
+                                stellar_xdr.SorobanAuthorizedInvocation(
+                                    function=stellar_xdr.SorobanAuthorizedFunction(
+                                        stellar_xdr.SorobanAuthorizedFunctionType.SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN,
+                                        contract_fn=stellar_xdr.InvokeContractArgs(
+                                            contract_address=Address(
+                                                "CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75"
+                                            ).to_xdr_sc_address(),
+                                            function_name=stellar_xdr.SCSymbol(
+                                                "test".encode()
+                                            ),
+                                            args=[],
+                                        ),
+                                    ),
+                                    sub_invocations=[],
+                                ),
+                            ],
+                        ),
+                    ),
+                    # ADDRESS credentials are not authorized by the transaction
+                    # signature and must be skipped in the display.
+                    stellar_xdr.SorobanAuthorizationEntry(
+                        stellar_xdr.SorobanCredentials(
+                            stellar_xdr.SorobanCredentialsType.SOROBAN_CREDENTIALS_ADDRESS,
+                            stellar_xdr.SorobanAddressCredentials(
+                                Address(
+                                    "GDUTHCF37UX32EMANXIL2WOOVEDZ47GHBTT3DYKU6EKM37SOIZXM2FN7"
+                                ).to_xdr_sc_address(),
+                                stellar_xdr.Int64(111324345),
+                                stellar_xdr.Uint32(34543543),
+                                scval.to_void(),
+                            ),
+                        ),
+                        stellar_xdr.SorobanAuthorizedInvocation(
+                            function=stellar_xdr.SorobanAuthorizedFunction(
+                                stellar_xdr.SorobanAuthorizedFunctionType.SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN,
+                                contract_fn=stellar_xdr.InvokeContractArgs(
+                                    contract_address=Address(
+                                        "CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75"
+                                    ).to_xdr_sc_address(),
+                                    function_name=stellar_xdr.SCSymbol(
+                                        "transfer".encode()
+                                    ),
+                                    args=[
+                                        scval.to_address(
+                                            "GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"
+                                        ),  # from
+                                        scval.to_address(
+                                            "GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"
+                                        ),  # to
+                                        scval.to_int128(399 * 10**5),
+                                    ],
+                                ),
+                            ),
+                            sub_invocations=[],
+                        ),
+                    ),
+                    stellar_xdr.SorobanAuthorizationEntry(
+                        stellar_xdr.SorobanCredentials(
+                            stellar_xdr.SorobanCredentialsType.SOROBAN_CREDENTIALS_SOURCE_ACCOUNT
+                        ),
+                        stellar_xdr.SorobanAuthorizedInvocation(
+                            function=stellar_xdr.SorobanAuthorizedFunction(
+                                stellar_xdr.SorobanAuthorizedFunctionType.SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN,
+                                contract_fn=stellar_xdr.InvokeContractArgs(
+                                    contract_address=Address(
+                                        "CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA"
+                                    ).to_xdr_sc_address(),
+                                    function_name=stellar_xdr.SCSymbol(
+                                        "approve".encode()
+                                    ),
+                                    args=[
+                                        scval.to_address(
+                                            "GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"
+                                        ),  # from
+                                        scval.to_address(
+                                            "GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"
+                                        ),  # to
+                                        scval.to_int128(123 * 10**5),  # amount
+                                        scval.to_uint32(234524532),
+                                    ],
+                                ),
+                            ),
+                            sub_invocations=[
+                                stellar_xdr.SorobanAuthorizedInvocation(
+                                    function=stellar_xdr.SorobanAuthorizedFunction(
+                                        stellar_xdr.SorobanAuthorizedFunctionType.SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN,
+                                        contract_fn=stellar_xdr.InvokeContractArgs(
+                                            contract_address=Address(
+                                                "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
+                                            ).to_xdr_sc_address(),
+                                            function_name=stellar_xdr.SCSymbol(
+                                                "burn".encode()
+                                            ),
+                                            args=[],
+                                        ),
+                                    ),
+                                    sub_invocations=[],
+                                ),
+                            ],
+                        ),
+                    ),
+                ],
+            )
+            .add_time_bounds(0, 0)
+            .build()
+        )
+        return tx
+
+    @staticmethod
     def op_invoke_host_function_without_auth_and_no_source() -> TransactionEnvelope:
         tx = (
             common_builder(base_fee=500)

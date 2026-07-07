@@ -1391,28 +1391,27 @@ fn format_invoke_host_function_op(
         }
     }
 
-    if config.show_nested_authorization {
-        let mut auth_index = 1;
-        for auth in op.auth.iter() {
-            match &auth.credentials {
-                SorobanCredentials::SourceAccount => {
-                    for (j, sub_invocation) in
-                        auth.root_invocation.sub_invocations.iter().enumerate()
-                    {
-                        let index = format!("{}-{}", auth_index, j + 1);
-                        entries.push(DataEntry::new("Nested Authorization", index.clone()));
-                        entries.extend(format_soroban_authorized_invocation(
-                            sub_invocation,
-                            Some(&index),
-                            config,
-                        ));
-                    }
-                    auth_index += 1;
-                }
-                SorobanCredentials::Address(_) => {
-                    // skip, these are not related to the current signatories,
-                    // and we will not authorize these things.
-                }
+    // Signing the transaction implicitly authorizes every authorization entry with
+    // source-account credentials, and an entry's root invocation is independent of
+    // the invoked host function (it may authorize a completely different call), so
+    // each tree must be shown from its root. An operation can also carry several
+    // such entries; number them so the user can tell the trees apart.
+    let mut auth_index = 1;
+    for auth in op.auth.iter() {
+        match &auth.credentials {
+            SorobanCredentials::SourceAccount => {
+                let index = auth_index.to_string();
+                entries.push(DataEntry::new("Authorization", index.clone()));
+                entries.extend(format_soroban_authorized_invocation(
+                    &auth.root_invocation,
+                    Some(&index),
+                    config,
+                ));
+                auth_index += 1;
+            }
+            SorobanCredentials::Address(_) => {
+                // skip, these are not related to the current signatories,
+                // and we will not authorize these things.
             }
         }
     }

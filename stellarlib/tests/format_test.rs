@@ -270,6 +270,8 @@ fn test_sign_tx_formats() {
         "op_invoke_host_function_with_auth",
         "op_invoke_host_function_with_auth_and_no_args_and_no_source",
         "op_invoke_host_function_with_auth_and_no_args",
+        "op_invoke_host_function_with_auth_root_differs_from_host_function",
+        "op_invoke_host_function_with_multiple_source_account_auth",
         "op_invoke_host_function_without_auth_and_no_source",
         "op_invoke_host_function_approve_usdc",
         "op_invoke_host_function_scvals_case0",
