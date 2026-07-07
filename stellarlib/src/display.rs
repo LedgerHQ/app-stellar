@@ -312,21 +312,22 @@ impl<'a, const MAX: usize> fmt::Display for StringM<'a, MAX> {
 
 /// Formats a numeric value as a decimal string with the specified number of decimal places
 ///
+/// Takes a concrete `i128` (every amount type in the app — u32, i64, u64,
+/// i128 — converts losslessly) instead of a generic so the decimal/comma
+/// logic is monomorphized exactly once in the size-constrained binary.
+///
 /// # Arguments
-/// * `num` - The numeric value to format (u64, u32, i32, i64)
+/// * `num` - The numeric value to format
 /// * `decimal_places` - Number of decimal places to show
 ///
 /// # Examples
 /// ```ignore
 /// use stellarlib::display::format_decimal;
 ///
-/// assert_eq!(format_decimal(1234567u64, 7), "0.1234567");
-/// assert_eq!(format_decimal(10000000u64, 7), "1.0000000");
+/// assert_eq!(format_decimal(1234567, 7), "0.1234567");
+/// assert_eq!(format_decimal(10000000, 7), "1.0000000");
 /// ```
-pub fn format_decimal<T>(num: T, decimal_places: u32) -> alloc::string::String
-where
-    T: ToString + Copy,
-{
+pub fn format_decimal(num: i128, decimal_places: u32) -> alloc::string::String {
     let num_str = num.to_string();
 
     if decimal_places == 0 {
@@ -601,14 +602,11 @@ pub fn format_duration(seconds: u64) -> alloc::string::String {
 ///
 /// # Examples
 /// ```ignore
-/// assert_eq!(format_native_amount(10000000u64), "1");
-/// assert_eq!(format_native_amount(12345678u64), "1.2345678");
-/// assert_eq!(format_native_amount(1234567890u64), "123.456789");
+/// assert_eq!(format_native_amount(10000000), "1");
+/// assert_eq!(format_native_amount(12345678), "1.2345678");
+/// assert_eq!(format_native_amount(1234567890), "123.456789");
 /// ```
-pub fn format_native_amount<T>(stroops: T) -> String
-where
-    T: ToString + Copy,
-{
+pub fn format_native_amount(stroops: i128) -> String {
     format_token_amount(stroops, STELLAR_NATIVE_DECIMAL_PLACES)
 }
 
@@ -623,14 +621,11 @@ where
 ///
 /// # Examples
 /// ```ignore
-/// assert_eq!(format_token_amount(10000000u64, 7), "1");
-/// assert_eq!(format_token_amount(12345678u64, 7), "1.2345678");
-/// assert_eq!(format_token_amount(1234567890u64, 7), "123.456789");
+/// assert_eq!(format_token_amount(10000000, 7), "1");
+/// assert_eq!(format_token_amount(12345678, 7), "1.2345678");
+/// assert_eq!(format_token_amount(1234567890, 7), "123.456789");
 /// ```
-pub fn format_token_amount<T>(amount: T, decimals: u32) -> String
-where
-    T: ToString + Copy,
-{
+pub fn format_token_amount(amount: i128, decimals: u32) -> String {
     let decimal_str = format_decimal(amount, decimals);
     format_number_with_commas(&decimal_str)
 }

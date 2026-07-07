@@ -5,36 +5,12 @@ use stellarlib::display::{
 
 #[test]
 fn test_format_decimal() {
-    assert_eq!(format_decimal(1234567u64, 7), "0.1234567");
-    assert_eq!(format_decimal(10000000u64, 7), "1.0000000");
-    assert_eq!(format_decimal(123u64, 0), "123");
-    assert_eq!(format_decimal(12345u64, 2), "123.45");
-    assert_eq!(format_decimal(42u64, 2), "0.42");
-    assert_eq!(format_decimal(-1234i64, 2), "-12.34");
-
-    // u128 extreme values
-    assert_eq!(
-        format_decimal(u128::MAX, 0),
-        "340282366920938463463374607431768211455"
-    );
-    assert_eq!(
-        format_decimal(u128::MAX, 10),
-        "34028236692093846346337460743.1768211455"
-    );
-    assert_eq!(
-        format_decimal(u128::MAX, 38),
-        "3.40282366920938463463374607431768211455"
-    );
-    assert_eq!(
-        format_decimal(u128::MAX, 39),
-        "0.340282366920938463463374607431768211455"
-    );
-    assert_eq!(
-        format_decimal(u128::MAX, 50),
-        "0.00000000000340282366920938463463374607431768211455"
-    );
-    assert_eq!(format_decimal(u128::MIN, 0), "0");
-    assert_eq!(format_decimal(u128::MIN, 5), "0.00000");
+    assert_eq!(format_decimal(1234567, 7), "0.1234567");
+    assert_eq!(format_decimal(10000000, 7), "1.0000000");
+    assert_eq!(format_decimal(123, 0), "123");
+    assert_eq!(format_decimal(12345, 2), "123.45");
+    assert_eq!(format_decimal(42, 2), "0.42");
+    assert_eq!(format_decimal(-1234, 2), "-12.34");
 
     // i128 extreme values
     assert_eq!(
@@ -72,20 +48,17 @@ fn test_format_decimal() {
 
     // Edge cases with large decimal places
     assert_eq!(
-        format_decimal(1u128, 40),
+        format_decimal(1, 40),
         "0.0000000000000000000000000000000000000001"
     );
     assert_eq!(
-        format_decimal(-1i128, 40),
+        format_decimal(-1, 40),
         "-0.0000000000000000000000000000000000000001"
     );
 
     // decimal places larger than typical integer sizes
-    assert_eq!(format_decimal(1u8, 30), "0.000000000000000000000000000001");
-    assert_eq!(
-        format_decimal(-1i8, 30),
-        "-0.000000000000000000000000000001"
-    );
+    assert_eq!(format_decimal(1, 30), "0.000000000000000000000000000001");
+    assert_eq!(format_decimal(-1, 30), "-0.000000000000000000000000000001");
 }
 
 #[test]
@@ -152,85 +125,82 @@ fn test_format_duration() {
 #[test]
 fn test_format_native_amount() {
     // Test standard native XLM amounts (7 decimal places)
-    assert_eq!(format_native_amount(10_000_000u64), "1");
-    assert_eq!(format_native_amount(12_345_678u64), "1.2345678");
-    assert_eq!(format_native_amount(123_456_789u64), "12.3456789");
-    assert_eq!(format_native_amount(1_234_567_890u64), "123.456789");
+    assert_eq!(format_native_amount(10_000_000), "1");
+    assert_eq!(format_native_amount(12_345_678), "1.2345678");
+    assert_eq!(format_native_amount(123_456_789), "12.3456789");
+    assert_eq!(format_native_amount(1_234_567_890), "123.456789");
 
     // Test with commas in large numbers
-    assert_eq!(format_native_amount(10_000_000_000_000u64), "1,000,000");
+    assert_eq!(format_native_amount(10_000_000_000_000), "1,000,000");
     assert_eq!(
-        format_native_amount(123_456_789_012_345u64),
+        format_native_amount(123_456_789_012_345),
         "12,345,678.9012345"
     );
 
     // Test small amounts
-    assert_eq!(format_native_amount(1_000_000u64), "0.1");
-    assert_eq!(format_native_amount(100_000u64), "0.01");
-    assert_eq!(format_native_amount(10_000u64), "0.001");
-    assert_eq!(format_native_amount(1_000u64), "0.0001");
-    assert_eq!(format_native_amount(100u64), "0.00001");
-    assert_eq!(format_native_amount(10u64), "0.000001");
-    assert_eq!(format_native_amount(1u64), "0.0000001");
+    assert_eq!(format_native_amount(1_000_000), "0.1");
+    assert_eq!(format_native_amount(100_000), "0.01");
+    assert_eq!(format_native_amount(10_000), "0.001");
+    assert_eq!(format_native_amount(1_000), "0.0001");
+    assert_eq!(format_native_amount(100), "0.00001");
+    assert_eq!(format_native_amount(10), "0.000001");
+    assert_eq!(format_native_amount(1), "0.0000001");
 
     // Test zero
-    assert_eq!(format_native_amount(0u64), "0");
+    assert_eq!(format_native_amount(0), "0");
 
     // Test negative amounts
-    assert_eq!(format_native_amount(-10_000_000i64), "-1");
-    assert_eq!(format_native_amount(-1_234_567i64), "-0.1234567");
-    assert_eq!(
-        format_native_amount(-123_456_789_000_000i64),
-        "-12,345,678.9"
-    );
+    assert_eq!(format_native_amount(-10_000_000), "-1");
+    assert_eq!(format_native_amount(-1_234_567), "-0.1234567");
+    assert_eq!(format_native_amount(-123_456_789_000_000), "-12,345,678.9");
 }
 
 #[test]
 fn test_format_token_amount_standard_decimals() {
     // Standard 7 decimals (most Stellar tokens)
-    assert_eq!(format_token_amount(10_000_000u64, 7), "1");
-    assert_eq!(format_token_amount(1_000_000u64, 7), "0.1");
-    assert_eq!(format_token_amount(100_000u64, 7), "0.01");
-    assert_eq!(format_token_amount(10_000u64, 7), "0.001");
-    assert_eq!(format_token_amount(1_000u64, 7), "0.0001");
-    assert_eq!(format_token_amount(100u64, 7), "0.00001");
-    assert_eq!(format_token_amount(10u64, 7), "0.000001");
-    assert_eq!(format_token_amount(1u64, 7), "0.0000001");
+    assert_eq!(format_token_amount(10_000_000, 7), "1");
+    assert_eq!(format_token_amount(1_000_000, 7), "0.1");
+    assert_eq!(format_token_amount(100_000, 7), "0.01");
+    assert_eq!(format_token_amount(10_000, 7), "0.001");
+    assert_eq!(format_token_amount(1_000, 7), "0.0001");
+    assert_eq!(format_token_amount(100, 7), "0.00001");
+    assert_eq!(format_token_amount(10, 7), "0.000001");
+    assert_eq!(format_token_amount(1, 7), "0.0000001");
 }
 
 #[test]
 fn test_format_token_amount_various_decimals() {
     // 0 decimals
-    assert_eq!(format_token_amount(1000u64, 0), "1,000");
+    assert_eq!(format_token_amount(1000, 0), "1,000");
 
     // 2 decimals (like traditional currencies)
-    assert_eq!(format_token_amount(100u64, 2), "1");
-    assert_eq!(format_token_amount(1234u64, 2), "12.34");
+    assert_eq!(format_token_amount(100, 2), "1");
+    assert_eq!(format_token_amount(1234, 2), "12.34");
 
     // 6 decimals
-    assert_eq!(format_token_amount(1_000_000u64, 6), "1");
-    assert_eq!(format_token_amount(123_456u64, 6), "0.123456");
+    assert_eq!(format_token_amount(1_000_000, 6), "1");
+    assert_eq!(format_token_amount(123_456, 6), "0.123456");
 
     // 18 decimals (Ethereum-style)
-    assert_eq!(format_token_amount(1_000_000_000_000_000_000u64, 18), "1");
+    assert_eq!(format_token_amount(1_000_000_000_000_000_000, 18), "1");
 }
 
 #[test]
 fn test_format_token_amount_large_numbers() {
     // Test with commas in large numbers
-    assert_eq!(format_token_amount(10_000_000_000_000u64, 7), "1,000,000");
+    assert_eq!(format_token_amount(10_000_000_000_000, 7), "1,000,000");
     assert_eq!(
-        format_token_amount(123_456_789_012_345u64, 7),
+        format_token_amount(123_456_789_012_345, 7),
         "12,345,678.9012345"
     );
 }
 
 #[test]
 fn test_format_token_amount_negative() {
-    assert_eq!(format_token_amount(-10_000_000i64, 7), "-1");
-    assert_eq!(format_token_amount(-1_234_567i64, 7), "-0.1234567");
+    assert_eq!(format_token_amount(-10_000_000, 7), "-1");
+    assert_eq!(format_token_amount(-1_234_567, 7), "-0.1234567");
     assert_eq!(
-        format_token_amount(-123_456_789_000_000i64, 7),
+        format_token_amount(-123_456_789_000_000, 7),
         "-12,345,678.9"
     );
 }
@@ -238,13 +208,13 @@ fn test_format_token_amount_negative() {
 #[test]
 fn test_format_token_amount_edge_cases() {
     // Zero
-    assert_eq!(format_token_amount(0u64, 7), "0");
-    assert_eq!(format_token_amount(0u64, 0), "0");
+    assert_eq!(format_token_amount(0, 7), "0");
+    assert_eq!(format_token_amount(0, 0), "0");
 
     // Maximum precision
-    assert_eq!(format_token_amount(12_345_678u64, 7), "1.2345678");
+    assert_eq!(format_token_amount(12_345_678, 7), "1.2345678");
 
     // Very small amounts
-    assert_eq!(format_token_amount(1u64, 7), "0.0000001");
-    assert_eq!(format_token_amount(9u64, 7), "0.0000009");
+    assert_eq!(format_token_amount(1, 7), "0.0000001");
+    assert_eq!(format_token_amount(9, 7), "0.0000009");
 }
