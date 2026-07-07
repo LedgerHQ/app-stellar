@@ -942,6 +942,14 @@ impl<'a> XdrParse<'a> for EnvelopeType {
     }
 }
 
+/// Maximum number of operations accepted in a single transaction.
+///
+/// This is the Stellar protocol limit (`MAX_OPS_PER_TX`), so rejecting beyond
+/// it can never refuse a transaction the network would accept. It bounds the
+/// per-operation display entries generated on the device from an otherwise
+/// attacker-controlled `u32` count.
+pub const MAX_OPS: u32 = 100;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Transaction<'a> {
     pub source_account: MuxedAccount<'a>,
@@ -960,6 +968,12 @@ impl<'a> XdrParse<'a> for Transaction<'a> {
         let cond = Preconditions::parse(parser)?;
         let memo = Memo::parse(parser)?;
         let op_count = parser.parse_uint32()?;
+        if op_count > MAX_OPS {
+            return Err(ParseError::LengthExceedsMax {
+                actual: op_count as usize,
+                max: MAX_OPS as usize,
+            });
+        }
 
         Ok(Transaction {
             source_account,
