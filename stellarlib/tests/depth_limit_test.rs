@@ -1,4 +1,4 @@
-use stellarlib::parser::{ClaimPredicate, ParseError, Parser, ScVal, XdrParse};
+use stellarlib::parser::{ClaimPredicate, ParseError, Parser, ScVal, SorobanCredentials, XdrParse};
 
 #[test]
 fn test_depth_limit_scval_vec() {
@@ -57,6 +57,51 @@ fn test_depth_limit_claim_predicate() {
     if let Err(ParseError::MaxDepthExceeded { depth, max }) = result {
         println!(
             "Successfully caught ClaimPredicate depth limit: {} > {}",
+            depth, max
+        );
+    }
+}
+
+#[test]
+fn test_depth_limit_soroban_delegate_signature() {
+    // CAP-71 (Protocol 27) SorobanDelegateSignature is recursive through its
+    // nestedDelegates<> list; nesting deeper than MAX_PARSE_DEPTH must fail
+    // instead of overflowing the device stack.
+
+    let mut data = Vec::new();
+    data.extend_from_slice(&[0, 0, 0, 3]); // SorobanCredentialsType::AddressWithDelegates
+
+    // SorobanAddressCredentials
+    data.extend_from_slice(&[0, 0, 0, 0]); // ScAddressType::ScAddressTypeAccount
+    data.extend_from_slice(&[0, 0, 0, 0]); // PublicKey type: ed25519
+    data.extend_from_slice(&[0u8; 32]); // ed25519 key
+    data.extend_from_slice(&[0u8; 8]); // nonce
+    data.extend_from_slice(&[0, 0, 0, 1]); // signature_expiration_ledger
+    data.extend_from_slice(&[0, 0, 0, 1]); // signature: ScValType::ScvVoid
+
+    // Each level: a one-element delegate list whose element nests the next level
+    for _ in 0..35 {
+        // Try to exceed MAX_PARSE_DEPTH (32)
+        data.extend_from_slice(&[0, 0, 0, 1]); // delegates/nestedDelegates length: 1
+        data.extend_from_slice(&[0, 0, 0, 0]); // ScAddressType::ScAddressTypeAccount
+        data.extend_from_slice(&[0, 0, 0, 0]); // PublicKey type: ed25519
+        data.extend_from_slice(&[0u8; 32]); // ed25519 key
+        data.extend_from_slice(&[0, 0, 0, 1]); // signature: ScValType::ScvVoid
+    }
+
+    // Innermost nestedDelegates: empty
+    data.extend_from_slice(&[0, 0, 0, 0]);
+
+    let mut parser = Parser::new(&data);
+    let result = SorobanCredentials::parse(&mut parser);
+
+    assert!(matches!(result, Err(ParseError::MaxDepthExceeded { .. })));
+
+    if let Err(ParseError::MaxDepthExceeded { depth, max }) = result {
+        assert!(depth > max);
+        assert_eq!(max, 32);
+        println!(
+            "Successfully caught SorobanDelegateSignature depth limit: {} > {}",
             depth, max
         );
     }

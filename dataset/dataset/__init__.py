@@ -2092,6 +2092,282 @@ class SignTxTestCases:
         return tx
 
     @staticmethod
+    def op_invoke_host_function_with_auth_address_v2() -> TransactionEnvelope:
+        # CAP-71 (Protocol 27): SOROBAN_CREDENTIALS_ADDRESS_V2 has the same body
+        # as SOROBAN_CREDENTIALS_ADDRESS but its signature payload is bound to
+        # the credential address.
+        scvals = [
+            scval.to_uint128(1),
+            scval.to_int128(2),
+            scval.to_uint256(3),
+        ]
+        tx = (
+            common_builder(base_fee=500)
+            .append_invoke_contract_function_op(
+                contract_id="CA3B55CUVQCP4C4WXGYG5I2ED7AYE6AFNJB25SFXXVWGEVP3LUVTN7ND",
+                function_name="testfunc",
+                parameters=scvals,
+                source=kp0.public_key,
+                auth=[
+                    stellar_xdr.SorobanAuthorizationEntry(
+                        stellar_xdr.SorobanCredentials(
+                            stellar_xdr.SorobanCredentialsType.SOROBAN_CREDENTIALS_ADDRESS_V2,
+                            address_v2=stellar_xdr.SorobanAddressCredentials(
+                                Address(
+                                    "GDUTHCF37UX32EMANXIL2WOOVEDZ47GHBTT3DYKU6EKM37SOIZXM2FN7"
+                                ).to_xdr_sc_address(),
+                                stellar_xdr.Int64(111324345),
+                                stellar_xdr.Uint32(34543543),
+                                scval.to_void(),
+                            ),
+                        ),
+                        stellar_xdr.SorobanAuthorizedInvocation(
+                            function=stellar_xdr.SorobanAuthorizedFunction(
+                                stellar_xdr.SorobanAuthorizedFunctionType.SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN,
+                                contract_fn=stellar_xdr.InvokeContractArgs(
+                                    contract_address=Address(
+                                        "CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75"
+                                    ).to_xdr_sc_address(),
+                                    function_name=stellar_xdr.SCSymbol(
+                                        "transfer".encode()
+                                    ),
+                                    args=[
+                                        scval.to_address(
+                                            "GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"
+                                        ),  # from
+                                        scval.to_address(
+                                            "GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"
+                                        ),  # to
+                                        scval.to_int128(399 * 10**5),
+                                    ],
+                                ),
+                            ),
+                            sub_invocations=[],
+                        ),
+                    ),
+                    stellar_xdr.SorobanAuthorizationEntry(
+                        stellar_xdr.SorobanCredentials(
+                            stellar_xdr.SorobanCredentialsType.SOROBAN_CREDENTIALS_SOURCE_ACCOUNT
+                        ),
+                        stellar_xdr.SorobanAuthorizedInvocation(
+                            function=stellar_xdr.SorobanAuthorizedFunction(
+                                stellar_xdr.SorobanAuthorizedFunctionType.SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN,
+                                contract_fn=stellar_xdr.InvokeContractArgs(
+                                    contract_address=Address(
+                                        "CA3B55CUVQCP4C4WXGYG5I2ED7AYE6AFNJB25SFXXVWGEVP3LUVTN7ND"
+                                    ).to_xdr_sc_address(),
+                                    function_name=stellar_xdr.SCSymbol(
+                                        "testfunc".encode()
+                                    ),
+                                    args=scvals,
+                                ),
+                            ),
+                            sub_invocations=[
+                                stellar_xdr.SorobanAuthorizedInvocation(
+                                    function=stellar_xdr.SorobanAuthorizedFunction(
+                                        stellar_xdr.SorobanAuthorizedFunctionType.SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN,
+                                        contract_fn=stellar_xdr.InvokeContractArgs(
+                                            contract_address=Address(
+                                                "CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75"
+                                            ).to_xdr_sc_address(),
+                                            function_name=stellar_xdr.SCSymbol(
+                                                "transfer".encode()
+                                            ),
+                                            args=[
+                                                scval.to_address(
+                                                    "GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"
+                                                ),  # from
+                                                scval.to_address(
+                                                    "GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"
+                                                ),  # to
+                                                scval.to_int128(456 * 10**5),  # amount
+                                            ],
+                                        ),
+                                    ),
+                                    sub_invocations=[],
+                                ),
+                                stellar_xdr.SorobanAuthorizedInvocation(
+                                    function=stellar_xdr.SorobanAuthorizedFunction(
+                                        stellar_xdr.SorobanAuthorizedFunctionType.SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN,
+                                        contract_fn=stellar_xdr.InvokeContractArgs(
+                                            contract_address=Address(
+                                                "CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA"
+                                            ).to_xdr_sc_address(),
+                                            function_name=stellar_xdr.SCSymbol(
+                                                "approve".encode()
+                                            ),
+                                            args=[
+                                                scval.to_address(
+                                                    "GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"
+                                                ),  # from
+                                                scval.to_address(
+                                                    "GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"
+                                                ),  # to
+                                                scval.to_int128(123 * 10**5),  # amount
+                                                scval.to_uint32(234524532),
+                                            ],
+                                        ),
+                                    ),
+                                    sub_invocations=[],
+                                ),
+                            ],
+                        ),
+                    ),
+                ],
+            )
+            .add_time_bounds(0, 0)
+            .build()
+        )
+        return tx
+
+    @staticmethod
+    def op_invoke_host_function_with_auth_delegates() -> TransactionEnvelope:
+        # CAP-71 (Protocol 27): SOROBAN_CREDENTIALS_ADDRESS_WITH_DELEGATES bundles
+        # delegated signers (with nesting) into the authorization entry.
+        scvals = [
+            scval.to_uint128(1),
+            scval.to_int128(2),
+            scval.to_uint256(3),
+        ]
+        tx = (
+            common_builder(base_fee=500)
+            .append_invoke_contract_function_op(
+                contract_id="CA3B55CUVQCP4C4WXGYG5I2ED7AYE6AFNJB25SFXXVWGEVP3LUVTN7ND",
+                function_name="testfunc",
+                parameters=scvals,
+                source=kp0.public_key,
+                auth=[
+                    stellar_xdr.SorobanAuthorizationEntry(
+                        stellar_xdr.SorobanCredentials(
+                            stellar_xdr.SorobanCredentialsType.SOROBAN_CREDENTIALS_ADDRESS_WITH_DELEGATES,
+                            address_with_delegates=stellar_xdr.SorobanAddressCredentialsWithDelegates(
+                                address_credentials=stellar_xdr.SorobanAddressCredentials(
+                                    Address(
+                                        "GDUTHCF37UX32EMANXIL2WOOVEDZ47GHBTT3DYKU6EKM37SOIZXM2FN7"
+                                    ).to_xdr_sc_address(),
+                                    stellar_xdr.Int64(111324345),
+                                    stellar_xdr.Uint32(34543543),
+                                    scval.to_void(),
+                                ),
+                                delegates=[
+                                    stellar_xdr.SorobanDelegateSignature(
+                                        address=Address(
+                                            "GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"
+                                        ).to_xdr_sc_address(),
+                                        signature=scval.to_void(),
+                                        nested_delegates=[
+                                            stellar_xdr.SorobanDelegateSignature(
+                                                address=Address(
+                                                    "GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"
+                                                ).to_xdr_sc_address(),
+                                                signature=scval.to_void(),
+                                                nested_delegates=[],
+                                            ),
+                                        ],
+                                    ),
+                                ],
+                            ),
+                        ),
+                        stellar_xdr.SorobanAuthorizedInvocation(
+                            function=stellar_xdr.SorobanAuthorizedFunction(
+                                stellar_xdr.SorobanAuthorizedFunctionType.SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN,
+                                contract_fn=stellar_xdr.InvokeContractArgs(
+                                    contract_address=Address(
+                                        "CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75"
+                                    ).to_xdr_sc_address(),
+                                    function_name=stellar_xdr.SCSymbol(
+                                        "transfer".encode()
+                                    ),
+                                    args=[
+                                        scval.to_address(
+                                            "GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"
+                                        ),  # from
+                                        scval.to_address(
+                                            "GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"
+                                        ),  # to
+                                        scval.to_int128(399 * 10**5),
+                                    ],
+                                ),
+                            ),
+                            sub_invocations=[],
+                        ),
+                    ),
+                    stellar_xdr.SorobanAuthorizationEntry(
+                        stellar_xdr.SorobanCredentials(
+                            stellar_xdr.SorobanCredentialsType.SOROBAN_CREDENTIALS_SOURCE_ACCOUNT
+                        ),
+                        stellar_xdr.SorobanAuthorizedInvocation(
+                            function=stellar_xdr.SorobanAuthorizedFunction(
+                                stellar_xdr.SorobanAuthorizedFunctionType.SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN,
+                                contract_fn=stellar_xdr.InvokeContractArgs(
+                                    contract_address=Address(
+                                        "CA3B55CUVQCP4C4WXGYG5I2ED7AYE6AFNJB25SFXXVWGEVP3LUVTN7ND"
+                                    ).to_xdr_sc_address(),
+                                    function_name=stellar_xdr.SCSymbol(
+                                        "testfunc".encode()
+                                    ),
+                                    args=scvals,
+                                ),
+                            ),
+                            sub_invocations=[
+                                stellar_xdr.SorobanAuthorizedInvocation(
+                                    function=stellar_xdr.SorobanAuthorizedFunction(
+                                        stellar_xdr.SorobanAuthorizedFunctionType.SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN,
+                                        contract_fn=stellar_xdr.InvokeContractArgs(
+                                            contract_address=Address(
+                                                "CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75"
+                                            ).to_xdr_sc_address(),
+                                            function_name=stellar_xdr.SCSymbol(
+                                                "transfer".encode()
+                                            ),
+                                            args=[
+                                                scval.to_address(
+                                                    "GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"
+                                                ),  # from
+                                                scval.to_address(
+                                                    "GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"
+                                                ),  # to
+                                                scval.to_int128(456 * 10**5),  # amount
+                                            ],
+                                        ),
+                                    ),
+                                    sub_invocations=[],
+                                ),
+                                stellar_xdr.SorobanAuthorizedInvocation(
+                                    function=stellar_xdr.SorobanAuthorizedFunction(
+                                        stellar_xdr.SorobanAuthorizedFunctionType.SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN,
+                                        contract_fn=stellar_xdr.InvokeContractArgs(
+                                            contract_address=Address(
+                                                "CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA"
+                                            ).to_xdr_sc_address(),
+                                            function_name=stellar_xdr.SCSymbol(
+                                                "approve".encode()
+                                            ),
+                                            args=[
+                                                scval.to_address(
+                                                    "GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"
+                                                ),  # from
+                                                scval.to_address(
+                                                    "GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"
+                                                ),  # to
+                                                scval.to_int128(123 * 10**5),  # amount
+                                                scval.to_uint32(234524532),
+                                            ],
+                                        ),
+                                    ),
+                                    sub_invocations=[],
+                                ),
+                            ],
+                        ),
+                    ),
+                ],
+            )
+            .add_time_bounds(0, 0)
+            .build()
+        )
+        return tx
+
+    @staticmethod
     def op_invoke_host_function_with_auth_and_no_args_and_no_source() -> (
         TransactionEnvelope
     ):
@@ -3891,6 +4167,176 @@ class SignSorobanAuthorizationTestCases:
                             ],
                         ),
                     ],
+                ),
+            ),
+        )
+        return data
+
+    @staticmethod
+    def soroban_auth_with_address_invoke_contract() -> stellar_xdr.HashIDPreimage:
+        # CAP-71 (Protocol 27): ENVELOPE_TYPE_SOROBAN_AUTHORIZATION_WITH_ADDRESS
+        # binds the signature payload to the authorizing address.
+        data = stellar_xdr.HashIDPreimage(
+            stellar_xdr.EnvelopeType.ENVELOPE_TYPE_SOROBAN_AUTHORIZATION_WITH_ADDRESS,
+            soroban_authorization_with_address=stellar_xdr.HashIDPreimageSorobanAuthorizationWithAddress(
+                network_id=stellar_xdr.Hash(
+                    Network(Network.PUBLIC_NETWORK_PASSPHRASE).network_id()
+                ),
+                nonce=stellar_xdr.Int64(1232432453),
+                signature_expiration_ledger=stellar_xdr.Uint32(34654367),
+                address=Address(
+                    "GDUTHCF37UX32EMANXIL2WOOVEDZ47GHBTT3DYKU6EKM37SOIZXM2FN7"
+                ).to_xdr_sc_address(),
+                invocation=stellar_xdr.SorobanAuthorizedInvocation(
+                    function=stellar_xdr.SorobanAuthorizedFunction(
+                        stellar_xdr.SorobanAuthorizedFunctionType.SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN,
+                        contract_fn=stellar_xdr.InvokeContractArgs(
+                            contract_address=Address(
+                                "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
+                            ).to_xdr_sc_address(),
+                            function_name=stellar_xdr.SCSymbol("transfer".encode()),
+                            args=[
+                                scval.to_address(
+                                    "GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"
+                                ),  # from
+                                scval.to_address(
+                                    "GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"
+                                ),  # to
+                                scval.to_int128(103560 * 10**5),  # amount, 100 XLM
+                            ],
+                        ),
+                    ),
+                    sub_invocations=[
+                        stellar_xdr.SorobanAuthorizedInvocation(
+                            function=stellar_xdr.SorobanAuthorizedFunction(
+                                stellar_xdr.SorobanAuthorizedFunctionType.SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN,
+                                contract_fn=stellar_xdr.InvokeContractArgs(
+                                    contract_address=Address(
+                                        "CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75"
+                                    ).to_xdr_sc_address(),
+                                    function_name=stellar_xdr.SCSymbol(
+                                        "transfer".encode()
+                                    ),
+                                    args=[
+                                        scval.to_address(
+                                            "GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"
+                                        ),  # from
+                                        scval.to_address(
+                                            "GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"
+                                        ),  # to
+                                        scval.to_int128(
+                                            123456 * 10**5
+                                        ),  # amount, 100 XLM
+                                    ],
+                                ),
+                            ),
+                            sub_invocations=[],
+                        ),
+                        stellar_xdr.SorobanAuthorizedInvocation(
+                            function=stellar_xdr.SorobanAuthorizedFunction(
+                                stellar_xdr.SorobanAuthorizedFunctionType.SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN,
+                                contract_fn=stellar_xdr.InvokeContractArgs(
+                                    contract_address=Address(
+                                        "CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA"
+                                    ).to_xdr_sc_address(),
+                                    function_name=stellar_xdr.SCSymbol(
+                                        "demofunc".encode()
+                                    ),
+                                    args=[
+                                        scval.to_address(
+                                            "GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"
+                                        ),  # from
+                                        scval.to_address(
+                                            "GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"
+                                        ),  # to
+                                        scval.to_int128(
+                                            234234 * 10**5
+                                        ),  # amount, 100 XLM
+                                    ],
+                                ),
+                            ),
+                            sub_invocations=[],
+                        ),
+                    ],
+                ),
+            ),
+        )
+        return data
+
+    @staticmethod
+    def soroban_auth_with_address_network_testnet() -> stellar_xdr.HashIDPreimage:
+        # CAP-71 (Protocol 27) payload on testnet.
+        data = stellar_xdr.HashIDPreimage(
+            stellar_xdr.EnvelopeType.ENVELOPE_TYPE_SOROBAN_AUTHORIZATION_WITH_ADDRESS,
+            soroban_authorization_with_address=stellar_xdr.HashIDPreimageSorobanAuthorizationWithAddress(
+                network_id=stellar_xdr.Hash(
+                    Network(Network.TESTNET_NETWORK_PASSPHRASE).network_id()
+                ),
+                nonce=stellar_xdr.Int64(1232432453),
+                signature_expiration_ledger=stellar_xdr.Uint32(34654367),
+                address=Address(
+                    "GDUTHCF37UX32EMANXIL2WOOVEDZ47GHBTT3DYKU6EKM37SOIZXM2FN7"
+                ).to_xdr_sc_address(),
+                invocation=stellar_xdr.SorobanAuthorizedInvocation(
+                    function=stellar_xdr.SorobanAuthorizedFunction(
+                        stellar_xdr.SorobanAuthorizedFunctionType.SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN,
+                        contract_fn=stellar_xdr.InvokeContractArgs(
+                            contract_address=Address(
+                                "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
+                            ).to_xdr_sc_address(),
+                            function_name=stellar_xdr.SCSymbol("transfer".encode()),
+                            args=[
+                                scval.to_address(
+                                    "GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"
+                                ),  # from
+                                scval.to_address(
+                                    "GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"
+                                ),  # to
+                                scval.to_int128(103560 * 10**5),  # amount, 100 XLM
+                            ],
+                        ),
+                    ),
+                    sub_invocations=[],
+                ),
+            ),
+        )
+        return data
+
+    @staticmethod
+    def soroban_auth_with_address_contract_address() -> stellar_xdr.HashIDPreimage:
+        # CAP-71 (Protocol 27) payload whose authorizing address is a contract
+        # (custom account / smart wallet).
+        data = stellar_xdr.HashIDPreimage(
+            stellar_xdr.EnvelopeType.ENVELOPE_TYPE_SOROBAN_AUTHORIZATION_WITH_ADDRESS,
+            soroban_authorization_with_address=stellar_xdr.HashIDPreimageSorobanAuthorizationWithAddress(
+                network_id=stellar_xdr.Hash(
+                    Network(Network.PUBLIC_NETWORK_PASSPHRASE).network_id()
+                ),
+                nonce=stellar_xdr.Int64(1232432453),
+                signature_expiration_ledger=stellar_xdr.Uint32(34654367),
+                address=Address(
+                    "CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA"
+                ).to_xdr_sc_address(),
+                invocation=stellar_xdr.SorobanAuthorizedInvocation(
+                    function=stellar_xdr.SorobanAuthorizedFunction(
+                        stellar_xdr.SorobanAuthorizedFunctionType.SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN,
+                        contract_fn=stellar_xdr.InvokeContractArgs(
+                            contract_address=Address(
+                                "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
+                            ).to_xdr_sc_address(),
+                            function_name=stellar_xdr.SCSymbol("transfer".encode()),
+                            args=[
+                                scval.to_address(
+                                    "GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"
+                                ),  # from
+                                scval.to_address(
+                                    "GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"
+                                ),  # to
+                                scval.to_int128(103560 * 10**5),  # amount, 100 XLM
+                            ],
+                        ),
+                    ),
+                    sub_invocations=[],
                 ),
             ),
         )

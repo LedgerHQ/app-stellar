@@ -160,34 +160,73 @@ pub fn format_transaction_signature_payload(
 
 /// Formats a hash ID preimage for Soroban authorization into data entries
 ///
+/// Supports both `ENVELOPE_TYPE_SOROBAN_AUTHORIZATION` and the Protocol 27
+/// `ENVELOPE_TYPE_SOROBAN_AUTHORIZATION_WITH_ADDRESS` (CAP-71) payloads; the
+/// latter additionally shows the address the signature is bound to.
+///
 /// # Arguments
-/// * `auth` - The hash ID preimage Soroban authorization to format
+/// * `preimage` - The hash ID preimage to format
 /// * `config` - Configuration options for formatting
 ///
 /// # Returns
 /// A vector of data entries containing the authorization details
 pub fn format_hash_id_preimage_soroban_authorization(
-    auth: &HashIdPreimageSorobanAuthorization,
+    preimage: &HashIDPreimage,
+    config: &FormatConfig,
+) -> Vec<DataEntry> {
+    match preimage {
+        HashIDPreimage::SorobanAuthorization(auth) => format_soroban_authorization_preimage(
+            &auth.network_id,
+            auth.nonce,
+            auth.signature_expiration_ledger,
+            None,
+            &auth.invocation,
+            config,
+        ),
+        HashIDPreimage::SorobanAuthorizationWithAddress(auth) => {
+            format_soroban_authorization_preimage(
+                &auth.network_id,
+                auth.nonce,
+                auth.signature_expiration_ledger,
+                Some(&auth.address),
+                &auth.invocation,
+                config,
+            )
+        }
+    }
+}
+
+fn format_soroban_authorization_preimage(
+    network_id: &Hash,
+    nonce: i64,
+    signature_expiration_ledger: u32,
+    address: Option<&ScAddress>,
+    invocation: &SorobanAuthorizedInvocation,
     config: &FormatConfig,
 ) -> Vec<DataEntry> {
     let mut entries = Vec::new();
 
     // Network ID (only show if not public network)
-    add_network_info_if_needed(&mut entries, &auth.network_id);
+    add_network_info_if_needed(&mut entries, network_id);
 
     if config.show_sequence_and_nonce {
-        entries.push(DataEntry::new("Nonce", auth.nonce.to_string()));
+        entries.push(DataEntry::new("Nonce", nonce.to_string()));
     }
 
     entries.push(DataEntry::new(
         "Sig Exp Ledger",
-        auth.signature_expiration_ledger.to_string(),
+        signature_expiration_ledger.to_string(),
     ));
 
+    // The address the signature payload is bound to (CAP-71); for delegated
+    // authorization this is the account being authorized, which may differ
+    // from the key that signs on this device, so it must be reviewable.
+    if let Some(address) = address {
+        entries.push(DataEntry::new("Address", address.to_string()));
+    }
+
     entries.extend(format_soroban_authorized_invocation(
-        &auth.invocation,
-        None,
-        config,
+        invocation, None, config,
     ));
 
     entries
@@ -1427,7 +1466,9 @@ fn format_invoke_host_function_op(
                     ));
                     auth_index += 1;
                 }
-                SorobanCredentials::Address(_) => {
+                SorobanCredentials::Address(_)
+                | SorobanCredentials::AddressV2(_)
+                | SorobanCredentials::AddressWithDelegates(_) => {
                     // skip, these are not related to the current signatories,
                     // and we will not authorize these things.
                 }

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+- Support for Protocol 27 (CAP-71): transactions carrying the new `SOROBAN_CREDENTIALS_ADDRESS_V2` and `SOROBAN_CREDENTIALS_ADDRESS_WITH_DELEGATES` credential types are now parsed, and Soroban authorization payloads using `ENVELOPE_TYPE_SOROBAN_AUTHORIZATION_WITH_ADDRESS` can be signed, with the address the signature is bound to shown during review.
+
 ### Updated
 
 - Each Soroban authorization entry with source-account credentials is now displayed in full from its root invocation; previously the root was assumed to match the invoked host function and was never shown, hiding the actual authorized call when they differ.

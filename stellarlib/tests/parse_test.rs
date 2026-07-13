@@ -168,6 +168,8 @@ fn test_sign_tx() {
         "op_invoke_host_function_with_auth",
         "op_invoke_host_function_with_auth_and_no_args_and_no_source",
         "op_invoke_host_function_with_auth_and_no_args",
+        "op_invoke_host_function_with_auth_address_v2",
+        "op_invoke_host_function_with_auth_delegates",
         "op_invoke_host_function_without_auth_and_no_source",
         "op_invoke_host_function_approve_usdc",
         "op_invoke_host_function_scvals_case0",
@@ -230,6 +232,9 @@ fn test_sign_soroban_auth() {
         "soroban_auth_invoke_contract",
         "soroban_auth_invoke_contract_without_args",
         "soroban_auth_invoke_contract_with_complex_sub_invocation",
+        "soroban_auth_with_address_invoke_contract",
+        "soroban_auth_with_address_network_testnet",
+        "soroban_auth_with_address_contract_address",
     ];
 
     run_test_cases(

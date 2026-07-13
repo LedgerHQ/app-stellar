@@ -121,7 +121,6 @@ fn test_soroban_auth_format_case(case_name: &str) {
     let mut parser = Parser::new(&raw_data);
     let hash_id_preimage = HashIDPreimage::parse(&mut parser)
         .unwrap_or_else(|_| panic!("Failed to parse XDR for {}", case_name));
-    let HashIDPreimage::SorobanAuthorization(auth) = hash_id_preimage;
 
     let config = FormatConfig {
         show_sequence_and_nonce: true,
@@ -130,7 +129,7 @@ fn test_soroban_auth_format_case(case_name: &str) {
         show_tx_source_if_matches_signer: false,
     };
 
-    let entries = format_hash_id_preimage_soroban_authorization(&auth, &config);
+    let entries = format_hash_id_preimage_soroban_authorization(&hash_id_preimage, &config);
     let actual_output = format_entries_to_text(&entries);
     compare_with_diff(&actual_output, &expected_output, case_name);
 }
@@ -272,6 +271,8 @@ fn test_sign_tx_formats() {
         "op_invoke_host_function_with_auth_and_no_args",
         "op_invoke_host_function_with_auth_root_differs_from_host_function",
         "op_invoke_host_function_with_multiple_source_account_auth",
+        "op_invoke_host_function_with_auth_address_v2",
+        "op_invoke_host_function_with_auth_delegates",
         "op_invoke_host_function_without_auth_and_no_source",
         "op_invoke_host_function_approve_usdc",
         "op_invoke_host_function_scvals_case0",
@@ -334,6 +335,9 @@ fn test_sign_soroban_auth_formats() {
         "soroban_auth_invoke_contract",
         "soroban_auth_invoke_contract_without_args",
         "soroban_auth_invoke_contract_with_complex_sub_invocation",
+        "soroban_auth_with_address_invoke_contract",
+        "soroban_auth_with_address_network_testnet",
+        "soroban_auth_with_address_contract_address",
     ];
 
     run_test_cases(

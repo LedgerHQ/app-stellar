@@ -921,6 +921,7 @@ pub enum EnvelopeType {
     EnvelopeTypePoolRevokeOpId = 7,
     EnvelopeTypeContractId = 8,
     EnvelopeTypeSorobanAuthorization = 9,
+    EnvelopeTypeSorobanAuthorizationWithAddress = 10,
 }
 
 impl<'a> XdrParse<'a> for EnvelopeType {
@@ -937,6 +938,7 @@ impl<'a> XdrParse<'a> for EnvelopeType {
             7 => Ok(EnvelopeType::EnvelopeTypePoolRevokeOpId),
             8 => Ok(EnvelopeType::EnvelopeTypeContractId),
             9 => Ok(EnvelopeType::EnvelopeTypeSorobanAuthorization),
+            10 => Ok(EnvelopeType::EnvelopeTypeSorobanAuthorizationWithAddress),
             _ => Err(ParseError::InvalidType(value)),
         }
     }
@@ -2640,11 +2642,50 @@ impl<'a> XdrParse<'a> for SorobanAddressCredentials<'a> {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SorobanDelegateSignature<'a> {
+    pub address: ScAddress<'a>,
+    pub signature: ScVal<'a>,
+    pub nested_delegates: VecM<SorobanDelegateSignature<'a>>,
+}
+
+impl<'a> XdrParse<'a> for SorobanDelegateSignature<'a> {
+    fn parse(parser: &mut Parser<'a>) -> Result<Self, ParseError> {
+        let address = ScAddress::parse(parser)?;
+        let signature = ScVal::parse(parser)?;
+        let nested_delegates = VecM::parse(parser)?;
+        Ok(SorobanDelegateSignature {
+            address,
+            signature,
+            nested_delegates,
+        })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SorobanAddressCredentialsWithDelegates<'a> {
+    pub address_credentials: SorobanAddressCredentials<'a>,
+    pub delegates: VecM<SorobanDelegateSignature<'a>>,
+}
+
+impl<'a> XdrParse<'a> for SorobanAddressCredentialsWithDelegates<'a> {
+    fn parse(parser: &mut Parser<'a>) -> Result<Self, ParseError> {
+        let address_credentials = SorobanAddressCredentials::parse(parser)?;
+        let delegates = VecM::parse(parser)?;
+        Ok(SorobanAddressCredentialsWithDelegates {
+            address_credentials,
+            delegates,
+        })
+    }
+}
+
 #[repr(i32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SorobanCredentialsType {
     SourceAccount = 0,
     Address = 1,
+    AddressV2 = 2,
+    AddressWithDelegates = 3,
 }
 
 impl SorobanCredentialsType {
@@ -2652,6 +2693,8 @@ impl SorobanCredentialsType {
         match value {
             0 => Ok(SorobanCredentialsType::SourceAccount),
             1 => Ok(SorobanCredentialsType::Address),
+            2 => Ok(SorobanCredentialsType::AddressV2),
+            3 => Ok(SorobanCredentialsType::AddressWithDelegates),
             _ => Err(ParseError::InvalidType(value)),
         }
     }
@@ -2668,6 +2711,8 @@ impl<'a> XdrParse<'a> for SorobanCredentialsType {
 pub enum SorobanCredentials<'a> {
     SourceAccount,
     Address(SorobanAddressCredentials<'a>),
+    AddressV2(SorobanAddressCredentials<'a>),
+    AddressWithDelegates(SorobanAddressCredentialsWithDelegates<'a>),
 }
 
 impl<'a> XdrParse<'a> for SorobanCredentials<'a> {
@@ -2679,6 +2724,16 @@ impl<'a> XdrParse<'a> for SorobanCredentials<'a> {
             SorobanCredentialsType::Address => {
                 let address = SorobanAddressCredentials::parse(parser)?;
                 Ok(SorobanCredentials::Address(address))
+            }
+            SorobanCredentialsType::AddressV2 => {
+                let address_v2 = SorobanAddressCredentials::parse(parser)?;
+                Ok(SorobanCredentials::AddressV2(address_v2))
+            }
+            SorobanCredentialsType::AddressWithDelegates => {
+                let address_with_delegates = SorobanAddressCredentialsWithDelegates::parse(parser)?;
+                Ok(SorobanCredentials::AddressWithDelegates(
+                    address_with_delegates,
+                ))
             }
         }
     }
@@ -3276,6 +3331,7 @@ impl<'a> XdrParse<'a> for Operation<'a> {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum HashIDPreimage<'a> {
     SorobanAuthorization(HashIdPreimageSorobanAuthorization<'a>),
+    SorobanAuthorizationWithAddress(HashIdPreimageSorobanAuthorizationWithAddress<'a>),
 }
 
 impl<'a> XdrParse<'a> for HashIDPreimage<'a> {
@@ -3285,6 +3341,13 @@ impl<'a> XdrParse<'a> for HashIDPreimage<'a> {
             EnvelopeType::EnvelopeTypeSorobanAuthorization => {
                 let soroban_auth = HashIdPreimageSorobanAuthorization::parse(parser)?;
                 Ok(HashIDPreimage::SorobanAuthorization(soroban_auth))
+            }
+            EnvelopeType::EnvelopeTypeSorobanAuthorizationWithAddress => {
+                let soroban_auth_with_address =
+                    HashIdPreimageSorobanAuthorizationWithAddress::parse(parser)?;
+                Ok(HashIDPreimage::SorobanAuthorizationWithAddress(
+                    soroban_auth_with_address,
+                ))
             }
             _ => Err(ParseError::InvalidType(preimage_type as i32)),
         }
@@ -3309,6 +3372,32 @@ impl<'a> XdrParse<'a> for HashIdPreimageSorobanAuthorization<'a> {
             network_id,
             nonce,
             signature_expiration_ledger,
+            invocation,
+        })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HashIdPreimageSorobanAuthorizationWithAddress<'a> {
+    pub network_id: Hash<'a>,
+    pub nonce: i64,
+    pub signature_expiration_ledger: u32,
+    pub address: ScAddress<'a>,
+    pub invocation: SorobanAuthorizedInvocation<'a>,
+}
+
+impl<'a> XdrParse<'a> for HashIdPreimageSorobanAuthorizationWithAddress<'a> {
+    fn parse(parser: &mut Parser<'a>) -> Result<Self, ParseError> {
+        let network_id = Hash::parse(parser)?;
+        let nonce = parser.parse_int64()?;
+        let signature_expiration_ledger = parser.parse_uint32()?;
+        let address = ScAddress::parse(parser)?;
+        let invocation = SorobanAuthorizedInvocation::parse(parser)?;
+        Ok(HashIdPreimageSorobanAuthorizationWithAddress {
+            network_id,
+            nonce,
+            signature_expiration_ledger,
+            address,
             invocation,
         })
     }
