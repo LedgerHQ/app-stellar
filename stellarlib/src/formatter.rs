@@ -567,7 +567,7 @@ pub fn get_operation_intent(operation: &Operation, tx_source: &str) -> Option<St
 macro_rules! format_asset_with_issuer {
     ($asset:expr) => {{
         let code = $asset.asset_code.to_string();
-        let issuer = format_issuer(&$asset.issuer.to_string());
+        let issuer = $asset.issuer.to_string();
         format!("{}@{}", code, issuer)
     }};
 }
@@ -629,21 +629,6 @@ where
     T: ToString + Copy,
 {
     format!("{} {}", format_native_amount(amount), format_asset(asset))
-}
-
-/// Formats an issuer address by showing first 3 and last 4 characters
-///
-/// # Arguments
-/// * `issuer` - The full issuer address
-///
-/// # Returns
-/// A shortened version like "GABCDE..UVWXYZ"
-fn format_issuer(issuer: &str) -> String {
-    if issuer.len() > 12 {
-        format!("{}..{}", &issuer[..3], &issuer[issuer.len() - 4..])
-    } else {
-        issuer.to_string()
-    }
 }
 
 /// Generic helper function to format flags from a bitmask
