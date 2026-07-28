@@ -15,8 +15,6 @@ swap-utils = { path = "./swap-utils" }
 [profile.release]
 opt-level = 'z'
 lto = true
-codegen-units = 1
-panic = 'abort'
 
 [features]
 default = ["ledger_device_sdk/nano_nbgl"]
