@@ -9,6 +9,7 @@
 ### Updated
 
 - Each Soroban authorization entry with source-account credentials is now displayed in full from its root invocation; previously the root was assumed to match the invoked host function and was never shown, hiding the actual authorized call when they differ.
+- A source-account authorization entry whose root invocation is exactly the invoked contract call and that has no sub-invocations is no longer displayed, since it authorizes nothing beyond the call already shown. This removes a verbatim repeat from roughly two thirds of Soroban transactions.
 - Authorization entries are now labeled `Authorization` with a hierarchical index (e.g. `1`, `1-1`, `1-2-1`), replacing the `Nested Authorization` label.
 - The `Nested Authorization` setting has been renamed to `Authorization Details`; when disabled, authorization trees in transactions are not displayed at all.
 

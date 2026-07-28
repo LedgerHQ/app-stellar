@@ -1424,6 +1424,33 @@ fn format_soroban_authorized_invocation(
     entries
 }
 
+/// Returns `true` if a source-account authorization entry authorizes nothing
+/// beyond the host function that is already being displayed.
+///
+/// Such an entry is a verbatim repeat of the call shown above it, and repeated
+/// screens only train the user to click through them. Sub-invocations authorize
+/// additional downstream calls, so an entry that has any is never redundant.
+///
+/// The comparison is structural rather than over the rendered entries because
+/// formatting is lossy. Only `InvokeContract` is folded away; contract creation
+/// is rare enough that it is not worth handling.
+fn auth_duplicates_host_function(
+    host_function: &HostFunction,
+    invocation: &SorobanAuthorizedInvocation,
+) -> bool {
+    if !invocation.sub_invocations.is_empty() {
+        return false;
+    }
+
+    match (host_function, &invocation.function) {
+        (
+            HostFunction::InvokeContract(host_args),
+            SorobanAuthorizedFunction::ContractFn(auth_args),
+        ) => host_args == auth_args,
+        _ => false,
+    }
+}
+
 fn format_invoke_host_function_op(
     op: &InvokeHostFunctionOp,
     config: &FormatConfig,
@@ -1451,12 +1478,18 @@ fn format_invoke_host_function_op(
     // source-account credentials, and an entry's root invocation is independent of
     // the invoked host function (it may authorize a completely different call), so
     // each tree must be shown from its root. An operation can also carry several
-    // such entries; number them so the user can tell the trees apart.
+    // such entries; number them so the user can tell the trees apart. Entries that
+    // merely repeat the host function are dropped, so the numbering counts the
+    // trees actually displayed rather than the entries in the operation.
     if config.show_authorization_details {
         let mut auth_index = 1;
         for auth in op.auth.iter() {
             match &auth.credentials {
                 SorobanCredentials::SourceAccount => {
+                    if auth_duplicates_host_function(&op.host_function, &auth.root_invocation) {
+                        continue;
+                    }
+
                     let index = auth_index.to_string();
                     entries.push(DataEntry::new("Authorization", index.clone()));
                     entries.extend(format_soroban_authorized_invocation(

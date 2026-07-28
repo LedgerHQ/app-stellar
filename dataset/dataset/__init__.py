@@ -2665,6 +2665,79 @@ class SignTxTestCases:
         return tx
 
     @staticmethod
+    def op_invoke_host_function_with_auth_root_matches_host_function() -> (
+        TransactionEnvelope
+    ):
+        # The first entry authorizes exactly the invoked host function and has no
+        # sub-invocations, so it repeats the call verbatim and is not displayed.
+        # The second entry is unrelated and must still be displayed, numbered from
+        # 1 because the numbering counts displayed trees, not entries.
+        scvals = [
+            scval.to_uint128(1),
+            scval.to_int128(2),
+            scval.to_uint256(3),
+        ]
+        tx = (
+            common_builder(base_fee=500)
+            .append_invoke_contract_function_op(
+                contract_id="CA3B55CUVQCP4C4WXGYG5I2ED7AYE6AFNJB25SFXXVWGEVP3LUVTN7ND",
+                function_name="testfunc",
+                parameters=scvals,
+                source=kp0.public_key,
+                auth=[
+                    stellar_xdr.SorobanAuthorizationEntry(
+                        stellar_xdr.SorobanCredentials(
+                            stellar_xdr.SorobanCredentialsType.SOROBAN_CREDENTIALS_SOURCE_ACCOUNT
+                        ),
+                        stellar_xdr.SorobanAuthorizedInvocation(
+                            function=stellar_xdr.SorobanAuthorizedFunction(
+                                stellar_xdr.SorobanAuthorizedFunctionType.SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN,
+                                contract_fn=stellar_xdr.InvokeContractArgs(
+                                    contract_address=Address(
+                                        "CA3B55CUVQCP4C4WXGYG5I2ED7AYE6AFNJB25SFXXVWGEVP3LUVTN7ND"
+                                    ).to_xdr_sc_address(),
+                                    function_name=stellar_xdr.SCSymbol(
+                                        "testfunc".encode()
+                                    ),
+                                    args=scvals,
+                                ),
+                            ),
+                            sub_invocations=[],
+                        ),
+                    ),
+                    stellar_xdr.SorobanAuthorizationEntry(
+                        stellar_xdr.SorobanCredentials(
+                            stellar_xdr.SorobanCredentialsType.SOROBAN_CREDENTIALS_SOURCE_ACCOUNT
+                        ),
+                        stellar_xdr.SorobanAuthorizedInvocation(
+                            function=stellar_xdr.SorobanAuthorizedFunction(
+                                stellar_xdr.SorobanAuthorizedFunctionType.SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN,
+                                contract_fn=stellar_xdr.InvokeContractArgs(
+                                    contract_address=Address(
+                                        "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
+                                    ).to_xdr_sc_address(),
+                                    function_name=stellar_xdr.SCSymbol(
+                                        "unrelated_fn".encode()
+                                    ),
+                                    args=[
+                                        scval.to_address(
+                                            "GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"
+                                        ),
+                                        scval.to_int128(999 * 10**5),
+                                    ],
+                                ),
+                            ),
+                            sub_invocations=[],
+                        ),
+                    ),
+                ],
+            )
+            .add_time_bounds(0, 0)
+            .build()
+        )
+        return tx
+
+    @staticmethod
     def op_invoke_host_function_with_multiple_source_account_auth() -> (
         TransactionEnvelope
     ):
