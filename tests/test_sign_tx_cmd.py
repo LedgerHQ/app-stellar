@@ -51,12 +51,8 @@ def test_sign_tx(backend, scenario_navigator, navigator, device, test_name):
     assert response == expected_signature
 
 
-@pytest.mark.parametrize(
-    "test_name", get_testcases_names(SignTxTestCases, filter="cond_")
-)
-def test_sign_tx_with_precondition_enabled(
-    backend, scenario_navigator, device, navigator, test_name
-):
+@pytest.mark.parametrize("test_name", get_testcases_names(SignTxTestCases, filter="cond_"))
+def test_sign_tx_with_precondition_enabled(backend, scenario_navigator, device, navigator, test_name):
     keypair = Keypair.from_mnemonic_phrase(MNEMONIC, index=0)
     path = "m/44'/148'/0'"
     transaction = getattr(SignTxTestCases, test_name)()
@@ -117,9 +113,7 @@ def test_sign_tx_with_tx_source_enabled(backend, scenario_navigator, device, nav
     assert response == expected_signature
 
 
-def test_sign_tx_with_nested_authorization_disabled(
-    backend, scenario_navigator, device, navigator
-):
+def test_sign_tx_with_nested_authorization_disabled(backend, scenario_navigator, device, navigator):
     keypair = Keypair.from_mnemonic_phrase(MNEMONIC, index=0)
     path = "m/44'/148'/0'"
     transaction = SignTxTestCases.op_invoke_host_function_with_complex_sub_invocation()

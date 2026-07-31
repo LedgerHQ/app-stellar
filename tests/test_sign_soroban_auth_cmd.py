@@ -16,18 +16,14 @@ from utils import (
 from dataset import MNEMONIC, SignSorobanAuthorizationTestCases
 
 
-@pytest.mark.parametrize(
-    "test_name", get_testcases_names(SignSorobanAuthorizationTestCases)
-)
+@pytest.mark.parametrize("test_name", get_testcases_names(SignSorobanAuthorizationTestCases))
 def test_sign_soroban_auth(backend, scenario_navigator, navigator, device, test_name):
     keypair = Keypair.from_mnemonic_phrase(MNEMONIC, index=0)
     path = "m/44'/148'/0'"
     preimage = getattr(SignSorobanAuthorizationTestCases, test_name)()
     client = StellarCommandSender(backend)
     configure_device_settings(navigator, device, SettingsId.ENABLE_BLIND_SIGNING)
-    with client.sign_soroban_auth(
-        path=path, soroban_authorization=preimage.to_xdr_bytes()
-    ):
+    with client.sign_soroban_auth(path=path, soroban_authorization=preimage.to_xdr_bytes()):
         handle_risk_warning(navigator, device)
         scenario_navigator.review_approve(
             ROOT_SCREENSHOT_PATH,
@@ -40,9 +36,7 @@ def test_sign_soroban_auth(backend, scenario_navigator, navigator, device, test_
     assert response == expected_signature
 
 
-def test_sign_soroban_auth_with_nonce_enabled(
-    backend, scenario_navigator, device, navigator
-):
+def test_sign_soroban_auth_with_nonce_enabled(backend, scenario_navigator, device, navigator):
     keypair = Keypair.from_mnemonic_phrase(MNEMONIC, index=0)
     path = "m/44'/148'/0'"
     preimage = SignSorobanAuthorizationTestCases.soroban_auth_create_smart_contract()
@@ -52,9 +46,7 @@ def test_sign_soroban_auth_with_nonce_enabled(
         device,
         SettingsId.ENABLE_SEQUENCE_AND_NONCE | SettingsId.ENABLE_BLIND_SIGNING,
     )
-    with client.sign_soroban_auth(
-        path=path, soroban_authorization=preimage.to_xdr_bytes()
-    ):
+    with client.sign_soroban_auth(path=path, soroban_authorization=preimage.to_xdr_bytes()):
         handle_risk_warning(navigator, device)
         scenario_navigator.review_approve(
             ROOT_SCREENSHOT_PATH,
@@ -66,9 +58,7 @@ def test_sign_soroban_auth_with_nonce_enabled(
     assert response == expected_signature
 
 
-def test_sign_soroban_auth_with_nested_authorization_disabled(
-    backend, scenario_navigator, device, navigator
-):
+def test_sign_soroban_auth_with_nested_authorization_disabled(backend, scenario_navigator, device, navigator):
     keypair = Keypair.from_mnemonic_phrase(MNEMONIC, index=0)
     path = "m/44'/148'/0'"
     preimage = SignSorobanAuthorizationTestCases.soroban_auth_invoke_contract_with_complex_sub_invocation()
@@ -78,9 +68,7 @@ def test_sign_soroban_auth_with_nested_authorization_disabled(
         device,
         SettingsId.DISABLE_NESTED_AUTHORIZATION | SettingsId.ENABLE_BLIND_SIGNING,
     )
-    with client.sign_soroban_auth(
-        path=path, soroban_authorization=preimage.to_xdr_bytes()
-    ):
+    with client.sign_soroban_auth(path=path, soroban_authorization=preimage.to_xdr_bytes()):
         handle_risk_warning(navigator, device)
         scenario_navigator.review_approve(
             ROOT_SCREENSHOT_PATH,
@@ -98,9 +86,7 @@ def test_sign_soroban_auth_reject(backend, scenario_navigator, navigator, device
     client = StellarCommandSender(backend)
     configure_device_settings(navigator, device, SettingsId.ENABLE_BLIND_SIGNING)
     with pytest.raises(ExceptionRAPDU) as e:
-        with client.sign_soroban_auth(
-            path=path, soroban_authorization=preimage.to_xdr_bytes()
-        ):
+        with client.sign_soroban_auth(path=path, soroban_authorization=preimage.to_xdr_bytes()):
             handle_risk_warning(navigator, device)
             scenario_navigator.review_reject(ROOT_SCREENSHOT_PATH)
 

@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 from stellar_sdk import (
     Account,
     Address,
@@ -30,7 +31,7 @@ from stellar_sdk import xdr as stellar_xdr
 from stellar_sdk.operation.revoke_sponsorship import RevokeSponsorshipType
 from stellar_sdk.operation.revoke_sponsorship import Signer as RevokeSponsorshipSigner
 
-__all__ = ["SignTxTestCases", "SignSorobanAuthorizationTestCases", "MNEMONIC"]
+__all__ = ["MNEMONIC", "SignSorobanAuthorizationTestCases", "SignTxTestCases"]
 
 MNEMONIC = "other base behind follow wet put glad muscle unlock sell income october"
 # mnemonic: 'other base behind follow wet put glad muscle unlock sell income october'
@@ -49,6 +50,9 @@ kp1 = Keypair.from_mnemonic_phrase(MNEMONIC, index=1)
 kp2 = Keypair.from_mnemonic_phrase(MNEMONIC, index=2)
 
 
+_DEFAULT_TIME_BOUNDS = TimeBounds(min_time=0, max_time=1670818332)
+
+
 def common_builder(
     source: Keypair = kp0,
     source_muxed_id: int | None = None,
@@ -56,15 +60,13 @@ def common_builder(
     network: str = Network.PUBLIC_NETWORK_PASSPHRASE,
     base_fee: int = 100,
     memo: Memo | None = None,
-    time_bounds: TimeBounds | None = TimeBounds(min_time=0, max_time=1670818332),
+    time_bounds: TimeBounds | None = _DEFAULT_TIME_BOUNDS,
 ) -> TransactionBuilder:
     if source_muxed_id is None:
         account = Account(account=source.public_key, sequence=sequence)
     else:
         account = Account(
-            MuxedAccount(
-                account_id=source.public_key, account_muxed_id=source_muxed_id
-            ),
+            MuxedAccount(account_id=source.public_key, account_muxed_id=source_muxed_id),
             sequence,
         )
 
@@ -113,9 +115,7 @@ class SignTxTestCases:
             common_builder()
             .append_payment_op(
                 destination=kp1.public_key,
-                asset=Asset(
-                    "BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"
-                ),
+                asset=Asset("BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"),
                 amount="922337203685.4775807",
             )
             .build()
@@ -155,9 +155,7 @@ class SignTxTestCases:
             common_builder()
             .append_path_payment_strict_receive_op(
                 destination=kp1.public_key,
-                send_asset=Asset(
-                    "BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"
-                ),
+                send_asset=Asset("BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"),
                 send_max="1",
                 dest_asset=Asset.native(),
                 dest_amount="123456789.334",
@@ -181,9 +179,7 @@ class SignTxTestCases:
             common_builder()
             .append_path_payment_strict_receive_op(
                 destination=kp1.public_key,
-                send_asset=Asset(
-                    "BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"
-                ),
+                send_asset=Asset("BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"),
                 send_max="1",
                 dest_asset=Asset.native(),
                 dest_amount="123456789.334",
@@ -198,9 +194,7 @@ class SignTxTestCases:
             common_builder()
             .append_path_payment_strict_receive_op(
                 destination=kp0.public_key,
-                send_asset=Asset(
-                    "BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"
-                ),
+                send_asset=Asset("BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"),
                 send_max="1",
                 dest_asset=Asset.native(),
                 dest_amount="123456789.334",
@@ -224,9 +218,7 @@ class SignTxTestCases:
             common_builder()
             .append_path_payment_strict_receive_op(
                 destination=kp1.public_key,
-                send_asset=Asset(
-                    "BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"
-                ),
+                send_asset=Asset("BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"),
                 send_max="1",
                 dest_asset=Asset.native(),
                 dest_amount="123456789.334",
@@ -251,9 +243,7 @@ class SignTxTestCases:
             common_builder()
             .append_path_payment_strict_receive_op(
                 destination=MuxedAccount(kp1.public_key, 12345),
-                send_asset=Asset(
-                    "BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"
-                ),
+                send_asset=Asset("BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"),
                 send_max="1",
                 dest_asset=Asset.native(),
                 dest_amount="123456789.334",
@@ -273,16 +263,12 @@ class SignTxTestCases:
         )
 
     @staticmethod
-    def op_path_payment_strict_receive_swap_with_op_source_not_equals_destination() -> (
-        TransactionEnvelope
-    ):
+    def op_path_payment_strict_receive_swap_with_op_source_not_equals_destination() -> TransactionEnvelope:
         return (
             common_builder()
             .append_path_payment_strict_receive_op(
                 destination=kp1.public_key,
-                send_asset=Asset(
-                    "BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"
-                ),
+                send_asset=Asset("BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"),
                 send_max="1",
                 dest_asset=Asset.native(),
                 dest_amount="123456789.334",
@@ -308,9 +294,7 @@ class SignTxTestCases:
             common_builder()
             .append_path_payment_strict_receive_op(
                 destination=muxed_account,
-                send_asset=Asset(
-                    "BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"
-                ),
+                send_asset=Asset("BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"),
                 send_max="1",
                 dest_asset=Asset.native(),
                 dest_amount="123456789.334",
@@ -333,9 +317,7 @@ class SignTxTestCases:
         return (
             common_builder()
             .append_manage_sell_offer_op(
-                selling=Asset(
-                    "BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"
-                ),
+                selling=Asset("BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"),
                 buying=Asset.native(),
                 amount="988448423.2134",
                 price="0.0001234",
@@ -348,9 +330,7 @@ class SignTxTestCases:
         return (
             common_builder()
             .append_manage_sell_offer_op(
-                selling=Asset(
-                    "BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"
-                ),
+                selling=Asset("BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"),
                 buying=Asset.native(),
                 amount="988448423.2134",
                 price="0.0001234",
@@ -364,9 +344,7 @@ class SignTxTestCases:
         return (
             common_builder()
             .append_manage_sell_offer_op(
-                selling=Asset(
-                    "BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"
-                ),
+                selling=Asset("BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"),
                 buying=Asset.native(),
                 amount="0",
                 price="0.0001234",
@@ -380,9 +358,7 @@ class SignTxTestCases:
         return (
             common_builder()
             .append_create_passive_sell_offer_op(
-                selling=Asset(
-                    "BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"
-                ),
+                selling=Asset("BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"),
                 buying=Asset.native(),
                 amount="988448423.2134",
                 price="0.0001234",
@@ -439,9 +415,7 @@ class SignTxTestCases:
         return (
             common_builder()
             .append_set_options_op(
-                signer=Signer.sha256_hash(
-                    "XDNA2V62PVEFBZ74CDJKTUHLY4Y7PL5UAV2MAM4VWF6USFE3SH235FXL", 10
-                ),
+                signer=Signer.sha256_hash("XDNA2V62PVEFBZ74CDJKTUHLY4Y7PL5UAV2MAM4VWF6USFE3SH235FXL", 10),
             )
             .build()
         )
@@ -451,9 +425,7 @@ class SignTxTestCases:
         return (
             common_builder()
             .append_set_options_op(
-                signer=Signer.sha256_hash(
-                    "XDNA2V62PVEFBZ74CDJKTUHLY4Y7PL5UAV2MAM4VWF6USFE3SH235FXL", 0
-                ),
+                signer=Signer.sha256_hash("XDNA2V62PVEFBZ74CDJKTUHLY4Y7PL5UAV2MAM4VWF6USFE3SH235FXL", 0),
             )
             .build()
         )
@@ -463,9 +435,7 @@ class SignTxTestCases:
         return (
             common_builder()
             .append_set_options_op(
-                signer=Signer.pre_auth_tx(
-                    "TDNA2V62PVEFBZ74CDJKTUHLY4Y7PL5UAV2MAM4VWF6USFE3SH234BSS", 10
-                ),
+                signer=Signer.pre_auth_tx("TDNA2V62PVEFBZ74CDJKTUHLY4Y7PL5UAV2MAM4VWF6USFE3SH234BSS", 10),
             )
             .build()
         )
@@ -475,9 +445,7 @@ class SignTxTestCases:
         return (
             common_builder()
             .append_set_options_op(
-                signer=Signer.pre_auth_tx(
-                    "TDNA2V62PVEFBZ74CDJKTUHLY4Y7PL5UAV2MAM4VWF6USFE3SH234BSS", 0
-                ),
+                signer=Signer.pre_auth_tx("TDNA2V62PVEFBZ74CDJKTUHLY4Y7PL5UAV2MAM4VWF6USFE3SH234BSS", 0),
             )
             .build()
         )
@@ -523,9 +491,7 @@ class SignTxTestCases:
         return (
             common_builder()
             .append_change_trust_op(
-                asset=Asset(
-                    "USDC", "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN"
-                ),
+                asset=Asset("USDC", "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN"),
                 limit="922337203680.9999999",
             )
             .build()
@@ -536,9 +502,7 @@ class SignTxTestCases:
         return (
             common_builder()
             .append_change_trust_op(
-                asset=Asset(
-                    "USDC", "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN"
-                ),
+                asset=Asset("USDC", "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN"),
                 limit="922337203685.4775807",
             )
             .build()
@@ -549,24 +513,16 @@ class SignTxTestCases:
         return (
             common_builder()
             .append_change_trust_op(
-                asset=Asset(
-                    "USD", "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN"
-                ),
+                asset=Asset("USD", "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN"),
                 limit="0",
             )
             .build()
         )
 
     @staticmethod
-    def op_change_trust_with_liquidity_pool_asset_add_trust_line() -> (
-        TransactionEnvelope
-    ):
-        asset1 = Asset(
-            "BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"
-        )
-        asset2 = Asset(
-            "USDC", "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN"
-        )
+    def op_change_trust_with_liquidity_pool_asset_add_trust_line() -> TransactionEnvelope:
+        asset1 = Asset("BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH")
+        asset2 = Asset("USDC", "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN")
         asset = LiquidityPoolAsset(asset_a=asset1, asset_b=asset2, fee=30)
 
         return (
@@ -579,15 +535,9 @@ class SignTxTestCases:
         )
 
     @staticmethod
-    def op_change_trust_with_liquidity_pool_asset_remove_trust_line() -> (
-        TransactionEnvelope
-    ):
-        asset1 = Asset(
-            "BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"
-        )
-        asset2 = Asset(
-            "USDC", "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN"
-        )
+    def op_change_trust_with_liquidity_pool_asset_remove_trust_line() -> TransactionEnvelope:
+        asset1 = Asset("BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH")
+        asset2 = Asset("USDC", "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN")
         asset = LiquidityPoolAsset(asset_a=asset1, asset_b=asset2, fee=30)
 
         return (
@@ -677,7 +627,7 @@ class SignTxTestCases:
             common_builder()
             .append_manage_data_op(
                 data_name="Ledger Stellar App abcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcda",
-                data_value="这是一条测试消息 hey".encode("utf-8"),
+                data_value="这是一条测试消息 hey".encode(),
             )
             .build()
         )
@@ -708,9 +658,7 @@ class SignTxTestCases:
         return (
             common_builder()
             .append_manage_buy_offer_op(
-                selling=Asset(
-                    "BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"
-                ),
+                selling=Asset("BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"),
                 buying=Asset.native(),
                 amount="988448111.2222",
                 price="0.0001011",
@@ -723,9 +671,7 @@ class SignTxTestCases:
         return (
             common_builder()
             .append_manage_buy_offer_op(
-                selling=Asset(
-                    "BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"
-                ),
+                selling=Asset("BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"),
                 buying=Asset.native(),
                 amount="988448111.2222",
                 price="0.0001011",
@@ -739,9 +685,7 @@ class SignTxTestCases:
         return (
             common_builder()
             .append_manage_buy_offer_op(
-                selling=Asset(
-                    "BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"
-                ),
+                selling=Asset("BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"),
                 buying=Asset.native(),
                 amount="0",
                 price="0.0001011",
@@ -756,9 +700,7 @@ class SignTxTestCases:
             common_builder()
             .append_path_payment_strict_send_op(
                 destination=kp1.public_key,
-                send_asset=Asset(
-                    "BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"
-                ),
+                send_asset=Asset("BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"),
                 send_amount="0.985",
                 dest_asset=Asset.native(),
                 dest_min="123456789.987",
@@ -782,9 +724,7 @@ class SignTxTestCases:
             common_builder()
             .append_path_payment_strict_send_op(
                 destination=kp1.public_key,
-                send_asset=Asset(
-                    "BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"
-                ),
+                send_asset=Asset("BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"),
                 send_amount="0.985",
                 dest_asset=Asset.native(),
                 dest_min="123456789.987",
@@ -799,9 +739,7 @@ class SignTxTestCases:
             common_builder()
             .append_path_payment_strict_send_op(
                 destination=kp0.public_key,
-                send_asset=Asset(
-                    "BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"
-                ),
+                send_asset=Asset("BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"),
                 send_amount="0.985",
                 dest_asset=Asset.native(),
                 dest_min="123456789.987",
@@ -825,9 +763,7 @@ class SignTxTestCases:
             common_builder()
             .append_path_payment_strict_send_op(
                 destination=kp1.public_key,
-                send_asset=Asset(
-                    "BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"
-                ),
+                send_asset=Asset("BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"),
                 send_amount="0.985",
                 dest_asset=Asset.native(),
                 dest_min="123456789.987",
@@ -852,9 +788,7 @@ class SignTxTestCases:
             common_builder()
             .append_path_payment_strict_send_op(
                 destination=MuxedAccount(kp1.public_key, 12345),
-                send_asset=Asset(
-                    "BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"
-                ),
+                send_asset=Asset("BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"),
                 send_amount="0.985",
                 dest_asset=Asset.native(),
                 dest_min="123456789.987",
@@ -874,16 +808,12 @@ class SignTxTestCases:
         )
 
     @staticmethod
-    def op_path_payment_strict_send_swap_with_op_source_not_equals_destination() -> (
-        TransactionEnvelope
-    ):
+    def op_path_payment_strict_send_swap_with_op_source_not_equals_destination() -> TransactionEnvelope:
         return (
             common_builder()
             .append_path_payment_strict_send_op(
                 destination=kp1.public_key,
-                send_asset=Asset(
-                    "BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"
-                ),
+                send_asset=Asset("BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"),
                 send_amount="0.985",
                 dest_asset=Asset.native(),
                 dest_min="123456789.987",
@@ -909,9 +839,7 @@ class SignTxTestCases:
             common_builder()
             .append_path_payment_strict_send_op(
                 destination=muxed_account,
-                send_asset=Asset(
-                    "BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"
-                ),
+                send_asset=Asset("BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"),
                 send_amount="0.985",
                 dest_asset=Asset.native(),
                 dest_min="123456789.987",
@@ -943,9 +871,7 @@ class SignTxTestCases:
                         ClaimPredicate.predicate_before_absolute_time(1629344902),
                         ClaimPredicate.predicate_before_absolute_time(1629300000),
                     ),
-                    ClaimPredicate.predicate_not(
-                        ClaimPredicate.predicate_before_relative_time(180)
-                    ),
+                    ClaimPredicate.predicate_not(ClaimPredicate.predicate_before_relative_time(180)),
                 ),
             ),
         ]
@@ -953,9 +879,7 @@ class SignTxTestCases:
         return (
             common_builder()
             .append_create_claimable_balance_op(
-                asset=Asset(
-                    "USDC", "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN"
-                ),
+                asset=Asset("USDC", "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN"),
                 amount="100",
                 claimants=claimants,
             )
@@ -1002,27 +926,17 @@ class SignTxTestCases:
             common_builder()
             .append_revoke_trustline_sponsorship_op(
                 account_id=kp1.public_key,
-                asset=Asset(
-                    "BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"
-                ),
+                asset=Asset("BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"),
             )
             .build()
         )
 
     @staticmethod
-    def op_revoke_sponsorship_trust_line_with_liquidity_pool_id() -> (
-        TransactionEnvelope
-    ):
-        asset1 = Asset(
-            "BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"
-        )
-        asset2 = Asset(
-            "USDC", "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN"
-        )
+    def op_revoke_sponsorship_trust_line_with_liquidity_pool_id() -> TransactionEnvelope:
+        asset1 = Asset("BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH")
+        asset2 = Asset("USDC", "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN")
 
-        liquidity_pool_asset = LiquidityPoolAsset(
-            asset_a=asset1, asset_b=asset2, fee=30
-        )
+        liquidity_pool_asset = LiquidityPoolAsset(asset_a=asset1, asset_b=asset2, fee=30)
         pool_id = liquidity_pool_asset.liquidity_pool_id
 
         return (
@@ -1141,9 +1055,7 @@ class SignTxTestCases:
         return (
             common_builder()
             .append_clawback_op(
-                asset=Asset(
-                    "USDC", "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN"
-                ),
+                asset=Asset("USDC", "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN"),
                 from_=kp1.public_key,
                 amount="1000.85",
             )
@@ -1156,9 +1068,7 @@ class SignTxTestCases:
         return (
             common_builder()
             .append_clawback_op(
-                asset=Asset(
-                    "USDC", "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN"
-                ),
+                asset=Asset("USDC", "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN"),
                 from_=muxed_account,
                 amount="1000.85",
             )
@@ -1181,9 +1091,7 @@ class SignTxTestCases:
             common_builder()
             .append_set_trust_line_flags_op(
                 trustor=kp1.public_key,
-                asset=Asset(
-                    "USDC", "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN"
-                ),
+                asset=Asset("USDC", "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN"),
                 clear_flags=TrustLineFlags.AUTHORIZED_FLAG
                 | TrustLineFlags.AUTHORIZED_TO_MAINTAIN_LIABILITIES_FLAG
                 | TrustLineFlags.TRUSTLINE_CLAWBACK_ENABLED_FLAG,
@@ -1197,64 +1105,45 @@ class SignTxTestCases:
             common_builder()
             .append_set_trust_line_flags_op(
                 trustor=kp1.public_key,
-                asset=Asset(
-                    "USDC", "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN"
-                ),
+                asset=Asset("USDC", "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN"),
                 clear_flags=TrustLineFlags.TRUSTLINE_CLAWBACK_ENABLED_FLAG,
-                set_flags=TrustLineFlags.AUTHORIZED_FLAG
-                | TrustLineFlags.AUTHORIZED_TO_MAINTAIN_LIABILITIES_FLAG,
+                set_flags=TrustLineFlags.AUTHORIZED_FLAG | TrustLineFlags.AUTHORIZED_TO_MAINTAIN_LIABILITIES_FLAG,
             )
             .build()
         )
 
     @staticmethod
-    def op_set_trust_line_flags_authorized_to_maintain_liabilities() -> (
-        TransactionEnvelope
-    ):
+    def op_set_trust_line_flags_authorized_to_maintain_liabilities() -> TransactionEnvelope:
         return (
             common_builder()
             .append_set_trust_line_flags_op(
                 trustor=kp1.public_key,
-                asset=Asset(
-                    "USDC", "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN"
-                ),
-                clear_flags=TrustLineFlags.AUTHORIZED_FLAG
-                | TrustLineFlags.TRUSTLINE_CLAWBACK_ENABLED_FLAG,
+                asset=Asset("USDC", "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN"),
+                clear_flags=TrustLineFlags.AUTHORIZED_FLAG | TrustLineFlags.TRUSTLINE_CLAWBACK_ENABLED_FLAG,
                 set_flags=TrustLineFlags.AUTHORIZED_TO_MAINTAIN_LIABILITIES_FLAG,
             )
             .build()
         )
 
     @staticmethod
-    def op_set_trust_line_flags_authorized_and_clawback_enabled() -> (
-        TransactionEnvelope
-    ):
+    def op_set_trust_line_flags_authorized_and_clawback_enabled() -> TransactionEnvelope:
         return (
             common_builder()
             .append_set_trust_line_flags_op(
                 trustor=kp1.public_key,
-                asset=Asset(
-                    "USDC", "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN"
-                ),
+                asset=Asset("USDC", "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN"),
                 clear_flags=TrustLineFlags.AUTHORIZED_TO_MAINTAIN_LIABILITIES_FLAG,
-                set_flags=TrustLineFlags.AUTHORIZED_FLAG
-                | TrustLineFlags.TRUSTLINE_CLAWBACK_ENABLED_FLAG,
+                set_flags=TrustLineFlags.AUTHORIZED_FLAG | TrustLineFlags.TRUSTLINE_CLAWBACK_ENABLED_FLAG,
             )
             .build()
         )
 
     @staticmethod
     def op_liquidity_pool_deposit() -> TransactionEnvelope:
-        asset1 = Asset(
-            "BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"
-        )
-        asset2 = Asset(
-            "USDC", "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN"
-        )
+        asset1 = Asset("BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH")
+        asset2 = Asset("USDC", "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN")
 
-        liquidity_pool_asset = LiquidityPoolAsset(
-            asset_a=asset1, asset_b=asset2, fee=30
-        )
+        liquidity_pool_asset = LiquidityPoolAsset(asset_a=asset1, asset_b=asset2, fee=30)
         pool_id = liquidity_pool_asset.liquidity_pool_id
 
         return (
@@ -1271,16 +1160,10 @@ class SignTxTestCases:
 
     @staticmethod
     def op_liquidity_pool_withdraw() -> TransactionEnvelope:
-        asset1 = Asset(
-            "BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"
-        )
-        asset2 = Asset(
-            "USDC", "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN"
-        )
+        asset1 = Asset("BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH")
+        asset2 = Asset("USDC", "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN")
 
-        liquidity_pool_asset = LiquidityPoolAsset(
-            asset_a=asset1, asset_b=asset2, fee=30
-        )
+        liquidity_pool_asset = LiquidityPoolAsset(asset_a=asset1, asset_b=asset2, fee=30)
         pool_id = liquidity_pool_asset.liquidity_pool_id
 
         return (
@@ -1431,9 +1314,7 @@ class SignTxTestCases:
                 parameters=scvals,
                 auth=[
                     stellar_xdr.SorobanAuthorizationEntry(
-                        stellar_xdr.SorobanCredentials(
-                            stellar_xdr.SorobanCredentialsType.SOROBAN_CREDENTIALS_SOURCE_ACCOUNT
-                        ),
+                        stellar_xdr.SorobanCredentials(stellar_xdr.SorobanCredentialsType.SOROBAN_CREDENTIALS_SOURCE_ACCOUNT),
                         stellar_xdr.SorobanAuthorizedInvocation(
                             function=stellar_xdr.SorobanAuthorizedFunction(
                                 stellar_xdr.SorobanAuthorizedFunctionType.SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN,
@@ -1441,9 +1322,7 @@ class SignTxTestCases:
                                     contract_address=Address(
                                         "CA3B55CUVQCP4C4WXGYG5I2ED7AYE6AFNJB25SFXXVWGEVP3LUVTN7ND"
                                     ).to_xdr_sc_address(),
-                                    function_name=stellar_xdr.SCSymbol(
-                                        "rootfunc".encode()
-                                    ),
+                                    function_name=stellar_xdr.SCSymbol(b"rootfunc"),
                                     args=scvals,
                                 ),
                             ),
@@ -1455,9 +1334,7 @@ class SignTxTestCases:
                                             contract_address=Address(
                                                 "CA3B55CUVQCP4C4WXGYG5I2ED7AYE6AFNJB25SFXXVWGEVP3LUVTN7ND"
                                             ).to_xdr_sc_address(),
-                                            function_name=stellar_xdr.SCSymbol(
-                                                "func0".encode()
-                                            ),
+                                            function_name=stellar_xdr.SCSymbol(b"func0"),
                                             args=[
                                                 scval.to_int128(103560 * 10**5),
                                             ],
@@ -1471,9 +1348,7 @@ class SignTxTestCases:
                                                     contract_address=Address(
                                                         "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
                                                     ).to_xdr_sc_address(),
-                                                    function_name=stellar_xdr.SCSymbol(
-                                                        "func1".encode()
-                                                    ),
+                                                    function_name=stellar_xdr.SCSymbol(b"func1"),
                                                     args=[],
                                                 ),
                                             ),
@@ -1486,9 +1361,7 @@ class SignTxTestCases:
                                                     contract_address=Address(
                                                         "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
                                                     ).to_xdr_sc_address(),
-                                                    function_name=stellar_xdr.SCSymbol(
-                                                        "func2".encode()
-                                                    ),
+                                                    function_name=stellar_xdr.SCSymbol(b"func2"),
                                                     args=[],
                                                 ),
                                             ),
@@ -1542,9 +1415,7 @@ class SignTxTestCases:
                                                                         scval.to_address(
                                                                             "GDAT5HWTGIU4TSSZ4752OUC4SABDLTLZFRPZUJ3D6LKBNEPA7V2CIG54"
                                                                         ),
-                                                                        scval.to_int128(
-                                                                            12000000
-                                                                        ),
+                                                                        scval.to_int128(12000000),
                                                                     ],
                                                                 ),
                                                             ),
@@ -1556,16 +1427,12 @@ class SignTxTestCases:
                                                                             Address(
                                                                                 "GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"
                                                                             ).to_xdr_sc_address(),
-                                                                            stellar_xdr.SCSymbol(
-                                                                                "__constructor".encode()
-                                                                            ),
+                                                                            stellar_xdr.SCSymbol(b"__constructor"),
                                                                             [
                                                                                 scval.to_address(
                                                                                     "GDAT5HWTGIU4TSSZ4752OUC4SABDLTLZFRPZUJ3D6LKBNEPA7V2CIG54"
                                                                                 ),
-                                                                                scval.to_int128(
-                                                                                    12000000
-                                                                                ),
+                                                                                scval.to_int128(12000000),
                                                                             ],
                                                                         ),
                                                                     ),
@@ -1580,9 +1447,7 @@ class SignTxTestCases:
                                                                     contract_address=Address(
                                                                         "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
                                                                     ).to_xdr_sc_address(),
-                                                                    function_name=stellar_xdr.SCSymbol(
-                                                                        "func4".encode()
-                                                                    ),
+                                                                    function_name=stellar_xdr.SCSymbol(b"func4"),
                                                                     args=[],
                                                                 ),
                                                             ),
@@ -1595,12 +1460,8 @@ class SignTxTestCases:
                                                                     contract_address=Address(
                                                                         "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
                                                                     ).to_xdr_sc_address(),
-                                                                    function_name=stellar_xdr.SCSymbol(
-                                                                        "func5".encode()
-                                                                    ),
-                                                                    args=[
-                                                                        scval.to_void()
-                                                                    ],
+                                                                    function_name=stellar_xdr.SCSymbol(b"func5"),
+                                                                    args=[scval.to_void()],
                                                                 ),
                                                             ),
                                                             sub_invocations=[
@@ -1611,12 +1472,8 @@ class SignTxTestCases:
                                                                             contract_address=Address(
                                                                                 "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
                                                                             ).to_xdr_sc_address(),
-                                                                            function_name=stellar_xdr.SCSymbol(
-                                                                                "func6".encode()
-                                                                            ),
-                                                                            args=[
-                                                                                scval.to_void()
-                                                                            ],
+                                                                            function_name=stellar_xdr.SCSymbol(b"func6"),
+                                                                            args=[scval.to_void()],
                                                                         ),
                                                                     ),
                                                                     sub_invocations=[
@@ -1627,12 +1484,8 @@ class SignTxTestCases:
                                                                                     contract_address=Address(
                                                                                         "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
                                                                                     ).to_xdr_sc_address(),
-                                                                                    function_name=stellar_xdr.SCSymbol(
-                                                                                        "func7".encode()
-                                                                                    ),
-                                                                                    args=[
-                                                                                        scval.to_void()
-                                                                                    ],
+                                                                                    function_name=stellar_xdr.SCSymbol(b"func7"),
+                                                                                    args=[scval.to_void()],
                                                                                 ),
                                                                             ),
                                                                             sub_invocations=[],
@@ -1644,12 +1497,8 @@ class SignTxTestCases:
                                                                                     contract_address=Address(
                                                                                         "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
                                                                                     ).to_xdr_sc_address(),
-                                                                                    function_name=stellar_xdr.SCSymbol(
-                                                                                        "func8".encode()
-                                                                                    ),
-                                                                                    args=[
-                                                                                        scval.to_void()
-                                                                                    ],
+                                                                                    function_name=stellar_xdr.SCSymbol(b"func8"),
+                                                                                    args=[scval.to_void()],
                                                                                 ),
                                                                             ),
                                                                             sub_invocations=[],
@@ -1984,9 +1833,7 @@ class SignTxTestCases:
                         stellar_xdr.SorobanCredentials(
                             stellar_xdr.SorobanCredentialsType.SOROBAN_CREDENTIALS_ADDRESS,
                             stellar_xdr.SorobanAddressCredentials(
-                                Address(
-                                    "GDUTHCF37UX32EMANXIL2WOOVEDZ47GHBTT3DYKU6EKM37SOIZXM2FN7"
-                                ).to_xdr_sc_address(),
+                                Address("GDUTHCF37UX32EMANXIL2WOOVEDZ47GHBTT3DYKU6EKM37SOIZXM2FN7").to_xdr_sc_address(),
                                 stellar_xdr.Int64(111324345),
                                 stellar_xdr.Uint32(34543543),
                                 scval.to_void(),
@@ -1999,16 +1846,10 @@ class SignTxTestCases:
                                     contract_address=Address(
                                         "CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75"
                                     ).to_xdr_sc_address(),
-                                    function_name=stellar_xdr.SCSymbol(
-                                        "transfer".encode()
-                                    ),
+                                    function_name=stellar_xdr.SCSymbol(b"transfer"),
                                     args=[
-                                        scval.to_address(
-                                            "GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"
-                                        ),  # from
-                                        scval.to_address(
-                                            "GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"
-                                        ),  # to
+                                        scval.to_address("GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"),  # from
+                                        scval.to_address("GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"),  # to
                                         scval.to_int128(399 * 10**5),
                                     ],
                                 ),
@@ -2017,9 +1858,7 @@ class SignTxTestCases:
                         ),
                     ),
                     stellar_xdr.SorobanAuthorizationEntry(
-                        stellar_xdr.SorobanCredentials(
-                            stellar_xdr.SorobanCredentialsType.SOROBAN_CREDENTIALS_SOURCE_ACCOUNT
-                        ),
+                        stellar_xdr.SorobanCredentials(stellar_xdr.SorobanCredentialsType.SOROBAN_CREDENTIALS_SOURCE_ACCOUNT),
                         stellar_xdr.SorobanAuthorizedInvocation(
                             function=stellar_xdr.SorobanAuthorizedFunction(
                                 stellar_xdr.SorobanAuthorizedFunctionType.SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN,
@@ -2027,9 +1866,7 @@ class SignTxTestCases:
                                     contract_address=Address(
                                         "CA3B55CUVQCP4C4WXGYG5I2ED7AYE6AFNJB25SFXXVWGEVP3LUVTN7ND"
                                     ).to_xdr_sc_address(),
-                                    function_name=stellar_xdr.SCSymbol(
-                                        "testfunc".encode()
-                                    ),
+                                    function_name=stellar_xdr.SCSymbol(b"testfunc"),
                                     args=scvals,
                                 ),
                             ),
@@ -2041,9 +1878,7 @@ class SignTxTestCases:
                                             contract_address=Address(
                                                 "CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75"
                                             ).to_xdr_sc_address(),
-                                            function_name=stellar_xdr.SCSymbol(
-                                                "transfer".encode()
-                                            ),
+                                            function_name=stellar_xdr.SCSymbol(b"transfer"),
                                             args=[
                                                 scval.to_address(
                                                     "GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"
@@ -2064,9 +1899,7 @@ class SignTxTestCases:
                                             contract_address=Address(
                                                 "CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA"
                                             ).to_xdr_sc_address(),
-                                            function_name=stellar_xdr.SCSymbol(
-                                                "approve".encode()
-                                            ),
+                                            function_name=stellar_xdr.SCSymbol(b"approve"),
                                             args=[
                                                 scval.to_address(
                                                     "GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"
@@ -2092,9 +1925,7 @@ class SignTxTestCases:
         return tx
 
     @staticmethod
-    def op_invoke_host_function_with_auth_and_no_args_and_no_source() -> (
-        TransactionEnvelope
-    ):
+    def op_invoke_host_function_with_auth_and_no_args_and_no_source() -> TransactionEnvelope:
         tx = (
             common_builder(base_fee=500)
             .append_invoke_contract_function_op(
@@ -2106,9 +1937,7 @@ class SignTxTestCases:
                         stellar_xdr.SorobanCredentials(
                             stellar_xdr.SorobanCredentialsType.SOROBAN_CREDENTIALS_ADDRESS,
                             stellar_xdr.SorobanAddressCredentials(
-                                Address(
-                                    "GDUTHCF37UX32EMANXIL2WOOVEDZ47GHBTT3DYKU6EKM37SOIZXM2FN7"
-                                ).to_xdr_sc_address(),
+                                Address("GDUTHCF37UX32EMANXIL2WOOVEDZ47GHBTT3DYKU6EKM37SOIZXM2FN7").to_xdr_sc_address(),
                                 stellar_xdr.Int64(111324345),
                                 stellar_xdr.Uint32(34543543),
                                 scval.to_void(),
@@ -2121,16 +1950,10 @@ class SignTxTestCases:
                                     contract_address=Address(
                                         "CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75"
                                     ).to_xdr_sc_address(),
-                                    function_name=stellar_xdr.SCSymbol(
-                                        "transfer".encode()
-                                    ),
+                                    function_name=stellar_xdr.SCSymbol(b"transfer"),
                                     args=[
-                                        scval.to_address(
-                                            "GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"
-                                        ),  # from
-                                        scval.to_address(
-                                            "GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"
-                                        ),  # to
+                                        scval.to_address("GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"),  # from
+                                        scval.to_address("GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"),  # to
                                         scval.to_int128(399 * 10**5),
                                     ],
                                 ),
@@ -2139,9 +1962,7 @@ class SignTxTestCases:
                         ),
                     ),
                     stellar_xdr.SorobanAuthorizationEntry(
-                        stellar_xdr.SorobanCredentials(
-                            stellar_xdr.SorobanCredentialsType.SOROBAN_CREDENTIALS_SOURCE_ACCOUNT
-                        ),
+                        stellar_xdr.SorobanCredentials(stellar_xdr.SorobanCredentialsType.SOROBAN_CREDENTIALS_SOURCE_ACCOUNT),
                         stellar_xdr.SorobanAuthorizedInvocation(
                             function=stellar_xdr.SorobanAuthorizedFunction(
                                 stellar_xdr.SorobanAuthorizedFunctionType.SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN,
@@ -2149,9 +1970,7 @@ class SignTxTestCases:
                                     contract_address=Address(
                                         "CA3B55CUVQCP4C4WXGYG5I2ED7AYE6AFNJB25SFXXVWGEVP3LUVTN7ND"
                                     ).to_xdr_sc_address(),
-                                    function_name=stellar_xdr.SCSymbol(
-                                        "testfunc".encode()
-                                    ),
+                                    function_name=stellar_xdr.SCSymbol(b"testfunc"),
                                     args=[],
                                 ),
                             ),
@@ -2163,9 +1982,7 @@ class SignTxTestCases:
                                             contract_address=Address(
                                                 "CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75"
                                             ).to_xdr_sc_address(),
-                                            function_name=stellar_xdr.SCSymbol(
-                                                "test".encode()
-                                            ),
+                                            function_name=stellar_xdr.SCSymbol(b"test"),
                                             args=[],
                                         ),
                                     ),
@@ -2178,9 +1995,7 @@ class SignTxTestCases:
                                             contract_address=Address(
                                                 "CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA"
                                             ).to_xdr_sc_address(),
-                                            function_name=stellar_xdr.SCSymbol(
-                                                "approve".encode()
-                                            ),
+                                            function_name=stellar_xdr.SCSymbol(b"approve"),
                                             args=[
                                                 scval.to_address(
                                                     "GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"
@@ -2219,9 +2034,7 @@ class SignTxTestCases:
                         stellar_xdr.SorobanCredentials(
                             stellar_xdr.SorobanCredentialsType.SOROBAN_CREDENTIALS_ADDRESS,
                             stellar_xdr.SorobanAddressCredentials(
-                                Address(
-                                    "GDUTHCF37UX32EMANXIL2WOOVEDZ47GHBTT3DYKU6EKM37SOIZXM2FN7"
-                                ).to_xdr_sc_address(),
+                                Address("GDUTHCF37UX32EMANXIL2WOOVEDZ47GHBTT3DYKU6EKM37SOIZXM2FN7").to_xdr_sc_address(),
                                 stellar_xdr.Int64(111324345),
                                 stellar_xdr.Uint32(34543543),
                                 scval.to_void(),
@@ -2234,16 +2047,10 @@ class SignTxTestCases:
                                     contract_address=Address(
                                         "CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75"
                                     ).to_xdr_sc_address(),
-                                    function_name=stellar_xdr.SCSymbol(
-                                        "transfer".encode()
-                                    ),
+                                    function_name=stellar_xdr.SCSymbol(b"transfer"),
                                     args=[
-                                        scval.to_address(
-                                            "GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"
-                                        ),  # from
-                                        scval.to_address(
-                                            "GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"
-                                        ),  # to
+                                        scval.to_address("GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"),  # from
+                                        scval.to_address("GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"),  # to
                                         scval.to_int128(399 * 10**5),
                                     ],
                                 ),
@@ -2252,9 +2059,7 @@ class SignTxTestCases:
                         ),
                     ),
                     stellar_xdr.SorobanAuthorizationEntry(
-                        stellar_xdr.SorobanCredentials(
-                            stellar_xdr.SorobanCredentialsType.SOROBAN_CREDENTIALS_SOURCE_ACCOUNT
-                        ),
+                        stellar_xdr.SorobanCredentials(stellar_xdr.SorobanCredentialsType.SOROBAN_CREDENTIALS_SOURCE_ACCOUNT),
                         stellar_xdr.SorobanAuthorizedInvocation(
                             function=stellar_xdr.SorobanAuthorizedFunction(
                                 stellar_xdr.SorobanAuthorizedFunctionType.SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN,
@@ -2262,9 +2067,7 @@ class SignTxTestCases:
                                     contract_address=Address(
                                         "CA3B55CUVQCP4C4WXGYG5I2ED7AYE6AFNJB25SFXXVWGEVP3LUVTN7ND"
                                     ).to_xdr_sc_address(),
-                                    function_name=stellar_xdr.SCSymbol(
-                                        "testfunc".encode()
-                                    ),
+                                    function_name=stellar_xdr.SCSymbol(b"testfunc"),
                                     args=[],
                                 ),
                             ),
@@ -2276,9 +2079,7 @@ class SignTxTestCases:
                                             contract_address=Address(
                                                 "CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75"
                                             ).to_xdr_sc_address(),
-                                            function_name=stellar_xdr.SCSymbol(
-                                                "test".encode()
-                                            ),
+                                            function_name=stellar_xdr.SCSymbol(b"test"),
                                             args=[],
                                         ),
                                     ),
@@ -2291,9 +2092,7 @@ class SignTxTestCases:
                                             contract_address=Address(
                                                 "CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA"
                                             ).to_xdr_sc_address(),
-                                            function_name=stellar_xdr.SCSymbol(
-                                                "approve".encode()
-                                            ),
+                                            function_name=stellar_xdr.SCSymbol(b"approve"),
                                             args=[
                                                 scval.to_address(
                                                     "GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"
@@ -2437,9 +2236,7 @@ class SignTxTestCases:
                 }
             ),
             scval.to_address(kp0.public_key),
-            scval.to_address(
-                "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
-            ),
+            scval.to_address("CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"),
             stellar_xdr.SCVal(stellar_xdr.SCValType.SCV_LEDGER_KEY_CONTRACT_INSTANCE),
             stellar_xdr.SCVal(
                 stellar_xdr.SCValType.SCV_LEDGER_KEY_NONCE,
@@ -2487,15 +2284,9 @@ class SignTxTestCases:
     @staticmethod
     def op_invoke_host_function_scvals_case3() -> TransactionEnvelope:
         scvals = [
-            scval.to_address(
-                "MAUPUK7AMSD6JHZCDVIOZQ2O4IHDVCLAJMKXZHOR6UOOT7T3ZFJV2AAAAAAAAAPA6OEF6"
-            ),
-            scval.to_address(
-                "BAAD6DBUX6J22DMZOHIEZTEQ64CVCHEDRKWZONFEUL5Q26QD7R76RGR4TU"
-            ),
-            scval.to_address(
-                "LA7QYNF7SOWQ3GLR2BGMZEHXAVIRZA4KVWLTJJFC7MGXUA74P7UJUPJN"
-            ),
+            scval.to_address("MAUPUK7AMSD6JHZCDVIOZQ2O4IHDVCLAJMKXZHOR6UOOT7T3ZFJV2AAAAAAAAAPA6OEF6"),
+            scval.to_address("BAAD6DBUX6J22DMZOHIEZTEQ64CVCHEDRKWZONFEUL5Q26QD7R76RGR4TU"),
+            scval.to_address("LA7QYNF7SOWQ3GLR2BGMZEHXAVIRZA4KVWLTJJFC7MGXUA74P7UJUPJN"),
         ]
         tx = (
             common_builder(base_fee=500, memo=None)
@@ -2514,20 +2305,14 @@ class SignTxTestCases:
         scvals = [
             scval.to_map(
                 {
-                    scval.to_address(
-                        Keypair.from_mnemonic_phrase(MNEMONIC, index=3).public_key
-                    ): scval.to_vec(
+                    scval.to_address(Keypair.from_mnemonic_phrase(MNEMONIC, index=3).public_key): scval.to_vec(
                         [
                             scval.to_int64(1),
                             scval.to_bool(True),
                             scval.to_string("hey!"),
                             scval.to_map(
                                 {
-                                    scval.to_address(
-                                        Keypair.from_mnemonic_phrase(
-                                            MNEMONIC, index=4
-                                        ).public_key
-                                    ): scval.to_vec(
+                                    scval.to_address(Keypair.from_mnemonic_phrase(MNEMONIC, index=4).public_key): scval.to_vec(
                                         [
                                             scval.to_int32(1),
                                             scval.to_int32(2),
@@ -2538,20 +2323,14 @@ class SignTxTestCases:
                             ),
                         ]
                     ),
-                    scval.to_address(
-                        Keypair.from_mnemonic_phrase(MNEMONIC, index=5).public_key
-                    ): scval.to_vec(
+                    scval.to_address(Keypair.from_mnemonic_phrase(MNEMONIC, index=5).public_key): scval.to_vec(
                         [
                             scval.to_int64(9),
                             scval.to_bool(False),
                             scval.to_string("hello!"),
                             scval.to_map(
                                 {
-                                    scval.to_address(
-                                        Keypair.from_mnemonic_phrase(
-                                            MNEMONIC, index=6
-                                        ).public_key
-                                    ): scval.to_vec(
+                                    scval.to_address(Keypair.from_mnemonic_phrase(MNEMONIC, index=6).public_key): scval.to_vec(
                                         [
                                             scval.to_int32(4),
                                             scval.to_int32(5),
@@ -2689,11 +2468,7 @@ class SignTxTestCases:
     @staticmethod
     def tx_memo_hash() -> TransactionEnvelope:
         return (
-            common_builder(
-                memo=HashMemo(
-                    "573c10b148fc4bc7db97540ce49da22930f4bcd48a060dc7347be84ea9f52d9f"
-                )
-            )
+            common_builder(memo=HashMemo("573c10b148fc4bc7db97540ce49da22930f4bcd48a060dc7347be84ea9f52d9f"))
             .append_payment_op(
                 destination=kp1.public_key,
                 asset=Asset.native(),
@@ -2705,11 +2480,7 @@ class SignTxTestCases:
     @staticmethod
     def tx_memo_return_hash() -> TransactionEnvelope:
         return (
-            common_builder(
-                memo=ReturnHashMemo(
-                    "573c10b148fc4bc7db97540ce49da22930f4bcd48a060dc7347be84ea9f52d9f"
-                )
-            )
+            common_builder(memo=ReturnHashMemo("573c10b148fc4bc7db97540ce49da22930f4bcd48a060dc7347be84ea9f52d9f"))
             .append_payment_op(
                 destination=kp1.public_key,
                 asset=Asset.native(),
@@ -2726,9 +2497,7 @@ class SignTxTestCases:
             .set_min_sequence_age(1649239999)
             .set_min_sequence_ledger_gap(30)
             .set_ledger_bounds(40351800, 40352000)
-            .add_extra_signer(
-                "GBJCHUKZMTFSLOMNC7P4TS4VJJBTCYL3XKSOLXAUJSD56C4LHND5TWUC"
-            )
+            .add_extra_signer("GBJCHUKZMTFSLOMNC7P4TS4VJJBTCYL3XKSOLXAUJSD56C4LHND5TWUC")
             .add_extra_signer(
                 "PA7QYNF7SOWQ3GLR2BGMZEHXAVIRZA4KVWLTJJFC7MGXUA74P7UJUAAAAAQACAQDAQCQMBYIBEFAWDANBYHRAEISCMKBKFQXDAMRUGY4DUPB6IBZGM"
             )
@@ -2926,9 +2695,7 @@ class SignTxTestCases:
             .add_extra_signer(
                 "PA7QYNF7SOWQ3GLR2BGMZEHXAVIRZA4KVWLTJJFC7MGXUA74P7UJUAAAAAQACAQDAQCQMBYIBEFAWDANBYHRAEISCMKBKFQXDAMRUGY4DUPB6IBZGM"
             )
-            .add_extra_signer(
-                "GBJCHUKZMTFSLOMNC7P4TS4VJJBTCYL3XKSOLXAUJSD56C4LHND5TWUC"
-            )
+            .add_extra_signer("GBJCHUKZMTFSLOMNC7P4TS4VJJBTCYL3XKSOLXAUJSD56C4LHND5TWUC")
             .append_payment_op(
                 destination=kp1.public_key,
                 asset=Asset.native(),
@@ -2948,9 +2715,7 @@ class SignTxTestCases:
             )
             .append_payment_op(
                 destination=kp1.public_key,
-                asset=Asset(
-                    "BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"
-                ),
+                asset=Asset("BTC", "GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH"),
                 amount="922337203685.4775807",
             )
             .append_set_options_op(home_domain="stellar.org")
@@ -3001,27 +2766,15 @@ class SignTxTestCases:
 
     @staticmethod
     def tx_network_public() -> TransactionEnvelope:
-        return (
-            common_builder(network=Network.PUBLIC_NETWORK_PASSPHRASE)
-            .append_bump_sequence_op(bump_to=1232134324234)
-            .build()
-        )
+        return common_builder(network=Network.PUBLIC_NETWORK_PASSPHRASE).append_bump_sequence_op(bump_to=1232134324234).build()
 
     @staticmethod
     def tx_network_testnet() -> TransactionEnvelope:
-        return (
-            common_builder(network=Network.TESTNET_NETWORK_PASSPHRASE)
-            .append_bump_sequence_op(bump_to=1232134324234)
-            .build()
-        )
+        return common_builder(network=Network.TESTNET_NETWORK_PASSPHRASE).append_bump_sequence_op(bump_to=1232134324234).build()
 
     @staticmethod
     def tx_network_custom() -> TransactionEnvelope:
-        return (
-            common_builder(network="Custom Network; October 2025")
-            .append_bump_sequence_op(bump_to=1232134324234)
-            .build()
-        )
+        return common_builder(network="Custom Network; October 2025").append_bump_sequence_op(bump_to=1232134324234).build()
 
     @staticmethod
     def fee_bump_tx() -> FeeBumpTransactionEnvelope:
@@ -3084,9 +2837,7 @@ class SignSorobanAuthorizationTestCases:
         data = stellar_xdr.HashIDPreimage(
             stellar_xdr.EnvelopeType.ENVELOPE_TYPE_SOROBAN_AUTHORIZATION,
             soroban_authorization=stellar_xdr.HashIDPreimageSorobanAuthorization(
-                network_id=stellar_xdr.Hash(
-                    Network(Network.TESTNET_NETWORK_PASSPHRASE).network_id()
-                ),
+                network_id=stellar_xdr.Hash(Network(Network.TESTNET_NETWORK_PASSPHRASE).network_id()),
                 nonce=stellar_xdr.Int64(1232432453),
                 signature_expiration_ledger=stellar_xdr.Uint32(34654367),
                 invocation=stellar_xdr.SorobanAuthorizedInvocation(
@@ -3096,14 +2847,10 @@ class SignSorobanAuthorizationTestCases:
                             contract_address=Address(
                                 "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
                             ).to_xdr_sc_address(),
-                            function_name=stellar_xdr.SCSymbol("transfer".encode()),
+                            function_name=stellar_xdr.SCSymbol(b"transfer"),
                             args=[
-                                scval.to_address(
-                                    "GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"
-                                ),  # from
-                                scval.to_address(
-                                    "GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"
-                                ),  # to
+                                scval.to_address("GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"),  # from
+                                scval.to_address("GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"),  # to
                                 scval.to_int128(103560 * 10**5),  # amount, 100 XLM
                             ],
                         ),
@@ -3119,9 +2866,7 @@ class SignSorobanAuthorizationTestCases:
         data = stellar_xdr.HashIDPreimage(
             stellar_xdr.EnvelopeType.ENVELOPE_TYPE_SOROBAN_AUTHORIZATION,
             soroban_authorization=stellar_xdr.HashIDPreimageSorobanAuthorization(
-                network_id=stellar_xdr.Hash(
-                    Network(Network.PUBLIC_NETWORK_PASSPHRASE).network_id()
-                ),
+                network_id=stellar_xdr.Hash(Network(Network.PUBLIC_NETWORK_PASSPHRASE).network_id()),
                 nonce=stellar_xdr.Int64(1232432453),
                 signature_expiration_ledger=stellar_xdr.Uint32(34654367),
                 invocation=stellar_xdr.SorobanAuthorizedInvocation(
@@ -3131,14 +2876,10 @@ class SignSorobanAuthorizationTestCases:
                             contract_address=Address(
                                 "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
                             ).to_xdr_sc_address(),
-                            function_name=stellar_xdr.SCSymbol("transfer".encode()),
+                            function_name=stellar_xdr.SCSymbol(b"transfer"),
                             args=[
-                                scval.to_address(
-                                    "GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"
-                                ),  # from
-                                scval.to_address(
-                                    "GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"
-                                ),  # to
+                                scval.to_address("GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"),  # from
+                                scval.to_address("GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"),  # to
                                 scval.to_int128(103560 * 10**5),  # amount, 100 XLM
                             ],
                         ),
@@ -3154,9 +2895,7 @@ class SignSorobanAuthorizationTestCases:
         data = stellar_xdr.HashIDPreimage(
             stellar_xdr.EnvelopeType.ENVELOPE_TYPE_SOROBAN_AUTHORIZATION,
             soroban_authorization=stellar_xdr.HashIDPreimageSorobanAuthorization(
-                network_id=stellar_xdr.Hash(
-                    Network("Custom Network; October 2025").network_id()
-                ),
+                network_id=stellar_xdr.Hash(Network("Custom Network; October 2025").network_id()),
                 nonce=stellar_xdr.Int64(1232432453),
                 signature_expiration_ledger=stellar_xdr.Uint32(34654367),
                 invocation=stellar_xdr.SorobanAuthorizedInvocation(
@@ -3166,14 +2905,10 @@ class SignSorobanAuthorizationTestCases:
                             contract_address=Address(
                                 "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
                             ).to_xdr_sc_address(),
-                            function_name=stellar_xdr.SCSymbol("transfer".encode()),
+                            function_name=stellar_xdr.SCSymbol(b"transfer"),
                             args=[
-                                scval.to_address(
-                                    "GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"
-                                ),  # from
-                                scval.to_address(
-                                    "GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"
-                                ),  # to
+                                scval.to_address("GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"),  # from
+                                scval.to_address("GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"),  # to
                                 scval.to_int128(103560 * 10**5),  # amount, 100 XLM
                             ],
                         ),
@@ -3190,9 +2925,7 @@ class SignSorobanAuthorizationTestCases:
             contract_id_preimage=stellar_xdr.ContractIDPreimage(
                 stellar_xdr.ContractIDPreimageType.CONTRACT_ID_PREIMAGE_FROM_ADDRESS,
                 from_address=stellar_xdr.ContractIDPreimageFromAddress(
-                    address=Address(
-                        "GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"
-                    ).to_xdr_sc_address(),
+                    address=Address("GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34").to_xdr_sc_address(),
                     salt=stellar_xdr.Uint256(
                         b"\xd9\x9f\x1f\xee4N\xeb\xd80}\xeb\x9f\xf4$W\xd8\xdb\x12\xeeS')\x18\xfe48\x02q\xc1\xd4\x10\n"
                     ),
@@ -3200,17 +2933,13 @@ class SignSorobanAuthorizationTestCases:
             ),
             executable=stellar_xdr.ContractExecutable(
                 stellar_xdr.ContractExecutableType.CONTRACT_EXECUTABLE_WASM,
-                stellar_xdr.Hash(
-                    b"\xd9\x9f\x1f\xee4N\xeb\xd80}\xeb\x9f\xf4$W\xd8\xdb\x12\xeeS')\x18\xfe48\x02q\xc1\xd4\x10\n"
-                ),
+                stellar_xdr.Hash(b"\xd9\x9f\x1f\xee4N\xeb\xd80}\xeb\x9f\xf4$W\xd8\xdb\x12\xeeS')\x18\xfe48\x02q\xc1\xd4\x10\n"),
             ),
         )
         data = stellar_xdr.HashIDPreimage(
             stellar_xdr.EnvelopeType.ENVELOPE_TYPE_SOROBAN_AUTHORIZATION,
             soroban_authorization=stellar_xdr.HashIDPreimageSorobanAuthorization(
-                network_id=stellar_xdr.Hash(
-                    Network(Network.PUBLIC_NETWORK_PASSPHRASE).network_id()
-                ),
+                network_id=stellar_xdr.Hash(Network(Network.PUBLIC_NETWORK_PASSPHRASE).network_id()),
                 nonce=stellar_xdr.Int64(1232432453),
                 signature_expiration_ledger=stellar_xdr.Uint32(34654367),
                 invocation=stellar_xdr.SorobanAuthorizedInvocation(
@@ -3230,9 +2959,7 @@ class SignSorobanAuthorizationTestCases:
             contract_id_preimage=stellar_xdr.ContractIDPreimage(
                 stellar_xdr.ContractIDPreimageType.CONTRACT_ID_PREIMAGE_FROM_ADDRESS,
                 from_address=stellar_xdr.ContractIDPreimageFromAddress(
-                    address=Address(
-                        "GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"
-                    ).to_xdr_sc_address(),
+                    address=Address("GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34").to_xdr_sc_address(),
                     salt=stellar_xdr.Uint256(
                         b"\xd9\x9f\x1f\xee4N\xeb\xd80}\xeb\x9f\xf4$W\xd8\xdb\x12\xeeS')\x18\xfe48\x02q\xc1\xd4\x10\n"
                     ),
@@ -3240,23 +2967,17 @@ class SignSorobanAuthorizationTestCases:
             ),
             executable=stellar_xdr.ContractExecutable(
                 stellar_xdr.ContractExecutableType.CONTRACT_EXECUTABLE_WASM,
-                stellar_xdr.Hash(
-                    b"\xd9\x9f\x1f\xee4N\xeb\xd80}\xeb\x9f\xf4$W\xd8\xdb\x12\xeeS')\x18\xfe48\x02q\xc1\xd4\x10\n"
-                ),
+                stellar_xdr.Hash(b"\xd9\x9f\x1f\xee4N\xeb\xd80}\xeb\x9f\xf4$W\xd8\xdb\x12\xeeS')\x18\xfe48\x02q\xc1\xd4\x10\n"),
             ),
             constructor_args=[
-                scval.to_address(
-                    "GDAT5HWTGIU4TSSZ4752OUC4SABDLTLZFRPZUJ3D6LKBNEPA7V2CIG54"
-                ),
+                scval.to_address("GDAT5HWTGIU4TSSZ4752OUC4SABDLTLZFRPZUJ3D6LKBNEPA7V2CIG54"),
                 scval.to_int128(12000000),
             ],
         )
         data = stellar_xdr.HashIDPreimage(
             stellar_xdr.EnvelopeType.ENVELOPE_TYPE_SOROBAN_AUTHORIZATION,
             soroban_authorization=stellar_xdr.HashIDPreimageSorobanAuthorization(
-                network_id=stellar_xdr.Hash(
-                    Network(Network.PUBLIC_NETWORK_PASSPHRASE).network_id()
-                ),
+                network_id=stellar_xdr.Hash(Network(Network.PUBLIC_NETWORK_PASSPHRASE).network_id()),
                 nonce=stellar_xdr.Int64(1232432453),
                 signature_expiration_ledger=stellar_xdr.Uint32(34654367),
                 invocation=stellar_xdr.SorobanAuthorizedInvocation(
@@ -3269,14 +2990,10 @@ class SignSorobanAuthorizationTestCases:
                             function=stellar_xdr.SorobanAuthorizedFunction(
                                 stellar_xdr.SorobanAuthorizedFunctionType.SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN,
                                 contract_fn=stellar_xdr.InvokeContractArgs(
-                                    Address(
-                                        "GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"
-                                    ).to_xdr_sc_address(),
-                                    stellar_xdr.SCSymbol("__constructor".encode()),
+                                    Address("GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34").to_xdr_sc_address(),
+                                    stellar_xdr.SCSymbol(b"__constructor"),
                                     [
-                                        scval.to_address(
-                                            "GDAT5HWTGIU4TSSZ4752OUC4SABDLTLZFRPZUJ3D6LKBNEPA7V2CIG54"
-                                        ),
+                                        scval.to_address("GDAT5HWTGIU4TSSZ4752OUC4SABDLTLZFRPZUJ3D6LKBNEPA7V2CIG54"),
                                         scval.to_int128(12000000),
                                     ],
                                 ),
@@ -3294,9 +3011,7 @@ class SignSorobanAuthorizationTestCases:
         data = stellar_xdr.HashIDPreimage(
             stellar_xdr.EnvelopeType.ENVELOPE_TYPE_SOROBAN_AUTHORIZATION,
             soroban_authorization=stellar_xdr.HashIDPreimageSorobanAuthorization(
-                network_id=stellar_xdr.Hash(
-                    Network(Network.PUBLIC_NETWORK_PASSPHRASE).network_id()
-                ),
+                network_id=stellar_xdr.Hash(Network(Network.PUBLIC_NETWORK_PASSPHRASE).network_id()),
                 nonce=stellar_xdr.Int64(1232432453),
                 signature_expiration_ledger=stellar_xdr.Uint32(34654367),
                 invocation=stellar_xdr.SorobanAuthorizedInvocation(
@@ -3306,14 +3021,10 @@ class SignSorobanAuthorizationTestCases:
                             contract_address=Address(
                                 "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
                             ).to_xdr_sc_address(),
-                            function_name=stellar_xdr.SCSymbol("transfer".encode()),
+                            function_name=stellar_xdr.SCSymbol(b"transfer"),
                             args=[
-                                scval.to_address(
-                                    "GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"
-                                ),  # from
-                                scval.to_address(
-                                    "GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"
-                                ),  # to
+                                scval.to_address("GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"),  # from
+                                scval.to_address("GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"),  # to
                                 scval.to_int128(103560 * 10**5),  # amount, 100 XLM
                             ],
                         ),
@@ -3326,19 +3037,11 @@ class SignSorobanAuthorizationTestCases:
                                     contract_address=Address(
                                         "CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75"
                                     ).to_xdr_sc_address(),
-                                    function_name=stellar_xdr.SCSymbol(
-                                        "transfer".encode()
-                                    ),
+                                    function_name=stellar_xdr.SCSymbol(b"transfer"),
                                     args=[
-                                        scval.to_address(
-                                            "GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"
-                                        ),  # from
-                                        scval.to_address(
-                                            "GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"
-                                        ),  # to
-                                        scval.to_int128(
-                                            123456 * 10**5
-                                        ),  # amount, 100 XLM
+                                        scval.to_address("GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"),  # from
+                                        scval.to_address("GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"),  # to
+                                        scval.to_int128(123456 * 10**5),  # amount, 100 XLM
                                     ],
                                 ),
                             ),
@@ -3351,19 +3054,11 @@ class SignSorobanAuthorizationTestCases:
                                     contract_address=Address(
                                         "CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA"
                                     ).to_xdr_sc_address(),
-                                    function_name=stellar_xdr.SCSymbol(
-                                        "demofunc".encode()
-                                    ),
+                                    function_name=stellar_xdr.SCSymbol(b"demofunc"),
                                     args=[
-                                        scval.to_address(
-                                            "GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"
-                                        ),  # from
-                                        scval.to_address(
-                                            "GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"
-                                        ),  # to
-                                        scval.to_int128(
-                                            234234 * 10**5
-                                        ),  # amount, 100 XLM
+                                        scval.to_address("GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"),  # from
+                                        scval.to_address("GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"),  # to
+                                        scval.to_int128(234234 * 10**5),  # amount, 100 XLM
                                     ],
                                 ),
                             ),
@@ -3381,9 +3076,7 @@ class SignSorobanAuthorizationTestCases:
         data = stellar_xdr.HashIDPreimage(
             stellar_xdr.EnvelopeType.ENVELOPE_TYPE_SOROBAN_AUTHORIZATION,
             soroban_authorization=stellar_xdr.HashIDPreimageSorobanAuthorization(
-                network_id=stellar_xdr.Hash(
-                    Network(Network.PUBLIC_NETWORK_PASSPHRASE).network_id()
-                ),
+                network_id=stellar_xdr.Hash(Network(Network.PUBLIC_NETWORK_PASSPHRASE).network_id()),
                 nonce=stellar_xdr.Int64(1232432453),
                 signature_expiration_ledger=stellar_xdr.Uint32(34654367),
                 invocation=stellar_xdr.SorobanAuthorizedInvocation(
@@ -3393,7 +3086,7 @@ class SignSorobanAuthorizationTestCases:
                             contract_address=Address(
                                 "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
                             ).to_xdr_sc_address(),
-                            function_name=stellar_xdr.SCSymbol("testfunc".encode()),
+                            function_name=stellar_xdr.SCSymbol(b"testfunc"),
                             args=[],
                         ),
                     ),
@@ -3405,19 +3098,11 @@ class SignSorobanAuthorizationTestCases:
                                     contract_address=Address(
                                         "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
                                     ).to_xdr_sc_address(),
-                                    function_name=stellar_xdr.SCSymbol(
-                                        "transfer".encode()
-                                    ),
+                                    function_name=stellar_xdr.SCSymbol(b"transfer"),
                                     args=[
-                                        scval.to_address(
-                                            "GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"
-                                        ),  # from
-                                        scval.to_address(
-                                            "GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"
-                                        ),  # to
-                                        scval.to_int128(
-                                            103560 * 10**5
-                                        ),  # amount, 100 XLM
+                                        scval.to_address("GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"),  # from
+                                        scval.to_address("GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"),  # to
+                                        scval.to_int128(103560 * 10**5),  # amount, 100 XLM
                                     ],
                                 ),
                             ),
@@ -3430,19 +3115,11 @@ class SignSorobanAuthorizationTestCases:
                                     contract_address=Address(
                                         "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
                                     ).to_xdr_sc_address(),
-                                    function_name=stellar_xdr.SCSymbol(
-                                        "transfer".encode()
-                                    ),
+                                    function_name=stellar_xdr.SCSymbol(b"transfer"),
                                     args=[
-                                        scval.to_address(
-                                            "GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"
-                                        ),  # from
-                                        scval.to_address(
-                                            "GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"
-                                        ),  # to
-                                        scval.to_int128(
-                                            103560 * 10**5
-                                        ),  # amount, 100 XLM
+                                        scval.to_address("GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA"),  # from
+                                        scval.to_address("GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"),  # to
+                                        scval.to_int128(103560 * 10**5),  # amount, 100 XLM
                                     ],
                                 ),
                             ),
@@ -3455,15 +3132,11 @@ class SignSorobanAuthorizationTestCases:
         return data
 
     @staticmethod
-    def soroban_auth_invoke_contract_with_complex_sub_invocation() -> (
-        stellar_xdr.HashIDPreimage
-    ):
+    def soroban_auth_invoke_contract_with_complex_sub_invocation() -> stellar_xdr.HashIDPreimage:
         data = stellar_xdr.HashIDPreimage(
             stellar_xdr.EnvelopeType.ENVELOPE_TYPE_SOROBAN_AUTHORIZATION,
             soroban_authorization=stellar_xdr.HashIDPreimageSorobanAuthorization(
-                network_id=stellar_xdr.Hash(
-                    Network(Network.PUBLIC_NETWORK_PASSPHRASE).network_id()
-                ),
+                network_id=stellar_xdr.Hash(Network(Network.PUBLIC_NETWORK_PASSPHRASE).network_id()),
                 nonce=stellar_xdr.Int64(1232432453),
                 signature_expiration_ledger=stellar_xdr.Uint32(34654367),
                 invocation=stellar_xdr.SorobanAuthorizedInvocation(
@@ -3473,7 +3146,7 @@ class SignSorobanAuthorizationTestCases:
                             contract_address=Address(
                                 "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
                             ).to_xdr_sc_address(),
-                            function_name=stellar_xdr.SCSymbol("func0".encode()),
+                            function_name=stellar_xdr.SCSymbol(b"func0"),
                             args=[
                                 scval.to_int128(103560 * 10**5),
                             ],
@@ -3487,9 +3160,7 @@ class SignSorobanAuthorizationTestCases:
                                     contract_address=Address(
                                         "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
                                     ).to_xdr_sc_address(),
-                                    function_name=stellar_xdr.SCSymbol(
-                                        "func1".encode()
-                                    ),
+                                    function_name=stellar_xdr.SCSymbol(b"func1"),
                                     args=[
                                         scval.to_int128(103560 * 10**5),
                                     ],
@@ -3504,9 +3175,7 @@ class SignSorobanAuthorizationTestCases:
                                     contract_address=Address(
                                         "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
                                     ).to_xdr_sc_address(),
-                                    function_name=stellar_xdr.SCSymbol(
-                                        "func2".encode()
-                                    ),
+                                    function_name=stellar_xdr.SCSymbol(b"func2"),
                                     args=[
                                         scval.to_int128(103560 * 10**5),
                                     ],
@@ -3520,9 +3189,7 @@ class SignSorobanAuthorizationTestCases:
                                             contract_address=Address(
                                                 "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
                                             ).to_xdr_sc_address(),
-                                            function_name=stellar_xdr.SCSymbol(
-                                                "func3".encode()
-                                            ),
+                                            function_name=stellar_xdr.SCSymbol(b"func3"),
                                             args=[
                                                 scval.to_int128(103560 * 10**5),
                                             ],
@@ -3536,9 +3203,7 @@ class SignSorobanAuthorizationTestCases:
                                                     contract_address=Address(
                                                         "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
                                                     ).to_xdr_sc_address(),
-                                                    function_name=stellar_xdr.SCSymbol(
-                                                        "func4".encode()
-                                                    ),
+                                                    function_name=stellar_xdr.SCSymbol(b"func4"),
                                                     args=[
                                                         scval.to_int128(103560 * 10**5),
                                                     ],
@@ -3553,9 +3218,7 @@ class SignSorobanAuthorizationTestCases:
                                                     contract_address=Address(
                                                         "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
                                                     ).to_xdr_sc_address(),
-                                                    function_name=stellar_xdr.SCSymbol(
-                                                        "func5".encode()
-                                                    ),
+                                                    function_name=stellar_xdr.SCSymbol(b"func5"),
                                                     args=[
                                                         scval.to_int128(103560 * 10**5),
                                                     ],
@@ -3569,13 +3232,9 @@ class SignSorobanAuthorizationTestCases:
                                                             contract_address=Address(
                                                                 "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
                                                             ).to_xdr_sc_address(),
-                                                            function_name=stellar_xdr.SCSymbol(
-                                                                "func6".encode()
-                                                            ),
+                                                            function_name=stellar_xdr.SCSymbol(b"func6"),
                                                             args=[
-                                                                scval.to_int128(
-                                                                    103560 * 10**5
-                                                                ),
+                                                                scval.to_int128(103560 * 10**5),
                                                             ],
                                                         ),
                                                     ),
@@ -3587,14 +3246,9 @@ class SignSorobanAuthorizationTestCases:
                                                                     contract_address=Address(
                                                                         "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
                                                                     ).to_xdr_sc_address(),
-                                                                    function_name=stellar_xdr.SCSymbol(
-                                                                        "func7".encode()
-                                                                    ),
+                                                                    function_name=stellar_xdr.SCSymbol(b"func7"),
                                                                     args=[
-                                                                        scval.to_int128(
-                                                                            103560
-                                                                            * 10**5
-                                                                        ),
+                                                                        scval.to_int128(103560 * 10**5),
                                                                     ],
                                                                 ),
                                                             ),
@@ -3607,14 +3261,9 @@ class SignSorobanAuthorizationTestCases:
                                                                     contract_address=Address(
                                                                         "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
                                                                     ).to_xdr_sc_address(),
-                                                                    function_name=stellar_xdr.SCSymbol(
-                                                                        "func8".encode()
-                                                                    ),
+                                                                    function_name=stellar_xdr.SCSymbol(b"func8"),
                                                                     args=[
-                                                                        scval.to_int128(
-                                                                            103560
-                                                                            * 10**5
-                                                                        ),
+                                                                        scval.to_int128(103560 * 10**5),
                                                                     ],
                                                                 ),
                                                             ),
@@ -3633,9 +3282,7 @@ class SignSorobanAuthorizationTestCases:
                                             contract_address=Address(
                                                 "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
                                             ).to_xdr_sc_address(),
-                                            function_name=stellar_xdr.SCSymbol(
-                                                "func9".encode()
-                                            ),
+                                            function_name=stellar_xdr.SCSymbol(b"func9"),
                                             args=[
                                                 scval.to_int128(103560 * 10**5),
                                             ],
@@ -3649,9 +3296,7 @@ class SignSorobanAuthorizationTestCases:
                                                     contract_address=Address(
                                                         "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
                                                     ).to_xdr_sc_address(),
-                                                    function_name=stellar_xdr.SCSymbol(
-                                                        "func10".encode()
-                                                    ),
+                                                    function_name=stellar_xdr.SCSymbol(b"func10"),
                                                     args=[
                                                         scval.to_int128(103560 * 10**5),
                                                     ],
@@ -3666,9 +3311,7 @@ class SignSorobanAuthorizationTestCases:
                                                     contract_address=Address(
                                                         "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
                                                     ).to_xdr_sc_address(),
-                                                    function_name=stellar_xdr.SCSymbol(
-                                                        "func11".encode()
-                                                    ),
+                                                    function_name=stellar_xdr.SCSymbol(b"func11"),
                                                     args=[
                                                         scval.to_int128(103560 * 10**5),
                                                     ],
