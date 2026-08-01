@@ -9,19 +9,30 @@ fn test_parse_tx_case(case_name: &str) {
     let tx_signature_payload = TransactionSignaturePayload::parse(&mut parser)
         .unwrap_or_else(|_| panic!("Failed to parse XDR for {}", case_name));
 
-    let tx = match tx_signature_payload.tagged_transaction {
-        stellarlib::TaggedTransaction::EnvelopeTypeTx(transaction) => transaction,
+    let op_count = match &tx_signature_payload.tagged_transaction {
+        stellarlib::TaggedTransaction::EnvelopeTypeTx(transaction) => transaction.op_count,
         stellarlib::TaggedTransaction::EnvelopeTypeTxFeeBump(fee_bump_transaction) => {
-            match fee_bump_transaction.inner_tx {
-                stellarlib::InnerTransaction::EnvelopeTypeTx(transaction) => transaction,
+            match &fee_bump_transaction.inner_tx {
+                stellarlib::InnerTransaction::EnvelopeTypeTx(transaction) => transaction.op_count,
             }
         }
     };
 
-    for _ in 0..tx.op_count {
+    for _ in 0..op_count {
         Operation::parse(&mut parser)
             .unwrap_or_else(|_| panic!("Failed to parse operation for {}", case_name));
     }
+
+    tx_signature_payload
+        .tagged_transaction
+        .parse_trailing(&mut parser)
+        .unwrap_or_else(|e| panic!("Failed to parse trailing fields for {}: {:?}", case_name, e));
+
+    // These fixtures are `signature_base()` output, i.e. exactly the bytes the
+    // device signs, so parsing has to end on the last byte.
+    parser
+        .ensure_fully_consumed()
+        .unwrap_or_else(|e| panic!("Payload not fully consumed for {}: {:?}", case_name, e));
 }
 
 fn test_parse_soroban_auth_case(case_name: &str) {
@@ -31,6 +42,9 @@ fn test_parse_soroban_auth_case(case_name: &str) {
     let mut parser = Parser::new(&raw_data);
     HashIDPreimage::parse(&mut parser)
         .unwrap_or_else(|_| panic!("Failed to parse Soroban Auth for {}", case_name));
+    parser
+        .ensure_fully_consumed()
+        .unwrap_or_else(|e| panic!("Preimage not fully consumed for {}: {:?}", case_name, e));
 }
 
 fn run_test_cases<F>(title: &str, cases: &[&str], test_fn: F)
@@ -242,4 +256,119 @@ fn test_sign_soroban_auth() {
         &cases,
         test_parse_soroban_auth_case,
     );
+}
+
+/// Reads a fixture and runs it through the full signing-review parse: payload,
+/// operations, then the fields that follow them.
+fn parse_full_tx(raw_data: &[u8]) -> Result<(), stellarlib::ParseError> {
+    let mut parser = Parser::new(raw_data);
+    let payload = TransactionSignaturePayload::parse(&mut parser)?;
+
+    let op_count = match &payload.tagged_transaction {
+        stellarlib::TaggedTransaction::EnvelopeTypeTx(tx) => tx.op_count,
+        stellarlib::TaggedTransaction::EnvelopeTypeTxFeeBump(fee_bump) => {
+            match &fee_bump.inner_tx {
+                stellarlib::InnerTransaction::EnvelopeTypeTx(tx) => tx.op_count,
+            }
+        }
+    };
+    for _ in 0..op_count {
+        Operation::parse(&mut parser)?;
+    }
+
+    payload.tagged_transaction.parse_trailing(&mut parser)?;
+    parser.ensure_fully_consumed()
+}
+
+/// A transaction the device would otherwise display correctly while signing
+/// more bytes than it showed. Appending to a valid payload must be rejected,
+/// otherwise the review screen describes only a prefix of what gets signed.
+#[test]
+fn test_trailing_bytes_are_rejected() {
+    let cases = [
+        "op_payment_asset_native",
+        "fee_bump_tx",
+        "op_invoke_host_function_asset_transfer",
+    ];
+
+    for case_name in cases {
+        let raw_path = format!("tests/testcases/{}.raw", case_name);
+        let raw_data =
+            fs::read(&raw_path).unwrap_or_else(|_| panic!("Failed to read {}", raw_path));
+
+        parse_full_tx(&raw_data)
+            .unwrap_or_else(|e| panic!("{} should parse cleanly as-is: {:?}", case_name, e));
+
+        // One appended XDR word, and a single stray byte that is not even
+        // 4-byte aligned.
+        for suffix in [b"\x00\x00\x00\x00".as_slice(), b"\xff".as_slice()] {
+            let mut tampered = raw_data.clone();
+            tampered.extend_from_slice(suffix);
+
+            assert_eq!(
+                parse_full_tx(&tampered),
+                Err(stellarlib::ParseError::TrailingData {
+                    remaining: suffix.len()
+                }),
+                "{} must reject {} appended byte(s)",
+                case_name,
+                suffix.len()
+            );
+        }
+    }
+}
+
+/// The same guarantee for Soroban authorization payloads.
+#[test]
+fn test_soroban_auth_trailing_bytes_are_rejected() {
+    let raw_path = "tests/testcases/soroban_auth_invoke_contract.raw";
+    let raw_data = fs::read(raw_path).unwrap_or_else(|_| panic!("Failed to read {}", raw_path));
+
+    let mut tampered = raw_data.clone();
+    tampered.extend_from_slice(b"\x00\x00\x00\x00");
+
+    let mut parser = Parser::new(&tampered);
+    HashIDPreimage::parse(&mut parser).expect("preimage prefix still parses");
+    assert_eq!(
+        parser.ensure_fully_consumed(),
+        Err(stellarlib::ParseError::TrailingData { remaining: 4 })
+    );
+}
+
+/// `tx.ext` carries the Soroban resource data, including the resource fee.
+/// Truncating it must fail rather than leave the tail unparsed.
+#[test]
+fn test_soroban_transaction_data_is_parsed() {
+    let raw_path = "tests/testcases/op_invoke_host_function_asset_transfer.raw";
+    let raw_data = fs::read(raw_path).unwrap_or_else(|_| panic!("Failed to read {}", raw_path));
+
+    let mut parser = Parser::new(&raw_data);
+    let payload = TransactionSignaturePayload::parse(&mut parser).expect("payload parses");
+    let op_count = match &payload.tagged_transaction {
+        stellarlib::TaggedTransaction::EnvelopeTypeTx(tx) => tx.op_count,
+        _ => unreachable!("fixture is a plain transaction"),
+    };
+    for _ in 0..op_count {
+        Operation::parse(&mut parser).expect("operation parses");
+    }
+
+    let ext = payload
+        .tagged_transaction
+        .parse_trailing(&mut parser)
+        .expect("trailing fields parse");
+
+    match ext {
+        stellarlib::TransactionExt::V1(data) => {
+            assert!(
+                data.resource_fee > 0,
+                "expected a resource fee on a Soroban transaction"
+            );
+        }
+        stellarlib::TransactionExt::V0 => panic!("expected Soroban resource data"),
+    }
+
+    // Dropping the last word of the resource data must be an error, not a
+    // silently ignored tail.
+    let truncated = &raw_data[..raw_data.len() - 4];
+    assert!(parse_full_tx(truncated).is_err());
 }

@@ -77,6 +77,16 @@ pub fn ui_sign_tx(raw_data: &[u8], signer: &[u8]) -> Result<bool, AppSW> {
         }
     }
 
+    // The handler signs the whole buffer, so anything the parser did not reach
+    // would be signed without ever reaching the screen below.
+    tx_signature_payload
+        .tagged_transaction
+        .parse_trailing(&mut parser)
+        .map_err(|_| AppSW::DataParsingFail)?;
+    parser
+        .ensure_fully_consumed()
+        .map_err(|_| AppSW::DataParsingFail)?;
+
     let (title, finish_title) = match &tx_signature_payload.tagged_transaction {
         stellarlib::TaggedTransaction::EnvelopeTypeTx(_) => match &intent {
             Some(intent) => (

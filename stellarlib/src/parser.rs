@@ -26,6 +26,7 @@ pub enum ParseError {
     InvalidPadding,
     LengthExceedsMax { actual: usize, max: usize },
     MaxDepthExceeded { depth: usize, max: usize },
+    TrailingData { remaining: usize },
 }
 
 impl fmt::Display for ParseError {
@@ -43,6 +44,9 @@ impl fmt::Display for ParseError {
                     "Parse depth {} exceeds maximum allowed depth {}",
                     depth, max
                 )
+            }
+            ParseError::TrailingData { remaining } => {
+                write!(f, "{} unparsed bytes remain after the input", remaining)
             }
         }
     }
@@ -71,6 +75,20 @@ impl<'a> Parser<'a> {
     /// Get current offset
     pub fn offset(&self) -> usize {
         self.offset
+    }
+
+    /// Verifies that parsing consumed every byte of the input.
+    ///
+    /// Signing flows hash the whole input buffer, so any byte the parser did
+    /// not reach is signed without ever being reviewed. Callers must run this
+    /// before treating a parsed structure as a faithful description of what
+    /// they are about to sign.
+    pub fn ensure_fully_consumed(&self) -> Result<(), ParseError> {
+        let remaining = self.remaining();
+        if remaining != 0 {
+            return Err(ParseError::TrailingData { remaining });
+        }
+        Ok(())
     }
 
     /// Enter a recursive parsing context, checking depth limit
@@ -1051,6 +1069,37 @@ impl<'a> XdrParse<'a> for TaggedTransaction<'a> {
             }
             _ => Err(ParseError::InvalidType(envelope_type as i32)),
         }
+    }
+}
+
+impl<'a> TaggedTransaction<'a> {
+    /// Parses the payload fields that sit after the operation list.
+    ///
+    /// [`TransactionSignaturePayload::parse`] deliberately stops at `op_count`
+    /// so callers can stream operations one at a time instead of holding them
+    /// all in memory. Everything after those operations is still part of the
+    /// signed bytes, so it has to be parsed before the payload can be called
+    /// fully reviewed:
+    ///
+    /// - a plain transaction ends with `tx.ext`;
+    /// - a fee bump wraps a whole `TransactionV1Envelope`, so the inner
+    ///   `tx.ext` is followed by the inner signature list and then the fee
+    ///   bump's own `ext`.
+    ///
+    /// Returns the transaction's `ext`, which for a Soroban transaction holds
+    /// the resource data.
+    pub fn parse_trailing(&self, parser: &mut Parser<'a>) -> Result<TransactionExt, ParseError> {
+        let ext = TransactionExt::parse(parser)?;
+
+        if matches!(self, TaggedTransaction::EnvelopeTypeTxFeeBump(_)) {
+            consume_array::<DecoratedSignature>(parser, MAX_ENVELOPE_SIGNATURES)?;
+            match parser.parse_int32()? {
+                0 => {}
+                v => return Err(ParseError::InvalidType(v)),
+            }
+        }
+
+        Ok(ext)
     }
 }
 
@@ -3135,6 +3184,181 @@ impl<'a> XdrParse<'a> for LedgerKey<'a> {
                 Ok(LedgerKey::Ttl(LedgerKeyTtl { key_hash }))
             }
         }
+    }
+}
+
+/// Parses a length-prefixed array of `T`, validating each element but keeping
+/// none of them.
+///
+/// Used for the parts of the signature payload that must be consumed to reach
+/// the end of the buffer but are never displayed. Retaining them would be
+/// wasteful at best and fatal at worst: a footprint may carry hundreds of
+/// `LedgerKey`s, each able to nest an arbitrary `ScVal`, which does not fit in
+/// the device heap.
+fn consume_array<'a, T: XdrParse<'a>>(
+    parser: &mut Parser<'a>,
+    max: u32,
+) -> Result<u32, ParseError> {
+    let count = parser.parse_uint32()?;
+    if count > max {
+        return Err(ParseError::LengthExceedsMax {
+            actual: count as usize,
+            max: max as usize,
+        });
+    }
+
+    // Every XDR element occupies at least 4 bytes, so the bytes left in the
+    // buffer bound how many elements can really follow. Rejecting up front
+    // avoids a long parse loop driven by an attacker-controlled length.
+    let max_possible = parser.remaining() / 4;
+    if count as usize > max_possible {
+        return Err(ParseError::LengthExceedsMax {
+            actual: count as usize,
+            max: max_possible,
+        });
+    }
+
+    parser.enter_recursion()?;
+    for _ in 0..count {
+        T::parse(parser)?;
+    }
+    parser.exit_recursion();
+
+    Ok(count)
+}
+
+/// Footprint of a Soroban transaction.
+///
+/// Only the entry counts are kept; see [`consume_array`] for why the keys
+/// themselves are validated and dropped.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LedgerFootprint {
+    pub read_only_count: u32,
+    pub read_write_count: u32,
+}
+
+impl<'a> XdrParse<'a> for LedgerFootprint {
+    fn parse(parser: &mut Parser<'a>) -> Result<Self, ParseError> {
+        let read_only_count = consume_array::<LedgerKey>(parser, u32::MAX)?;
+        let read_write_count = consume_array::<LedgerKey>(parser, u32::MAX)?;
+        Ok(LedgerFootprint {
+            read_only_count,
+            read_write_count,
+        })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SorobanResources {
+    pub footprint: LedgerFootprint,
+    pub instructions: u32,
+    pub disk_read_bytes: u32,
+    pub write_bytes: u32,
+}
+
+impl<'a> XdrParse<'a> for SorobanResources {
+    fn parse(parser: &mut Parser<'a>) -> Result<Self, ParseError> {
+        let footprint = LedgerFootprint::parse(parser)?;
+        let instructions = parser.parse_uint32()?;
+        let disk_read_bytes = parser.parse_uint32()?;
+        let write_bytes = parser.parse_uint32()?;
+        Ok(SorobanResources {
+            footprint,
+            instructions,
+            disk_read_bytes,
+            write_bytes,
+        })
+    }
+}
+
+/// `SorobanTransactionData.ext`, extended by CAP-62 to carry the indices of the
+/// archived entries a transaction restores.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SorobanTransactionDataExt {
+    V0,
+    V1 { archived_entry_count: u32 },
+}
+
+impl<'a> XdrParse<'a> for SorobanTransactionDataExt {
+    fn parse(parser: &mut Parser<'a>) -> Result<Self, ParseError> {
+        match parser.parse_int32()? {
+            0 => Ok(SorobanTransactionDataExt::V0),
+            1 => {
+                let archived_entry_count = consume_array::<Uint32>(parser, u32::MAX)?;
+                Ok(SorobanTransactionDataExt::V1 {
+                    archived_entry_count,
+                })
+            }
+            v => Err(ParseError::InvalidType(v)),
+        }
+    }
+}
+
+/// A bare XDR `uint32`, so that arrays of them can go through [`consume_array`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Uint32(pub u32);
+
+impl<'a> XdrParse<'a> for Uint32 {
+    fn parse(parser: &mut Parser<'a>) -> Result<Self, ParseError> {
+        Ok(Uint32(parser.parse_uint32()?))
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SorobanTransactionData {
+    pub ext: SorobanTransactionDataExt,
+    pub resources: SorobanResources,
+    /// Portion of `tx.fee` reserved for resource usage. Bounded by the fee the
+    /// review screen already shows, so it is parsed but not displayed.
+    pub resource_fee: i64,
+}
+
+impl<'a> XdrParse<'a> for SorobanTransactionData {
+    fn parse(parser: &mut Parser<'a>) -> Result<Self, ParseError> {
+        let ext = SorobanTransactionDataExt::parse(parser)?;
+        let resources = SorobanResources::parse(parser)?;
+        let resource_fee = parser.parse_int64()?;
+        Ok(SorobanTransactionData {
+            ext,
+            resources,
+            resource_fee,
+        })
+    }
+}
+
+/// `Transaction.ext`: the last field of a transaction, after its operations.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TransactionExt {
+    V0,
+    V1(SorobanTransactionData),
+}
+
+impl<'a> XdrParse<'a> for TransactionExt {
+    fn parse(parser: &mut Parser<'a>) -> Result<Self, ParseError> {
+        match parser.parse_int32()? {
+            0 => Ok(TransactionExt::V0),
+            1 => Ok(TransactionExt::V1(SorobanTransactionData::parse(parser)?)),
+            v => Err(ParseError::InvalidType(v)),
+        }
+    }
+}
+
+/// Maximum number of signatures an envelope may carry, per the XDR definition
+/// of `TransactionV1Envelope`.
+const MAX_ENVELOPE_SIGNATURES: u32 = 20;
+
+/// A signature attached to an envelope: a 4-byte key hint plus the signature.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DecoratedSignature<'a> {
+    pub hint: &'a [u8; 4],
+    pub signature: &'a [u8],
+}
+
+impl<'a> XdrParse<'a> for DecoratedSignature<'a> {
+    fn parse(parser: &mut Parser<'a>) -> Result<Self, ParseError> {
+        let hint = parser.read_array_ref::<4>()?;
+        let signature = parser.parse_var_opaque(Some(64))?;
+        Ok(DecoratedSignature { hint, signature })
     }
 }
 

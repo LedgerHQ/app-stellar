@@ -3,8 +3,8 @@ use csv::Reader;
 use std::fs::{self, File};
 use std::path::Path;
 use stellarlib::{
-    format_transaction_signature_payload, FormatConfig, Operation, Parser,
-    TransactionSignaturePayload, XdrParse,
+    format_transaction_signature_payload, DecoratedSignature, FormatConfig, Operation, Parser,
+    TransactionSignaturePayload, VecM, XdrParse,
 };
 
 #[derive(Debug)]
@@ -142,6 +142,23 @@ fn test_transaction(test_case: &SorobanTestCase) -> Result<(), String> {
         Operation::parse(&mut parser)
             .map_err(|e| format!("Failed to parse operation {}: {:?}", i, e))?;
     }
+
+    // Consume everything the signing flow signs but the loop above skipped:
+    // `tx.ext` (the Soroban resource data, for the soroban dataset) and, for a
+    // fee bump, the inner envelope's signatures plus the fee bump's own ext.
+    tx_signature_payload
+        .tagged_transaction
+        .parse_trailing(&mut parser)
+        .map_err(|e| format!("Failed to parse trailing payload fields: {:?}", e))?;
+
+    // These rows are whole envelopes rather than signature payloads, so what
+    // is left at this point must be exactly the envelope's own signature list.
+    // Landing anywhere else means `parse_trailing` mis-measured the payload.
+    VecM::<DecoratedSignature, 20>::parse(&mut parser)
+        .map_err(|e| format!("Failed to parse envelope signatures: {:?}", e))?;
+    parser
+        .ensure_fully_consumed()
+        .map_err(|e| format!("Payload boundary mismatch: {:?}", e))?;
 
     // Reset parser for formatting test
     let mut parser = Parser::new(&raw_data);
