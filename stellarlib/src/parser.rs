@@ -27,6 +27,7 @@ pub enum ParseError {
     LengthExceedsMax { actual: usize, max: usize },
     MaxDepthExceeded { depth: usize, max: usize },
     TrailingData { remaining: usize },
+    InvalidFlags(u32),
 }
 
 impl fmt::Display for ParseError {
@@ -47,6 +48,9 @@ impl fmt::Display for ParseError {
             }
             ParseError::TrailingData { remaining } => {
                 write!(f, "{} unparsed bytes remain after the input", remaining)
+            }
+            ParseError::InvalidFlags(flags) => {
+                write!(f, "Flag value 0x{:x} is not valid for this field", flags)
             }
         }
     }
@@ -284,6 +288,31 @@ pub enum AccountFlags {
     RevocableFlag = 0x2,
     ImmutableFlag = 0x4,
     ClawbackEnabledFlag = 0x8,
+}
+
+/// Mask of every account flag the protocol defines.
+pub const ALL_ACCOUNT_FLAGS: u32 = 0xF;
+
+/// Mask of every trust line flag the protocol defines.
+pub const ALL_TRUSTLINE_FLAGS: u32 = 0x7;
+
+/// Rejects a bitmask carrying anything outside `mask`.
+///
+/// The device cannot name a flag it does not know, so the review screen would
+/// drop it silently; refusing is the only honest option. This mirrors
+/// stellar-core's own `accountFlagMaskCheckIsValid` /
+/// `trustLineFlagMaskCheckIsValid` (`(flag & ~MASK) == 0`), so nothing the
+/// network would accept is rejected here.
+///
+/// Deliberately no stricter than that: core also enforces semantic rules (set
+/// and clear must be disjoint, clawback requires revocable, and so on), but
+/// those values can all be displayed truthfully, so rejecting them would only
+/// add a way to refuse transactions a future protocol might allow.
+fn check_flags(flags: u32, mask: u32) -> Result<(), ParseError> {
+    if flags & !mask != 0 {
+        return Err(ParseError::InvalidFlags(flags));
+    }
+    Ok(())
 }
 
 #[repr(i32)]
@@ -1955,6 +1984,9 @@ impl<'a> XdrParse<'a> for SetOptionsOp<'a> {
         let inflation_dest = parser.parse_optional(AccountId::parse)?;
         let clear_flags = parser.parse_optional(|p| p.parse_uint32())?;
         let set_flags = parser.parse_optional(|p| p.parse_uint32())?;
+        for flags in [clear_flags, set_flags].into_iter().flatten() {
+            check_flags(flags, ALL_ACCOUNT_FLAGS)?;
+        }
         let master_weight = parser.parse_optional(|p| p.parse_uint32())?;
         let low_threshold = parser.parse_optional(|p| p.parse_uint32())?;
         let med_threshold = parser.parse_optional(|p| p.parse_uint32())?;
@@ -2078,6 +2110,16 @@ impl<'a> XdrParse<'a> for AllowTrustOp<'a> {
         let trustor = AccountId::parse(parser)?;
         let asset = AssetCode::parse(parser)?;
         let authorize = parser.parse_uint32()?;
+        // `authorize` is not a bitmask. The XDR defines it as "One of 0,
+        // AUTHORIZED_FLAG, or AUTHORIZED_TO_MAINTAIN_LIABILITIES_FLAG", so even
+        // the combination 0x3 is meaningless for this field.
+        const UNAUTHORIZED: u32 = 0;
+        const AUTHORIZED: u32 = TrustLineFlags::AuthorizedFlag as u32;
+        const MAINTAIN_LIABILITIES: u32 =
+            TrustLineFlags::AuthorizedToMaintainLiabilitiesFlag as u32;
+        if !matches!(authorize, UNAUTHORIZED | AUTHORIZED | MAINTAIN_LIABILITIES) {
+            return Err(ParseError::InvalidFlags(authorize));
+        }
         Ok(AllowTrustOp {
             trustor,
             asset,
@@ -2351,6 +2393,8 @@ impl<'a> XdrParse<'a> for SetTrustLineFlagsOp<'a> {
         let asset = Asset::parse(parser)?;
         let clear_flags = parser.parse_uint32()?;
         let set_flags = parser.parse_uint32()?;
+        check_flags(clear_flags, ALL_TRUSTLINE_FLAGS)?;
+        check_flags(set_flags, ALL_TRUSTLINE_FLAGS)?;
         Ok(SetTrustLineFlagsOp {
             trustor,
             asset,

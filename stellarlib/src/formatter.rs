@@ -712,30 +712,22 @@ fn format_issuer(issuer: &str) -> String {
 /// * `zero_value` - String to return when flags is 0
 ///
 /// # Returns
-/// A string listing the flag names or the zero_value
+/// A string listing the flag names, or `zero_value` when no flag is set.
+///
+/// Every bit reaching here has a name: the parser rejects values outside each
+/// field's protocol-defined set, and `flag_definitions` covers that set in
+/// full. `test_flag_definitions_cover_every_accepted_value` fails if the two
+/// ever drift apart, which is what would let a bit be silently dropped.
 fn format_flags_generic(flags: u32, flag_definitions: &[(u32, &str)], zero_value: &str) -> String {
     if flags == 0 {
         return zero_value.to_string();
     }
 
-    let flag_names: Vec<&str> = flag_definitions
+    flag_definitions
         .iter()
-        .filter_map(
-            |(flag, name)| {
-                if flags & flag != 0 {
-                    Some(*name)
-                } else {
-                    None
-                }
-            },
-        )
-        .collect();
-
-    if flag_names.is_empty() {
-        format!("{} (unknown flags)", flags)
-    } else {
-        flag_names.join(", ")
-    }
+        .filter_map(|(flag, name)| (flags & flag != 0).then_some(*name))
+        .collect::<Vec<&str>>()
+        .join(", ")
 }
 
 /// Formats account flags from a bitmask into flag names

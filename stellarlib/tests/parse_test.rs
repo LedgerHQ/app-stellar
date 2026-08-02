@@ -1,5 +1,8 @@
 use std::fs;
-use stellarlib::{HashIDPreimage, Operation, Parser, TransactionSignaturePayload, XdrParse};
+use stellarlib::{
+    format_operation, FormatConfig, HashIDPreimage, Operation, Parser, TransactionSignaturePayload,
+    XdrParse,
+};
 
 fn test_parse_tx_case(case_name: &str) {
     let raw_path = format!("tests/testcases/{}.raw", case_name);
@@ -371,4 +374,188 @@ fn test_soroban_transaction_data_is_parsed() {
     // silently ignored tail.
     let truncated = &raw_data[..raw_data.len() - 4];
     assert!(parse_full_tx(truncated).is_err());
+}
+
+/// Builds a bare `Operation` (no source account) around an operation body.
+fn operation_bytes(op_type: u32, body: &[u8]) -> Vec<u8> {
+    let mut v = Vec::new();
+    v.extend_from_slice(&0u32.to_be_bytes()); // sourceAccount: not present
+    v.extend_from_slice(&op_type.to_be_bytes());
+    v.extend_from_slice(body);
+    v
+}
+
+fn account_id_bytes() -> Vec<u8> {
+    let mut v = 0u32.to_be_bytes().to_vec(); // PUBLIC_KEY_TYPE_ED25519
+    v.extend_from_slice(&[7u8; 32]);
+    v
+}
+
+fn alphanum4_asset_code() -> Vec<u8> {
+    let mut v = 1u32.to_be_bytes().to_vec(); // ASSET_TYPE_CREDIT_ALPHANUM4
+    v.extend_from_slice(b"USD\0");
+    v
+}
+
+fn allow_trust_op(authorize: u32) -> Vec<u8> {
+    let mut body = account_id_bytes();
+    body.extend_from_slice(&alphanum4_asset_code());
+    body.extend_from_slice(&authorize.to_be_bytes());
+    operation_bytes(7, &body)
+}
+
+fn set_options_flags_op(clear_flags: u32, set_flags: u32) -> Vec<u8> {
+    let mut body = Vec::new();
+    body.extend_from_slice(&0u32.to_be_bytes()); // inflationDest absent
+    body.extend_from_slice(&1u32.to_be_bytes()); // clearFlags present
+    body.extend_from_slice(&clear_flags.to_be_bytes());
+    body.extend_from_slice(&1u32.to_be_bytes()); // setFlags present
+    body.extend_from_slice(&set_flags.to_be_bytes());
+    for _ in 0..5 {
+        // masterWeight, thresholds, homeDomain: all absent
+        body.extend_from_slice(&0u32.to_be_bytes());
+    }
+    body.extend_from_slice(&0u32.to_be_bytes()); // signer absent
+    operation_bytes(5, &body)
+}
+
+fn set_trust_line_flags_op(clear_flags: u32, set_flags: u32) -> Vec<u8> {
+    let mut body = account_id_bytes();
+    body.extend_from_slice(&1u32.to_be_bytes()); // ASSET_TYPE_CREDIT_ALPHANUM4
+    body.extend_from_slice(b"USD\0");
+    body.extend_from_slice(&account_id_bytes()); // issuer
+    body.extend_from_slice(&clear_flags.to_be_bytes());
+    body.extend_from_slice(&set_flags.to_be_bytes());
+    operation_bytes(21, &body)
+}
+
+fn parse_op(bytes: &[u8]) -> Result<(), stellarlib::ParseError> {
+    let mut parser = Parser::new(bytes);
+    Operation::parse(&mut parser)?;
+    parser.ensure_fully_consumed()
+}
+
+/// The protocol enumerates every valid flag value, so a bit outside that set
+/// cannot be displayed honestly and must not be signed. Confirms the legal
+/// values still parse, so the check cannot reject a real transaction.
+#[test]
+fn test_invalid_flag_values_are_rejected() {
+    // AllowTrustOp.authorize is "One of 0, AUTHORIZED_FLAG, or
+    // AUTHORIZED_TO_MAINTAIN_LIABILITIES_FLAG" — not a bitmask, so 0x3 is
+    // invalid even though both bits are individually known.
+    for authorize in [0, 1, 2] {
+        assert!(
+            parse_op(&allow_trust_op(authorize)).is_ok(),
+            "authorize={} is valid and must parse",
+            authorize
+        );
+    }
+    for authorize in [3, 4, 5, 0x8000_0000] {
+        assert_eq!(
+            parse_op(&allow_trust_op(authorize)),
+            Err(stellarlib::ParseError::InvalidFlags(authorize)),
+            "authorize={} must be rejected",
+            authorize
+        );
+    }
+
+    // Account flags: the protocol defines 0x1 through 0x8.
+    for flags in [0x0, 0x1, 0x8, 0xF] {
+        assert!(parse_op(&set_options_flags_op(flags, flags)).is_ok());
+    }
+    for flags in [0x10, 0x11, 0xFFFF_FFFF] {
+        assert_eq!(
+            parse_op(&set_options_flags_op(0, flags)),
+            Err(stellarlib::ParseError::InvalidFlags(flags))
+        );
+        assert_eq!(
+            parse_op(&set_options_flags_op(flags, 0)),
+            Err(stellarlib::ParseError::InvalidFlags(flags))
+        );
+    }
+
+    // Trust line flags: the protocol defines 0x1 through 0x4.
+    for flags in [0x0, 0x1, 0x4, 0x7] {
+        assert!(parse_op(&set_trust_line_flags_op(flags, flags)).is_ok());
+    }
+    for flags in [0x8, 0x9, 0xFFFF_FFFF] {
+        assert_eq!(
+            parse_op(&set_trust_line_flags_op(0, flags)),
+            Err(stellarlib::ParseError::InvalidFlags(flags))
+        );
+        assert_eq!(
+            parse_op(&set_trust_line_flags_op(flags, 0)),
+            Err(stellarlib::ParseError::InvalidFlags(flags))
+        );
+    }
+}
+
+/// The formatter names flags from its own tables while the parser decides which
+/// values are accepted. If the parser ever widens without the formatter's table
+/// growing to match, a bit would pass validation and then vanish from the review
+/// screen — the exact failure the validation exists to prevent. Every value the
+/// parser accepts must therefore render with every one of its bits named.
+#[test]
+fn test_flag_definitions_cover_every_accepted_value() {
+    let cfg = FormatConfig {
+        show_sequence_and_nonce: true,
+        show_preconditions: true,
+        show_authorization_details: true,
+        show_tx_source_if_matches_signer: true,
+    };
+    let source = "GDUTHCF37UX32EMANXIL2WOOVEDZ47GHBTT3DYKU6EKM37SOIZXM2FN7";
+
+    let rendered = |bytes: &[u8], field: &str| -> String {
+        let mut parser = Parser::new(bytes);
+        let op = Operation::parse(&mut parser).expect("accepted by the parser");
+        // Guards the hand-built operations above: a stray byte would otherwise
+        // leave this exercising a different value than intended.
+        parser.ensure_fully_consumed().expect("operation is exact");
+        format_operation(&op, &cfg, source)
+            .expect("formats")
+            .into_iter()
+            .find(|e| e.title == field)
+            .unwrap_or_else(|| panic!("no `{}` entry", field))
+            .content
+    };
+
+    // One name per set bit, so the rendered list must have as many entries.
+    // An empty render is zero names, not one: `"".split(", ").count()` is 1,
+    // which would let a dropped single-bit name pass unnoticed.
+    let named_count = |s: &str| {
+        if s.is_empty() {
+            0
+        } else {
+            s.split(", ").count()
+        }
+    };
+
+    for flags in 1..=stellarlib::ALL_ACCOUNT_FLAGS {
+        let content = rendered(&set_options_flags_op(flags, flags), "Set Flags");
+        assert_eq!(
+            named_count(&content),
+            flags.count_ones() as usize,
+            "account flags {:#x} rendered as {:?}, dropping a bit",
+            flags,
+            content
+        );
+    }
+
+    for flags in 1..=stellarlib::ALL_TRUSTLINE_FLAGS {
+        let content = rendered(&set_trust_line_flags_op(0, flags), "Set Flags");
+        assert_eq!(
+            named_count(&content),
+            flags.count_ones() as usize,
+            "trust line flags {:#x} rendered as {:?}, dropping a bit",
+            flags,
+            content
+        );
+    }
+
+    // AllowTrust is an enumeration, not a mask: each accepted value has exactly
+    // one name.
+    for authorize in [1, 2] {
+        let content = rendered(&allow_trust_op(authorize), "Authorize");
+        assert_eq!(named_count(&content), 1, "authorize={}", authorize);
+    }
 }
