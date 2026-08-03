@@ -624,7 +624,7 @@ pub fn get_operation_intent(operation: &Operation, tx_source: &str) -> Option<St
 macro_rules! format_asset_with_issuer {
     ($asset:expr) => {{
         let code = $asset.asset_code.to_string();
-        let issuer = format_issuer(&$asset.issuer.to_string());
+        let issuer = $asset.issuer.to_string();
         format!("{}@{}", code, issuer)
     }};
 }
@@ -672,7 +672,7 @@ fn add_network_info_if_needed(entries: &mut Vec<DataEntry>, network_id: &Hash) {
 /// * `asset` - The asset to format
 ///
 /// # Returns
-/// A formatted string like "1.23 XLM" or "100 USDC:GABCD..XYZA"
+/// A formatted string like "1.23 XLM" or "100 USDC@<full issuer StrKey>"
 ///
 /// # Examples
 /// ```ignore
@@ -687,21 +687,6 @@ fn format_amount_with_asset(amount: i64, asset: &Asset) -> String {
         format_native_amount(amount.into()),
         format_asset(asset)
     )
-}
-
-/// Formats an issuer address by showing first 3 and last 4 characters
-///
-/// # Arguments
-/// * `issuer` - The full issuer address
-///
-/// # Returns
-/// A shortened version like "GABCDE..UVWXYZ"
-fn format_issuer(issuer: &str) -> String {
-    if issuer.len() > 12 {
-        format!("{}..{}", &issuer[..3], &issuer[issuer.len() - 4..])
-    } else {
-        issuer.to_string()
-    }
 }
 
 /// Generic helper function to format flags from a bitmask
@@ -1520,7 +1505,8 @@ fn format_restore_footprint_op(_op: &RestoreFootprintOp) -> Vec<DataEntry> {
 
 #[cfg(test)]
 mod tests {
-    use super::format_basis_points_as_percent;
+    use super::{format_asset, format_basis_points_as_percent};
+    use crate::{AlphaNum4, Asset, AssetCode4, PublicKey, Uint256};
     use alloc::format;
 
     #[test]
@@ -1531,6 +1517,21 @@ mod tests {
         assert_eq!(format_basis_points_as_percent(125), "1.25%");
         assert_eq!(format_basis_points_as_percent(5), "0.05%");
         assert_eq!(format_basis_points_as_percent(-30), "-0.3%");
+    }
+
+    #[test]
+    fn test_format_asset_includes_full_issuer() {
+        let issuer_bytes = [0x42; 32];
+        let issuer = PublicKey::PublicKeyTypeEd25519(Uint256(&issuer_bytes));
+        let issuer_string = issuer.to_string();
+        let asset = Asset::CreditAlphanum4(AlphaNum4 {
+            asset_code: AssetCode4(b"USDC"),
+            issuer,
+        });
+
+        let formatted = format_asset(&asset);
+
+        assert_eq!(formatted, format!("USDC@{issuer_string}"));
     }
 
     /// The integer formatter must reproduce the old `f64` output exactly.
