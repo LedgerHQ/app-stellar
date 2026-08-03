@@ -1,5 +1,6 @@
 import pytest
 from application_client.stellar_command_sender import CLA, P1, P2, Errors, InsType
+from ragger.bip import pack_derivation_path
 from ragger.error import ExceptionRAPDU
 
 
@@ -42,5 +43,60 @@ def test_continuation_without_first_chunk(backend, ins):
     with pytest.raises(ExceptionRAPDU) as e:
         backend.exchange(
             cla=CLA, ins=ins, p1=P1.MORE_APDU, p2=P2.LAST_APDU, data=b"\x00" * 8
+        )
+    assert e.value.status == Errors.SW_DATA_PARSING_FAIL
+
+
+CHUNKED_SIGNING_INS = (
+    InsType.SIGN_TX,
+    InsType.SIGN_SOROBAN_AUTH,
+    InsType.SIGN_MESSAGE,
+)
+
+
+@pytest.mark.parametrize(
+    "first_ins,continuation_ins",
+    [
+        pytest.param(
+            first_ins,
+            continuation_ins,
+            id=f"{first_ins.name.lower()}_to_{continuation_ins.name.lower()}",
+        )
+        for first_ins in CHUNKED_SIGNING_INS
+        for continuation_ins in CHUNKED_SIGNING_INS
+        if first_ins != continuation_ins
+    ],
+)
+def test_continuation_with_different_instruction_is_rejected(
+    backend, first_ins, continuation_ins
+):
+    path = pack_derivation_path("m/44'/148'/0'")
+
+    backend.exchange(
+        cla=CLA,
+        ins=first_ins,
+        p1=P1.FIRST_APDU,
+        p2=P2.MORE_APDU,
+        data=path,
+    )
+
+    with pytest.raises(ExceptionRAPDU) as e:
+        backend.exchange(
+            cla=CLA,
+            ins=continuation_ins,
+            p1=P1.MORE_APDU,
+            p2=P2.LAST_APDU,
+            data=b"\x00" * 8,
+        )
+    assert e.value.status == Errors.SW_DATA_PARSING_FAIL
+
+    # A mismatched continuation invalidates the original stream as well.
+    with pytest.raises(ExceptionRAPDU) as e:
+        backend.exchange(
+            cla=CLA,
+            ins=first_ins,
+            p1=P1.MORE_APDU,
+            p2=P2.LAST_APDU,
+            data=b"\x00" * 8,
         )
     assert e.value.status == Errors.SW_DATA_PARSING_FAIL

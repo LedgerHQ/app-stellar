@@ -15,7 +15,7 @@
  *  limitations under the License.
  *****************************************************************************/
 use crate::app_ui::sign_tx::ui_sign_tx;
-use crate::context::AppContext;
+use crate::context::{ActiveFlow, AppContext};
 use crate::crypto::{get_public_key, hash, sign};
 use crate::sw::AppSW;
 use ledger_device_sdk::io::Comm;
@@ -26,7 +26,7 @@ pub fn handler_sign_tx<const MAX: usize>(
     more: bool,
     ctx: &mut AppContext<MAX>,
 ) -> Result<(), AppSW> {
-    ctx.handle_chunk(comm, first)?;
+    ctx.handle_chunk(comm, ActiveFlow::SignTx, first)?;
 
     if more {
         return Ok(());

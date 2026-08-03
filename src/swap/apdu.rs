@@ -16,7 +16,7 @@
  *****************************************************************************/
 
 use crate::{
-    context::AppContext,
+    context::{ActiveFlow, AppContext},
     crypto::{get_public_key, hash, sign},
     sw::AppSW,
     Instruction,
@@ -90,7 +90,7 @@ fn handle_swap_sign_tx<const MAX: usize>(
         first,
         more
     );
-    ctx.handle_chunk(comm, first)?;
+    ctx.handle_chunk(comm, ActiveFlow::SignTx, first)?;
 
     // If more data expected, return None
     if more {

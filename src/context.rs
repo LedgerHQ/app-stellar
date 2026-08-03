@@ -27,6 +27,18 @@ pub const MAX_RAW_DATA_LEN: usize = 1024 * 8;
 
 pub const SWAP_MAX_RAW_DATA_LEN: usize = 1024;
 
+/// Identifies the signing instruction that owns an in-progress chunk stream.
+///
+/// Variant names intentionally mirror the APDU instruction names used throughout
+/// the app, making mismatched-flow checks explicit at each handler call site.
+#[allow(clippy::enum_variant_names)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum ActiveFlow {
+    SignTx,
+    SignSorobanAuth,
+    SignMessage,
+}
+
 pub struct RawDataBuffer<const MAX: usize> {
     data: [u8; MAX],
     len: usize,
@@ -105,9 +117,9 @@ pub struct AppContext<const MAX: usize> {
     pub path: Bip32Path,
     pub raw_data: RawDataBuffer<MAX>,
     pub review_finished: bool,
-    /// Whether a first chunk has been received and a multi-chunk transfer is
-    /// in progress. Continuation chunks are rejected while this is false.
-    chunk_started: bool,
+    /// The signing instruction that started the current chunk stream.
+    /// Continuation chunks must belong to the same instruction.
+    active_flow: Option<ActiveFlow>,
 }
 
 impl<const MAX: usize> AppContext<MAX> {
@@ -125,7 +137,7 @@ impl<const MAX: usize> AppContext<MAX> {
         self.raw_data.clear();
         self.path = Default::default();
         self.review_finished = false;
-        self.chunk_started = false;
+        self.active_flow = None;
     }
 
     /// Handles multi-chunk data reception for handlers that accumulate data across multiple APDUs.
@@ -137,13 +149,19 @@ impl<const MAX: usize> AppContext<MAX> {
     ///
     /// # Arguments
     /// * `comm` - The communication channel for receiving APDU data
+    /// * `flow` - Signing instruction receiving this chunk
     /// * `first` - Whether this is the first chunk of data
     ///
     /// # Returns
     /// * `Ok(())` if the chunk was successfully processed
     /// * `Err(AppSW)` if an error occurred (wrong length, data too large,
     ///   continuation chunk without a first chunk, etc.)
-    pub fn handle_chunk(&mut self, comm: &mut Comm, first: bool) -> Result<(), AppSW> {
+    pub(crate) fn handle_chunk(
+        &mut self,
+        comm: &mut Comm,
+        flow: ActiveFlow,
+        first: bool,
+    ) -> Result<(), AppSW> {
         let data = comm.get_data().map_err(|_| AppSW::WrongApduLength)?;
         if first {
             // Reset context for new transaction
@@ -160,11 +178,12 @@ impl<const MAX: usize> AppContext<MAX> {
             // extend_from_slice now handles the size check internally
             self.raw_data.extend_from_slice(remaining_data)?;
 
-            self.chunk_started = true;
+            self.active_flow = Some(flow);
         } else {
-            // A continuation without a preceding first chunk would otherwise
-            // proceed with the default path and whatever the buffer holds.
-            if !self.chunk_started {
+            // Reject both orphaned continuations and chunks that switch signing
+            // instructions in the middle of a stream.
+            if self.active_flow != Some(flow) {
+                self.reset();
                 return Err(AppSW::DataParsingFail);
             }
 

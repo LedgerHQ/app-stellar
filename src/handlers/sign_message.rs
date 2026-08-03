@@ -16,7 +16,7 @@
  *****************************************************************************/
 
 use crate::app_ui::sign_message::ui_sign_message;
-use crate::context::AppContext;
+use crate::context::{ActiveFlow, AppContext};
 use crate::crypto::{hash_parts, sign};
 use crate::sw::AppSW;
 use alloc::string::String;
@@ -42,7 +42,7 @@ pub fn handler_sign_message<const MAX: usize>(
     more: bool,
     ctx: &mut AppContext<MAX>,
 ) -> Result<(), AppSW> {
-    ctx.handle_chunk(comm, first)?;
+    ctx.handle_chunk(comm, ActiveFlow::SignMessage, first)?;
 
     if ctx.raw_data.len() > MAX_MESSAGE_LEN {
         return Err(AppSW::RequestDataTooLarge);
