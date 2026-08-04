@@ -24,6 +24,7 @@ pub enum ParseError {
     BufferOverflow,
     InvalidType(i32),
     InvalidPadding,
+    AllocationFailed,
     LengthExceedsMax { actual: usize, max: usize },
     MaxDepthExceeded { depth: usize, max: usize },
     TrailingData { remaining: usize },
@@ -36,6 +37,7 @@ impl fmt::Display for ParseError {
             ParseError::BufferOverflow => write!(f, "Buffer overflow: not enough bytes to read"),
             ParseError::InvalidType(val) => write!(f, "Invalid type value: {}", val),
             ParseError::InvalidPadding => write!(f, "Invalid padding: non-zero bytes in padding"),
+            ParseError::AllocationFailed => write!(f, "Failed to allocate parser storage"),
             ParseError::LengthExceedsMax { actual, max } => {
                 write!(f, "Length {} exceeds maximum allowed {}", actual, max)
             }
@@ -97,7 +99,7 @@ impl<'a> Parser<'a> {
 
     /// Enter a recursive parsing context, checking depth limit
     #[inline]
-    pub(crate) fn enter_recursion(&mut self) -> Result<(), ParseError> {
+    fn enter_recursion(&mut self) -> Result<(), ParseError> {
         if self.depth >= MAX_PARSE_DEPTH {
             return Err(ParseError::MaxDepthExceeded {
                 depth: self.depth + 1,
@@ -110,17 +112,30 @@ impl<'a> Parser<'a> {
 
     /// Exit a recursive parsing context
     #[inline]
-    pub(crate) fn exit_recursion(&mut self) {
+    fn exit_recursion(&mut self) {
         self.depth = self.depth.saturating_sub(1);
+    }
+
+    /// Run a parser operation one recursion level deeper.
+    ///
+    /// Keeping depth restoration here prevents `?` inside recursive parsers
+    /// from leaving the parser at an artificially elevated depth after an
+    /// ordinary parse or allocation error.
+    #[inline]
+    fn with_recursion<T>(
+        &mut self,
+        parse: impl FnOnce(&mut Self) -> Result<T, ParseError>,
+    ) -> Result<T, ParseError> {
+        self.enter_recursion()?;
+        let result = parse(self);
+        self.exit_recursion();
+        result
     }
 
     /// Parse with depth tracking for recursive types
     #[inline]
     pub fn parse_with_depth<T: XdrParse<'a>>(&mut self) -> Result<T, ParseError> {
-        self.enter_recursion()?;
-        let result = T::parse(self);
-        self.exit_recursion();
-        result
+        self.with_recursion(T::parse)
     }
 
     /// Check if we can read n bytes
@@ -415,8 +430,15 @@ impl<'a, const MAX: usize> XdrParse<'a> for BytesM<'a, MAX> {
     }
 }
 
+/// Maximum item count for XDR vectors without a smaller protocol-defined cap.
+///
+/// Soroban collections are unbounded in the XDR schema, but retaining more
+/// than this on a device with a 16 KiB heap is unsafe. Fields with protocol
+/// limits continue to provide their own `MAX` value.
+pub const MAX_SOROBAN_VEC_ITEMS: u32 = 64;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct VecM<T, const MAX: u32 = { u32::MAX }>(Vec<T>);
+pub struct VecM<T, const MAX: u32 = MAX_SOROBAN_VEC_ITEMS>(Vec<T>);
 
 impl<T, const MAX: u32> VecM<T, MAX> {
     /// Create a new VecM from a Vec (mainly for testing)
@@ -441,6 +463,14 @@ impl<T, const MAX: u32> VecM<T, MAX> {
     }
 }
 
+fn try_vec_with_capacity<T>(capacity: usize) -> Result<Vec<T>, ParseError> {
+    let mut items = Vec::new();
+    items
+        .try_reserve_exact(capacity)
+        .map_err(|_| ParseError::AllocationFailed)?;
+    Ok(items)
+}
+
 impl<'a, T: XdrParse<'a>, const MAX: u32> XdrParse<'a> for VecM<T, MAX> {
     fn parse(parser: &mut Parser<'a>) -> Result<Self, ParseError> {
         let len = parser.parse_uint32()?;
@@ -451,22 +481,31 @@ impl<'a, T: XdrParse<'a>, const MAX: u32> XdrParse<'a> for VecM<T, MAX> {
             });
         }
 
-        // Enter recursion context for VecM parsing
-        parser.enter_recursion()?;
-
-        // `len` is attacker-controlled and unbounded for types using the default
-        // MAX (u32::MAX), so pre-allocating from it directly can abort the app
-        // inside the allocator. Every XDR element occupies at least 4 bytes, so
-        // the remaining input bounds how many elements can actually follow.
-        let capacity = (len as usize).min(parser.remaining() / 4);
-        let mut items = Vec::with_capacity(capacity);
-        for _ in 0..len {
-            let item = T::parse(parser)?;
-            items.push(item);
+        // No XDR element can occupy fewer than four bytes. Reject impossible
+        // lengths before allocating so malformed inputs cannot consume all
+        // remaining heap merely because the APDU buffer itself is large.
+        let max_possible = parser.remaining() / 4;
+        if len as usize > max_possible {
+            return Err(ParseError::LengthExceedsMax {
+                actual: len as usize,
+                max: max_possible,
+            });
         }
 
-        parser.exit_recursion();
-        Ok(VecM(items))
+        parser.with_recursion(|parser| {
+            // `len` is attacker-controlled. Reserving remains fallible because even
+            // a bounded, input-valid capacity can exceed the currently available
+            // device heap when T is much larger than its encoded representation.
+            // Once this exact reservation succeeds, none of the pushes below can
+            // grow the Vec.
+            let mut items = try_vec_with_capacity(len as usize)?;
+            for _ in 0..len {
+                let item = T::parse(parser)?;
+                items.push(item);
+            }
+
+            Ok(VecM(items))
+        })
     }
 }
 
@@ -2194,39 +2233,35 @@ pub enum ClaimPredicate {
 
 impl<'a> XdrParse<'a> for ClaimPredicate {
     fn parse(parser: &mut Parser<'a>) -> Result<Self, ParseError> {
-        // Enter recursion for ClaimPredicate parsing
-        parser.enter_recursion()?;
-
-        let pred_type = ClaimPredicateType::from_i32(parser.parse_int32()?)?;
-        let result = match pred_type {
-            ClaimPredicateType::Unconditional => Ok(ClaimPredicate::Unconditional),
-            ClaimPredicateType::And => {
-                let predicates = VecM::parse(parser)?;
-                Ok(ClaimPredicate::And(predicates))
-            }
-            ClaimPredicateType::Or => {
-                let predicates = VecM::parse(parser)?;
-                Ok(ClaimPredicate::Or(predicates))
-            }
-            ClaimPredicateType::Not => {
-                let predicate = parser.parse_optional(ClaimPredicate::parse)?;
-                match predicate {
-                    Some(p) => Ok(ClaimPredicate::Not(Box::new(p))),
-                    None => Err(ParseError::BufferOverflow),
+        parser.with_recursion(|parser| {
+            let pred_type = ClaimPredicateType::from_i32(parser.parse_int32()?)?;
+            match pred_type {
+                ClaimPredicateType::Unconditional => Ok(ClaimPredicate::Unconditional),
+                ClaimPredicateType::And => {
+                    let predicates = VecM::parse(parser)?;
+                    Ok(ClaimPredicate::And(predicates))
+                }
+                ClaimPredicateType::Or => {
+                    let predicates = VecM::parse(parser)?;
+                    Ok(ClaimPredicate::Or(predicates))
+                }
+                ClaimPredicateType::Not => {
+                    let predicate = parser.parse_optional(ClaimPredicate::parse)?;
+                    match predicate {
+                        Some(p) => Ok(ClaimPredicate::Not(Box::new(p))),
+                        None => Err(ParseError::BufferOverflow),
+                    }
+                }
+                ClaimPredicateType::BeforeAbsoluteTime => {
+                    let abs_before = parser.parse_int64()?;
+                    Ok(ClaimPredicate::BeforeAbsoluteTime(abs_before))
+                }
+                ClaimPredicateType::BeforeRelativeTime => {
+                    let rel_before = parser.parse_int64()?;
+                    Ok(ClaimPredicate::BeforeRelativeTime(rel_before))
                 }
             }
-            ClaimPredicateType::BeforeAbsoluteTime => {
-                let abs_before = parser.parse_int64()?;
-                Ok(ClaimPredicate::BeforeAbsoluteTime(abs_before))
-            }
-            ClaimPredicateType::BeforeRelativeTime => {
-                let rel_before = parser.parse_int64()?;
-                Ok(ClaimPredicate::BeforeRelativeTime(rel_before))
-            }
-        };
-
-        parser.exit_recursion();
-        result
+        })
     }
 }
 
@@ -3262,13 +3297,12 @@ fn consume_array<'a, T: XdrParse<'a>>(
         });
     }
 
-    parser.enter_recursion()?;
-    for _ in 0..count {
-        T::parse(parser)?;
-    }
-    parser.exit_recursion();
-
-    Ok(count)
+    parser.with_recursion(|parser| {
+        for _ in 0..count {
+            T::parse(parser)?;
+        }
+        Ok(count)
+    })
 }
 
 /// Footprint of a Soroban transaction.
@@ -3668,5 +3702,75 @@ impl<'a> XdrParse<'a> for HashIdPreimageSorobanAuthorizationWithAddress<'a> {
             address,
             invocation,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        consume_array, try_vec_with_capacity, ClaimPredicate, ParseError, Parser, VecM, XdrParse,
+    };
+
+    struct AlwaysFails;
+
+    impl<'a> XdrParse<'a> for AlwaysFails {
+        fn parse(_parser: &mut Parser<'a>) -> Result<Self, ParseError> {
+            Err(ParseError::InvalidType(-1))
+        }
+    }
+
+    #[test]
+    fn vec_capacity_overflow_returns_parse_error() {
+        let result = try_vec_with_capacity::<u64>(usize::MAX);
+        assert!(matches!(result, Err(ParseError::AllocationFailed)));
+    }
+
+    #[test]
+    fn vecm_error_restores_recursion_depth() {
+        let data = [0, 0, 0, 1, 0, 0, 0, 0];
+        let mut parser = Parser::new(&data);
+
+        assert!(matches!(
+            VecM::<AlwaysFails, 1>::parse(&mut parser),
+            Err(ParseError::InvalidType(-1))
+        ));
+        assert_eq!(parser.depth, 0);
+    }
+
+    #[test]
+    fn claim_predicate_error_restores_recursion_depth() {
+        let data = [0, 0, 0, 99];
+        let mut parser = Parser::new(&data);
+
+        assert!(matches!(
+            ClaimPredicate::parse(&mut parser),
+            Err(ParseError::InvalidType(99))
+        ));
+        assert_eq!(parser.depth, 0);
+    }
+
+    #[test]
+    fn claim_predicate_not_parses_and_restores_recursion_depth() {
+        let data = [0, 0, 0, 3, 0, 0, 0, 1, 0, 0, 0, 0];
+        let mut parser = Parser::new(&data);
+
+        let parsed = ClaimPredicate::parse(&mut parser).expect("valid predicate must parse");
+        assert!(matches!(
+            parsed,
+            ClaimPredicate::Not(inner) if matches!(*inner, ClaimPredicate::Unconditional)
+        ));
+        assert_eq!(parser.depth, 0);
+    }
+
+    #[test]
+    fn consume_array_error_restores_recursion_depth() {
+        let data = [0, 0, 0, 1, 0, 0, 0, 0];
+        let mut parser = Parser::new(&data);
+
+        assert!(matches!(
+            consume_array::<AlwaysFails>(&mut parser, 1),
+            Err(ParseError::InvalidType(-1))
+        ));
+        assert_eq!(parser.depth, 0);
     }
 }

@@ -1,8 +1,10 @@
-use stellarlib::parser::{ParseError, Parser, ScVal, Transaction, XdrParse, MAX_OPS};
+use stellarlib::parser::{
+    ParseError, Parser, ScVal, Transaction, XdrParse, MAX_OPS, MAX_SOROBAN_VEC_ITEMS,
+};
 
 // Regression tests for the VecM eager-allocation DoS: a huge length prefix on a
-// vector type must fail with BufferOverflow once the input runs out, instead of
-// pre-allocating `len` elements (which aborts the app on the 16 KB device heap).
+// vector type must fail before allocation, instead of pre-allocating `len`
+// elements (which aborts the app on the 16 KB device heap).
 
 #[test]
 fn test_vecm_huge_length_prefix_no_data() {
@@ -16,17 +18,21 @@ fn test_vecm_huge_length_prefix_no_data() {
     let mut parser = Parser::new(&data);
     let result = ScVal::parse(&mut parser);
 
-    assert!(matches!(result, Err(ParseError::BufferOverflow)));
+    assert!(matches!(
+        result,
+        Err(ParseError::LengthExceedsMax { actual, max })
+            if actual == u32::MAX as usize && max == MAX_SOROBAN_VEC_ITEMS as usize
+    ));
 }
 
 #[test]
 fn test_vecm_length_prefix_exceeds_remaining_data() {
     // Length prefix claims more elements than the remaining bytes can hold;
-    // parsing must stop cleanly when the real data runs out.
+    // parsing must reject the impossible length before allocating.
     let mut data = Vec::new();
     data.extend_from_slice(&[0, 0, 0, 16]); // ScValType::ScvVec
     data.extend_from_slice(&[0, 0, 0, 1]); // Optional: present
-    data.extend_from_slice(&[0, 0, 4, 0]); // VecM length: 1024
+    data.extend_from_slice(&[0, 0, 0, 4]); // VecM length: 4
     for _ in 0..3 {
         data.extend_from_slice(&[0, 0, 0, 1]); // ScValType::ScvVoid
     }
@@ -34,7 +40,41 @@ fn test_vecm_length_prefix_exceeds_remaining_data() {
     let mut parser = Parser::new(&data);
     let result = ScVal::parse(&mut parser);
 
-    assert!(matches!(result, Err(ParseError::BufferOverflow)));
+    assert!(matches!(
+        result,
+        Err(ParseError::LengthExceedsMax { actual: 4, max: 3 })
+    ));
+}
+
+fn scval_void_vector(item_count: u32) -> Vec<u8> {
+    let mut data = Vec::new();
+    data.extend_from_slice(&[0, 0, 0, 16]); // ScValType::ScvVec
+    data.extend_from_slice(&[0, 0, 0, 1]); // Optional: present
+    data.extend_from_slice(&item_count.to_be_bytes());
+    for _ in 0..item_count {
+        data.extend_from_slice(&[0, 0, 0, 1]); // ScValType::ScvVoid
+    }
+    data
+}
+
+#[test]
+fn test_vecm_default_limit_boundary() {
+    let accepted = scval_void_vector(MAX_SOROBAN_VEC_ITEMS);
+    let mut parser = Parser::new(&accepted);
+    let parsed = ScVal::parse(&mut parser).expect("vector at limit must parse");
+    assert!(matches!(
+        parsed,
+        ScVal::Vec(Some(items)) if items.len() == MAX_SOROBAN_VEC_ITEMS as usize
+    ));
+
+    let rejected_count = MAX_SOROBAN_VEC_ITEMS + 1;
+    let rejected = scval_void_vector(rejected_count);
+    let mut parser = Parser::new(&rejected);
+    assert!(matches!(
+        ScVal::parse(&mut parser),
+        Err(ParseError::LengthExceedsMax { actual, max })
+            if actual == rejected_count as usize && max == MAX_SOROBAN_VEC_ITEMS as usize
+    ));
 }
 
 #[test]
