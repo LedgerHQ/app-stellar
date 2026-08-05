@@ -2368,6 +2368,215 @@ class SignTxTestCases:
         return tx
 
     @staticmethod
+    def op_invoke_host_function_with_multiple_auth_delegates() -> TransactionEnvelope:
+        # Delegate paths are scoped by their authorization entry so that two
+        # AddressWithDelegates credentials never produce the same review label.
+        def credentials(
+            auth_address: str,
+            nonce: int,
+            signature_expiration_ledger: int,
+            delegate_address: str,
+            nested_delegate_address: str,
+        ) -> stellar_xdr.SorobanCredentials:
+            return stellar_xdr.SorobanCredentials(
+                stellar_xdr.SorobanCredentialsType.SOROBAN_CREDENTIALS_ADDRESS_WITH_DELEGATES,
+                address_with_delegates=stellar_xdr.SorobanAddressCredentialsWithDelegates(
+                    address_credentials=stellar_xdr.SorobanAddressCredentials(
+                        address=Address(auth_address).to_xdr_sc_address(),
+                        nonce=stellar_xdr.Int64(nonce),
+                        signature_expiration_ledger=stellar_xdr.Uint32(
+                            signature_expiration_ledger
+                        ),
+                        signature=scval.to_void(),
+                    ),
+                    delegates=[
+                        stellar_xdr.SorobanDelegateSignature(
+                            address=Address(delegate_address).to_xdr_sc_address(),
+                            signature=scval.to_void(),
+                            nested_delegates=[
+                                stellar_xdr.SorobanDelegateSignature(
+                                    address=Address(
+                                        nested_delegate_address
+                                    ).to_xdr_sc_address(),
+                                    signature=scval.to_void(),
+                                    nested_delegates=[],
+                                )
+                            ],
+                        )
+                    ],
+                ),
+            )
+
+        def invocation(
+            contract_address: str, function_name: bytes
+        ) -> stellar_xdr.SorobanAuthorizedInvocation:
+            return stellar_xdr.SorobanAuthorizedInvocation(
+                function=stellar_xdr.SorobanAuthorizedFunction(
+                    stellar_xdr.SorobanAuthorizedFunctionType.SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN,
+                    contract_fn=stellar_xdr.InvokeContractArgs(
+                        contract_address=Address(contract_address).to_xdr_sc_address(),
+                        function_name=stellar_xdr.SCSymbol(function_name),
+                        args=[],
+                    ),
+                ),
+                sub_invocations=[],
+            )
+
+        return (
+            common_builder(base_fee=500)
+            .append_invoke_contract_function_op(
+                contract_id="CA3B55CUVQCP4C4WXGYG5I2ED7AYE6AFNJB25SFXXVWGEVP3LUVTN7ND",
+                function_name="testfunc",
+                parameters=None,
+                auth=[
+                    stellar_xdr.SorobanAuthorizationEntry(
+                        credentials=credentials(
+                            "GDUTHCF37UX32EMANXIL2WOOVEDZ47GHBTT3DYKU6EKM37SOIZXM2FN7",
+                            111,
+                            1000,
+                            "GCWNBLOHPARYAAF5W25NELURTERYS732Q7RRBTXRKBPGYCYLOFKCLKKA",
+                            "GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34",
+                        ),
+                        root_invocation=invocation(
+                            "CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75",
+                            b"first_auth",
+                        ),
+                    ),
+                    stellar_xdr.SorobanAuthorizationEntry(
+                        credentials=credentials(
+                            "CA4D4MGTRVJXZIHWN2DRKGTW5IZYU4X65SFIFYQZKBU6QQXYKGNTSZML",
+                            222,
+                            2000,
+                            "GACXLJTQBM24XSQBZKRT22VWGWUI4WSR6TLJFBMMRZKVO76CUIB2L6N3",
+                            "GDFUXVTQTPNX63ZBX4GAOS5LU4HQREXRH3K4UOFLZEBLCP6ZPGZBNB6A",
+                        ),
+                        root_invocation=invocation(
+                            "CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA",
+                            b"second_auth",
+                        ),
+                    ),
+                ],
+            )
+            .add_time_bounds(0, 0)
+            .build()
+        )
+
+    @staticmethod
+    def op_invoke_host_function_with_auth_delegates_complex() -> TransactionEnvelope:
+        # Model a real AddressWithDelegates transaction: the authorizing address
+        # is a contract, delegate signatures contain structured ScVals, and the
+        # delegate tree has multiple roots, siblings, and three levels of depth.
+        contract_address = "CD4QPQP6I4N5BJA353IG2XXL4REKLIFF526O3K2X6UD5NYLILJKQ5IBW"
+        auth_address = "CA4D4MGTRVJXZIHWN2DRKGTW5IZYU4X65SFIFYQZKBU6QQXYKGNTSZML"
+        args = [scval.to_address(auth_address), scval.to_uint32(1)]
+
+        def signature(public_key: str, value: str) -> stellar_xdr.SCVal:
+            return scval.to_vec(
+                [
+                    scval.to_map(
+                        {
+                            scval.to_symbol("public_key"): scval.to_bytes(
+                                bytes.fromhex(public_key)
+                            ),
+                            scval.to_symbol("signature"): scval.to_bytes(
+                                bytes.fromhex(value)
+                            ),
+                        }
+                    )
+                ]
+            )
+
+        delegates = [
+            stellar_xdr.SorobanDelegateSignature(
+                address=Address(
+                    "GACXLJTQBM24XSQBZKRT22VWGWUI4WSR6TLJFBMMRZKVO76CUIB2L6N3"
+                ).to_xdr_sc_address(),
+                signature=signature(
+                    "0575a6700b35cbca01caa33d6ab635a88e5a51f4d692858c8e55577fc2a203a5",
+                    "e8415219d257d5954f520049ff259caeb10c121be646339ce54617cb86fdc84a29ac935a484941ed49a9cf500a65d5eacfc010672b45d2aefa85f6df7c198107",
+                ),
+                nested_delegates=[
+                    stellar_xdr.SorobanDelegateSignature(
+                        address=Address(
+                            "GDFUXVTQTPNX63ZBX4GAOS5LU4HQREXRH3K4UOFLZEBLCP6ZPGZBNB6A"
+                        ).to_xdr_sc_address(),
+                        signature=signature(
+                            "cb4bd6709bdb7f6f21bf0c074baba70f0892f13ed5ca38abc902b13fd979b216",
+                            "751477a088c98ef6931a7987a30a945ddc7837e989c10d1bcd0cbf5349614c4493ae41a7a23f40cb5ba976a1ee4e7af2f85ac4b6dcc78e228b693aaf6df8620a",
+                        ),
+                        nested_delegates=[
+                            stellar_xdr.SorobanDelegateSignature(
+                                address=Address(kp1.public_key).to_xdr_sc_address(),
+                                signature=scval.to_void(),
+                                nested_delegates=[],
+                            )
+                        ],
+                    ),
+                    stellar_xdr.SorobanDelegateSignature(
+                        address=Address(kp2.public_key).to_xdr_sc_address(),
+                        signature=scval.to_void(),
+                        nested_delegates=[],
+                    ),
+                ],
+            ),
+            stellar_xdr.SorobanDelegateSignature(
+                address=Address(kp0.public_key).to_xdr_sc_address(),
+                signature=scval.to_void(),
+                nested_delegates=[
+                    stellar_xdr.SorobanDelegateSignature(
+                        address=Address(
+                            Keypair.from_mnemonic_phrase(MNEMONIC, index=3).public_key
+                        ).to_xdr_sc_address(),
+                        signature=scval.to_void(),
+                        nested_delegates=[],
+                    )
+                ],
+            ),
+        ]
+
+        return (
+            common_builder(base_fee=500)
+            .append_invoke_contract_function_op(
+                contract_id=contract_address,
+                function_name="increment",
+                parameters=args,
+                auth=[
+                    stellar_xdr.SorobanAuthorizationEntry(
+                        credentials=stellar_xdr.SorobanCredentials(
+                            stellar_xdr.SorobanCredentialsType.SOROBAN_CREDENTIALS_ADDRESS_WITH_DELEGATES,
+                            address_with_delegates=stellar_xdr.SorobanAddressCredentialsWithDelegates(
+                                address_credentials=stellar_xdr.SorobanAddressCredentials(
+                                    address=Address(auth_address).to_xdr_sc_address(),
+                                    nonce=stellar_xdr.Int64(6937990895908832718),
+                                    signature_expiration_ledger=stellar_xdr.Uint32(
+                                        3716907
+                                    ),
+                                    signature=scval.to_void(),
+                                ),
+                                delegates=delegates,
+                            ),
+                        ),
+                        root_invocation=stellar_xdr.SorobanAuthorizedInvocation(
+                            function=stellar_xdr.SorobanAuthorizedFunction(
+                                stellar_xdr.SorobanAuthorizedFunctionType.SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN,
+                                contract_fn=stellar_xdr.InvokeContractArgs(
+                                    contract_address=Address(
+                                        contract_address
+                                    ).to_xdr_sc_address(),
+                                    function_name=stellar_xdr.SCSymbol(b"increment"),
+                                    args=args,
+                                ),
+                            ),
+                            sub_invocations=[],
+                        ),
+                    )
+                ],
+            )
+            .add_time_bounds(0, 1784601889)
+            .build()
+        )
+
+    @staticmethod
     def op_invoke_host_function_with_auth_and_no_args_and_no_source() -> (
         TransactionEnvelope
     ):
@@ -2738,6 +2947,59 @@ class SignTxTestCases:
         return tx
 
     @staticmethod
+    def op_invoke_host_function_with_auth_address_root_matches_host_function() -> (
+        TransactionEnvelope
+    ):
+        # Unlike source-account credentials, address credentials carry their own
+        # authorization context and must remain visible even when the invocation
+        # itself is identical to the host function.
+        scvals = [
+            scval.to_uint128(1),
+            scval.to_int128(2),
+            scval.to_uint256(3),
+        ]
+        tx = (
+            common_builder(base_fee=500)
+            .append_invoke_contract_function_op(
+                contract_id="CA3B55CUVQCP4C4WXGYG5I2ED7AYE6AFNJB25SFXXVWGEVP3LUVTN7ND",
+                function_name="testfunc",
+                parameters=scvals,
+                source=kp0.public_key,
+                auth=[
+                    stellar_xdr.SorobanAuthorizationEntry(
+                        stellar_xdr.SorobanCredentials(
+                            stellar_xdr.SorobanCredentialsType.SOROBAN_CREDENTIALS_ADDRESS,
+                            stellar_xdr.SorobanAddressCredentials(
+                                Address(
+                                    "GDUTHCF37UX32EMANXIL2WOOVEDZ47GHBTT3DYKU6EKM37SOIZXM2FN7"
+                                ).to_xdr_sc_address(),
+                                stellar_xdr.Int64(111324345),
+                                stellar_xdr.Uint32(34543543),
+                                scval.to_void(),
+                            ),
+                        ),
+                        stellar_xdr.SorobanAuthorizedInvocation(
+                            function=stellar_xdr.SorobanAuthorizedFunction(
+                                stellar_xdr.SorobanAuthorizedFunctionType.SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN,
+                                contract_fn=stellar_xdr.InvokeContractArgs(
+                                    contract_address=Address(
+                                        "CA3B55CUVQCP4C4WXGYG5I2ED7AYE6AFNJB25SFXXVWGEVP3LUVTN7ND"
+                                    ).to_xdr_sc_address(),
+                                    function_name=stellar_xdr.SCSymbol(b"testfunc"),
+                                    args=scvals,
+                                ),
+                            ),
+                            sub_invocations=[],
+                        ),
+                    ),
+                ],
+            )
+            .add_time_bounds(0, 0)
+            .build()
+        )
+        return tx
+
+    @staticmethod
     def op_invoke_host_function_with_multiple_source_account_auth() -> (
         TransactionEnvelope
     ):
@@ -2787,8 +3049,9 @@ class SignTxTestCases:
                             ],
                         ),
                     ),
-                    # ADDRESS credentials are not authorized by the transaction
-                    # signature and must be skipped in the display.
+                    # ADDRESS credentials bind the authorization to a separate
+                    # address; the display shows them together with their
+                    # credential context (address, nonce, expiration).
                     stellar_xdr.SorobanAuthorizationEntry(
                         stellar_xdr.SorobanCredentials(
                             stellar_xdr.SorobanCredentialsType.SOROBAN_CREDENTIALS_ADDRESS,
@@ -3772,6 +4035,51 @@ class SignSorobanAuthorizationTestCases:
                 ),
                 nonce=stellar_xdr.Int64(1232432453),
                 signature_expiration_ledger=stellar_xdr.Uint32(34654367),
+                invocation=stellar_xdr.SorobanAuthorizedInvocation(
+                    function=stellar_xdr.SorobanAuthorizedFunction(
+                        stellar_xdr.SorobanAuthorizedFunctionType.SOROBAN_AUTHORIZED_FUNCTION_TYPE_CREATE_CONTRACT_HOST_FN,
+                        create_contract_host_fn=create_contract,
+                    ),
+                    sub_invocations=[],
+                ),
+            ),
+        )
+        return data
+
+    @staticmethod
+    def soroban_auth_with_address_create_smart_contract() -> stellar_xdr.HashIDPreimage:
+        # CAP-71 (Protocol 27): cover an address-bound payload whose root is a
+        # create-contract host function rather than a contract invocation.
+        create_contract = stellar_xdr.CreateContractArgs(
+            contract_id_preimage=stellar_xdr.ContractIDPreimage(
+                stellar_xdr.ContractIDPreimageType.CONTRACT_ID_PREIMAGE_FROM_ADDRESS,
+                from_address=stellar_xdr.ContractIDPreimageFromAddress(
+                    address=Address(
+                        "GB42LIJ3V5KXCY32EFL4NL73OSI5PRCFJ3WNFMFX4QHGOAR7BFX2YC34"
+                    ).to_xdr_sc_address(),
+                    salt=stellar_xdr.Uint256(
+                        b"\xd9\x9f\x1f\xee4N\xeb\xd80}\xeb\x9f\xf4$W\xd8\xdb\x12\xeeS')\x18\xfe48\x02q\xc1\xd4\x10\n"
+                    ),
+                ),
+            ),
+            executable=stellar_xdr.ContractExecutable(
+                stellar_xdr.ContractExecutableType.CONTRACT_EXECUTABLE_WASM,
+                stellar_xdr.Hash(
+                    b"\xd9\x9f\x1f\xee4N\xeb\xd80}\xeb\x9f\xf4$W\xd8\xdb\x12\xeeS')\x18\xfe48\x02q\xc1\xd4\x10\n"
+                ),
+            ),
+        )
+        data = stellar_xdr.HashIDPreimage(
+            stellar_xdr.EnvelopeType.ENVELOPE_TYPE_SOROBAN_AUTHORIZATION_WITH_ADDRESS,
+            soroban_authorization_with_address=stellar_xdr.HashIDPreimageSorobanAuthorizationWithAddress(
+                network_id=stellar_xdr.Hash(
+                    Network(Network.PUBLIC_NETWORK_PASSPHRASE).network_id()
+                ),
+                nonce=stellar_xdr.Int64(1232432453),
+                signature_expiration_ledger=stellar_xdr.Uint32(34654367),
+                address=Address(
+                    "GDUTHCF37UX32EMANXIL2WOOVEDZ47GHBTT3DYKU6EKM37SOIZXM2FN7"
+                ).to_xdr_sc_address(),
                 invocation=stellar_xdr.SorobanAuthorizedInvocation(
                     function=stellar_xdr.SorobanAuthorizedFunction(
                         stellar_xdr.SorobanAuthorizedFunctionType.SOROBAN_AUTHORIZED_FUNCTION_TYPE_CREATE_CONTRACT_HOST_FN,

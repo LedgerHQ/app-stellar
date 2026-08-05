@@ -80,13 +80,18 @@ def test_sign_tx_with_precondition_enabled(
 def test_sign_tx_with_sequence_enabled(backend, scenario_navigator, device, navigator):
     keypair = Keypair.from_mnemonic_phrase(MNEMONIC, index=0)
     path = "m/44'/148'/0'"
-    transaction = SignTxTestCases.op_payment_asset_native()
+    transaction = SignTxTestCases.op_invoke_host_function_with_auth_delegates()
     client = StellarCommandSender(backend)
     signature_base = transaction.signature_base()
 
-    configure_device_settings(navigator, device, SettingsId.ENABLE_SEQUENCE_AND_NONCE)
+    configure_device_settings(
+        navigator,
+        device,
+        SettingsId.ENABLE_SEQUENCE_AND_NONCE | SettingsId.ENABLE_BLIND_SIGNING,
+    )
 
     with client.sign_tx(path=path, transaction=signature_base):
+        handle_risk_warning(navigator, device)
         scenario_navigator.review_approve(
             ROOT_SCREENSHOT_PATH,
             custom_screen_text="Sign ",
@@ -122,7 +127,7 @@ def test_sign_tx_with_authorization_details_disabled(
 ):
     keypair = Keypair.from_mnemonic_phrase(MNEMONIC, index=0)
     path = "m/44'/148'/0'"
-    transaction = SignTxTestCases.op_invoke_host_function_with_complex_sub_invocation()
+    transaction = SignTxTestCases.op_invoke_host_function_with_auth_delegates()
     client = StellarCommandSender(backend)
     signature_base = transaction.signature_base()
     configure_device_settings(

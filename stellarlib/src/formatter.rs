@@ -1428,6 +1428,80 @@ fn auth_duplicates_host_function(
     }
 }
 
+/// Renders the credential context of a Soroban authorization entry.
+///
+/// Source-account credentials are implicit (the key on this device signs the
+/// whole transaction) and render nothing. Address-based credentials bind the
+/// authorization to a specific address with its own nonce and signature
+/// expiration; `AddressV2` distinguishes the Protocol 27 payload and
+/// `AddressWithDelegates` additionally carries a nested tree of delegated
+/// signers. These fields are part of the payload the device commits to, so they
+/// must be reviewable even though the key on this device does not produce them.
+/// Credential and delegate signatures are still parsed but are intentionally
+/// not rendered: they are opaque proofs rather than authorization intent; the
+/// corresponding authorizing and delegate addresses are the reviewable fields.
+/// Delegate paths are prefixed with `auth_index`. The path and address use
+/// separate fields so both titles stay fixed at any nesting depth.
+fn format_soroban_authorization_credentials(
+    credentials: &SorobanCredentials,
+    config: &FormatConfig,
+    auth_index: &str,
+) -> Vec<DataEntry> {
+    let mut entries = Vec::new();
+    match credentials {
+        SorobanCredentials::SourceAccount => {}
+        SorobanCredentials::Address(cred) => {
+            entries.push(DataEntry::new("Auth Type", "Address".to_string()));
+            format_soroban_address_credentials(cred, config, &mut entries);
+        }
+        SorobanCredentials::AddressV2(cred) => {
+            entries.push(DataEntry::new("Auth Type", "Address V2".to_string()));
+            format_soroban_address_credentials(cred, config, &mut entries);
+        }
+        SorobanCredentials::AddressWithDelegates(cred) => {
+            entries.push(DataEntry::new(
+                "Auth Type",
+                "Address with Delegates".to_string(),
+            ));
+            format_soroban_address_credentials(&cred.address_credentials, config, &mut entries);
+            for (i, delegate) in cred.delegates.iter().enumerate() {
+                format_soroban_delegate(delegate, format!("{auth_index}-{}", i + 1), &mut entries);
+            }
+        }
+    }
+    entries
+}
+
+fn format_soroban_address_credentials(
+    cred: &SorobanAddressCredentials,
+    config: &FormatConfig,
+    entries: &mut Vec<DataEntry>,
+) {
+    entries.push(DataEntry::new("Auth Address", cred.address.to_string()));
+    if config.show_sequence_and_nonce {
+        entries.push(DataEntry::new("Nonce", cred.nonce.to_string()));
+    }
+    entries.push(DataEntry::new(
+        "Sig Exp Ledger",
+        cred.signature_expiration_ledger.to_string(),
+    ));
+}
+
+fn format_soroban_delegate(
+    delegate: &SorobanDelegateSignature,
+    index: String,
+    entries: &mut Vec<DataEntry>,
+) {
+    entries.push(DataEntry::new("Delegate", index.clone()));
+    entries.push(DataEntry::new(
+        "Delegate Address",
+        delegate.address.to_string(),
+    ));
+    for (i, nested) in delegate.nested_delegates.iter().enumerate() {
+        format_soroban_delegate(nested, format!("{index}-{}", i + 1), entries);
+    }
+}
+
 fn format_invoke_host_function_op(
     op: &InvokeHostFunctionOp,
     config: &FormatConfig,
@@ -1451,38 +1525,42 @@ fn format_invoke_host_function_op(
         }
     }
 
-    // Signing the transaction implicitly authorizes every authorization entry with
-    // source-account credentials, and an entry's root invocation is independent of
-    // the invoked host function (it may authorize a completely different call), so
-    // each tree must be shown from its root. An operation can also carry several
-    // such entries; number them so the user can tell the trees apart. Entries that
-    // merely repeat the host function are dropped, so the numbering counts the
-    // trees actually displayed rather than the entries in the operation.
+    // An operation can carry several authorization entries; number them so the
+    // user can tell the blocks apart. An entry's root invocation is independent
+    // of the invoked host function (it may authorize a completely different
+    // call), so each tree must be shown from its root. Signing the transaction
+    // implicitly authorizes entries with source-account credentials; entries
+    // signed by other addresses (or their delegates) are part of the same
+    // authorization payload, so they are shown too. Only a source-account entry
+    // that merely repeats the host function is redundant with what is already on
+    // screen and is dropped; the numbering counts the blocks actually displayed.
     if config.show_authorization_details {
         let mut auth_index = 1;
         for auth in op.auth.iter() {
-            match &auth.credentials {
-                SorobanCredentials::SourceAccount => {
-                    if auth_duplicates_host_function(&op.host_function, &auth.root_invocation) {
-                        continue;
-                    }
+            let is_source_account = matches!(auth.credentials, SorobanCredentials::SourceAccount);
 
-                    let index = auth_index.to_string();
-                    entries.push(DataEntry::new("Authorization", index.clone()));
-                    entries.extend(format_soroban_authorized_invocation(
-                        &auth.root_invocation,
-                        Some(&index),
-                        config,
-                    ));
-                    auth_index += 1;
-                }
-                SorobanCredentials::Address(_)
-                | SorobanCredentials::AddressV2(_)
-                | SorobanCredentials::AddressWithDelegates(_) => {
-                    // skip, these are not related to the current signatories,
-                    // and we will not authorize these things.
-                }
+            // Address-based entries always carry unique credential context (who
+            // is authorizing), so they must not be folded away even when their
+            // root invocation repeats the host function.
+            if is_source_account
+                && auth_duplicates_host_function(&op.host_function, &auth.root_invocation)
+            {
+                continue;
             }
+
+            let index = auth_index.to_string();
+            entries.push(DataEntry::new("Authorization", index.clone()));
+            entries.extend(format_soroban_authorization_credentials(
+                &auth.credentials,
+                config,
+                &index,
+            ));
+            entries.extend(format_soroban_authorized_invocation(
+                &auth.root_invocation,
+                Some(&index),
+                config,
+            ));
+            auth_index += 1;
         }
     }
 

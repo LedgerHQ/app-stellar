@@ -55,28 +55,18 @@ fn compare_with_diff(actual: &str, expected: &str, case_name: &str) {
     panic!("Output mismatch for {}", case_name);
 }
 
-fn test_sign_tx_format_case(case_name: &str) {
+fn format_sign_tx_case(case_name: &str, config: &FormatConfig) -> String {
     let raw_path = format!("tests/testcases/{}.raw", case_name);
-    let txt_path = format!("tests/testcases/{}.txt", case_name);
 
     let raw_data = fs::read(&raw_path).unwrap_or_else(|_| panic!("Failed to read {}", raw_path));
-    let expected_output =
-        fs::read_to_string(&txt_path).unwrap_or_else(|_| panic!("Failed to read {}", txt_path));
 
     let mut parser = Parser::new(&raw_data);
     let tx_signature_payload = TransactionSignaturePayload::parse(&mut parser)
         .unwrap_or_else(|_| panic!("Failed to parse XDR for {}", case_name));
 
-    let config = FormatConfig {
-        show_sequence_and_nonce: true,
-        show_preconditions: true,
-        show_authorization_details: true,
-        show_tx_source_if_matches_signer: true,
-    };
-
     let signer = "GDUTHCF37UX32EMANXIL2WOOVEDZ47GHBTT3DYKU6EKM37SOIZXM2FN7";
 
-    let mut entries = format_transaction_signature_payload(&tx_signature_payload, &config, signer)
+    let mut entries = format_transaction_signature_payload(&tx_signature_payload, config, signer)
         .unwrap_or_else(|_| panic!("Failed to format transaction for {}", case_name));
 
     let (op_count, tx_source) = match &tx_signature_payload.tagged_transaction {
@@ -101,36 +91,52 @@ fn test_sign_tx_format_case(case_name: &str) {
         }
         let operation = stellarlib::Operation::parse(&mut parser)
             .unwrap_or_else(|_| panic!("Failed to parse Operation for {}", case_name));
-        let op_entries = stellarlib::formatter::format_operation(&operation, &config, &tx_source)
+        let op_entries = stellarlib::formatter::format_operation(&operation, config, &tx_source)
             .unwrap_or_else(|_| panic!("Failed to format Operation for {}", case_name));
         entries.extend(op_entries);
     }
 
-    let actual_output = format_entries_to_text(&entries);
+    format_entries_to_text(&entries)
+}
+
+fn test_sign_tx_format_case(case_name: &str) {
+    let txt_path = format!("tests/testcases/{}.txt", case_name);
+    let expected_output =
+        fs::read_to_string(&txt_path).unwrap_or_else(|_| panic!("Failed to read {}", txt_path));
+    let config = FormatConfig {
+        show_sequence_and_nonce: true,
+        show_preconditions: true,
+        show_authorization_details: true,
+        show_tx_source_if_matches_signer: true,
+    };
+    let actual_output = format_sign_tx_case(case_name, &config);
     compare_with_diff(&actual_output, &expected_output, case_name);
 }
 
-fn test_soroban_auth_format_case(case_name: &str) {
+fn format_soroban_auth_case(case_name: &str, config: &FormatConfig) -> String {
     let raw_path = format!("tests/testcases/{}.raw", case_name);
-    let txt_path = format!("tests/testcases/{}.txt", case_name);
 
     let raw_data = fs::read(&raw_path).unwrap_or_else(|_| panic!("Failed to read {}", raw_path));
-    let expected_output =
-        fs::read_to_string(&txt_path).unwrap_or_else(|_| panic!("Failed to read {}", txt_path));
 
     let mut parser = Parser::new(&raw_data);
     let hash_id_preimage = HashIDPreimage::parse(&mut parser)
         .unwrap_or_else(|_| panic!("Failed to parse XDR for {}", case_name));
 
+    let entries = format_hash_id_preimage_soroban_authorization(&hash_id_preimage, config);
+    format_entries_to_text(&entries)
+}
+
+fn test_soroban_auth_format_case(case_name: &str) {
+    let txt_path = format!("tests/testcases/{}.txt", case_name);
+    let expected_output =
+        fs::read_to_string(&txt_path).unwrap_or_else(|_| panic!("Failed to read {}", txt_path));
     let config = FormatConfig {
         show_sequence_and_nonce: true,
         show_preconditions: true,
         show_authorization_details: true,
         show_tx_source_if_matches_signer: false,
     };
-
-    let entries = format_hash_id_preimage_soroban_authorization(&hash_id_preimage, &config);
-    let actual_output = format_entries_to_text(&entries);
+    let actual_output = format_soroban_auth_case(case_name, &config);
     compare_with_diff(&actual_output, &expected_output, case_name);
 }
 
@@ -271,9 +277,12 @@ fn test_sign_tx_formats() {
         "op_invoke_host_function_with_auth_and_no_args",
         "op_invoke_host_function_with_auth_root_differs_from_host_function",
         "op_invoke_host_function_with_auth_root_matches_host_function",
+        "op_invoke_host_function_with_auth_address_root_matches_host_function",
         "op_invoke_host_function_with_multiple_source_account_auth",
         "op_invoke_host_function_with_auth_address_v2",
         "op_invoke_host_function_with_auth_delegates",
+        "op_invoke_host_function_with_multiple_auth_delegates",
+        "op_invoke_host_function_with_auth_delegates_complex",
         "op_invoke_host_function_without_auth_and_no_source",
         "op_invoke_host_function_approve_usdc",
         "op_invoke_host_function_scvals_case0",
@@ -332,6 +341,7 @@ fn test_sign_soroban_auth_formats() {
         "soroban_auth_network_public",
         "soroban_auth_network_custom",
         "soroban_auth_create_smart_contract",
+        "soroban_auth_with_address_create_smart_contract",
         "soroban_auth_create_smart_contract_v2",
         "soroban_auth_invoke_contract",
         "soroban_auth_invoke_contract_without_args",
@@ -346,4 +356,61 @@ fn test_sign_soroban_auth_formats() {
         &cases,
         test_soroban_auth_format_case,
     );
+}
+
+#[test]
+fn test_sign_tx_authorization_settings() {
+    let case_name = "op_invoke_host_function_with_auth_delegates_complex";
+    let mut config = FormatConfig {
+        show_sequence_and_nonce: false,
+        show_preconditions: true,
+        show_authorization_details: true,
+        show_tx_source_if_matches_signer: true,
+    };
+
+    let actual = format_sign_tx_case(case_name, &config);
+    assert!(!actual.contains("Sequence Num;"));
+    assert!(!actual.contains("Nonce; 6937990895908832718"));
+    assert!(
+        actual.contains("Auth Address; CA4D4MGTRVJXZIHWN2DRKGTW5IZYU4X65SFIFYQZKBU6QQXYKGNTSZML")
+    );
+    assert!(actual.contains("Sig Exp Ledger; 3716907"));
+    assert!(actual.contains("Delegate; 1-1-1-1"));
+    assert!(actual
+        .contains("Delegate Address; GDRMNAIPTNIJWJSL6JOF76CJORN47TDVMWERTXO2G2WKOMXGNHUFL5QX"));
+
+    config.show_sequence_and_nonce = true;
+    config.show_authorization_details = false;
+    let actual = format_sign_tx_case(case_name, &config);
+    assert!(actual.contains("Sequence Num; 103720918407102568"));
+    assert!(!actual.contains("Authorization;"));
+    assert!(!actual.contains("Auth Type;"));
+    assert!(!actual.contains("Auth Address;"));
+    assert!(!actual.contains("Delegate;"));
+    assert!(actual.contains("Function; increment"));
+}
+
+#[test]
+fn test_sign_soroban_auth_settings() {
+    let case_name = "soroban_auth_with_address_invoke_contract";
+    let mut config = FormatConfig {
+        show_sequence_and_nonce: false,
+        show_preconditions: true,
+        show_authorization_details: true,
+        show_tx_source_if_matches_signer: false,
+    };
+
+    let actual = format_soroban_auth_case(case_name, &config);
+    assert!(!actual.contains("Nonce; 1232432453"));
+    assert!(actual.contains("Address; GDUTHCF37UX32EMANXIL2WOOVEDZ47GHBTT3DYKU6EKM37SOIZXM2FN7"));
+    assert!(actual.contains("Sig Exp Ledger; 34654367"));
+    assert!(actual.contains("Authorization; 1"));
+
+    config.show_sequence_and_nonce = true;
+    config.show_authorization_details = false;
+    let actual = format_soroban_auth_case(case_name, &config);
+    assert!(actual.contains("Nonce; 1232432453"));
+    assert!(!actual.contains("Authorization;"));
+    assert!(actual.contains("Function; transfer"));
+    assert!(actual.contains("Address; GDUTHCF37UX32EMANXIL2WOOVEDZ47GHBTT3DYKU6EKM37SOIZXM2FN7"));
 }
