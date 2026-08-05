@@ -104,13 +104,16 @@ impl<'a> fmt::Display for PublicKey<'a> {
 /// Format a ContractId (Hash) as a strkey-encoded string
 pub fn format_contract_id(contract_id: &Uint256) -> alloc::string::String {
     let Uint256(h) = contract_id;
-    stellar_strkey::Contract(**h).to_string()
+    alloc::format!("{}", stellar_strkey::Contract(**h))
 }
 
 /// Format a PoolId (Hash) as a strkey-encoded string
 pub fn format_pool_id(pool_id: &Uint256) -> alloc::string::String {
     let Uint256(p_id) = pool_id;
-    stellar_strkey::Strkey::LiquidityPool(stellar_strkey::LiquidityPool(**p_id)).to_string()
+    alloc::format!(
+        "{}",
+        stellar_strkey::Strkey::LiquidityPool(stellar_strkey::LiquidityPool(**p_id))
+    )
 }
 
 impl<'a> fmt::Display for MuxedEd25519<'a> {
@@ -147,14 +150,13 @@ impl<'a> fmt::Display for Ed25519SignedPayload<'a> {
             ed25519: Uint256(ed25519),
             payload,
         } = self;
-        write!(
-            f,
-            "{}",
-            stellar_strkey::ed25519::SignedPayload {
-                ed25519: **ed25519,
-                payload: (*payload).into(),
-            }
-        )
+        // stellar-strkey 0.0.18 rejects empty or overlong inner payloads
+        // (stellar-core does too), so fall back to the bare key when the
+        // parsed payload cannot be encoded.
+        match stellar_strkey::ed25519::SignedPayload::new(**ed25519, payload) {
+            Ok(signed_payload) => write!(f, "{}", signed_payload),
+            Err(_) => write!(f, "{}", stellar_strkey::ed25519::PublicKey(**ed25519)),
+        }
     }
 }
 
