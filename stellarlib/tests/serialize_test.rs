@@ -5,6 +5,18 @@ use stellarlib::parser::{
 };
 use stellarlib::serialize::{scval_to_key_string, ToJson};
 
+fn string_m<const MAX: usize>(data: &[u8]) -> StringM<'_, MAX> {
+    StringM::new(data).expect("test string must fit its declared bound")
+}
+
+fn bytes_m<const MAX: usize>(data: &[u8]) -> BytesM<'_, MAX> {
+    BytesM::new(data).expect("test bytes must fit their declared bound")
+}
+
+fn vec_m<T, const MAX: u32>(data: Vec<T>) -> VecM<T, MAX> {
+    VecM::new(data).expect("test vector must fit its declared bound")
+}
+
 // ============================================================================
 // Basic Types Tests
 // ============================================================================
@@ -171,14 +183,14 @@ fn test_serialize_i256() {
 #[test]
 fn test_serialize_string() {
     let string_data = b"Hello, World!";
-    let sc_string = StringM::<{ u32::MAX as usize }>::new(string_data);
+    let sc_string = string_m::<{ u32::MAX as usize }>(string_data);
     let val = ScVal::String(sc_string);
     let json = val.to_json();
     assert_eq!(json, r#""Hello, World!""#);
 
     // Test with special characters (UTF-8 "你好\nHello\t👋")
     let string_data = b"\xE4\xBD\xA0\xE5\xA5\xBD\nHello\t\xF0\x9F\x91\x8B";
-    let sc_string = StringM::<{ u32::MAX as usize }>::new(string_data);
+    let sc_string = string_m::<{ u32::MAX as usize }>(string_data);
     let val = ScVal::String(sc_string);
     let json = val.to_json();
     assert_eq!(
@@ -190,7 +202,7 @@ fn test_serialize_string() {
 #[test]
 fn test_serialize_symbol() {
     let symbol_data = b"TRANSFER";
-    let sc_symbol = StringM::<32>::new(symbol_data);
+    let sc_symbol = string_m::<32>(symbol_data);
     let val = ScVal::Symbol(sc_symbol);
     let json = val.to_json();
     assert_eq!(json, r#""TRANSFER""#);
@@ -199,7 +211,7 @@ fn test_serialize_symbol() {
 #[test]
 fn test_serialize_bytes() {
     let bytes_data = b"\x00\x01\x02\x03\xFF";
-    let sc_bytes = BytesM::<{ u32::MAX as usize }>::new(bytes_data);
+    let sc_bytes = bytes_m::<{ u32::MAX as usize }>(bytes_data);
     let val = ScVal::Bytes(sc_bytes);
     let json = val.to_json();
     // Bytes are displayed using escape_bytes format
@@ -243,7 +255,7 @@ fn test_serialize_vec_basic() {
         ScVal::U32(3),
         ScVal::U32(1000),
     ];
-    let val = ScVal::Vec(Some(VecM::new(vec_data)));
+    let val = ScVal::Vec(Some(vec_m(vec_data)));
     let json = val.to_json();
     assert_eq!(json, r#"["1","2","3","1,000"]"#);
 
@@ -258,10 +270,10 @@ fn test_serialize_vec_mixed_types() {
     let vec_data = vec![
         ScVal::Bool(true),
         ScVal::U32(42),
-        ScVal::String(StringM::<{ u32::MAX as usize }>::new(b"text")),
+        ScVal::String(string_m::<{ u32::MAX as usize }>(b"text")),
         ScVal::Void,
     ];
-    let val = ScVal::Vec(Some(VecM::new(vec_data)));
+    let val = ScVal::Vec(Some(vec_m(vec_data)));
     let json = val.to_json();
     assert_eq!(json, r#"[true,"42","text",null]"#);
 }
@@ -270,19 +282,19 @@ fn test_serialize_vec_mixed_types() {
 fn test_serialize_map_basic() {
     let map_data = vec![
         ScMapEntry {
-            key: ScVal::String(StringM::<{ u32::MAX as usize }>::new(b"name")),
-            val: ScVal::String(StringM::<{ u32::MAX as usize }>::new(b"Alice")),
+            key: ScVal::String(string_m::<{ u32::MAX as usize }>(b"name")),
+            val: ScVal::String(string_m::<{ u32::MAX as usize }>(b"Alice")),
         },
         ScMapEntry {
-            key: ScVal::String(StringM::<{ u32::MAX as usize }>::new(b"age")),
+            key: ScVal::String(string_m::<{ u32::MAX as usize }>(b"age")),
             val: ScVal::U32(30),
         },
         ScMapEntry {
-            key: ScVal::String(StringM::<{ u32::MAX as usize }>::new(b"balance")),
+            key: ScVal::String(string_m::<{ u32::MAX as usize }>(b"balance")),
             val: ScVal::U64(1000000),
         },
     ];
-    let val = ScVal::Map(Some(VecM::new(map_data)));
+    let val = ScVal::Map(Some(vec_m(map_data)));
     let json = val.to_json();
 
     // Our serialization preserves order
@@ -296,18 +308,18 @@ fn test_serialize_map_non_string_keys() {
     let map_data = vec![
         ScMapEntry {
             key: ScVal::U32(100),
-            val: ScVal::String(StringM::<{ u32::MAX as usize }>::new(b"hundred")),
+            val: ScVal::String(string_m::<{ u32::MAX as usize }>(b"hundred")),
         },
         ScMapEntry {
             key: ScVal::Bool(true),
-            val: ScVal::String(StringM::<{ u32::MAX as usize }>::new(b"yes")),
+            val: ScVal::String(string_m::<{ u32::MAX as usize }>(b"yes")),
         },
         ScMapEntry {
             key: ScVal::Void,
-            val: ScVal::String(StringM::<{ u32::MAX as usize }>::new(b"nothing")),
+            val: ScVal::String(string_m::<{ u32::MAX as usize }>(b"nothing")),
         },
     ];
-    let val = ScVal::Map(Some(VecM::new(map_data)));
+    let val = ScVal::Map(Some(vec_m(map_data)));
     let json = val.to_json();
 
     // Our serialization preserves order
@@ -322,14 +334,14 @@ fn test_serialize_map_non_string_keys() {
 #[test]
 fn test_serialize_nested_vec() {
     // Vec containing another Vec
-    let inner_vec = ScVal::Vec(Some(VecM::new(vec![ScVal::U32(1), ScVal::U32(2)])));
+    let inner_vec = ScVal::Vec(Some(vec_m(vec![ScVal::U32(1), ScVal::U32(2)])));
 
     let outer_vec = vec![
-        ScVal::String(StringM::<{ u32::MAX as usize }>::new(b"start")),
+        ScVal::String(string_m::<{ u32::MAX as usize }>(b"start")),
         inner_vec,
-        ScVal::String(StringM::<{ u32::MAX as usize }>::new(b"end")),
+        ScVal::String(string_m::<{ u32::MAX as usize }>(b"end")),
     ];
-    let val = ScVal::Vec(Some(VecM::new(outer_vec)));
+    let val = ScVal::Vec(Some(vec_m(outer_vec)));
     let json = val.to_json();
     assert_eq!(json, r#"["start",["1","2"],"end"]"#);
 }
@@ -337,28 +349,28 @@ fn test_serialize_nested_vec() {
 #[test]
 fn test_serialize_nested_map() {
     // Map containing another Map
-    let inner_map = ScVal::Map(Some(VecM::new(vec![
+    let inner_map = ScVal::Map(Some(vec_m(vec![
         ScMapEntry {
-            key: ScVal::String(StringM::<{ u32::MAX as usize }>::new(b"x")),
+            key: ScVal::String(string_m::<{ u32::MAX as usize }>(b"x")),
             val: ScVal::U32(10),
         },
         ScMapEntry {
-            key: ScVal::String(StringM::<{ u32::MAX as usize }>::new(b"y")),
+            key: ScVal::String(string_m::<{ u32::MAX as usize }>(b"y")),
             val: ScVal::U32(20),
         },
     ])));
 
     let outer_map = vec![
         ScMapEntry {
-            key: ScVal::String(StringM::<{ u32::MAX as usize }>::new(b"coordinates")),
+            key: ScVal::String(string_m::<{ u32::MAX as usize }>(b"coordinates")),
             val: inner_map,
         },
         ScMapEntry {
-            key: ScVal::String(StringM::<{ u32::MAX as usize }>::new(b"label")),
-            val: ScVal::String(StringM::<{ u32::MAX as usize }>::new(b"Point A")),
+            key: ScVal::String(string_m::<{ u32::MAX as usize }>(b"label")),
+            val: ScVal::String(string_m::<{ u32::MAX as usize }>(b"Point A")),
         },
     ];
-    let val = ScVal::Map(Some(VecM::new(outer_map)));
+    let val = ScVal::Map(Some(vec_m(outer_map)));
     let json = val.to_json();
 
     // Our serialization preserves order
@@ -369,18 +381,18 @@ fn test_serialize_nested_map() {
 #[test]
 fn test_serialize_complex_structure() {
     // Create a complex structure with multiple levels of nesting
-    let user_data = ScVal::Map(Some(VecM::new(vec![
+    let user_data = ScVal::Map(Some(vec_m(vec![
         ScMapEntry {
-            key: ScVal::String(StringM::<{ u32::MAX as usize }>::new(b"id")),
+            key: ScVal::String(string_m::<{ u32::MAX as usize }>(b"id")),
             val: ScVal::U64(123456789),
         },
         ScMapEntry {
-            key: ScVal::String(StringM::<{ u32::MAX as usize }>::new(b"username")),
-            val: ScVal::String(StringM::<{ u32::MAX as usize }>::new(b"alice_doe")),
+            key: ScVal::String(string_m::<{ u32::MAX as usize }>(b"username")),
+            val: ScVal::String(string_m::<{ u32::MAX as usize }>(b"alice_doe")),
         },
         ScMapEntry {
-            key: ScVal::String(StringM::<{ u32::MAX as usize }>::new(b"scores")),
-            val: ScVal::Vec(Some(VecM::new(vec![
+            key: ScVal::String(string_m::<{ u32::MAX as usize }>(b"scores")),
+            val: ScVal::Vec(Some(vec_m(vec![
                 ScVal::U32(95),
                 ScVal::U32(87),
                 ScVal::U32(92),
@@ -388,18 +400,18 @@ fn test_serialize_complex_structure() {
             ]))),
         },
         ScMapEntry {
-            key: ScVal::String(StringM::<{ u32::MAX as usize }>::new(b"metadata")),
-            val: ScVal::Map(Some(VecM::new(vec![
+            key: ScVal::String(string_m::<{ u32::MAX as usize }>(b"metadata")),
+            val: ScVal::Map(Some(vec_m(vec![
                 ScMapEntry {
-                    key: ScVal::String(StringM::<{ u32::MAX as usize }>::new(b"created_at")),
+                    key: ScVal::String(string_m::<{ u32::MAX as usize }>(b"created_at")),
                     val: ScVal::Timepoint(1704067200),
                 },
                 ScMapEntry {
-                    key: ScVal::String(StringM::<{ u32::MAX as usize }>::new(b"premium")),
+                    key: ScVal::String(string_m::<{ u32::MAX as usize }>(b"premium")),
                     val: ScVal::Bool(true),
                 },
                 ScMapEntry {
-                    key: ScVal::String(StringM::<{ u32::MAX as usize }>::new(b"balance")),
+                    key: ScVal::String(string_m::<{ u32::MAX as usize }>(b"balance")),
                     val: ScVal::U128(UInt128Parts {
                         hi: 0,
                         lo: 999999999999,
@@ -475,12 +487,12 @@ fn test_serialize_ledger_key_contract_instance() {
 #[test]
 fn test_serialize_empty_collections() {
     // Empty Vec
-    let val = ScVal::Vec(Some(VecM::new(vec![])));
+    let val = ScVal::Vec(Some(vec_m(vec![])));
     let json = val.to_json();
     assert_eq!(json, "[]");
 
     // Empty Map
-    let val = ScVal::Map(Some(VecM::new(vec![])));
+    let val = ScVal::Map(Some(vec_m(vec![])));
     let json = val.to_json();
     assert_eq!(json, "{}");
 }
@@ -494,10 +506,10 @@ fn test_map_key_conversion() {
     assert_eq!(scval_to_key_string(&ScVal::U32(1234567)), "1,234,567");
     assert_eq!(scval_to_key_string(&ScVal::I32(-987654)), "-987,654");
 
-    let symbol = ScVal::Symbol(StringM::<32>::new(b"TEST"));
+    let symbol = ScVal::Symbol(string_m::<32>(b"TEST"));
     assert_eq!(scval_to_key_string(&symbol), "TEST");
 
-    let string = ScVal::String(StringM::<{ u32::MAX as usize }>::new(b"hello"));
+    let string = ScVal::String(string_m::<{ u32::MAX as usize }>(b"hello"));
     assert_eq!(scval_to_key_string(&string), "hello");
 }
 
@@ -538,7 +550,7 @@ fn test_serialize_claim_predicate_not() {
 fn test_serialize_claim_predicate_and() {
     let pred1 = ClaimPredicate::BeforeAbsoluteTime(1629344902);
     let pred2 = ClaimPredicate::BeforeRelativeTime(180);
-    let predicates = VecM::new(vec![pred1, pred2]);
+    let predicates = vec_m(vec![pred1, pred2]);
     let predicate = ClaimPredicate::And(predicates);
     let json = predicate.to_json();
     assert_eq!(
@@ -551,7 +563,7 @@ fn test_serialize_claim_predicate_and() {
 fn test_serialize_claim_predicate_or() {
     let pred1 = ClaimPredicate::BeforeAbsoluteTime(1629344902);
     let pred2 = ClaimPredicate::BeforeAbsoluteTime(1629300000);
-    let predicates = VecM::new(vec![pred1, pred2]);
+    let predicates = vec_m(vec![pred1, pred2]);
     let predicate = ClaimPredicate::Or(predicates);
     let json = predicate.to_json();
     assert_eq!(
@@ -565,13 +577,13 @@ fn test_serialize_claim_predicate_complex_nested() {
     // Create the complex nested predicate from the example
     let before_abs_time1 = ClaimPredicate::BeforeAbsoluteTime(1629344902);
     let before_abs_time2 = ClaimPredicate::BeforeAbsoluteTime(1629300000);
-    let or_predicates = VecM::new(vec![before_abs_time1, before_abs_time2]);
+    let or_predicates = vec_m(vec![before_abs_time1, before_abs_time2]);
     let or_pred = ClaimPredicate::Or(or_predicates);
 
     let before_rel_time = ClaimPredicate::BeforeRelativeTime(180);
     let not_pred = ClaimPredicate::Not(Box::new(before_rel_time));
 
-    let and_predicates = VecM::new(vec![or_pred, not_pred]);
+    let and_predicates = vec_m(vec![or_pred, not_pred]);
     let predicate = ClaimPredicate::And(and_predicates);
 
     let json = predicate.to_json();

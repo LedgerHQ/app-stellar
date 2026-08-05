@@ -386,9 +386,15 @@ pub struct StringM<'a, const MAX: usize> {
 }
 
 impl<'a, const MAX: usize> StringM<'a, MAX> {
-    /// Create a new StringM from byte slice (mainly for testing)
-    pub fn new(data: &'a [u8]) -> Self {
-        Self { data }
+    /// Create a new `StringM` after enforcing its maximum encoded length.
+    pub fn new(data: &'a [u8]) -> Result<Self, ParseError> {
+        if data.len() > MAX {
+            return Err(ParseError::LengthExceedsMax {
+                actual: data.len(),
+                max: MAX,
+            });
+        }
+        Ok(Self { data })
     }
 
     /// Get the string data as bytes
@@ -415,7 +421,7 @@ impl<'a, const MAX: usize> StringM<'a, MAX> {
 impl<'a, const MAX: usize> XdrParse<'a> for StringM<'a, MAX> {
     fn parse(parser: &mut Parser<'a>) -> Result<Self, ParseError> {
         let data = parser.parse_var_opaque(Some(MAX))?;
-        Ok(StringM { data })
+        StringM::new(data)
     }
 }
 
@@ -425,9 +431,15 @@ pub struct BytesM<'a, const MAX: usize> {
 }
 
 impl<'a, const MAX: usize> BytesM<'a, MAX> {
-    /// Create a new BytesM from byte slice (mainly for testing)
-    pub fn new(data: &'a [u8]) -> Self {
-        Self { data }
+    /// Create a new `BytesM` after enforcing its maximum encoded length.
+    pub fn new(data: &'a [u8]) -> Result<Self, ParseError> {
+        if data.len() > MAX {
+            return Err(ParseError::LengthExceedsMax {
+                actual: data.len(),
+                max: MAX,
+            });
+        }
+        Ok(Self { data })
     }
 
     /// Get the byte data
@@ -449,7 +461,7 @@ impl<'a, const MAX: usize> BytesM<'a, MAX> {
 impl<'a, const MAX: usize> XdrParse<'a> for BytesM<'a, MAX> {
     fn parse(parser: &mut Parser<'a>) -> Result<Self, ParseError> {
         let data = parser.parse_var_opaque(Some(MAX))?;
-        Ok(BytesM { data })
+        BytesM::new(data)
     }
 }
 
@@ -464,9 +476,15 @@ pub const MAX_SOROBAN_VEC_ITEMS: u32 = 64;
 pub struct VecM<T, const MAX: u32 = MAX_SOROBAN_VEC_ITEMS>(Vec<T>);
 
 impl<T, const MAX: u32> VecM<T, MAX> {
-    /// Create a new VecM from a Vec (mainly for testing)
-    pub fn new(data: Vec<T>) -> Self {
-        Self(data)
+    /// Create a new `VecM` after enforcing its maximum item count.
+    pub fn new(data: Vec<T>) -> Result<Self, ParseError> {
+        if data.len() > MAX as usize {
+            return Err(ParseError::LengthExceedsMax {
+                actual: data.len(),
+                max: MAX as usize,
+            });
+        }
+        Ok(Self(data))
     }
 
     pub fn as_slice(&self) -> &[T] {
@@ -527,7 +545,7 @@ impl<'a, T: XdrParse<'a>, const MAX: u32> XdrParse<'a> for VecM<T, MAX> {
                 items.push(item);
             }
 
-            Ok(VecM(items))
+            VecM::new(items)
         })
     }
 }
@@ -670,26 +688,44 @@ impl<'a> XdrParse<'a> for PublicKey<'a> {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Ed25519SignedPayload<'a> {
-    pub ed25519: Uint256<'a>,
-    pub payload: &'a [u8],
+    ed25519: Uint256<'a>,
+    payload: &'a [u8],
+}
+
+impl<'a> Ed25519SignedPayload<'a> {
+    const MIN_PAYLOAD_LENGTH: usize = 1;
+    const MAX_PAYLOAD_LENGTH: usize = 64;
+
+    /// Create a signed-payload signer while enforcing its protocol length.
+    pub fn new(ed25519: Uint256<'a>, payload: &'a [u8]) -> Result<Self, ParseError> {
+        if !(Self::MIN_PAYLOAD_LENGTH..=Self::MAX_PAYLOAD_LENGTH).contains(&payload.len()) {
+            return Err(ParseError::InvalidLength {
+                actual: payload.len(),
+                min: Self::MIN_PAYLOAD_LENGTH,
+                max: Self::MAX_PAYLOAD_LENGTH,
+            });
+        }
+        Ok(Self { ed25519, payload })
+    }
+
+    pub fn ed25519(&self) -> &Uint256<'a> {
+        &self.ed25519
+    }
+
+    pub fn payload(&self) -> &'a [u8] {
+        self.payload
+    }
 }
 
 impl<'a> XdrParse<'a> for Ed25519SignedPayload<'a> {
     fn parse(parser: &mut Parser<'a>) -> Result<Self, ParseError> {
         let ed25519 = Uint256::parse(parser)?;
-        let payload = parser.parse_var_opaque(Some(64))?;
+        let payload = parser.parse_var_opaque(Some(Self::MAX_PAYLOAD_LENGTH))?;
         // stellar-strkey and stellar-core both require the inner payload to be
         // 1..=64 bytes (SET_OPTIONS_BAD_SIGNER for empty), so an XDR that
         // parses an empty payload can never be a chain-accepted transaction and
         // cannot be strkey-encoded for display. Reject it at parse time.
-        if payload.is_empty() {
-            return Err(ParseError::InvalidLength {
-                actual: 0,
-                min: 1,
-                max: 64,
-            });
-        }
-        Ok(Ed25519SignedPayload { ed25519, payload })
+        Ed25519SignedPayload::new(ed25519, payload)
     }
 }
 
@@ -3748,8 +3784,8 @@ impl<'a> XdrParse<'a> for HashIdPreimageSorobanAuthorizationWithAddress<'a> {
 #[cfg(test)]
 mod tests {
     use super::{
-        consume_array, try_vec_with_capacity, ClaimPredicate, ParseError, Parser, SignerKey, VecM,
-        XdrParse,
+        consume_array, try_vec_with_capacity, BytesM, ClaimPredicate, Ed25519SignedPayload,
+        ParseError, Parser, SignerKey, StringM, Uint256, VecM, XdrParse,
     };
 
     struct AlwaysFails;
@@ -3764,6 +3800,74 @@ mod tests {
     fn vec_capacity_overflow_returns_parse_error() {
         let result = try_vec_with_capacity::<u64>(usize::MAX);
         assert!(matches!(result, Err(ParseError::AllocationFailed)));
+    }
+
+    #[test]
+    fn bounded_constructors_enforce_their_declared_limits() {
+        assert_eq!(
+            StringM::<4>::new(b"test")
+                .expect("value at the limit must be accepted")
+                .as_bytes(),
+            b"test"
+        );
+        assert!(matches!(
+            StringM::<4>::new(b"large"),
+            Err(ParseError::LengthExceedsMax { actual: 5, max: 4 })
+        ));
+
+        assert_eq!(
+            BytesM::<4>::new(b"test")
+                .expect("value at the limit must be accepted")
+                .as_bytes(),
+            b"test"
+        );
+        assert!(matches!(
+            BytesM::<4>::new(b"large"),
+            Err(ParseError::LengthExceedsMax { actual: 5, max: 4 })
+        ));
+
+        assert_eq!(
+            VecM::<_, 2>::new(alloc::vec![1u8, 2])
+                .expect("value at the limit must be accepted")
+                .as_slice(),
+            &[1, 2]
+        );
+        assert!(matches!(
+            VecM::<_, 2>::new(alloc::vec![1u8, 2, 3]),
+            Err(ParseError::LengthExceedsMax { actual: 3, max: 2 })
+        ));
+    }
+
+    #[test]
+    fn signed_payload_constructor_enforces_both_length_bounds() {
+        let ed25519 = [0u8; 32];
+        let one_byte = [1u8; 1];
+        let max_payload = [2u8; 64];
+        let overlong_payload = [3u8; 65];
+
+        assert!(matches!(
+            Ed25519SignedPayload::new(Uint256(&ed25519), &[]),
+            Err(ParseError::InvalidLength {
+                actual: 0,
+                min: 1,
+                max: 64
+            })
+        ));
+
+        let signed_payload = Ed25519SignedPayload::new(Uint256(&ed25519), &one_byte)
+            .expect("minimum-length payload must be accepted");
+        assert_eq!(signed_payload.ed25519().as_bytes(), &ed25519);
+        assert_eq!(signed_payload.payload(), &one_byte);
+
+        assert!(Ed25519SignedPayload::new(Uint256(&ed25519), &max_payload).is_ok());
+        assert!(matches!(
+            Ed25519SignedPayload::new(Uint256(&ed25519), &overlong_payload),
+            Err(ParseError::InvalidLength {
+                actual: 65,
+                min: 1,
+                max: 64
+            })
+        ));
     }
 
     #[test]

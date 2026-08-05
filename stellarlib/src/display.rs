@@ -146,17 +146,11 @@ impl<'a> fmt::Display for MuxedAccount<'a> {
 
 impl<'a> fmt::Display for Ed25519SignedPayload<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let Ed25519SignedPayload {
-            ed25519: Uint256(ed25519),
-            payload,
-        } = self;
-        // The parser enforces a 1..=64-byte inner payload (matching
-        // stellar-strkey and stellar-core), so `SignedPayload::new` cannot
-        // fail for parser-produced values; this is unreachable in practice.
-        let Ok(signed_payload) = stellar_strkey::ed25519::SignedPayload::new(**ed25519, payload)
-        else {
-            unreachable!("parser enforces 1..=64-byte signed payload")
-        };
+        // `Ed25519SignedPayload` has private fields and its constructor
+        // enforces the same invariant as stellar-strkey.
+        let signed_payload =
+            stellar_strkey::ed25519::SignedPayload::new(*self.ed25519().as_bytes(), self.payload())
+                .map_err(|_| fmt::Error)?;
         write!(f, "{signed_payload}")
     }
 }
