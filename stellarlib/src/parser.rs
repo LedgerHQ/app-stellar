@@ -25,9 +25,25 @@ pub enum ParseError {
     InvalidType(i32),
     InvalidPadding,
     AllocationFailed,
-    LengthExceedsMax { actual: usize, max: usize },
-    MaxDepthExceeded { depth: usize, max: usize },
-    TrailingData { remaining: usize },
+    LengthExceedsMax {
+        actual: usize,
+        max: usize,
+    },
+    /// A length / cardinality outside the required inclusive range, e.g. an
+    /// empty `opaque payload<64>` (must be 1..=64) or a `ClaimPredicate::Not`
+    /// arm without its required single predicate (must be 1..=1).
+    InvalidLength {
+        actual: usize,
+        min: usize,
+        max: usize,
+    },
+    MaxDepthExceeded {
+        depth: usize,
+        max: usize,
+    },
+    TrailingData {
+        remaining: usize,
+    },
     InvalidFlags(u32),
 }
 
@@ -40,6 +56,13 @@ impl fmt::Display for ParseError {
             ParseError::AllocationFailed => write!(f, "Failed to allocate parser storage"),
             ParseError::LengthExceedsMax { actual, max } => {
                 write!(f, "Length {} exceeds maximum allowed {}", actual, max)
+            }
+            ParseError::InvalidLength { actual, min, max } => {
+                write!(
+                    f,
+                    "Length {} is outside the allowed range {}..={}",
+                    actual, min, max
+                )
             }
             ParseError::MaxDepthExceeded { depth, max } => {
                 write!(
@@ -655,6 +678,17 @@ impl<'a> XdrParse<'a> for Ed25519SignedPayload<'a> {
     fn parse(parser: &mut Parser<'a>) -> Result<Self, ParseError> {
         let ed25519 = Uint256::parse(parser)?;
         let payload = parser.parse_var_opaque(Some(64))?;
+        // stellar-strkey and stellar-core both require the inner payload to be
+        // 1..=64 bytes (SET_OPTIONS_BAD_SIGNER for empty), so an XDR that
+        // parses an empty payload can never be a chain-accepted transaction and
+        // cannot be strkey-encoded for display. Reject it at parse time.
+        if payload.is_empty() {
+            return Err(ParseError::InvalidLength {
+                actual: 0,
+                min: 1,
+                max: 64,
+            });
+        }
         Ok(Ed25519SignedPayload { ed25519, payload })
     }
 }
@@ -2249,7 +2283,13 @@ impl<'a> XdrParse<'a> for ClaimPredicate {
                     let predicate = parser.parse_optional(ClaimPredicate::parse)?;
                     match predicate {
                         Some(p) => Ok(ClaimPredicate::Not(Box::new(p))),
-                        None => Err(ParseError::BufferOverflow),
+                        // The Not arm must carry exactly one predicate; an
+                        // absent optional is malformed, not a buffer overflow.
+                        None => Err(ParseError::InvalidLength {
+                            actual: 0,
+                            min: 1,
+                            max: 1,
+                        }),
                     }
                 }
                 ClaimPredicateType::BeforeAbsoluteTime => {
@@ -3708,7 +3748,8 @@ impl<'a> XdrParse<'a> for HashIdPreimageSorobanAuthorizationWithAddress<'a> {
 #[cfg(test)]
 mod tests {
     use super::{
-        consume_array, try_vec_with_capacity, ClaimPredicate, ParseError, Parser, VecM, XdrParse,
+        consume_array, try_vec_with_capacity, ClaimPredicate, ParseError, Parser, SignerKey, VecM,
+        XdrParse,
     };
 
     struct AlwaysFails;
@@ -3763,6 +3804,24 @@ mod tests {
     }
 
     #[test]
+    fn claim_predicate_not_without_predicate_is_rejected() {
+        // Not arm (type 3) whose optional predicate is absent (bool = 0):
+        // malformed, not a buffer overflow.
+        let data = [0, 0, 0, 3, 0, 0, 0, 0];
+        let mut parser = Parser::new(&data);
+
+        assert!(matches!(
+            ClaimPredicate::parse(&mut parser),
+            Err(ParseError::InvalidLength {
+                actual: 0,
+                min: 1,
+                max: 1
+            })
+        ));
+        assert_eq!(parser.depth, 0);
+    }
+
+    #[test]
     fn consume_array_error_restores_recursion_depth() {
         let data = [0, 0, 0, 1, 0, 0, 0, 0];
         let mut parser = Parser::new(&data);
@@ -3772,5 +3831,62 @@ mod tests {
             Err(ParseError::InvalidType(-1))
         ));
         assert_eq!(parser.depth, 0);
+    }
+
+    /// SIGNER_KEY_TYPE_ED25519_SIGNED_PAYLOAD = 3, followed by a 32-byte
+    /// ed25519 key and an `opaque<64>` payload.
+    const SIGNED_PAYLOAD_LEN_PREFIX: usize = 4 + 32 + 4;
+
+    #[test]
+    fn empty_signed_payload_is_rejected() {
+        // Empty inner payloads are invalid per stellar-core and cannot be
+        // strkey-encoded, so the parser must refuse them.
+        let mut data = [0u8; SIGNED_PAYLOAD_LEN_PREFIX];
+        data[3] = 3; // signer key type
+        data[SIGNED_PAYLOAD_LEN_PREFIX - 4..SIGNED_PAYLOAD_LEN_PREFIX].fill(0); // length = 0
+
+        let mut parser = Parser::new(&data);
+        assert!(matches!(
+            SignerKey::parse(&mut parser),
+            Err(ParseError::InvalidLength {
+                actual: 0,
+                min: 1,
+                max: 64
+            })
+        ));
+    }
+
+    #[test]
+    fn overlong_signed_payload_is_rejected() {
+        // A 65-byte inner payload exceeds the `opaque<64>` bound.
+        let mut data = [0u8; SIGNED_PAYLOAD_LEN_PREFIX + 65 + 3];
+        data[3] = 3; // signer key type
+        data[4 + 32..4 + 32 + 4].copy_from_slice(&65u32.to_be_bytes());
+
+        let mut parser = Parser::new(&data);
+        assert!(matches!(
+            SignerKey::parse(&mut parser),
+            Err(ParseError::LengthExceedsMax {
+                actual: 65,
+                max: 64
+            })
+        ));
+    }
+
+    #[test]
+    fn valid_signed_payload_parses() {
+        let mut data = [0u8; SIGNED_PAYLOAD_LEN_PREFIX + 4];
+        data[3] = 3; // signer key type
+        data[4 + 32..4 + 32 + 4].copy_from_slice(&4u32.to_be_bytes());
+        data[SIGNED_PAYLOAD_LEN_PREFIX..SIGNED_PAYLOAD_LEN_PREFIX + 4].copy_from_slice(b"test");
+
+        let mut parser = Parser::new(&data);
+        let key = SignerKey::parse(&mut parser).expect("valid signed payload must parse");
+        assert!(matches!(
+            key,
+            SignerKey::SignerKeyTypeEd25519SignedPayload(_)
+        ));
+        assert_eq!(parser.offset(), SIGNED_PAYLOAD_LEN_PREFIX + 4);
+        assert_eq!(parser.remaining(), 0);
     }
 }

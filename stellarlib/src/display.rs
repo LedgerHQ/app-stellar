@@ -150,13 +150,14 @@ impl<'a> fmt::Display for Ed25519SignedPayload<'a> {
             ed25519: Uint256(ed25519),
             payload,
         } = self;
-        // stellar-strkey 0.0.18 rejects empty or overlong inner payloads
-        // (stellar-core does too), so fall back to the bare key when the
-        // parsed payload cannot be encoded.
-        match stellar_strkey::ed25519::SignedPayload::new(**ed25519, payload) {
-            Ok(signed_payload) => write!(f, "{}", signed_payload),
-            Err(_) => write!(f, "{}", stellar_strkey::ed25519::PublicKey(**ed25519)),
-        }
+        // The parser enforces a 1..=64-byte inner payload (matching
+        // stellar-strkey and stellar-core), so `SignedPayload::new` cannot
+        // fail for parser-produced values; this is unreachable in practice.
+        let Ok(signed_payload) = stellar_strkey::ed25519::SignedPayload::new(**ed25519, payload)
+        else {
+            unreachable!("parser enforces 1..=64-byte signed payload")
+        };
+        write!(f, "{signed_payload}")
     }
 }
 
