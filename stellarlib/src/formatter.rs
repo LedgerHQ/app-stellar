@@ -209,27 +209,42 @@ fn format_soroban_authorization_preimage(
     // Network ID (only show if not public network)
     add_network_info_if_needed(&mut entries, network_id);
 
-    if config.show_sequence_and_nonce {
-        entries.push(DataEntry::new("Nonce", nonce.to_string()));
-    }
-
-    entries.push(DataEntry::new(
-        "Sig Exp Ledger",
-        signature_expiration_ledger.to_string(),
-    ));
-
-    // The address the signature payload is bound to (CAP-71); for delegated
-    // authorization this is the account being authorized, which may differ
-    // from the key that signs on this device, so it must be reviewable.
-    if let Some(address) = address {
-        entries.push(DataEntry::new("Address", address.to_string()));
-    }
+    format_soroban_auth_metadata(
+        address,
+        nonce,
+        signature_expiration_ledger,
+        config,
+        &mut entries,
+    );
 
     entries.extend(format_soroban_authorized_invocation(
         invocation, None, config,
     ));
 
     entries
+}
+
+/// Formats the metadata shared by Soroban authorization preimages and
+/// address-based authorization credentials.
+///
+/// CAP-71 preimages and address credentials bind the authorization to an
+/// address that may differ from the key signing on this device. Keeping this
+/// field order and naming in one helper prevents the two review paths from
+/// drifting apart. Legacy preimages have no address and omit that field.
+fn format_soroban_auth_metadata(
+    address: Option<&ScAddress>,
+    nonce: i64,
+    expiration_ledger: u32,
+    config: &FormatConfig,
+    entries: &mut Vec<DataEntry>,
+) {
+    if let Some(address) = address {
+        entries.push(DataEntry::new("Auth Address", address.to_string()));
+    }
+    if config.show_sequence_and_nonce {
+        entries.push(DataEntry::new("Nonce", nonce.to_string()));
+    }
+    entries.push(DataEntry::new("Exp Ledger", expiration_ledger.to_string()));
 }
 
 /// Formats a price as a decimal string with 7 decimal places and comma separators
@@ -1477,14 +1492,13 @@ fn format_soroban_address_credentials(
     config: &FormatConfig,
     entries: &mut Vec<DataEntry>,
 ) {
-    entries.push(DataEntry::new("Auth Address", cred.address.to_string()));
-    if config.show_sequence_and_nonce {
-        entries.push(DataEntry::new("Nonce", cred.nonce.to_string()));
-    }
-    entries.push(DataEntry::new(
-        "Sig Exp Ledger",
-        cred.signature_expiration_ledger.to_string(),
-    ));
+    format_soroban_auth_metadata(
+        Some(&cred.address),
+        cred.nonce,
+        cred.signature_expiration_ledger,
+        config,
+        entries,
+    );
 }
 
 fn format_soroban_delegate(

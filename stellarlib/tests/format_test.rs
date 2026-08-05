@@ -374,7 +374,7 @@ fn test_sign_tx_authorization_settings() {
     assert!(
         actual.contains("Auth Address; CA4D4MGTRVJXZIHWN2DRKGTW5IZYU4X65SFIFYQZKBU6QQXYKGNTSZML")
     );
-    assert!(actual.contains("Sig Exp Ledger; 3716907"));
+    assert!(actual.contains("Exp Ledger; 3716907"));
     assert!(actual.contains("Delegate; 1-1-1-1"));
     assert!(actual
         .contains("Delegate Address; GDRMNAIPTNIJWJSL6JOF76CJORN47TDVMWERTXO2G2WKOMXGNHUFL5QX"));
@@ -402,8 +402,10 @@ fn test_sign_soroban_auth_settings() {
 
     let actual = format_soroban_auth_case(case_name, &config);
     assert!(!actual.contains("Nonce; 1232432453"));
-    assert!(actual.contains("Address; GDUTHCF37UX32EMANXIL2WOOVEDZ47GHBTT3DYKU6EKM37SOIZXM2FN7"));
-    assert!(actual.contains("Sig Exp Ledger; 34654367"));
+    assert!(
+        actual.contains("Auth Address; GDUTHCF37UX32EMANXIL2WOOVEDZ47GHBTT3DYKU6EKM37SOIZXM2FN7")
+    );
+    assert!(actual.contains("Exp Ledger; 34654367"));
     assert!(actual.contains("Authorization; 1"));
 
     config.show_sequence_and_nonce = true;
@@ -412,5 +414,7 @@ fn test_sign_soroban_auth_settings() {
     assert!(actual.contains("Nonce; 1232432453"));
     assert!(!actual.contains("Authorization;"));
     assert!(actual.contains("Function; transfer"));
-    assert!(actual.contains("Address; GDUTHCF37UX32EMANXIL2WOOVEDZ47GHBTT3DYKU6EKM37SOIZXM2FN7"));
+    assert!(
+        actual.contains("Auth Address; GDUTHCF37UX32EMANXIL2WOOVEDZ47GHBTT3DYKU6EKM37SOIZXM2FN7")
+    );
 }
