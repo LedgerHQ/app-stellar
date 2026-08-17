@@ -1,4 +1,4 @@
-from dataset import SignTxTestCases, SignSorobanAuthorizationTestCases
+from dataset import SignSorobanAuthorizationTestCases, SignTxTestCases
 
 CURRENT_DIR = __file__.rsplit("/", 1)[0]
 OUTPUT_DIR = f"{CURRENT_DIR}/testcases"

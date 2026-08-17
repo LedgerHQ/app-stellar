@@ -1,8 +1,6 @@
 import requests
-
 from stellar_sdk import Asset, Network, utils
 from stellar_sdk import xdr as stellar_xdr
-
 
 LOBSTR_TOKEN_API_URL = "https://lobstr.co/api/v1/sep/assets/curated.json"
 
@@ -45,8 +43,6 @@ print(f"// Token list version: {version}, generated from {LOBSTR_TOKEN_API_URL}"
 sorted_tokens = sorted(tokens, key=lambda x: x["code"])
 for token in sorted_tokens:
     asset = Asset(code=token["code"], issuer=token["issuer"])
-    if bytes.fromhex(token["contract"]) != get_asset_contract_id(
-        asset, Network.PUBLIC_NETWORK_PASSPHRASE
-    ):
+    if bytes.fromhex(token["contract"]) != get_asset_contract_id(asset, Network.PUBLIC_NETWORK_PASSPHRASE):
         raise ValueError("Contract ID does not match asset")
     print_asset(asset)
