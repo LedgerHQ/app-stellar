@@ -59,9 +59,7 @@ def configure_device_settings(navigator, device, settings: SettingsId):
     elif device.type in (DeviceType.STAX, DeviceType.FLEX, DeviceType.APEX_P):
         instructions = _get_touchscreen_instructions(device.type, settings)
     else:
-        raise NotImplementedError(
-            f"Settings navigation not implemented for device: {device}"
-        )
+        raise NotImplementedError(f"Settings navigation not implemented for device: {device}")
 
     navigator.navigate(
         instructions,
@@ -143,9 +141,7 @@ _TOUCHSCREEN_LAYOUTS = {
 }
 
 
-def _get_touchscreen_instructions(
-    device_type: DeviceType, settings: SettingsId
-) -> list[NavIns | NavInsID]:
+def _get_touchscreen_instructions(device_type: DeviceType, settings: SettingsId) -> list[NavIns | NavInsID]:
     """Generate navigation instructions for touchscreen devices (Stax/Flex/Apex P)."""
     buttons = _SETTINGS_BUTTONS[device_type]
     layout = _TOUCHSCREEN_LAYOUTS[device_type]
@@ -177,13 +173,7 @@ def handle_risk_warning(navigator, device, accept: bool = True) -> None:
             ]
     else:
         # Note: USE_CASE_CHOICE_REJECT actually accepts, USE_CASE_CHOICE_CONFIRM rejects
-        instructions = [
-            NavIns(
-                NavInsID.USE_CASE_CHOICE_REJECT
-                if accept
-                else NavInsID.USE_CASE_CHOICE_CONFIRM
-            )
-        ]
+        instructions = [NavIns(NavInsID.USE_CASE_CHOICE_REJECT if accept else NavInsID.USE_CASE_CHOICE_CONFIRM)]
 
     navigator.navigate(
         instructions,

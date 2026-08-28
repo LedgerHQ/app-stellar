@@ -1,6 +1,6 @@
+from collections.abc import Generator
 from contextlib import contextmanager
 from enum import IntEnum
-from typing import Generator, List, Optional
 
 from ragger.backend.interface import RAPDU, BackendInterface
 from ragger.bip import pack_derivation_path
@@ -53,7 +53,7 @@ class Errors(IntEnum):
     SW_BLIND_SIGNING_MODE_NOT_ENABLED = 0x6C66
 
 
-def split_message(message: bytes, max_size: int) -> List[bytes]:
+def split_message(message: bytes, max_size: int) -> list[bytes]:
     return [message[x : x + max_size] for x in range(0, len(message), max_size)]
 
 
@@ -71,12 +71,10 @@ class StellarCommandSender:
             data=pack_derivation_path(path),
         )
 
-    def _send_data_chunks(self, ins: InsType, messages: List[bytes]) -> None:
+    def _send_data_chunks(self, ins: InsType, messages: list[bytes]) -> None:
         """Send all data chunks except the last one."""
         for msg in messages[:-1]:
-            self.backend.exchange(
-                cla=CLA, ins=ins, p1=P1.MORE_APDU, p2=P2.MORE_APDU, data=msg
-            )
+            self.backend.exchange(cla=CLA, ins=ins, p1=P1.MORE_APDU, p2=P2.MORE_APDU, data=msg)
 
     def _send_final_chunk_async(self, ins: InsType, message: bytes):
         """Send final chunk asynchronously and return context manager."""
@@ -99,9 +97,7 @@ class StellarCommandSender:
         )
 
     def get_configuration(self) -> RAPDU:
-        return self.backend.exchange(
-            cla=CLA, ins=InsType.GET_CONF, p1=P1.FIRST_APDU, p2=P2.LAST_APDU
-        )
+        return self.backend.exchange(cla=CLA, ins=InsType.GET_CONF, p1=P1.FIRST_APDU, p2=P2.LAST_APDU)
 
     def get_public_key(self, path: str) -> RAPDU:
         return self.backend.exchange(
@@ -124,9 +120,7 @@ class StellarCommandSender:
             yield response
 
     @contextmanager
-    def get_public_key_with_confirmation(
-        self, path: str
-    ) -> Generator[None, None, None]:
+    def get_public_key_with_confirmation(self, path: str) -> Generator[None, None, None]:
         with self.backend.exchange_async(
             cla=CLA,
             ins=InsType.GET_PUBLIC_KEY,
@@ -145,15 +139,11 @@ class StellarCommandSender:
             yield response
 
     @contextmanager
-    def sign_soroban_auth(
-        self, path: str, soroban_authorization: bytes
-    ) -> Generator[None, None, None]:
+    def sign_soroban_auth(self, path: str, soroban_authorization: bytes) -> Generator[None, None, None]:
         self._send_initial_apdu_with_path(InsType.SIGN_SOROBAN_AUTH, path)
         messages = split_message(soroban_authorization, MAX_APDU_LEN)
         self._send_data_chunks(InsType.SIGN_SOROBAN_AUTH, messages)
-        with self._send_final_chunk_async(
-            InsType.SIGN_SOROBAN_AUTH, messages[-1]
-        ) as response:
+        with self._send_final_chunk_async(InsType.SIGN_SOROBAN_AUTH, messages[-1]) as response:
             yield response
 
     @contextmanager
@@ -161,10 +151,8 @@ class StellarCommandSender:
         self._send_initial_apdu_with_path(InsType.SIGN_MESSAGE, path)
         messages = split_message(message, MAX_APDU_LEN)
         self._send_data_chunks(InsType.SIGN_MESSAGE, messages)
-        with self._send_final_chunk_async(
-            InsType.SIGN_MESSAGE, messages[-1]
-        ) as response:
+        with self._send_final_chunk_async(InsType.SIGN_MESSAGE, messages[-1]) as response:
             yield response
 
-    def get_async_response(self) -> Optional[RAPDU]:
+    def get_async_response(self) -> RAPDU | None:
         return self.backend.last_async_response

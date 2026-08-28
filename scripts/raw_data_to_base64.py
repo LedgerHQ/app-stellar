@@ -1,16 +1,16 @@
 """A script is used to parse the raw data into Base64 XDR data."""
 
+import base64
+import sys
+
 from stellar_sdk import (
     FeeBumpTransaction,
     FeeBumpTransactionEnvelope,
+    Network,
     Transaction,
     TransactionEnvelope,
-    Network,
 )
 from stellar_sdk.xdr import HashIDPreimage
-
-import base64
-import sys
 
 
 def get_network_passphrase(network_id: bytes):
@@ -28,7 +28,7 @@ def parse_tx_from_raw_xdr(raw_xdr: bytes):
     try:
         tx = Transaction.from_xdr(tx)
         return TransactionEnvelope(tx, network_passphrase)
-    except Exception as e:
+    except Exception:
         tx = FeeBumpTransaction.from_xdr(tx, network_passphrase)
         return FeeBumpTransactionEnvelope(tx, network_passphrase)
 
@@ -49,7 +49,7 @@ def main():
     except FileNotFoundError:
         print(f"File not found: {file_path}")
         sys.exit(1)
-    except IOError:
+    except OSError:
         print(f"Error reading file: {file_path}")
         sys.exit(1)
 
@@ -57,7 +57,7 @@ def main():
         tx_envelope = parse_tx_from_raw_xdr(raw_data)
         print(tx_envelope.to_xdr())
         return
-    except Exception as e:
+    except Exception:
         pass
 
     try:
