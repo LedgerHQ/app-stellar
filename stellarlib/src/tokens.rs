@@ -47,6 +47,16 @@ pub static KNOWN_TOKENS: &[TokenInfo] = &[
         symbol: "xSolvBTC",
         decimals: 8,
     },
+    // USDT0-GATISXX6BZ6NC7IKQBY37CJD4SOZL3CYZJWXEDG6JVIY4WBS6KXJHN6Q
+    TokenInfo {
+        contract_address: [
+            0x64, 0x9c, 0x91, 0x0e, 0xe8, 0xbe, 0xa1, 0x6a, 0x45, 0xdb, 0x15, 0x26, 0xde, 0xe9,
+            0x95, 0xba, 0x6d, 0xd6, 0x6d, 0x0d, 0xf8, 0x09, 0xb1, 0x54, 0x46, 0xc3, 0xa6, 0x47,
+            0x89, 0x53, 0x39, 0x1d,
+        ],
+        symbol: "USDT0",
+        decimals: 7,
+    },
     // Token list version: 199.338, generated from https://lobstr.co/api/v1/sep/assets/curated.json
     // AFR-GBX6YI45VU7WNAAKA3RBFDR3I3UKNFHTJPQ5F6KOOKSGYIAM4TRQN54W
     TokenInfo {
