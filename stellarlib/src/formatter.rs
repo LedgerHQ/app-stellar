@@ -10,7 +10,7 @@ use crate::display::{
     format_unix_timestamp, STELLAR_NATIVE_DECIMAL_PLACES,
 };
 use crate::parser::*;
-use crate::serialize::scval_to_key_string;
+use crate::serialize::{scval_to_key_string, ToJson};
 use alloc::format;
 use alloc::string::{String, ToString};
 use alloc::vec;
@@ -19,8 +19,26 @@ use alloc::vec::Vec;
 /// Number of stroops per XLM (10^7)
 const STROOPS_PER_XLM: u64 = 10_000_000;
 
-/// Liquidity pool fees are expressed in basis points (1/100 of a percent)
-const BASIS_POINTS_TO_PERCENT: f64 = 100.0;
+/// Formats a fee expressed in basis points (1/100 of a percent) as a percent
+/// string, e.g. `30` -> `"0.3%"`, `125` -> `"1.25%"`.
+///
+/// Integer-only on purpose: this used to be the sole `f64` in the app, and the
+/// division pulled soft-float and float-formatting machinery into the binary.
+/// The output matches `format!("{}%", fee as f64 / 100.0)` for every `i32`
+/// (trailing zeros trimmed, no fraction when it is zero).
+fn format_basis_points_as_percent(fee: i32) -> String {
+    let sign = if fee < 0 { "-" } else { "" };
+    let abs = fee.unsigned_abs();
+    let whole = abs / 100;
+    let frac = abs % 100;
+    if frac == 0 {
+        format!("{}{}%", sign, whole)
+    } else if frac.is_multiple_of(10) {
+        format!("{}{}.{}%", sign, whole, frac / 10)
+    } else {
+        format!("{}{}.{:02}%", sign, whole, frac)
+    }
+}
 
 /// Represents a formatted data entry with a title and content
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -58,8 +76,8 @@ pub struct FormatConfig {
     pub show_sequence_and_nonce: bool,
     /// Whether to show transaction preconditions
     pub show_preconditions: bool,
-    /// Whether to show nested Soroban authorization details
-    pub show_nested_authorization: bool,
+    /// Whether to show authorization details (authorized invocation trees)
+    pub show_authorization_details: bool,
     /// Whether to show transaction source when it matches the signer address
     pub show_tx_source_if_matches_signer: bool,
 }
@@ -69,7 +87,7 @@ impl Default for FormatConfig {
         Self {
             show_sequence_and_nonce: true,
             show_preconditions: true,
-            show_nested_authorization: true,
+            show_authorization_details: true,
             show_tx_source_if_matches_signer: false,
         }
     }
@@ -121,7 +139,7 @@ pub fn format_transaction_signature_payload(
             entries.push(DataEntry::new("Fee Source", tx.fee_source.to_string()));
             entries.push(DataEntry::new(
                 "Max Fee",
-                format!("{} XLM", format_native_amount(tx.fee)),
+                format!("{} XLM", format_native_amount(tx.fee.into())),
             ));
             entries.push(DataEntry::new(
                 "Inner Tx",
@@ -142,37 +160,91 @@ pub fn format_transaction_signature_payload(
 
 /// Formats a hash ID preimage for Soroban authorization into data entries
 ///
+/// Supports both `ENVELOPE_TYPE_SOROBAN_AUTHORIZATION` and the Protocol 27
+/// `ENVELOPE_TYPE_SOROBAN_AUTHORIZATION_WITH_ADDRESS` (CAP-71) payloads; the
+/// latter additionally shows the address the signature is bound to.
+///
 /// # Arguments
-/// * `auth` - The hash ID preimage Soroban authorization to format
+/// * `preimage` - The hash ID preimage to format
 /// * `config` - Configuration options for formatting
 ///
 /// # Returns
 /// A vector of data entries containing the authorization details
 pub fn format_hash_id_preimage_soroban_authorization(
-    auth: &HashIdPreimageSorobanAuthorization,
+    preimage: &HashIDPreimage,
+    config: &FormatConfig,
+) -> Vec<DataEntry> {
+    match preimage {
+        HashIDPreimage::SorobanAuthorization(auth) => format_soroban_authorization_preimage(
+            &auth.network_id,
+            auth.nonce,
+            auth.signature_expiration_ledger,
+            None,
+            &auth.invocation,
+            config,
+        ),
+        HashIDPreimage::SorobanAuthorizationWithAddress(auth) => {
+            format_soroban_authorization_preimage(
+                &auth.network_id,
+                auth.nonce,
+                auth.signature_expiration_ledger,
+                Some(&auth.address),
+                &auth.invocation,
+                config,
+            )
+        }
+    }
+}
+
+fn format_soroban_authorization_preimage(
+    network_id: &Hash,
+    nonce: i64,
+    signature_expiration_ledger: u32,
+    address: Option<&ScAddress>,
+    invocation: &SorobanAuthorizedInvocation,
     config: &FormatConfig,
 ) -> Vec<DataEntry> {
     let mut entries = Vec::new();
 
     // Network ID (only show if not public network)
-    add_network_info_if_needed(&mut entries, &auth.network_id);
+    add_network_info_if_needed(&mut entries, network_id);
 
-    if config.show_sequence_and_nonce {
-        entries.push(DataEntry::new("Nonce", auth.nonce.to_string()));
-    }
-
-    entries.push(DataEntry::new(
-        "Sig Exp Ledger",
-        auth.signature_expiration_ledger.to_string(),
-    ));
+    format_soroban_auth_metadata(
+        address,
+        nonce,
+        signature_expiration_ledger,
+        config,
+        &mut entries,
+    );
 
     entries.extend(format_soroban_authorized_invocation(
-        &auth.invocation,
-        None,
-        config,
+        invocation, None, config,
     ));
 
     entries
+}
+
+/// Formats the metadata shared by Soroban authorization preimages and
+/// address-based authorization credentials.
+///
+/// CAP-71 preimages and address credentials bind the authorization to an
+/// address that may differ from the key signing on this device. Keeping this
+/// field order and naming in one helper prevents the two review paths from
+/// drifting apart. Legacy preimages have no address and omit that field.
+fn format_soroban_auth_metadata(
+    address: Option<&ScAddress>,
+    nonce: i64,
+    expiration_ledger: u32,
+    config: &FormatConfig,
+    entries: &mut Vec<DataEntry>,
+) {
+    if let Some(address) = address {
+        entries.push(DataEntry::new("Auth Address", address.to_string()));
+    }
+    if config.show_sequence_and_nonce {
+        entries.push(DataEntry::new("Nonce", nonce.to_string()));
+    }
+    entries.push(DataEntry::new("Exp Ledger", expiration_ledger.to_string()));
 }
 
 /// Formats a price as a decimal string with 7 decimal places and comma separators
@@ -216,7 +288,7 @@ fn format_price(price: &Price) -> Result<String, FormatError> {
 
     let result = scaled_numerator / denominator_u64;
 
-    let decimal_str = format_decimal(result, STELLAR_NATIVE_DECIMAL_PLACES);
+    let decimal_str = format_decimal(result.into(), STELLAR_NATIVE_DECIMAL_PLACES);
     let formatted = format_number_with_commas(&decimal_str);
 
     Ok(formatted)
@@ -274,7 +346,7 @@ fn format_transaction(
 
     entries.push(DataEntry::new(
         "Max Fee",
-        format!("{} XLM", format_native_amount(transaction.fee)),
+        format!("{} XLM", format_native_amount(transaction.fee.into())),
     ));
 
     if config.show_sequence_and_nonce {
@@ -567,7 +639,7 @@ pub fn get_operation_intent(operation: &Operation, tx_source: &str) -> Option<St
 macro_rules! format_asset_with_issuer {
     ($asset:expr) => {{
         let code = $asset.asset_code.to_string();
-        let issuer = format_issuer(&$asset.issuer.to_string());
+        let issuer = $asset.issuer.to_string();
         format!("{}@{}", code, issuer)
     }};
 }
@@ -615,7 +687,7 @@ fn add_network_info_if_needed(entries: &mut Vec<DataEntry>, network_id: &Hash) {
 /// * `asset` - The asset to format
 ///
 /// # Returns
-/// A formatted string like "1.23 XLM" or "100 USDC:GABCD..XYZA"
+/// A formatted string like "1.23 XLM" or "100 USDC@<full issuer StrKey>"
 ///
 /// # Examples
 /// ```ignore
@@ -624,26 +696,12 @@ fn add_network_info_if_needed(entries: &mut Vec<DataEntry>, network_id: &Hash) {
 /// let asset = Asset::Native;
 /// assert_eq!(format_amount_with_asset(10000000u64, &asset), "1 XLM");
 /// ```
-fn format_amount_with_asset<T>(amount: T, asset: &Asset) -> String
-where
-    T: ToString + Copy,
-{
-    format!("{} {}", format_native_amount(amount), format_asset(asset))
-}
-
-/// Formats an issuer address by showing first 3 and last 4 characters
-///
-/// # Arguments
-/// * `issuer` - The full issuer address
-///
-/// # Returns
-/// A shortened version like "GABCDE..UVWXYZ"
-fn format_issuer(issuer: &str) -> String {
-    if issuer.len() > 12 {
-        format!("{}..{}", &issuer[..3], &issuer[issuer.len() - 4..])
-    } else {
-        issuer.to_string()
-    }
+fn format_amount_with_asset(amount: i64, asset: &Asset) -> String {
+    format!(
+        "{} {}",
+        format_native_amount(amount.into()),
+        format_asset(asset)
+    )
 }
 
 /// Generic helper function to format flags from a bitmask
@@ -654,30 +712,22 @@ fn format_issuer(issuer: &str) -> String {
 /// * `zero_value` - String to return when flags is 0
 ///
 /// # Returns
-/// A string listing the flag names or the zero_value
+/// A string listing the flag names, or `zero_value` when no flag is set.
+///
+/// Every bit reaching here has a name: the parser rejects values outside each
+/// field's protocol-defined set, and `flag_definitions` covers that set in
+/// full. `test_flag_definitions_cover_every_accepted_value` fails if the two
+/// ever drift apart, which is what would let a bit be silently dropped.
 fn format_flags_generic(flags: u32, flag_definitions: &[(u32, &str)], zero_value: &str) -> String {
     if flags == 0 {
         return zero_value.to_string();
     }
 
-    let flag_names: Vec<&str> = flag_definitions
+    flag_definitions
         .iter()
-        .filter_map(
-            |(flag, name)| {
-                if flags & flag != 0 {
-                    Some(*name)
-                } else {
-                    None
-                }
-            },
-        )
-        .collect();
-
-    if flag_names.is_empty() {
-        format!("{} (unknown flags)", flags)
-    } else {
-        flag_names.join(", ")
-    }
+        .filter_map(|(flag, name)| (flags & flag != 0).then_some(*name))
+        .collect::<Vec<&str>>()
+        .join(", ")
 }
 
 /// Formats account flags from a bitmask into flag names
@@ -731,7 +781,7 @@ fn format_create_account_op(op: &CreateAccountOp) -> Vec<DataEntry> {
 
     entries.push(DataEntry::new(
         "Send",
-        format!("{} XLM", format_native_amount(op.starting_balance)),
+        format!("{} XLM", format_native_amount(op.starting_balance.into())),
     ));
     entries.push(DataEntry::new("To", op.destination.to_string()));
 
@@ -940,10 +990,8 @@ fn format_change_trust_op(op: &ChangeTrustOp) -> Vec<DataEntry> {
                     ));
                     entries.push(DataEntry::new(
                         "Pool Fee Rate",
-                        format!(
-                            "{}%",
-                            liquidity_pool_constant_product_parameters.fee as f64
-                                / BASIS_POINTS_TO_PERCENT
+                        format_basis_points_as_percent(
+                            liquidity_pool_constant_product_parameters.fee,
                         ),
                     ));
                 }
@@ -957,7 +1005,7 @@ fn format_change_trust_op(op: &ChangeTrustOp) -> Vec<DataEntry> {
         } else {
             entries.push(DataEntry::new(
                 "Trust Limit",
-                format_native_amount(op.limit),
+                format_native_amount(op.limit.into()),
             ));
         }
     }
@@ -1082,8 +1130,7 @@ fn format_create_claimable_balance_op(op: &CreateClaimableBalanceOp) -> Vec<Data
     for (index, claimant) in op.claimants.iter().enumerate() {
         entries.push(DataEntry::new(
             &format!("Claimant {}", index + 1),
-            serde_json::to_string(&claimant)
-                .unwrap_or_else(|_| "[unserializable data]".to_string()),
+            claimant.to_json(),
         ));
     }
     entries
@@ -1216,11 +1263,11 @@ fn format_liquidity_pool_deposit_op(
         DataEntry::new("Pool ID", format_pool_id(&op.liquidity_pool_id)),
         DataEntry::new(
             "Max Amount A",
-            format_native_amount(op.max_amount_a).to_string(),
+            format_native_amount(op.max_amount_a.into()).to_string(),
         ),
         DataEntry::new(
             "Max Amount B",
-            format_native_amount(op.max_amount_b).to_string(),
+            format_native_amount(op.max_amount_b.into()).to_string(),
         ),
         DataEntry::new("Min Price", format_price(&op.min_price)?),
         DataEntry::new("Max Price", format_price(&op.max_price)?),
@@ -1231,14 +1278,14 @@ fn format_liquidity_pool_withdraw_op(op: &LiquidityPoolWithdrawOp) -> Vec<DataEn
     vec![
         DataEntry::new("Operation Type", "Liquidity Pool Withdraw".to_string()),
         DataEntry::new("Pool ID", format_pool_id(&op.liquidity_pool_id)),
-        DataEntry::new("Amount", format_native_amount(op.amount).to_string()),
+        DataEntry::new("Amount", format_native_amount(op.amount.into()).to_string()),
         DataEntry::new(
             "Min Amount A",
-            format_native_amount(op.min_amount_a).to_string(),
+            format_native_amount(op.min_amount_a.into()).to_string(),
         ),
         DataEntry::new(
             "Min Amount B",
-            format_native_amount(op.min_amount_b).to_string(),
+            format_native_amount(op.min_amount_b.into()).to_string(),
         ),
     ]
 }
@@ -1319,7 +1366,7 @@ fn format_invoke_contract_args(args: &InvokeContractArgs) -> Vec<DataEntry> {
 ///
 /// # Arguments
 /// * `invocation` - The Soroban authorized invocation to format
-/// * `parent_index` - Optional parent index for nested invocations (e.g., "1.2")
+/// * `parent_index` - Optional parent index for nested invocations (e.g., "1-2")
 ///
 /// # Returns
 /// A vector of data entries containing the invocation details and any sub-invocations
@@ -1330,7 +1377,7 @@ fn format_invoke_contract_args(args: &InvokeContractArgs) -> Vec<DataEntry> {
 /// let entries = format_soroban_authorized_invocation(&invocation, None);
 ///
 /// // Nested invocation with parent index
-/// let entries = format_soroban_authorized_invocation(&invocation, Some("1.2"));
+/// let entries = format_soroban_authorized_invocation(&invocation, Some("1-2"));
 /// ```
 fn format_soroban_authorized_invocation(
     invocation: &SorobanAuthorizedInvocation,
@@ -1350,14 +1397,14 @@ fn format_soroban_authorized_invocation(
         }
     }
 
-    if config.show_nested_authorization {
+    if config.show_authorization_details {
         for (i, sub_invocation) in invocation.sub_invocations.iter().enumerate() {
             let nested_index = match parent_index {
                 None => (i + 1).to_string(),
                 Some(parent) => format!("{}-{}", parent, i + 1),
             };
 
-            entries.push(DataEntry::new("Nested Authorization", nested_index.clone()));
+            entries.push(DataEntry::new("Authorization", nested_index.clone()));
             entries.extend(format_soroban_authorized_invocation(
                 sub_invocation,
                 Some(&nested_index),
@@ -1367,6 +1414,106 @@ fn format_soroban_authorized_invocation(
     }
 
     entries
+}
+
+/// Returns `true` if a source-account authorization entry authorizes nothing
+/// beyond the host function that is already being displayed.
+///
+/// Such an entry is a verbatim repeat of the call shown above it, and repeated
+/// screens only train the user to click through them. Sub-invocations authorize
+/// additional downstream calls, so an entry that has any is never redundant.
+///
+/// The comparison is structural rather than over the rendered entries because
+/// formatting is lossy. Only `InvokeContract` is folded away; contract creation
+/// is rare enough that it is not worth handling.
+fn auth_duplicates_host_function(
+    host_function: &HostFunction,
+    invocation: &SorobanAuthorizedInvocation,
+) -> bool {
+    if !invocation.sub_invocations.is_empty() {
+        return false;
+    }
+
+    match (host_function, &invocation.function) {
+        (
+            HostFunction::InvokeContract(host_args),
+            SorobanAuthorizedFunction::ContractFn(auth_args),
+        ) => host_args == auth_args,
+        _ => false,
+    }
+}
+
+/// Renders the credential context of a Soroban authorization entry.
+///
+/// Source-account credentials are implicit (the key on this device signs the
+/// whole transaction) and render nothing. Address-based credentials bind the
+/// authorization to a specific address with its own nonce and signature
+/// expiration; `AddressV2` distinguishes the Protocol 27 payload and
+/// `AddressWithDelegates` additionally carries a nested tree of delegated
+/// signers. These fields are part of the payload the device commits to, so they
+/// must be reviewable even though the key on this device does not produce them.
+/// Credential and delegate signatures are still parsed but are intentionally
+/// not rendered: they are opaque proofs rather than authorization intent; the
+/// corresponding authorizing and delegate addresses are the reviewable fields.
+/// Delegate paths are prefixed with `auth_index`. The path and address use
+/// separate fields so both titles stay fixed at any nesting depth.
+fn format_soroban_authorization_credentials(
+    credentials: &SorobanCredentials,
+    config: &FormatConfig,
+    auth_index: &str,
+) -> Vec<DataEntry> {
+    let mut entries = Vec::new();
+    match credentials {
+        SorobanCredentials::SourceAccount => {}
+        SorobanCredentials::Address(cred) => {
+            entries.push(DataEntry::new("Auth Type", "Address".to_string()));
+            format_soroban_address_credentials(cred, config, &mut entries);
+        }
+        SorobanCredentials::AddressV2(cred) => {
+            entries.push(DataEntry::new("Auth Type", "Address V2".to_string()));
+            format_soroban_address_credentials(cred, config, &mut entries);
+        }
+        SorobanCredentials::AddressWithDelegates(cred) => {
+            entries.push(DataEntry::new(
+                "Auth Type",
+                "Address with Delegates".to_string(),
+            ));
+            format_soroban_address_credentials(&cred.address_credentials, config, &mut entries);
+            for (i, delegate) in cred.delegates.iter().enumerate() {
+                format_soroban_delegate(delegate, format!("{auth_index}-{}", i + 1), &mut entries);
+            }
+        }
+    }
+    entries
+}
+
+fn format_soroban_address_credentials(
+    cred: &SorobanAddressCredentials,
+    config: &FormatConfig,
+    entries: &mut Vec<DataEntry>,
+) {
+    format_soroban_auth_metadata(
+        Some(&cred.address),
+        cred.nonce,
+        cred.signature_expiration_ledger,
+        config,
+        entries,
+    );
+}
+
+fn format_soroban_delegate(
+    delegate: &SorobanDelegateSignature,
+    index: String,
+    entries: &mut Vec<DataEntry>,
+) {
+    entries.push(DataEntry::new("Delegate", index.clone()));
+    entries.push(DataEntry::new(
+        "Delegate Address",
+        delegate.address.to_string(),
+    ));
+    for (i, nested) in delegate.nested_delegates.iter().enumerate() {
+        format_soroban_delegate(nested, format!("{index}-{}", i + 1), entries);
+    }
 }
 
 fn format_invoke_host_function_op(
@@ -1392,29 +1539,42 @@ fn format_invoke_host_function_op(
         }
     }
 
-    if config.show_nested_authorization {
+    // An operation can carry several authorization entries; number them so the
+    // user can tell the blocks apart. An entry's root invocation is independent
+    // of the invoked host function (it may authorize a completely different
+    // call), so each tree must be shown from its root. Signing the transaction
+    // implicitly authorizes entries with source-account credentials; entries
+    // signed by other addresses (or their delegates) are part of the same
+    // authorization payload, so they are shown too. Only a source-account entry
+    // that merely repeats the host function is redundant with what is already on
+    // screen and is dropped; the numbering counts the blocks actually displayed.
+    if config.show_authorization_details {
         let mut auth_index = 1;
         for auth in op.auth.iter() {
-            match &auth.credentials {
-                SorobanCredentials::SourceAccount => {
-                    for (j, sub_invocation) in
-                        auth.root_invocation.sub_invocations.iter().enumerate()
-                    {
-                        let index = format!("{}-{}", auth_index, j + 1);
-                        entries.push(DataEntry::new("Nested Authorization", index.clone()));
-                        entries.extend(format_soroban_authorized_invocation(
-                            sub_invocation,
-                            Some(&index),
-                            config,
-                        ));
-                    }
-                    auth_index += 1;
-                }
-                SorobanCredentials::Address(_) => {
-                    // skip, these are not related to the current signatories,
-                    // and we will not authorize these things.
-                }
+            let is_source_account = matches!(auth.credentials, SorobanCredentials::SourceAccount);
+
+            // Address-based entries always carry unique credential context (who
+            // is authorizing), so they must not be folded away even when their
+            // root invocation repeats the host function.
+            if is_source_account
+                && auth_duplicates_host_function(&op.host_function, &auth.root_invocation)
+            {
+                continue;
             }
+
+            let index = auth_index.to_string();
+            entries.push(DataEntry::new("Authorization", index.clone()));
+            entries.extend(format_soroban_authorization_credentials(
+                &auth.credentials,
+                config,
+                &index,
+            ));
+            entries.extend(format_soroban_authorized_invocation(
+                &auth.root_invocation,
+                Some(&index),
+                config,
+            ));
+            auth_index += 1;
         }
     }
 
@@ -1433,4 +1593,50 @@ fn format_restore_footprint_op(_op: &RestoreFootprintOp) -> Vec<DataEntry> {
         "Operation Type",
         "Restore Footprint".to_string(),
     )]
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{format_asset, format_basis_points_as_percent};
+    use crate::{AlphaNum4, Asset, AssetCode4, PublicKey, Uint256};
+    use alloc::format;
+
+    #[test]
+    fn test_format_basis_points_as_percent() {
+        assert_eq!(format_basis_points_as_percent(0), "0%");
+        assert_eq!(format_basis_points_as_percent(30), "0.3%");
+        assert_eq!(format_basis_points_as_percent(100), "1%");
+        assert_eq!(format_basis_points_as_percent(125), "1.25%");
+        assert_eq!(format_basis_points_as_percent(5), "0.05%");
+        assert_eq!(format_basis_points_as_percent(-30), "-0.3%");
+    }
+
+    #[test]
+    fn test_format_asset_includes_full_issuer() {
+        let issuer_bytes = [0x42; 32];
+        let issuer = PublicKey::PublicKeyTypeEd25519(Uint256(&issuer_bytes));
+        let issuer_string = issuer.to_string();
+        let asset = Asset::CreditAlphanum4(AlphaNum4 {
+            asset_code: AssetCode4(b"USDC"),
+            issuer,
+        });
+
+        let formatted = format_asset(&asset);
+
+        assert_eq!(formatted, format!("USDC@{issuer_string}"));
+    }
+
+    /// The integer formatter must reproduce the old `f64` output exactly.
+    #[test]
+    fn test_matches_f64_display() {
+        let edge_cases = [i32::MIN, i32::MIN + 1, i32::MAX, i32::MAX - 1];
+        for fee in (-1_000_000..=1_000_000).chain(edge_cases) {
+            assert_eq!(
+                format_basis_points_as_percent(fee),
+                format!("{}%", fee as f64 / 100.0),
+                "mismatch for fee={}",
+                fee
+            );
+        }
+    }
 }

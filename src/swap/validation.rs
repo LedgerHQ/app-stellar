@@ -23,7 +23,7 @@ use alloc::string::ToString;
 use ledger_device_sdk::libcall::swap::{CheckAddressParams, CreateTxParams};
 use stellarlib::{
     parser::{Parser, TransactionSignaturePayload},
-    Operation, TaggedTransaction, XdrParse, PUBLIC_NETWORK_HASH,
+    Operation, TaggedTransaction, TransactionExt, XdrParse, PUBLIC_NETWORK_HASH,
 };
 use swap_utils::format_stellar_address;
 
@@ -104,6 +104,21 @@ pub fn validate_swap_transaction(
 
     // Validate transaction fee
     validate_fee(&envelope, tx_params)?;
+
+    // A swap transaction is a plain XLM payment, so its ext must be empty;
+    // the network rejects Soroban data on a classic transaction anyway.
+    // `extract_transaction` has already ruled out fee bumps, so `tx.ext` is
+    // the only field left before the end of the payload.
+    match TransactionExt::parse(&mut parser) {
+        Ok(TransactionExt::V0) => {}
+        Ok(TransactionExt::V1(_)) => return Err("Swap transaction must not carry Soroban data"),
+        Err(_) => return Err("Failed to parse transaction extension"),
+    }
+
+    // Everything is signed, so nothing may be left unreviewed.
+    parser
+        .ensure_fully_consumed()
+        .map_err(|_| "Unexpected trailing data in swap transaction")?;
 
     Ok(())
 }

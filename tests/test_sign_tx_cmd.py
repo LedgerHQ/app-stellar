@@ -51,8 +51,12 @@ def test_sign_tx(backend, scenario_navigator, navigator, device, test_name):
     assert response == expected_signature
 
 
-@pytest.mark.parametrize("test_name", get_testcases_names(SignTxTestCases, filter="cond_"))
-def test_sign_tx_with_precondition_enabled(backend, scenario_navigator, device, navigator, test_name):
+@pytest.mark.parametrize(
+    "test_name", get_testcases_names(SignTxTestCases, filter="cond_")
+)
+def test_sign_tx_with_precondition_enabled(
+    backend, scenario_navigator, device, navigator, test_name
+):
     keypair = Keypair.from_mnemonic_phrase(MNEMONIC, index=0)
     path = "m/44'/148'/0'"
     transaction = getattr(SignTxTestCases, test_name)()
@@ -76,13 +80,18 @@ def test_sign_tx_with_precondition_enabled(backend, scenario_navigator, device, 
 def test_sign_tx_with_sequence_enabled(backend, scenario_navigator, device, navigator):
     keypair = Keypair.from_mnemonic_phrase(MNEMONIC, index=0)
     path = "m/44'/148'/0'"
-    transaction = SignTxTestCases.op_payment_asset_native()
+    transaction = SignTxTestCases.op_invoke_host_function_with_auth_delegates()
     client = StellarCommandSender(backend)
     signature_base = transaction.signature_base()
 
-    configure_device_settings(navigator, device, SettingsId.ENABLE_SEQUENCE_AND_NONCE)
+    configure_device_settings(
+        navigator,
+        device,
+        SettingsId.ENABLE_SEQUENCE_AND_NONCE | SettingsId.ENABLE_BLIND_SIGNING,
+    )
 
     with client.sign_tx(path=path, transaction=signature_base):
+        handle_risk_warning(navigator, device)
         scenario_navigator.review_approve(
             ROOT_SCREENSHOT_PATH,
             custom_screen_text="Sign ",
@@ -113,16 +122,18 @@ def test_sign_tx_with_tx_source_enabled(backend, scenario_navigator, device, nav
     assert response == expected_signature
 
 
-def test_sign_tx_with_nested_authorization_disabled(backend, scenario_navigator, device, navigator):
+def test_sign_tx_with_authorization_details_disabled(
+    backend, scenario_navigator, device, navigator
+):
     keypair = Keypair.from_mnemonic_phrase(MNEMONIC, index=0)
     path = "m/44'/148'/0'"
-    transaction = SignTxTestCases.op_invoke_host_function_with_complex_sub_invocation()
+    transaction = SignTxTestCases.op_invoke_host_function_with_auth_delegates()
     client = StellarCommandSender(backend)
     signature_base = transaction.signature_base()
     configure_device_settings(
         navigator,
         device,
-        SettingsId.DISABLE_NESTED_AUTHORIZATION | SettingsId.ENABLE_BLIND_SIGNING,
+        SettingsId.DISABLE_AUTHORIZATION_DETAILS | SettingsId.ENABLE_BLIND_SIGNING,
     )
 
     with client.sign_tx(path=path, transaction=signature_base):

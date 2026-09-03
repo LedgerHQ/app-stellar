@@ -30,10 +30,13 @@ pub fn ui_sign_soroban_auth(raw_data: &[u8]) -> Result<bool, AppSW> {
 
     let mut parser = Parser::new(raw_data);
     let preimage = HashIDPreimage::parse(&mut parser).map_err(|_| AppSW::DataParsingFail)?;
-    let HashIDPreimage::SorobanAuthorization(auth) = preimage;
+    // The handler signs the whole buffer, not just the preimage parsed here.
+    parser
+        .ensure_fully_consumed()
+        .map_err(|_| AppSW::DataParsingFail)?;
 
     let data_entries =
-        format_hash_id_preimage_soroban_authorization(&auth, &Settings.to_format_config());
+        format_hash_id_preimage_soroban_authorization(&preimage, &Settings.to_format_config());
     let fields: Vec<Field> = data_entries
         .iter()
         .map(|entry| Field {

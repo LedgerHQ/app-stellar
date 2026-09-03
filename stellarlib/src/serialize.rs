@@ -1,4 +1,6 @@
-//! Serde serialization support for Stellar XDR types
+//! Manual JSON serialization for Stellar XDR types
+//!
+//! This module provides lightweight JSON serialization without serde_json dependency.
 
 extern crate alloc;
 
@@ -9,15 +11,37 @@ use crate::{
     parser::{ClaimPredicate, Claimant, ClaimantV0, SCError, SCErrorCode, ScVal},
 };
 use alloc::format;
-use alloc::string::ToString;
+use alloc::string::{String, ToString};
 use alloc::vec::Vec;
-use serde::ser::{Serialize, SerializeMap, SerializeSeq, Serializer};
 
-impl Serialize for SCErrorCode {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
+/// Trait for types that can be serialized to JSON string
+pub trait ToJson {
+    fn to_json(&self) -> String;
+}
+
+/// Escape a string for JSON output
+fn escape_json_string(s: &str) -> String {
+    let mut result = String::with_capacity(s.len() + 2);
+    result.push('"');
+    for c in s.chars() {
+        match c {
+            '"' => result.push_str("\\\""),
+            '\\' => result.push_str("\\\\"),
+            '\n' => result.push_str("\\n"),
+            '\r' => result.push_str("\\r"),
+            '\t' => result.push_str("\\t"),
+            c if c.is_control() => {
+                result.push_str(&format!("\\u{:04x}", c as u32));
+            }
+            c => result.push(c),
+        }
+    }
+    result.push('"');
+    result
+}
+
+impl ToJson for SCErrorCode {
+    fn to_json(&self) -> String {
         let code_str = match self {
             SCErrorCode::ScecArithDomain => "ArithDomain",
             SCErrorCode::ScecIndexBounds => "IndexBounds",
@@ -30,202 +54,160 @@ impl Serialize for SCErrorCode {
             SCErrorCode::ScecUnexpectedType => "UnexpectedType",
             SCErrorCode::ScecUnexpectedSize => "UnexpectedSize",
         };
-        serializer.serialize_str(code_str)
+        escape_json_string(code_str)
     }
 }
 
-impl Serialize for SCError {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut map = serializer.serialize_map(Some(2))?;
+impl ToJson for SCError {
+    fn to_json(&self) -> String {
+        let (error_type, error_value) = match self {
+            SCError::SceContract(code) => ("Contract", code.to_string()),
+            SCError::SceWasmVm(code) => ("WasmVm", code.to_json()),
+            SCError::SceContext(code) => ("Context", code.to_json()),
+            SCError::SceStorage(code) => ("Storage", code.to_json()),
+            SCError::SceObject(code) => ("Object", code.to_json()),
+            SCError::SceCrypto(code) => ("Crypto", code.to_json()),
+            SCError::SceEvents(code) => ("Events", code.to_json()),
+            SCError::SceBudget(code) => ("Budget", code.to_json()),
+            SCError::SceValue(code) => ("Value", code.to_json()),
+            SCError::SceAuth(code) => ("Auth", code.to_json()),
+        };
 
+        format!(
+            "{{\"error_type\":{},\"error_value\":{}}}",
+            escape_json_string(error_type),
+            error_value
+        )
+    }
+}
+
+/// Convert ScVal to string representation for use as JSON map keys
+pub fn scval_to_key_string<'a>(val: &ScVal<'a>) -> String {
+    match val {
+        ScVal::Bool(b) => b.to_string(),
+        ScVal::Void => "[void]".to_string(),
+        ScVal::Error(e) => e.to_json(),
+        ScVal::U32(v) => format_number_with_commas(&v.to_string()),
+        ScVal::I32(v) => format_number_with_commas(&v.to_string()),
+        ScVal::U64(v) => format_number_with_commas(&v.to_string()),
+        ScVal::I64(v) => format_number_with_commas(&v.to_string()),
+        ScVal::Timepoint(v) => format_unix_timestamp(*v),
+        ScVal::Duration(v) => format_duration(*v),
+        ScVal::U128(v) => format_number_with_commas(&v.to_string()),
+        ScVal::I128(v) => format_number_with_commas(&v.to_string()),
+        ScVal::U256(v) => format_number_with_commas(&v.to_string()),
+        ScVal::I256(v) => format_number_with_commas(&v.to_string()),
+        ScVal::Bytes(b) => b.to_string(),
+        ScVal::String(s) => s.to_string(),
+        ScVal::Symbol(s) => s.to_string(),
+        ScVal::Vec(_) | ScVal::Map(_) => val.to_json(),
+        ScVal::Address(addr) => addr.to_string(),
+        ScVal::ContractInstance(_) => "[ContractInstance]".to_string(),
+        ScVal::LedgerKeyContractInstance => "[LedgerKeyContractInstance]".to_string(),
+        ScVal::LedgerKeyNonce(_) => "[LedgerKeyNonce]".to_string(),
+    }
+}
+
+impl<'a> ToJson for ScVal<'a> {
+    fn to_json(&self) -> String {
         match self {
-            SCError::SceContract(contract_code) => {
-                map.serialize_entry("error_type", "Contract")?;
-                map.serialize_entry("error_value", contract_code)?;
+            ScVal::Bool(b) => {
+                if *b {
+                    "true".to_string()
+                } else {
+                    "false".to_string()
+                }
             }
-            SCError::SceWasmVm(code) => {
-                map.serialize_entry("error_type", "WasmVm")?;
-                map.serialize_entry("error_value", code)?;
-            }
-            SCError::SceContext(code) => {
-                map.serialize_entry("error_type", "Context")?;
-                map.serialize_entry("error_value", code)?;
-            }
-            SCError::SceStorage(code) => {
-                map.serialize_entry("error_type", "Storage")?;
-                map.serialize_entry("error_value", code)?;
-            }
-            SCError::SceObject(code) => {
-                map.serialize_entry("error_type", "Object")?;
-                map.serialize_entry("error_value", code)?;
-            }
-            SCError::SceCrypto(code) => {
-                map.serialize_entry("error_type", "Crypto")?;
-                map.serialize_entry("error_value", code)?;
-            }
-            SCError::SceEvents(code) => {
-                map.serialize_entry("error_type", "Events")?;
-                map.serialize_entry("error_value", code)?;
-            }
-            SCError::SceBudget(code) => {
-                map.serialize_entry("error_type", "Budget")?;
-                map.serialize_entry("error_value", code)?;
-            }
-            SCError::SceValue(code) => {
-                map.serialize_entry("error_type", "Value")?;
-                map.serialize_entry("error_value", code)?;
-            }
-            SCError::SceAuth(code) => {
-                map.serialize_entry("error_type", "Auth")?;
-                map.serialize_entry("error_value", code)?;
-            }
-        }
-
-        map.end()
-    }
-}
-
-// Helper to convert ScVal to string representation for use as JSON map keys
-// This is needed because JSON only supports string keys, and we want to
-// maintain the same formatting as the value serialization
-pub fn scval_to_key_string<'a>(val: &ScVal<'a>) -> alloc::string::String {
-    // For most types, we can use serde_json to get the serialized form
-    // and then strip the quotes if it's a string
-    match serde_json::to_value(val) {
-        Ok(json_val) => match json_val {
-            serde_json::Value::String(s) => s,
-            serde_json::Value::Bool(b) => b.to_string(),
-            serde_json::Value::Null => "[void]".to_string(),
-            serde_json::Value::Number(_) => {
-                // Numbers lose formatting in serde_json::Value, so we handle them specially
-                // This should not happen as our Serialize impl outputs strings for numbers
-                serde_json::to_string(&json_val)
-                    .unwrap_or_else(|_| "[unserializable data]".to_string())
-            }
-            serde_json::Value::Array(_) | serde_json::Value::Object(_) => {
-                // Complex types get JSON string representation
-                serde_json::to_string(&json_val)
-                    .unwrap_or_else(|_| "[unserializable data]".to_string())
-            }
-        },
-        Err(e) => format!("[serialization_error: {}]", e),
-    }
-}
-
-impl<'a> Serialize for ScVal<'a> {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match self {
-            ScVal::Bool(b) => b.serialize(serializer),
-            ScVal::Void => serializer.serialize_unit(),
-            ScVal::Error(e) => e.serialize(serializer),
-            ScVal::U32(v) => format_number_with_commas(&v.to_string()).serialize(serializer),
-            ScVal::I32(v) => format_number_with_commas(&v.to_string()).serialize(serializer),
-            ScVal::U64(v) => format_number_with_commas(&v.to_string()).serialize(serializer),
-            ScVal::I64(v) => format_number_with_commas(&v.to_string()).serialize(serializer),
-            ScVal::Timepoint(v) => format_unix_timestamp(*v).serialize(serializer),
-            ScVal::Duration(v) => format_duration(*v).serialize(serializer),
-            ScVal::U128(v) => format_number_with_commas(&v.to_string()).serialize(serializer),
-            ScVal::I128(v) => format_number_with_commas(&v.to_string()).serialize(serializer),
-            ScVal::U256(v) => format_number_with_commas(&v.to_string()).serialize(serializer),
-            ScVal::I256(v) => format_number_with_commas(&v.to_string()).serialize(serializer),
-            ScVal::Bytes(b) => b.to_string().serialize(serializer),
-            ScVal::String(s) => s.to_string().serialize(serializer),
-            ScVal::Symbol(s) => s.to_string().serialize(serializer),
+            ScVal::Void => "null".to_string(),
+            ScVal::Error(e) => e.to_json(),
+            ScVal::U32(v) => escape_json_string(&format_number_with_commas(&v.to_string())),
+            ScVal::I32(v) => escape_json_string(&format_number_with_commas(&v.to_string())),
+            ScVal::U64(v) => escape_json_string(&format_number_with_commas(&v.to_string())),
+            ScVal::I64(v) => escape_json_string(&format_number_with_commas(&v.to_string())),
+            ScVal::Timepoint(v) => escape_json_string(&format_unix_timestamp(*v)),
+            ScVal::Duration(v) => escape_json_string(&format_duration(*v)),
+            ScVal::U128(v) => escape_json_string(&format_number_with_commas(&v.to_string())),
+            ScVal::I128(v) => escape_json_string(&format_number_with_commas(&v.to_string())),
+            ScVal::U256(v) => escape_json_string(&format_number_with_commas(&v.to_string())),
+            ScVal::I256(v) => escape_json_string(&format_number_with_commas(&v.to_string())),
+            ScVal::Bytes(b) => escape_json_string(&b.to_string()),
+            ScVal::String(s) => escape_json_string(&s.to_string()),
+            ScVal::Symbol(s) => escape_json_string(&s.to_string()),
             ScVal::Vec(opt_vec) => match opt_vec {
                 Some(vec) => {
-                    let mut seq = serializer.serialize_seq(Some(vec.len()))?;
-                    for item in vec.iter() {
-                        seq.serialize_element(item)?;
-                    }
-                    seq.end()
+                    let items: Vec<String> = vec.iter().map(|item| item.to_json()).collect();
+                    format!("[{}]", items.join(","))
                 }
-                None => serializer.serialize_none(),
+                None => "null".to_string(),
             },
             ScVal::Map(opt_map) => match opt_map {
                 Some(map) => {
-                    let mut map_ser = serializer.serialize_map(Some(map.len()))?;
-                    for entry in map.iter() {
-                        // Convert key to string for JSON compatibility
-                        let key_str = scval_to_key_string(&entry.key);
-                        map_ser.serialize_entry(&key_str, &entry.val)?;
-                    }
-                    map_ser.end()
+                    let entries: Vec<String> = map
+                        .iter()
+                        .map(|entry| {
+                            let key_str = scval_to_key_string(&entry.key);
+                            format!("{}:{}", escape_json_string(&key_str), entry.val.to_json())
+                        })
+                        .collect();
+                    format!("{{{}}}", entries.join(","))
                 }
-                None => serializer.serialize_none(),
+                None => "null".to_string(),
             },
-            ScVal::Address(addr) => addr.to_string().serialize(serializer),
-            // The following types are actually not used
-            ScVal::ContractInstance(_) => "[ContractInstance]".serialize(serializer),
-            ScVal::LedgerKeyContractInstance => "[LedgerKeyContractInstance]".serialize(serializer),
-            ScVal::LedgerKeyNonce(_) => "[LedgerKeyNonce]".serialize(serializer),
+            ScVal::Address(addr) => escape_json_string(&addr.to_string()),
+            ScVal::ContractInstance(_) => escape_json_string("[ContractInstance]"),
+            ScVal::LedgerKeyContractInstance => escape_json_string("[LedgerKeyContractInstance]"),
+            ScVal::LedgerKeyNonce(_) => escape_json_string("[LedgerKeyNonce]"),
         }
     }
 }
 
-impl Serialize for ClaimPredicate {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
+impl ToJson for ClaimPredicate {
+    fn to_json(&self) -> String {
         match self {
-            ClaimPredicate::Unconditional => serializer.serialize_str("unconditional"),
+            ClaimPredicate::Unconditional => escape_json_string("unconditional"),
             ClaimPredicate::And(predicates) => {
-                let mut map = serializer.serialize_map(Some(1))?;
-                let vec: Vec<&ClaimPredicate> = predicates.as_slice().iter().collect();
-                map.serialize_entry("and", &vec)?;
-                map.end()
+                let items: Vec<String> =
+                    predicates.as_slice().iter().map(|p| p.to_json()).collect();
+                format!("{{\"and\":[{}]}}", items.join(","))
             }
             ClaimPredicate::Or(predicates) => {
-                let mut map = serializer.serialize_map(Some(1))?;
-                // Serialize the inner predicates as an array
-                let vec: Vec<&ClaimPredicate> = predicates.as_slice().iter().collect();
-                map.serialize_entry("or", &vec)?;
-                map.end()
+                let items: Vec<String> =
+                    predicates.as_slice().iter().map(|p| p.to_json()).collect();
+                format!("{{\"or\":[{}]}}", items.join(","))
             }
             ClaimPredicate::Not(predicate) => {
-                let mut map = serializer.serialize_map(Some(1))?;
-                map.serialize_entry("not", predicate.as_ref())?;
-                map.end()
+                format!("{{\"not\":{}}}", predicate.to_json())
             }
             ClaimPredicate::BeforeAbsoluteTime(timestamp) => {
-                let mut map = serializer.serialize_map(Some(1))?;
-                map.serialize_entry("before_absolute_time", &timestamp.to_string())?;
-                map.end()
+                format!(
+                    "{{\"before_absolute_time\":{}}}",
+                    escape_json_string(&timestamp.to_string())
+                )
             }
             ClaimPredicate::BeforeRelativeTime(seconds) => {
-                let mut map = serializer.serialize_map(Some(1))?;
-                map.serialize_entry("before_relative_time", &seconds.to_string())?;
-                map.end()
+                format!(
+                    "{{\"before_relative_time\":{}}}",
+                    escape_json_string(&seconds.to_string())
+                )
             }
         }
     }
 }
 
-impl<'a> Serialize for ClaimantV0<'a> {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut map = serializer.serialize_map(Some(2))?;
-        map.serialize_entry("destination", &self.destination.to_string())?;
-        map.serialize_entry("predicate", &self.predicate)?;
-        map.end()
+impl<'a> ToJson for ClaimantV0<'a> {
+    fn to_json(&self) -> String {
+        format!(
+            "{{\"destination\":{},\"predicate\":{}}}",
+            escape_json_string(&self.destination.to_string()),
+            self.predicate.to_json()
+        )
     }
 }
 
-impl<'a> Serialize for Claimant<'a> {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
+impl<'a> ToJson for Claimant<'a> {
+    fn to_json(&self) -> String {
         match self {
-            Claimant::V0(claimant_v0) => claimant_v0.serialize(serializer),
+            Claimant::V0(claimant_v0) => claimant_v0.to_json(),
         }
     }
 }

@@ -24,8 +24,27 @@ pub enum ParseError {
     BufferOverflow,
     InvalidType(i32),
     InvalidPadding,
-    LengthExceedsMax { actual: usize, max: usize },
-    MaxDepthExceeded { depth: usize, max: usize },
+    AllocationFailed,
+    LengthExceedsMax {
+        actual: usize,
+        max: usize,
+    },
+    /// A length / cardinality outside the required inclusive range, e.g. an
+    /// empty `opaque payload<64>` (must be 1..=64) or a `ClaimPredicate::Not`
+    /// arm without its required single predicate (must be 1..=1).
+    InvalidLength {
+        actual: usize,
+        min: usize,
+        max: usize,
+    },
+    MaxDepthExceeded {
+        depth: usize,
+        max: usize,
+    },
+    TrailingData {
+        remaining: usize,
+    },
+    InvalidFlags(u32),
 }
 
 impl fmt::Display for ParseError {
@@ -34,8 +53,16 @@ impl fmt::Display for ParseError {
             ParseError::BufferOverflow => write!(f, "Buffer overflow: not enough bytes to read"),
             ParseError::InvalidType(val) => write!(f, "Invalid type value: {}", val),
             ParseError::InvalidPadding => write!(f, "Invalid padding: non-zero bytes in padding"),
+            ParseError::AllocationFailed => write!(f, "Failed to allocate parser storage"),
             ParseError::LengthExceedsMax { actual, max } => {
                 write!(f, "Length {} exceeds maximum allowed {}", actual, max)
+            }
+            ParseError::InvalidLength { actual, min, max } => {
+                write!(
+                    f,
+                    "Length {} is outside the allowed range {}..={}",
+                    actual, min, max
+                )
             }
             ParseError::MaxDepthExceeded { depth, max } => {
                 write!(
@@ -43,6 +70,12 @@ impl fmt::Display for ParseError {
                     "Parse depth {} exceeds maximum allowed depth {}",
                     depth, max
                 )
+            }
+            ParseError::TrailingData { remaining } => {
+                write!(f, "{} unparsed bytes remain after the input", remaining)
+            }
+            ParseError::InvalidFlags(flags) => {
+                write!(f, "Flag value 0x{:x} is not valid for this field", flags)
             }
         }
     }
@@ -73,9 +106,23 @@ impl<'a> Parser<'a> {
         self.offset
     }
 
+    /// Verifies that parsing consumed every byte of the input.
+    ///
+    /// Signing flows hash the whole input buffer, so any byte the parser did
+    /// not reach is signed without ever being reviewed. Callers must run this
+    /// before treating a parsed structure as a faithful description of what
+    /// they are about to sign.
+    pub fn ensure_fully_consumed(&self) -> Result<(), ParseError> {
+        let remaining = self.remaining();
+        if remaining != 0 {
+            return Err(ParseError::TrailingData { remaining });
+        }
+        Ok(())
+    }
+
     /// Enter a recursive parsing context, checking depth limit
     #[inline]
-    pub(crate) fn enter_recursion(&mut self) -> Result<(), ParseError> {
+    fn enter_recursion(&mut self) -> Result<(), ParseError> {
         if self.depth >= MAX_PARSE_DEPTH {
             return Err(ParseError::MaxDepthExceeded {
                 depth: self.depth + 1,
@@ -88,23 +135,42 @@ impl<'a> Parser<'a> {
 
     /// Exit a recursive parsing context
     #[inline]
-    pub(crate) fn exit_recursion(&mut self) {
+    fn exit_recursion(&mut self) {
         self.depth = self.depth.saturating_sub(1);
+    }
+
+    /// Run a parser operation one recursion level deeper.
+    ///
+    /// Keeping depth restoration here prevents `?` inside recursive parsers
+    /// from leaving the parser at an artificially elevated depth after an
+    /// ordinary parse or allocation error.
+    #[inline]
+    fn with_recursion<T>(
+        &mut self,
+        parse: impl FnOnce(&mut Self) -> Result<T, ParseError>,
+    ) -> Result<T, ParseError> {
+        self.enter_recursion()?;
+        let result = parse(self);
+        self.exit_recursion();
+        result
     }
 
     /// Parse with depth tracking for recursive types
     #[inline]
     pub fn parse_with_depth<T: XdrParse<'a>>(&mut self) -> Result<T, ParseError> {
-        self.enter_recursion()?;
-        let result = T::parse(self);
-        self.exit_recursion();
-        result
+        self.with_recursion(T::parse)
     }
 
     /// Check if we can read n bytes
     #[inline]
     fn can_read(&self, n: usize) -> bool {
         self.offset.saturating_add(n) <= self.data.len()
+    }
+
+    /// Number of bytes left to read
+    #[inline]
+    fn remaining(&self) -> usize {
+        self.data.len().saturating_sub(self.offset)
     }
 
     /// Read raw bytes without copying (zero-copy)
@@ -262,6 +328,31 @@ pub enum AccountFlags {
     ClawbackEnabledFlag = 0x8,
 }
 
+/// Mask of every account flag the protocol defines.
+pub const ALL_ACCOUNT_FLAGS: u32 = 0xF;
+
+/// Mask of every trust line flag the protocol defines.
+pub const ALL_TRUSTLINE_FLAGS: u32 = 0x7;
+
+/// Rejects a bitmask carrying anything outside `mask`.
+///
+/// The device cannot name a flag it does not know, so the review screen would
+/// drop it silently; refusing is the only honest option. This mirrors
+/// stellar-core's own `accountFlagMaskCheckIsValid` /
+/// `trustLineFlagMaskCheckIsValid` (`(flag & ~MASK) == 0`), so nothing the
+/// network would accept is rejected here.
+///
+/// Deliberately no stricter than that: core also enforces semantic rules (set
+/// and clear must be disjoint, clawback requires revocable, and so on), but
+/// those values can all be displayed truthfully, so rejecting them would only
+/// add a way to refuse transactions a future protocol might allow.
+fn check_flags(flags: u32, mask: u32) -> Result<(), ParseError> {
+    if flags & !mask != 0 {
+        return Err(ParseError::InvalidFlags(flags));
+    }
+    Ok(())
+}
+
 #[repr(i32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MemoType {
@@ -295,9 +386,15 @@ pub struct StringM<'a, const MAX: usize> {
 }
 
 impl<'a, const MAX: usize> StringM<'a, MAX> {
-    /// Create a new StringM from byte slice (mainly for testing)
-    pub fn new(data: &'a [u8]) -> Self {
-        Self { data }
+    /// Create a new `StringM` after enforcing its maximum encoded length.
+    pub fn new(data: &'a [u8]) -> Result<Self, ParseError> {
+        if data.len() > MAX {
+            return Err(ParseError::LengthExceedsMax {
+                actual: data.len(),
+                max: MAX,
+            });
+        }
+        Ok(Self { data })
     }
 
     /// Get the string data as bytes
@@ -324,7 +421,7 @@ impl<'a, const MAX: usize> StringM<'a, MAX> {
 impl<'a, const MAX: usize> XdrParse<'a> for StringM<'a, MAX> {
     fn parse(parser: &mut Parser<'a>) -> Result<Self, ParseError> {
         let data = parser.parse_var_opaque(Some(MAX))?;
-        Ok(StringM { data })
+        StringM::new(data)
     }
 }
 
@@ -334,9 +431,15 @@ pub struct BytesM<'a, const MAX: usize> {
 }
 
 impl<'a, const MAX: usize> BytesM<'a, MAX> {
-    /// Create a new BytesM from byte slice (mainly for testing)
-    pub fn new(data: &'a [u8]) -> Self {
-        Self { data }
+    /// Create a new `BytesM` after enforcing its maximum encoded length.
+    pub fn new(data: &'a [u8]) -> Result<Self, ParseError> {
+        if data.len() > MAX {
+            return Err(ParseError::LengthExceedsMax {
+                actual: data.len(),
+                max: MAX,
+            });
+        }
+        Ok(Self { data })
     }
 
     /// Get the byte data
@@ -358,17 +461,30 @@ impl<'a, const MAX: usize> BytesM<'a, MAX> {
 impl<'a, const MAX: usize> XdrParse<'a> for BytesM<'a, MAX> {
     fn parse(parser: &mut Parser<'a>) -> Result<Self, ParseError> {
         let data = parser.parse_var_opaque(Some(MAX))?;
-        Ok(BytesM { data })
+        BytesM::new(data)
     }
 }
 
+/// Maximum item count for XDR vectors without a smaller protocol-defined cap.
+///
+/// Soroban collections are unbounded in the XDR schema, but retaining more
+/// than this on a device with a 16 KiB heap is unsafe. Fields with protocol
+/// limits continue to provide their own `MAX` value.
+pub const MAX_SOROBAN_VEC_ITEMS: u32 = 64;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct VecM<T, const MAX: u32 = { u32::MAX }>(Vec<T>);
+pub struct VecM<T, const MAX: u32 = MAX_SOROBAN_VEC_ITEMS>(Vec<T>);
 
 impl<T, const MAX: u32> VecM<T, MAX> {
-    /// Create a new VecM from a Vec (mainly for testing)
-    pub fn new(data: Vec<T>) -> Self {
-        Self(data)
+    /// Create a new `VecM` after enforcing its maximum item count.
+    pub fn new(data: Vec<T>) -> Result<Self, ParseError> {
+        if data.len() > MAX as usize {
+            return Err(ParseError::LengthExceedsMax {
+                actual: data.len(),
+                max: MAX as usize,
+            });
+        }
+        Ok(Self(data))
     }
 
     pub fn as_slice(&self) -> &[T] {
@@ -388,6 +504,14 @@ impl<T, const MAX: u32> VecM<T, MAX> {
     }
 }
 
+fn try_vec_with_capacity<T>(capacity: usize) -> Result<Vec<T>, ParseError> {
+    let mut items = Vec::new();
+    items
+        .try_reserve_exact(capacity)
+        .map_err(|_| ParseError::AllocationFailed)?;
+    Ok(items)
+}
+
 impl<'a, T: XdrParse<'a>, const MAX: u32> XdrParse<'a> for VecM<T, MAX> {
     fn parse(parser: &mut Parser<'a>) -> Result<Self, ParseError> {
         let len = parser.parse_uint32()?;
@@ -398,17 +522,31 @@ impl<'a, T: XdrParse<'a>, const MAX: u32> XdrParse<'a> for VecM<T, MAX> {
             });
         }
 
-        // Enter recursion context for VecM parsing
-        parser.enter_recursion()?;
-
-        let mut items = Vec::with_capacity(len as usize);
-        for _ in 0..len {
-            let item = T::parse(parser)?;
-            items.push(item);
+        // No XDR element can occupy fewer than four bytes. Reject impossible
+        // lengths before allocating so malformed inputs cannot consume all
+        // remaining heap merely because the APDU buffer itself is large.
+        let max_possible = parser.remaining() / 4;
+        if len as usize > max_possible {
+            return Err(ParseError::LengthExceedsMax {
+                actual: len as usize,
+                max: max_possible,
+            });
         }
 
-        parser.exit_recursion();
-        Ok(VecM(items))
+        parser.with_recursion(|parser| {
+            // `len` is attacker-controlled. Reserving remains fallible because even
+            // a bounded, input-valid capacity can exceed the currently available
+            // device heap when T is much larger than its encoded representation.
+            // Once this exact reservation succeeds, none of the pushes below can
+            // grow the Vec.
+            let mut items = try_vec_with_capacity(len as usize)?;
+            for _ in 0..len {
+                let item = T::parse(parser)?;
+                items.push(item);
+            }
+
+            VecM::new(items)
+        })
     }
 }
 
@@ -550,15 +688,44 @@ impl<'a> XdrParse<'a> for PublicKey<'a> {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Ed25519SignedPayload<'a> {
-    pub ed25519: Uint256<'a>,
-    pub payload: &'a [u8],
+    ed25519: Uint256<'a>,
+    payload: &'a [u8],
+}
+
+impl<'a> Ed25519SignedPayload<'a> {
+    const MIN_PAYLOAD_LENGTH: usize = 1;
+    const MAX_PAYLOAD_LENGTH: usize = 64;
+
+    /// Create a signed-payload signer while enforcing its protocol length.
+    pub fn new(ed25519: Uint256<'a>, payload: &'a [u8]) -> Result<Self, ParseError> {
+        if !(Self::MIN_PAYLOAD_LENGTH..=Self::MAX_PAYLOAD_LENGTH).contains(&payload.len()) {
+            return Err(ParseError::InvalidLength {
+                actual: payload.len(),
+                min: Self::MIN_PAYLOAD_LENGTH,
+                max: Self::MAX_PAYLOAD_LENGTH,
+            });
+        }
+        Ok(Self { ed25519, payload })
+    }
+
+    pub fn ed25519(&self) -> &Uint256<'a> {
+        &self.ed25519
+    }
+
+    pub fn payload(&self) -> &'a [u8] {
+        self.payload
+    }
 }
 
 impl<'a> XdrParse<'a> for Ed25519SignedPayload<'a> {
     fn parse(parser: &mut Parser<'a>) -> Result<Self, ParseError> {
         let ed25519 = Uint256::parse(parser)?;
-        let payload = parser.parse_var_opaque(Some(64))?;
-        Ok(Ed25519SignedPayload { ed25519, payload })
+        let payload = parser.parse_var_opaque(Some(Self::MAX_PAYLOAD_LENGTH))?;
+        // stellar-strkey and stellar-core both require the inner payload to be
+        // 1..=64 bytes (SET_OPTIONS_BAD_SIGNER for empty), so an XDR that
+        // parses an empty payload can never be a chain-accepted transaction and
+        // cannot be strkey-encoded for display. Reject it at parse time.
+        Ed25519SignedPayload::new(ed25519, payload)
     }
 }
 
@@ -910,6 +1077,7 @@ pub enum EnvelopeType {
     EnvelopeTypePoolRevokeOpId = 7,
     EnvelopeTypeContractId = 8,
     EnvelopeTypeSorobanAuthorization = 9,
+    EnvelopeTypeSorobanAuthorizationWithAddress = 10,
 }
 
 impl<'a> XdrParse<'a> for EnvelopeType {
@@ -926,10 +1094,19 @@ impl<'a> XdrParse<'a> for EnvelopeType {
             7 => Ok(EnvelopeType::EnvelopeTypePoolRevokeOpId),
             8 => Ok(EnvelopeType::EnvelopeTypeContractId),
             9 => Ok(EnvelopeType::EnvelopeTypeSorobanAuthorization),
+            10 => Ok(EnvelopeType::EnvelopeTypeSorobanAuthorizationWithAddress),
             _ => Err(ParseError::InvalidType(value)),
         }
     }
 }
+
+/// Maximum number of operations accepted in a single transaction.
+///
+/// This is the Stellar protocol limit (`MAX_OPS_PER_TX`), so rejecting beyond
+/// it can never refuse a transaction the network would accept. It bounds the
+/// per-operation display entries generated on the device from an otherwise
+/// attacker-controlled `u32` count.
+pub const MAX_OPS: u32 = 100;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Transaction<'a> {
@@ -949,6 +1126,12 @@ impl<'a> XdrParse<'a> for Transaction<'a> {
         let cond = Preconditions::parse(parser)?;
         let memo = Memo::parse(parser)?;
         let op_count = parser.parse_uint32()?;
+        if op_count > MAX_OPS {
+            return Err(ParseError::LengthExceedsMax {
+                actual: op_count as usize,
+                max: MAX_OPS as usize,
+            });
+        }
 
         Ok(Transaction {
             source_account,
@@ -1024,6 +1207,37 @@ impl<'a> XdrParse<'a> for TaggedTransaction<'a> {
             }
             _ => Err(ParseError::InvalidType(envelope_type as i32)),
         }
+    }
+}
+
+impl<'a> TaggedTransaction<'a> {
+    /// Parses the payload fields that sit after the operation list.
+    ///
+    /// [`TransactionSignaturePayload::parse`] deliberately stops at `op_count`
+    /// so callers can stream operations one at a time instead of holding them
+    /// all in memory. Everything after those operations is still part of the
+    /// signed bytes, so it has to be parsed before the payload can be called
+    /// fully reviewed:
+    ///
+    /// - a plain transaction ends with `tx.ext`;
+    /// - a fee bump wraps a whole `TransactionV1Envelope`, so the inner
+    ///   `tx.ext` is followed by the inner signature list and then the fee
+    ///   bump's own `ext`.
+    ///
+    /// Returns the transaction's `ext`, which for a Soroban transaction holds
+    /// the resource data.
+    pub fn parse_trailing(&self, parser: &mut Parser<'a>) -> Result<TransactionExt, ParseError> {
+        let ext = TransactionExt::parse(parser)?;
+
+        if matches!(self, TaggedTransaction::EnvelopeTypeTxFeeBump(_)) {
+            consume_array::<DecoratedSignature>(parser, MAX_ENVELOPE_SIGNATURES)?;
+            match parser.parse_int32()? {
+                0 => {}
+                v => return Err(ParseError::InvalidType(v)),
+            }
+        }
+
+        Ok(ext)
     }
 }
 
@@ -1879,6 +2093,9 @@ impl<'a> XdrParse<'a> for SetOptionsOp<'a> {
         let inflation_dest = parser.parse_optional(AccountId::parse)?;
         let clear_flags = parser.parse_optional(|p| p.parse_uint32())?;
         let set_flags = parser.parse_optional(|p| p.parse_uint32())?;
+        for flags in [clear_flags, set_flags].into_iter().flatten() {
+            check_flags(flags, ALL_ACCOUNT_FLAGS)?;
+        }
         let master_weight = parser.parse_optional(|p| p.parse_uint32())?;
         let low_threshold = parser.parse_optional(|p| p.parse_uint32())?;
         let med_threshold = parser.parse_optional(|p| p.parse_uint32())?;
@@ -2002,6 +2219,16 @@ impl<'a> XdrParse<'a> for AllowTrustOp<'a> {
         let trustor = AccountId::parse(parser)?;
         let asset = AssetCode::parse(parser)?;
         let authorize = parser.parse_uint32()?;
+        // `authorize` is not a bitmask. The XDR defines it as "One of 0,
+        // AUTHORIZED_FLAG, or AUTHORIZED_TO_MAINTAIN_LIABILITIES_FLAG", so even
+        // the combination 0x3 is meaningless for this field.
+        const UNAUTHORIZED: u32 = 0;
+        const AUTHORIZED: u32 = TrustLineFlags::AuthorizedFlag as u32;
+        const MAINTAIN_LIABILITIES: u32 =
+            TrustLineFlags::AuthorizedToMaintainLiabilitiesFlag as u32;
+        if !matches!(authorize, UNAUTHORIZED | AUTHORIZED | MAINTAIN_LIABILITIES) {
+            return Err(ParseError::InvalidFlags(authorize));
+        }
         Ok(AllowTrustOp {
             trustor,
             asset,
@@ -2076,39 +2303,41 @@ pub enum ClaimPredicate {
 
 impl<'a> XdrParse<'a> for ClaimPredicate {
     fn parse(parser: &mut Parser<'a>) -> Result<Self, ParseError> {
-        // Enter recursion for ClaimPredicate parsing
-        parser.enter_recursion()?;
-
-        let pred_type = ClaimPredicateType::from_i32(parser.parse_int32()?)?;
-        let result = match pred_type {
-            ClaimPredicateType::Unconditional => Ok(ClaimPredicate::Unconditional),
-            ClaimPredicateType::And => {
-                let predicates = VecM::parse(parser)?;
-                Ok(ClaimPredicate::And(predicates))
-            }
-            ClaimPredicateType::Or => {
-                let predicates = VecM::parse(parser)?;
-                Ok(ClaimPredicate::Or(predicates))
-            }
-            ClaimPredicateType::Not => {
-                let predicate = parser.parse_optional(ClaimPredicate::parse)?;
-                match predicate {
-                    Some(p) => Ok(ClaimPredicate::Not(Box::new(p))),
-                    None => Err(ParseError::BufferOverflow),
+        parser.with_recursion(|parser| {
+            let pred_type = ClaimPredicateType::from_i32(parser.parse_int32()?)?;
+            match pred_type {
+                ClaimPredicateType::Unconditional => Ok(ClaimPredicate::Unconditional),
+                ClaimPredicateType::And => {
+                    let predicates = VecM::parse(parser)?;
+                    Ok(ClaimPredicate::And(predicates))
+                }
+                ClaimPredicateType::Or => {
+                    let predicates = VecM::parse(parser)?;
+                    Ok(ClaimPredicate::Or(predicates))
+                }
+                ClaimPredicateType::Not => {
+                    let predicate = parser.parse_optional(ClaimPredicate::parse)?;
+                    match predicate {
+                        Some(p) => Ok(ClaimPredicate::Not(Box::new(p))),
+                        // The Not arm must carry exactly one predicate; an
+                        // absent optional is malformed, not a buffer overflow.
+                        None => Err(ParseError::InvalidLength {
+                            actual: 0,
+                            min: 1,
+                            max: 1,
+                        }),
+                    }
+                }
+                ClaimPredicateType::BeforeAbsoluteTime => {
+                    let abs_before = parser.parse_int64()?;
+                    Ok(ClaimPredicate::BeforeAbsoluteTime(abs_before))
+                }
+                ClaimPredicateType::BeforeRelativeTime => {
+                    let rel_before = parser.parse_int64()?;
+                    Ok(ClaimPredicate::BeforeRelativeTime(rel_before))
                 }
             }
-            ClaimPredicateType::BeforeAbsoluteTime => {
-                let abs_before = parser.parse_int64()?;
-                Ok(ClaimPredicate::BeforeAbsoluteTime(abs_before))
-            }
-            ClaimPredicateType::BeforeRelativeTime => {
-                let rel_before = parser.parse_int64()?;
-                Ok(ClaimPredicate::BeforeRelativeTime(rel_before))
-            }
-        };
-
-        parser.exit_recursion();
-        result
+        })
     }
 }
 
@@ -2275,6 +2504,8 @@ impl<'a> XdrParse<'a> for SetTrustLineFlagsOp<'a> {
         let asset = Asset::parse(parser)?;
         let clear_flags = parser.parse_uint32()?;
         let set_flags = parser.parse_uint32()?;
+        check_flags(clear_flags, ALL_TRUSTLINE_FLAGS)?;
+        check_flags(set_flags, ALL_TRUSTLINE_FLAGS)?;
         Ok(SetTrustLineFlagsOp {
             trustor,
             asset,
@@ -2615,11 +2846,50 @@ impl<'a> XdrParse<'a> for SorobanAddressCredentials<'a> {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SorobanDelegateSignature<'a> {
+    pub address: ScAddress<'a>,
+    pub signature: ScVal<'a>,
+    pub nested_delegates: VecM<SorobanDelegateSignature<'a>>,
+}
+
+impl<'a> XdrParse<'a> for SorobanDelegateSignature<'a> {
+    fn parse(parser: &mut Parser<'a>) -> Result<Self, ParseError> {
+        let address = ScAddress::parse(parser)?;
+        let signature = ScVal::parse(parser)?;
+        let nested_delegates = VecM::parse(parser)?;
+        Ok(SorobanDelegateSignature {
+            address,
+            signature,
+            nested_delegates,
+        })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SorobanAddressCredentialsWithDelegates<'a> {
+    pub address_credentials: SorobanAddressCredentials<'a>,
+    pub delegates: VecM<SorobanDelegateSignature<'a>>,
+}
+
+impl<'a> XdrParse<'a> for SorobanAddressCredentialsWithDelegates<'a> {
+    fn parse(parser: &mut Parser<'a>) -> Result<Self, ParseError> {
+        let address_credentials = SorobanAddressCredentials::parse(parser)?;
+        let delegates = VecM::parse(parser)?;
+        Ok(SorobanAddressCredentialsWithDelegates {
+            address_credentials,
+            delegates,
+        })
+    }
+}
+
 #[repr(i32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SorobanCredentialsType {
     SourceAccount = 0,
     Address = 1,
+    AddressV2 = 2,
+    AddressWithDelegates = 3,
 }
 
 impl SorobanCredentialsType {
@@ -2627,6 +2897,8 @@ impl SorobanCredentialsType {
         match value {
             0 => Ok(SorobanCredentialsType::SourceAccount),
             1 => Ok(SorobanCredentialsType::Address),
+            2 => Ok(SorobanCredentialsType::AddressV2),
+            3 => Ok(SorobanCredentialsType::AddressWithDelegates),
             _ => Err(ParseError::InvalidType(value)),
         }
     }
@@ -2643,6 +2915,8 @@ impl<'a> XdrParse<'a> for SorobanCredentialsType {
 pub enum SorobanCredentials<'a> {
     SourceAccount,
     Address(SorobanAddressCredentials<'a>),
+    AddressV2(SorobanAddressCredentials<'a>),
+    AddressWithDelegates(SorobanAddressCredentialsWithDelegates<'a>),
 }
 
 impl<'a> XdrParse<'a> for SorobanCredentials<'a> {
@@ -2654,6 +2928,16 @@ impl<'a> XdrParse<'a> for SorobanCredentials<'a> {
             SorobanCredentialsType::Address => {
                 let address = SorobanAddressCredentials::parse(parser)?;
                 Ok(SorobanCredentials::Address(address))
+            }
+            SorobanCredentialsType::AddressV2 => {
+                let address_v2 = SorobanAddressCredentials::parse(parser)?;
+                Ok(SorobanCredentials::AddressV2(address_v2))
+            }
+            SorobanCredentialsType::AddressWithDelegates => {
+                let address_with_delegates = SorobanAddressCredentialsWithDelegates::parse(parser)?;
+                Ok(SorobanCredentials::AddressWithDelegates(
+                    address_with_delegates,
+                ))
             }
         }
     }
@@ -3058,6 +3342,180 @@ impl<'a> XdrParse<'a> for LedgerKey<'a> {
     }
 }
 
+/// Parses a length-prefixed array of `T`, validating each element but keeping
+/// none of them.
+///
+/// Used for the parts of the signature payload that must be consumed to reach
+/// the end of the buffer but are never displayed. Retaining them would be
+/// wasteful at best and fatal at worst: a footprint may carry hundreds of
+/// `LedgerKey`s, each able to nest an arbitrary `ScVal`, which does not fit in
+/// the device heap.
+fn consume_array<'a, T: XdrParse<'a>>(
+    parser: &mut Parser<'a>,
+    max: u32,
+) -> Result<u32, ParseError> {
+    let count = parser.parse_uint32()?;
+    if count > max {
+        return Err(ParseError::LengthExceedsMax {
+            actual: count as usize,
+            max: max as usize,
+        });
+    }
+
+    // Every XDR element occupies at least 4 bytes, so the bytes left in the
+    // buffer bound how many elements can really follow. Rejecting up front
+    // avoids a long parse loop driven by an attacker-controlled length.
+    let max_possible = parser.remaining() / 4;
+    if count as usize > max_possible {
+        return Err(ParseError::LengthExceedsMax {
+            actual: count as usize,
+            max: max_possible,
+        });
+    }
+
+    parser.with_recursion(|parser| {
+        for _ in 0..count {
+            T::parse(parser)?;
+        }
+        Ok(count)
+    })
+}
+
+/// Footprint of a Soroban transaction.
+///
+/// Only the entry counts are kept; see [`consume_array`] for why the keys
+/// themselves are validated and dropped.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LedgerFootprint {
+    pub read_only_count: u32,
+    pub read_write_count: u32,
+}
+
+impl<'a> XdrParse<'a> for LedgerFootprint {
+    fn parse(parser: &mut Parser<'a>) -> Result<Self, ParseError> {
+        let read_only_count = consume_array::<LedgerKey>(parser, u32::MAX)?;
+        let read_write_count = consume_array::<LedgerKey>(parser, u32::MAX)?;
+        Ok(LedgerFootprint {
+            read_only_count,
+            read_write_count,
+        })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SorobanResources {
+    pub footprint: LedgerFootprint,
+    pub instructions: u32,
+    pub disk_read_bytes: u32,
+    pub write_bytes: u32,
+}
+
+impl<'a> XdrParse<'a> for SorobanResources {
+    fn parse(parser: &mut Parser<'a>) -> Result<Self, ParseError> {
+        let footprint = LedgerFootprint::parse(parser)?;
+        let instructions = parser.parse_uint32()?;
+        let disk_read_bytes = parser.parse_uint32()?;
+        let write_bytes = parser.parse_uint32()?;
+        Ok(SorobanResources {
+            footprint,
+            instructions,
+            disk_read_bytes,
+            write_bytes,
+        })
+    }
+}
+
+/// `SorobanTransactionData.ext`, extended by CAP-62 to carry the indices of the
+/// archived entries a transaction restores.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SorobanTransactionDataExt {
+    V0,
+    V1 { archived_entry_count: u32 },
+}
+
+impl<'a> XdrParse<'a> for SorobanTransactionDataExt {
+    fn parse(parser: &mut Parser<'a>) -> Result<Self, ParseError> {
+        match parser.parse_int32()? {
+            0 => Ok(SorobanTransactionDataExt::V0),
+            1 => {
+                let archived_entry_count = consume_array::<Uint32>(parser, u32::MAX)?;
+                Ok(SorobanTransactionDataExt::V1 {
+                    archived_entry_count,
+                })
+            }
+            v => Err(ParseError::InvalidType(v)),
+        }
+    }
+}
+
+/// A bare XDR `uint32`, so that arrays of them can go through [`consume_array`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Uint32(pub u32);
+
+impl<'a> XdrParse<'a> for Uint32 {
+    fn parse(parser: &mut Parser<'a>) -> Result<Self, ParseError> {
+        Ok(Uint32(parser.parse_uint32()?))
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SorobanTransactionData {
+    pub ext: SorobanTransactionDataExt,
+    pub resources: SorobanResources,
+    /// Portion of `tx.fee` reserved for resource usage. Bounded by the fee the
+    /// review screen already shows, so it is parsed but not displayed.
+    pub resource_fee: i64,
+}
+
+impl<'a> XdrParse<'a> for SorobanTransactionData {
+    fn parse(parser: &mut Parser<'a>) -> Result<Self, ParseError> {
+        let ext = SorobanTransactionDataExt::parse(parser)?;
+        let resources = SorobanResources::parse(parser)?;
+        let resource_fee = parser.parse_int64()?;
+        Ok(SorobanTransactionData {
+            ext,
+            resources,
+            resource_fee,
+        })
+    }
+}
+
+/// `Transaction.ext`: the last field of a transaction, after its operations.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TransactionExt {
+    V0,
+    V1(SorobanTransactionData),
+}
+
+impl<'a> XdrParse<'a> for TransactionExt {
+    fn parse(parser: &mut Parser<'a>) -> Result<Self, ParseError> {
+        match parser.parse_int32()? {
+            0 => Ok(TransactionExt::V0),
+            1 => Ok(TransactionExt::V1(SorobanTransactionData::parse(parser)?)),
+            v => Err(ParseError::InvalidType(v)),
+        }
+    }
+}
+
+/// Maximum number of signatures an envelope may carry, per the XDR definition
+/// of `TransactionV1Envelope`.
+const MAX_ENVELOPE_SIGNATURES: u32 = 20;
+
+/// A signature attached to an envelope: a 4-byte key hint plus the signature.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DecoratedSignature<'a> {
+    pub hint: &'a [u8; 4],
+    pub signature: &'a [u8],
+}
+
+impl<'a> XdrParse<'a> for DecoratedSignature<'a> {
+    fn parse(parser: &mut Parser<'a>) -> Result<Self, ParseError> {
+        let hint = parser.read_array_ref::<4>()?;
+        let signature = parser.parse_var_opaque(Some(64))?;
+        Ok(DecoratedSignature { hint, signature })
+    }
+}
+
 #[repr(i32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RevokeSponsorshipType {
@@ -3251,6 +3709,7 @@ impl<'a> XdrParse<'a> for Operation<'a> {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum HashIDPreimage<'a> {
     SorobanAuthorization(HashIdPreimageSorobanAuthorization<'a>),
+    SorobanAuthorizationWithAddress(HashIdPreimageSorobanAuthorizationWithAddress<'a>),
 }
 
 impl<'a> XdrParse<'a> for HashIDPreimage<'a> {
@@ -3260,6 +3719,13 @@ impl<'a> XdrParse<'a> for HashIDPreimage<'a> {
             EnvelopeType::EnvelopeTypeSorobanAuthorization => {
                 let soroban_auth = HashIdPreimageSorobanAuthorization::parse(parser)?;
                 Ok(HashIDPreimage::SorobanAuthorization(soroban_auth))
+            }
+            EnvelopeType::EnvelopeTypeSorobanAuthorizationWithAddress => {
+                let soroban_auth_with_address =
+                    HashIdPreimageSorobanAuthorizationWithAddress::parse(parser)?;
+                Ok(HashIDPreimage::SorobanAuthorizationWithAddress(
+                    soroban_auth_with_address,
+                ))
             }
             _ => Err(ParseError::InvalidType(preimage_type as i32)),
         }
@@ -3286,5 +3752,245 @@ impl<'a> XdrParse<'a> for HashIdPreimageSorobanAuthorization<'a> {
             signature_expiration_ledger,
             invocation,
         })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HashIdPreimageSorobanAuthorizationWithAddress<'a> {
+    pub network_id: Hash<'a>,
+    pub nonce: i64,
+    pub signature_expiration_ledger: u32,
+    pub address: ScAddress<'a>,
+    pub invocation: SorobanAuthorizedInvocation<'a>,
+}
+
+impl<'a> XdrParse<'a> for HashIdPreimageSorobanAuthorizationWithAddress<'a> {
+    fn parse(parser: &mut Parser<'a>) -> Result<Self, ParseError> {
+        let network_id = Hash::parse(parser)?;
+        let nonce = parser.parse_int64()?;
+        let signature_expiration_ledger = parser.parse_uint32()?;
+        let address = ScAddress::parse(parser)?;
+        let invocation = SorobanAuthorizedInvocation::parse(parser)?;
+        Ok(HashIdPreimageSorobanAuthorizationWithAddress {
+            network_id,
+            nonce,
+            signature_expiration_ledger,
+            address,
+            invocation,
+        })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        consume_array, try_vec_with_capacity, BytesM, ClaimPredicate, Ed25519SignedPayload,
+        ParseError, Parser, SignerKey, StringM, Uint256, VecM, XdrParse,
+    };
+
+    struct AlwaysFails;
+
+    impl<'a> XdrParse<'a> for AlwaysFails {
+        fn parse(_parser: &mut Parser<'a>) -> Result<Self, ParseError> {
+            Err(ParseError::InvalidType(-1))
+        }
+    }
+
+    #[test]
+    fn vec_capacity_overflow_returns_parse_error() {
+        let result = try_vec_with_capacity::<u64>(usize::MAX);
+        assert!(matches!(result, Err(ParseError::AllocationFailed)));
+    }
+
+    #[test]
+    fn bounded_constructors_enforce_their_declared_limits() {
+        assert_eq!(
+            StringM::<4>::new(b"test")
+                .expect("value at the limit must be accepted")
+                .as_bytes(),
+            b"test"
+        );
+        assert!(matches!(
+            StringM::<4>::new(b"large"),
+            Err(ParseError::LengthExceedsMax { actual: 5, max: 4 })
+        ));
+
+        assert_eq!(
+            BytesM::<4>::new(b"test")
+                .expect("value at the limit must be accepted")
+                .as_bytes(),
+            b"test"
+        );
+        assert!(matches!(
+            BytesM::<4>::new(b"large"),
+            Err(ParseError::LengthExceedsMax { actual: 5, max: 4 })
+        ));
+
+        assert_eq!(
+            VecM::<_, 2>::new(alloc::vec![1u8, 2])
+                .expect("value at the limit must be accepted")
+                .as_slice(),
+            &[1, 2]
+        );
+        assert!(matches!(
+            VecM::<_, 2>::new(alloc::vec![1u8, 2, 3]),
+            Err(ParseError::LengthExceedsMax { actual: 3, max: 2 })
+        ));
+    }
+
+    #[test]
+    fn signed_payload_constructor_enforces_both_length_bounds() {
+        let ed25519 = [0u8; 32];
+        let one_byte = [1u8; 1];
+        let max_payload = [2u8; 64];
+        let overlong_payload = [3u8; 65];
+
+        assert!(matches!(
+            Ed25519SignedPayload::new(Uint256(&ed25519), &[]),
+            Err(ParseError::InvalidLength {
+                actual: 0,
+                min: 1,
+                max: 64
+            })
+        ));
+
+        let signed_payload = Ed25519SignedPayload::new(Uint256(&ed25519), &one_byte)
+            .expect("minimum-length payload must be accepted");
+        assert_eq!(signed_payload.ed25519().as_bytes(), &ed25519);
+        assert_eq!(signed_payload.payload(), &one_byte);
+
+        assert!(Ed25519SignedPayload::new(Uint256(&ed25519), &max_payload).is_ok());
+        assert!(matches!(
+            Ed25519SignedPayload::new(Uint256(&ed25519), &overlong_payload),
+            Err(ParseError::InvalidLength {
+                actual: 65,
+                min: 1,
+                max: 64
+            })
+        ));
+    }
+
+    #[test]
+    fn vecm_error_restores_recursion_depth() {
+        let data = [0, 0, 0, 1, 0, 0, 0, 0];
+        let mut parser = Parser::new(&data);
+
+        assert!(matches!(
+            VecM::<AlwaysFails, 1>::parse(&mut parser),
+            Err(ParseError::InvalidType(-1))
+        ));
+        assert_eq!(parser.depth, 0);
+    }
+
+    #[test]
+    fn claim_predicate_error_restores_recursion_depth() {
+        let data = [0, 0, 0, 99];
+        let mut parser = Parser::new(&data);
+
+        assert!(matches!(
+            ClaimPredicate::parse(&mut parser),
+            Err(ParseError::InvalidType(99))
+        ));
+        assert_eq!(parser.depth, 0);
+    }
+
+    #[test]
+    fn claim_predicate_not_parses_and_restores_recursion_depth() {
+        let data = [0, 0, 0, 3, 0, 0, 0, 1, 0, 0, 0, 0];
+        let mut parser = Parser::new(&data);
+
+        let parsed = ClaimPredicate::parse(&mut parser).expect("valid predicate must parse");
+        assert!(matches!(
+            parsed,
+            ClaimPredicate::Not(inner) if matches!(*inner, ClaimPredicate::Unconditional)
+        ));
+        assert_eq!(parser.depth, 0);
+    }
+
+    #[test]
+    fn claim_predicate_not_without_predicate_is_rejected() {
+        // Not arm (type 3) whose optional predicate is absent (bool = 0):
+        // malformed, not a buffer overflow.
+        let data = [0, 0, 0, 3, 0, 0, 0, 0];
+        let mut parser = Parser::new(&data);
+
+        assert!(matches!(
+            ClaimPredicate::parse(&mut parser),
+            Err(ParseError::InvalidLength {
+                actual: 0,
+                min: 1,
+                max: 1
+            })
+        ));
+        assert_eq!(parser.depth, 0);
+    }
+
+    #[test]
+    fn consume_array_error_restores_recursion_depth() {
+        let data = [0, 0, 0, 1, 0, 0, 0, 0];
+        let mut parser = Parser::new(&data);
+
+        assert!(matches!(
+            consume_array::<AlwaysFails>(&mut parser, 1),
+            Err(ParseError::InvalidType(-1))
+        ));
+        assert_eq!(parser.depth, 0);
+    }
+
+    /// SIGNER_KEY_TYPE_ED25519_SIGNED_PAYLOAD = 3, followed by a 32-byte
+    /// ed25519 key and an `opaque<64>` payload.
+    const SIGNED_PAYLOAD_LEN_PREFIX: usize = 4 + 32 + 4;
+
+    #[test]
+    fn empty_signed_payload_is_rejected() {
+        // Empty inner payloads are invalid per stellar-core and cannot be
+        // strkey-encoded, so the parser must refuse them.
+        let mut data = [0u8; SIGNED_PAYLOAD_LEN_PREFIX];
+        data[3] = 3; // signer key type
+        data[SIGNED_PAYLOAD_LEN_PREFIX - 4..SIGNED_PAYLOAD_LEN_PREFIX].fill(0); // length = 0
+
+        let mut parser = Parser::new(&data);
+        assert!(matches!(
+            SignerKey::parse(&mut parser),
+            Err(ParseError::InvalidLength {
+                actual: 0,
+                min: 1,
+                max: 64
+            })
+        ));
+    }
+
+    #[test]
+    fn overlong_signed_payload_is_rejected() {
+        // A 65-byte inner payload exceeds the `opaque<64>` bound.
+        let mut data = [0u8; SIGNED_PAYLOAD_LEN_PREFIX + 65 + 3];
+        data[3] = 3; // signer key type
+        data[4 + 32..4 + 32 + 4].copy_from_slice(&65u32.to_be_bytes());
+
+        let mut parser = Parser::new(&data);
+        assert!(matches!(
+            SignerKey::parse(&mut parser),
+            Err(ParseError::LengthExceedsMax {
+                actual: 65,
+                max: 64
+            })
+        ));
+    }
+
+    #[test]
+    fn valid_signed_payload_parses() {
+        let mut data = [0u8; SIGNED_PAYLOAD_LEN_PREFIX + 4];
+        data[3] = 3; // signer key type
+        data[4 + 32..4 + 32 + 4].copy_from_slice(&4u32.to_be_bytes());
+        data[SIGNED_PAYLOAD_LEN_PREFIX..SIGNED_PAYLOAD_LEN_PREFIX + 4].copy_from_slice(b"test");
+
+        let mut parser = Parser::new(&data);
+        let key = SignerKey::parse(&mut parser).expect("valid signed payload must parse");
+        assert!(matches!(
+            key,
+            SignerKey::SignerKeyTypeEd25519SignedPayload(_)
+        ));
+        assert_eq!(parser.offset(), SIGNED_PAYLOAD_LEN_PREFIX + 4);
+        assert_eq!(parser.remaining(), 0);
     }
 }

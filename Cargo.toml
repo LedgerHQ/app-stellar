@@ -1,20 +1,21 @@
 [package]
 name = "stellar"
-version = "6.0.3"
+version = "6.1.0"
 authors = ["overcat"]
 edition = "2021"
 
 [dependencies]
 escape-bytes = { version = "0.1.1", default-features = false }
 hex = { version = "0.4.3", default-features = false, features = ["alloc"] }
-ledger_device_sdk = { version = "1.34.0" }
+ledger_device_sdk = { version = "1.37.0" }
 stellarlib = { path = "./stellarlib" }
-stellar-strkey = { version = "0.0.16", default-features = false }
+stellar-strkey = { version = "0.0.18", default-features = false }
 swap-utils = { path = "./swap-utils" }
 
 [profile.release]
 opt-level = 'z'
 lto = true
+codegen-units = 1
 
 [features]
 default = ["ledger_device_sdk/nano_nbgl"]
@@ -25,21 +26,11 @@ curve = ["ed25519"]
 flags = "0xa00"
 path = ["44'/148'"]
 name = "Stellar"
-
-[package.metadata.ledger.nanox]
-icon = "icons/stellar_14x14.gif"
-
-[package.metadata.ledger.nanosplus]
-icon = "icons/stellar_14x14.gif"
-
-[package.metadata.ledger.stax]
-icon = "icons/stellar_32x32.gif"
-
-[package.metadata.ledger.flex]
-icon = "icons/stellar_40x40.gif"
-
-[package.metadata.ledger.apex_p]
-icon = "icons/stellar_32x32.png"
+nanosplus = { icon = "icons/stellar_14x14.gif" }
+nanox = { icon = "icons/stellar_14x14.gif" }
+stax = { icon = "icons/stellar_32x32.gif" }
+flex = { icon = "icons/stellar_40x40.gif" }
+apex_p = { icon = "icons/stellar_32x32.png" }
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = [
