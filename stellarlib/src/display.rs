@@ -8,7 +8,6 @@ use crate::parser::{
     UInt128Parts, UInt256Parts, Uint256,
 };
 use alloc::string::ToString;
-use chrono::DateTime;
 use core::fmt;
 
 use alloc::format;
@@ -105,13 +104,16 @@ impl<'a> fmt::Display for PublicKey<'a> {
 /// Format a ContractId (Hash) as a strkey-encoded string
 pub fn format_contract_id(contract_id: &Uint256) -> alloc::string::String {
     let Uint256(h) = contract_id;
-    stellar_strkey::Contract(**h).to_string()
+    alloc::format!("{}", stellar_strkey::Contract(**h))
 }
 
 /// Format a PoolId (Hash) as a strkey-encoded string
 pub fn format_pool_id(pool_id: &Uint256) -> alloc::string::String {
     let Uint256(p_id) = pool_id;
-    stellar_strkey::Strkey::LiquidityPool(stellar_strkey::LiquidityPool(**p_id)).to_string()
+    alloc::format!(
+        "{}",
+        stellar_strkey::Strkey::LiquidityPool(stellar_strkey::LiquidityPool(**p_id))
+    )
 }
 
 impl<'a> fmt::Display for MuxedEd25519<'a> {
@@ -144,18 +146,12 @@ impl<'a> fmt::Display for MuxedAccount<'a> {
 
 impl<'a> fmt::Display for Ed25519SignedPayload<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let Ed25519SignedPayload {
-            ed25519: Uint256(ed25519),
-            payload,
-        } = self;
-        write!(
-            f,
-            "{}",
-            stellar_strkey::ed25519::SignedPayload {
-                ed25519: **ed25519,
-                payload: (*payload).into(),
-            }
-        )
+        // `Ed25519SignedPayload` has private fields and its constructor
+        // enforces the same invariant as stellar-strkey.
+        let signed_payload =
+            stellar_strkey::ed25519::SignedPayload::new(*self.ed25519().as_bytes(), self.payload())
+                .map_err(|_| fmt::Error)?;
+        write!(f, "{signed_payload}")
     }
 }
 
@@ -313,21 +309,22 @@ impl<'a, const MAX: usize> fmt::Display for StringM<'a, MAX> {
 
 /// Formats a numeric value as a decimal string with the specified number of decimal places
 ///
+/// Takes a concrete `i128` (every amount type in the app — u32, i64, u64,
+/// i128 — converts losslessly) instead of a generic so the decimal/comma
+/// logic is monomorphized exactly once in the size-constrained binary.
+///
 /// # Arguments
-/// * `num` - The numeric value to format (u64, u32, i32, i64)
+/// * `num` - The numeric value to format
 /// * `decimal_places` - Number of decimal places to show
 ///
 /// # Examples
 /// ```ignore
 /// use stellarlib::display::format_decimal;
 ///
-/// assert_eq!(format_decimal(1234567u64, 7), "0.1234567");
-/// assert_eq!(format_decimal(10000000u64, 7), "1.0000000");
+/// assert_eq!(format_decimal(1234567, 7), "0.1234567");
+/// assert_eq!(format_decimal(10000000, 7), "1.0000000");
 /// ```
-pub fn format_decimal<T>(num: T, decimal_places: u32) -> alloc::string::String
-where
-    T: ToString + Copy,
-{
+pub fn format_decimal(num: i128, decimal_places: u32) -> alloc::string::String {
     let num_str = num.to_string();
 
     if decimal_places == 0 {
@@ -482,19 +479,66 @@ pub fn format_number_with_commas(decimal_str: &str) -> alloc::string::String {
 /// assert_eq!(format_unix_timestamp(1703335871), "2023-12-23 12:51:11 UTC");
 /// ```
 pub fn format_unix_timestamp(timestamp: u64) -> alloc::string::String {
-    // Check if timestamp exceeds i64::MAX to avoid overflow
-    if timestamp > i64::MAX as u64 {
-        // Fallback to timestamp string if too large
+    // Constants for time calculations
+    const SECS_PER_MIN: u64 = 60;
+    const SECS_PER_HOUR: u64 = 3600;
+    const SECS_PER_DAY: u64 = 86400;
+
+    // Days in each month (non-leap year)
+    const DAYS_IN_MONTH: [u64; 12] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+    // Check for unreasonable timestamps (beyond year 9999)
+    // Year 9999 is approximately timestamp 253402300799
+    if timestamp > 253402300799 {
         return timestamp.to_string();
     }
 
-    // Convert to DateTime<Utc>
-    if let Some(datetime) = DateTime::from_timestamp(timestamp as i64, 0) {
-        datetime.to_string()
-    } else {
-        // Fallback to timestamp string if conversion fails
-        timestamp.to_string()
+    // Calculate time components
+    let secs = timestamp % SECS_PER_MIN;
+    let mins = (timestamp / SECS_PER_MIN) % 60;
+    let hours = (timestamp / SECS_PER_HOUR) % 24;
+
+    // Calculate days since Unix epoch (1970-01-01)
+    let mut days = timestamp / SECS_PER_DAY;
+
+    // Calculate year
+    let mut year: u64 = 1970;
+    loop {
+        let days_in_year = if is_leap_year(year) { 366 } else { 365 };
+        if days < days_in_year {
+            break;
+        }
+        days -= days_in_year;
+        year += 1;
     }
+
+    // Calculate month and day
+    let is_leap = is_leap_year(year);
+    let mut month: u64 = 1;
+    for (i, &days_in_month) in DAYS_IN_MONTH.iter().enumerate() {
+        let dim = if i == 1 && is_leap {
+            days_in_month + 1
+        } else {
+            days_in_month
+        };
+        if days < dim {
+            break;
+        }
+        days -= dim;
+        month += 1;
+    }
+    let day = days + 1;
+
+    format!(
+        "{:04}-{:02}-{:02} {:02}:{:02}:{:02} UTC",
+        year, month, day, hours, mins, secs
+    )
+}
+
+/// Check if a year is a leap year
+#[inline]
+fn is_leap_year(year: u64) -> bool {
+    (year.is_multiple_of(4) && !year.is_multiple_of(100)) || year.is_multiple_of(400)
 }
 
 /// Formats a duration in seconds to a human-readable string
@@ -555,14 +599,11 @@ pub fn format_duration(seconds: u64) -> alloc::string::String {
 ///
 /// # Examples
 /// ```ignore
-/// assert_eq!(format_native_amount(10000000u64), "1");
-/// assert_eq!(format_native_amount(12345678u64), "1.2345678");
-/// assert_eq!(format_native_amount(1234567890u64), "123.456789");
+/// assert_eq!(format_native_amount(10000000), "1");
+/// assert_eq!(format_native_amount(12345678), "1.2345678");
+/// assert_eq!(format_native_amount(1234567890), "123.456789");
 /// ```
-pub fn format_native_amount<T>(stroops: T) -> String
-where
-    T: ToString + Copy,
-{
+pub fn format_native_amount(stroops: i128) -> String {
     format_token_amount(stroops, STELLAR_NATIVE_DECIMAL_PLACES)
 }
 
@@ -577,14 +618,11 @@ where
 ///
 /// # Examples
 /// ```ignore
-/// assert_eq!(format_token_amount(10000000u64, 7), "1");
-/// assert_eq!(format_token_amount(12345678u64, 7), "1.2345678");
-/// assert_eq!(format_token_amount(1234567890u64, 7), "123.456789");
+/// assert_eq!(format_token_amount(10000000, 7), "1");
+/// assert_eq!(format_token_amount(12345678, 7), "1.2345678");
+/// assert_eq!(format_token_amount(1234567890, 7), "123.456789");
 /// ```
-pub fn format_token_amount<T>(amount: T, decimals: u32) -> String
-where
-    T: ToString + Copy,
-{
+pub fn format_token_amount(amount: i128, decimals: u32) -> String {
     let decimal_str = format_decimal(amount, decimals);
     format_number_with_commas(&decimal_str)
 }
