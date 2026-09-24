@@ -45,7 +45,7 @@ def test_sign_soroban_auth_with_nonce_enabled(
 ):
     keypair = Keypair.from_mnemonic_phrase(MNEMONIC, index=0)
     path = "m/44'/148'/0'"
-    preimage = SignSorobanAuthorizationTestCases.soroban_auth_create_smart_contract()
+    preimage = SignSorobanAuthorizationTestCases.soroban_auth_with_address_create_smart_contract()
     client = StellarCommandSender(backend)
     configure_device_settings(
         navigator,
@@ -66,19 +66,19 @@ def test_sign_soroban_auth_with_nonce_enabled(
     assert response == expected_signature
 
 
-def test_sign_soroban_auth_with_nested_authorization_disabled(
+def test_sign_soroban_auth_with_authorization_details_disabled(
     backend, scenario_navigator, device, navigator
 ):
     keypair = Keypair.from_mnemonic_phrase(MNEMONIC, index=0)
     path = "m/44'/148'/0'"
     preimage = (
-        SignSorobanAuthorizationTestCases.soroban_auth_invoke_contract_with_complex_sub_invocation()
+        SignSorobanAuthorizationTestCases.soroban_auth_with_address_invoke_contract()
     )
     client = StellarCommandSender(backend)
     configure_device_settings(
         navigator,
         device,
-        SettingsId.DISABLE_NESTED_AUTHORIZATION | SettingsId.ENABLE_BLIND_SIGNING,
+        SettingsId.DISABLE_AUTHORIZATION_DETAILS | SettingsId.ENABLE_BLIND_SIGNING,
     )
     with client.sign_soroban_auth(
         path=path, soroban_authorization=preimage.to_xdr_bytes()

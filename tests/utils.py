@@ -23,7 +23,7 @@ class SettingsId(IntFlag):
     ENABLE_TRANSACTION_SOURCE = auto()
     ENABLE_SEQUENCE_AND_NONCE = auto()
     ENABLE_PRECONDITION = auto()
-    DISABLE_NESTED_AUTHORIZATION = auto()
+    DISABLE_AUTHORIZATION_DETAILS = auto()
 
 
 # Button coordinates for different device types
@@ -33,21 +33,21 @@ _SETTINGS_BUTTONS = {
         SettingsId.ENABLE_TRANSACTION_SOURCE: (340, 280),
         SettingsId.ENABLE_SEQUENCE_AND_NONCE: (340, 445),
         SettingsId.ENABLE_PRECONDITION: (340, 135),
-        SettingsId.DISABLE_NESTED_AUTHORIZATION: (340, 305),
+        SettingsId.DISABLE_AUTHORIZATION_DETAILS: (340, 305),
     },
     DeviceType.FLEX: {
         SettingsId.ENABLE_BLIND_SIGNING: (415, 140),
         SettingsId.ENABLE_TRANSACTION_SOURCE: (415, 280),
         SettingsId.ENABLE_SEQUENCE_AND_NONCE: (415, 140),
         SettingsId.ENABLE_PRECONDITION: (415, 320),
-        SettingsId.DISABLE_NESTED_AUTHORIZATION: (415, 140),
+        SettingsId.DISABLE_AUTHORIZATION_DETAILS: (415, 140),
     },
     DeviceType.APEX_P: {
         SettingsId.ENABLE_BLIND_SIGNING: (265, 95),
         SettingsId.ENABLE_TRANSACTION_SOURCE: (265, 190),
         SettingsId.ENABLE_SEQUENCE_AND_NONCE: (265, 95),
         SettingsId.ENABLE_PRECONDITION: (265, 210),
-        SettingsId.DISABLE_NESTED_AUTHORIZATION: (265, 95),
+        SettingsId.DISABLE_AUTHORIZATION_DETAILS: (265, 95),
     },
 }
 
@@ -59,9 +59,7 @@ def configure_device_settings(navigator, device, settings: SettingsId):
     elif device.type in (DeviceType.STAX, DeviceType.FLEX, DeviceType.APEX_P):
         instructions = _get_touchscreen_instructions(device.type, settings)
     else:
-        raise NotImplementedError(
-            f"Settings navigation not implemented for device: {device}"
-        )
+        raise NotImplementedError(f"Settings navigation not implemented for device: {device}")
 
     navigator.navigate(
         instructions,
@@ -82,7 +80,7 @@ def _get_nano_instructions(settings: SettingsId) -> list[NavIns]:
         SettingsId.ENABLE_TRANSACTION_SOURCE,
         SettingsId.ENABLE_SEQUENCE_AND_NONCE,
         SettingsId.ENABLE_PRECONDITION,
-        SettingsId.DISABLE_NESTED_AUTHORIZATION,
+        SettingsId.DISABLE_AUTHORIZATION_DETAILS,
     ]
 
     for setting in settings_order:
@@ -105,7 +103,7 @@ _TOUCHSCREEN_LAYOUTS = {
         # Page 2
         [
             SettingsId.ENABLE_PRECONDITION,
-            SettingsId.DISABLE_NESTED_AUTHORIZATION,
+            SettingsId.DISABLE_AUTHORIZATION_DETAILS,
         ],
     ],
     DeviceType.FLEX: [
@@ -121,7 +119,7 @@ _TOUCHSCREEN_LAYOUTS = {
         ],
         # Page 3
         [
-            SettingsId.DISABLE_NESTED_AUTHORIZATION,
+            SettingsId.DISABLE_AUTHORIZATION_DETAILS,
         ],
     ],
     DeviceType.APEX_P: [
@@ -137,15 +135,13 @@ _TOUCHSCREEN_LAYOUTS = {
         ],
         # Page 3
         [
-            SettingsId.DISABLE_NESTED_AUTHORIZATION,
+            SettingsId.DISABLE_AUTHORIZATION_DETAILS,
         ],
     ],
 }
 
 
-def _get_touchscreen_instructions(
-    device_type: DeviceType, settings: SettingsId
-) -> list[NavIns | NavInsID]:
+def _get_touchscreen_instructions(device_type: DeviceType, settings: SettingsId) -> list[NavIns | NavInsID]:
     """Generate navigation instructions for touchscreen devices (Stax/Flex/Apex P)."""
     buttons = _SETTINGS_BUTTONS[device_type]
     layout = _TOUCHSCREEN_LAYOUTS[device_type]
@@ -177,13 +173,7 @@ def handle_risk_warning(navigator, device, accept: bool = True) -> None:
             ]
     else:
         # Note: USE_CASE_CHOICE_REJECT actually accepts, USE_CASE_CHOICE_CONFIRM rejects
-        instructions = [
-            NavIns(
-                NavInsID.USE_CASE_CHOICE_REJECT
-                if accept
-                else NavInsID.USE_CASE_CHOICE_CONFIRM
-            )
-        ]
+        instructions = [NavIns(NavInsID.USE_CASE_CHOICE_REJECT if accept else NavInsID.USE_CASE_CHOICE_CONFIRM)]
 
     navigator.navigate(
         instructions,

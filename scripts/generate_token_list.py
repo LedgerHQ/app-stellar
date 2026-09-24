@@ -1,15 +1,10 @@
 import requests
-
 from stellar_sdk import Asset, Network, utils
 from stellar_sdk import xdr as stellar_xdr
 
 LOBSTR_TOKEN_API_URL = "https://lobstr.co/api/v1/sep/assets/curated.json"
-SOROSWAP_TOKEN_API_URL = (
-    "https://raw.githubusercontent.com/soroswap/token-list/main/tokenList.json"
-)
-STELLAR_EXPERT_TOKEN_API_URL = (
-    "https://api.stellar.expert/explorer/public/asset/?limit=200&order=desc&sort=rating"
-)
+SOROSWAP_TOKEN_API_URL = "https://raw.githubusercontent.com/soroswap/token-list/main/tokenList.json"
+STELLAR_EXPERT_TOKEN_API_URL = "https://api.stellar.expert/explorer/public/asset/?limit=200&order=desc&sort=rating"
 
 lobstr_tokens = set()
 soroswap_tokens = set()
@@ -37,9 +32,7 @@ for record in resp["_embedded"]["records"]:
 
 # Find tokens that are common to at least two of the lists.
 tokens_in_at_least_two = (
-    (lobstr_tokens & soroswap_tokens)
-    | (lobstr_tokens & stellar_expert_tokens)
-    | (soroswap_tokens & stellar_expert_tokens)
+    (lobstr_tokens & soroswap_tokens) | (lobstr_tokens & stellar_expert_tokens) | (soroswap_tokens & stellar_expert_tokens)
 )
 
 

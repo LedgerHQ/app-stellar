@@ -28,7 +28,7 @@ pub enum SettingId {
     TransactionSource = 1,
     SequenceAndNonce = 2,
     Precondition = 3,
-    NestedAuthorization = 4,
+    AuthorizationDetails = 4,
 }
 
 impl SettingId {
@@ -47,8 +47,8 @@ impl SettingId {
                 ("Sequence & Nonce", "Allow display of tx sequence and nonce")
             }
             SettingId::Precondition => ("Precondition", "Allow display of tx precondition"),
-            SettingId::NestedAuthorization => {
-                ("Nested Authz", "Allow display of nested authorizations")
+            SettingId::AuthorizationDetails => {
+                ("Authz Details", "Allow display of authorization details")
             }
         }
     }
@@ -68,9 +68,9 @@ impl SettingId {
             SettingId::Precondition => {
                 ("Precondition", "Allow display of transaction precondition")
             }
-            SettingId::NestedAuthorization => (
-                "Nested Authorization",
-                "Allow display of nested authorizations",
+            SettingId::AuthorizationDetails => (
+                "Authorization Details",
+                "Allow display of authorization details",
             ),
         }
     }
@@ -82,7 +82,7 @@ const DEFAULT_SETTINGS: [u8; SETTINGS_SIZE] = [
     0, // TransactionSource: disabled by default
     0, // SequenceAndNonce: disabled by default
     0, // Precondition: disabled by default
-    1, // Nested Authorization: enabled by default
+    1, // Authorization Details: enabled by default
     0, 0, 0, 0, 0, // Reserved for future settings
 ];
 
@@ -93,7 +93,7 @@ const EXPOSED_SETTINGS: [SettingId; 5] = [
     SettingId::TransactionSource,
     SettingId::SequenceAndNonce,
     SettingId::Precondition,
-    SettingId::NestedAuthorization,
+    SettingId::AuthorizationDetails,
 ];
 
 const EXPOSED_SETTINGS_COUNT: usize = EXPOSED_SETTINGS.len();
@@ -161,15 +161,15 @@ impl Settings {
         self.get_setting(SettingId::Precondition)
     }
 
-    pub fn is_show_nested_authorization_enabled(&self) -> bool {
-        self.get_setting(SettingId::NestedAuthorization)
+    pub fn is_show_authorization_details_enabled(&self) -> bool {
+        self.get_setting(SettingId::AuthorizationDetails)
     }
 
     pub fn to_format_config(self) -> FormatConfig {
         FormatConfig {
             show_sequence_and_nonce: self.is_show_sequence_and_nonce_enabled(),
             show_preconditions: self.is_show_precondition_enabled(),
-            show_nested_authorization: self.is_show_nested_authorization_enabled(),
+            show_authorization_details: self.is_show_authorization_details_enabled(),
             show_tx_source_if_matches_signer: self.is_show_transaction_source_if_matches_signer(),
         }
     }

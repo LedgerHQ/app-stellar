@@ -30,7 +30,7 @@ use stellarlib::{
 pub fn ui_sign_tx(raw_data: &[u8], signer: &[u8]) -> Result<bool, AppSW> {
     let config = Settings.to_format_config();
     let signer = stellar_strkey::ed25519::PublicKey::from_payload(signer)
-        .expect("caller guarantees 32-byte Stellar public key")
+        .map_err(|_| AppSW::KeyDeriveFail)?
         .to_string();
     let mut parser = Parser::new(raw_data);
     let tx_signature_payload =
@@ -76,6 +76,16 @@ pub fn ui_sign_tx(raw_data: &[u8], signer: &[u8]) -> Result<bool, AppSW> {
             intent = get_operation_intent(&op, &tx_source);
         }
     }
+
+    // The handler signs the whole buffer, so anything the parser did not reach
+    // would be signed without ever reaching the screen below.
+    tx_signature_payload
+        .tagged_transaction
+        .parse_trailing(&mut parser)
+        .map_err(|_| AppSW::DataParsingFail)?;
+    parser
+        .ensure_fully_consumed()
+        .map_err(|_| AppSW::DataParsingFail)?;
 
     let (title, finish_title) = match &tx_signature_payload.tagged_transaction {
         stellarlib::TaggedTransaction::EnvelopeTypeTx(_) => match &intent {

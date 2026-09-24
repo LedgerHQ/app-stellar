@@ -72,9 +72,12 @@ fn handle_printable_amount_command(arg0: u32) {
             formatted_str,
         )),
         Err(_) => {
-            // will not happen, but just in case
+            // Unreachable today (XLM supply is far below i64::MAX), but the
+            // app-exchange contract requires an empty printable_amount to
+            // signal failure — a non-empty string would be displayed as a
+            // real amount in the Exchange UI.
             ledger_device_sdk::log::error!("[swap] Error formatting amount");
-            swap::swap_return(swap::SwapResult::PrintableAmountResult(&mut params, "0"))
+            swap::swap_return(swap::SwapResult::PrintableAmountResult(&mut params, ""))
         }
     }
 }

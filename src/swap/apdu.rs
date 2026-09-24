@@ -16,7 +16,7 @@
  *****************************************************************************/
 
 use crate::{
-    context::AppContext,
+    context::{ActiveFlow, AppContext},
     crypto::{get_public_key, hash, sign},
     sw::AppSW,
     Instruction,
@@ -90,7 +90,7 @@ fn handle_swap_sign_tx<const MAX: usize>(
         first,
         more
     );
-    ctx.handle_chunk(comm, first)?;
+    ctx.handle_chunk(comm, ActiveFlow::SignTx, first)?;
 
     // If more data expected, return None
     if more {
@@ -102,7 +102,7 @@ fn handle_swap_sign_tx<const MAX: usize>(
 
     let signer = get_public_key(&ctx.path)?;
     let signer = stellar_strkey::ed25519::PublicKey::from_payload(&signer)
-        .expect("caller guarantees 32-byte Stellar public key")
+        .map_err(|_| AppSW::KeyDeriveFail)?
         .to_string();
 
     // Validate the swap transaction
